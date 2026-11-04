@@ -72,8 +72,8 @@
         if (!ac || l.src) return;
         l.src = ac.createBufferSource(); l.src.buffer = noiseBuf; l.src.loop = true;
         l.f = ac.createBiquadFilter(); l.g = ac.createGain(); l.g.gain.value = 0;
-        if (kind === 'stir') { l.f.type = 'lowpass'; l.f.frequency.value = 520; l.f.Q.value = 2.5; l.max = 0.55; }
-        if (kind === 'rub') { l.f.type = 'bandpass'; l.f.frequency.value = 2600; l.f.Q.value = 0.9; l.max = 0.16; }
+        if (kind === 'stir') { l.f.type = 'lowpass'; l.f.frequency.value = 380; l.f.Q.value = 1.5; l.max = 0.16; }
+        if (kind === 'rub') { l.f.type = 'bandpass'; l.f.frequency.value = 2600; l.f.Q.value = 0.9; l.max = 0.06; }
         if (kind === 'pour') {
           l.f.type = 'bandpass'; l.f.frequency.value = 900; l.f.Q.value = 4; l.max = 0.5;
           var lfo = ac.createOscillator(); lfo.frequency.value = 9; var lg = ac.createGain(); lg.gain.value = 350;
@@ -106,6 +106,9 @@
         noise({ freq: 2400 * p, q: 1.4, dur: 0.045, gain: 0.25 });
         noise({ type: 'highpass', freq: 6000, dur: 0.02, gain: 0.08, delay: 0.01 });
       },
+      /* sticky rice: lots of tiny grainy clicks, with the odd soft squish */
+      riceTick: function () { noise({ freq: 1800 + Math.random() * 3600, q: 3 + Math.random() * 5, dur: 0.006 + Math.random() * 0.016, gain: 0.05 + Math.random() * 0.08 }); },
+      squish: function () { noise({ type: 'lowpass', freq: 260 + Math.random() * 260, q: 1.5, attack: 0.012, dur: 0.08 + Math.random() * 0.06, gain: 0.16 }); },
       whoosh: function () { noise({ freq: 1800, q: 0.7, attack: 0.04, dur: 0.12, gain: 0.07 }); },
       pop: function () { tone({ f: 420, to: 920, dur: 0.11, gain: 0.18, slide: 0.06 }); },
       plop: function () { tone({ f: 300, to: 140, dur: 0.12, gain: 0.25 }); noise({ type: 'lowpass', freq: 700, dur: 0.06, gain: 0.12 }); },
@@ -221,8 +224,10 @@
       rr(c, -len / 2, -8, len, 16, 7); c.fillStyle = '#4FAE5E'; c.fill(); ink(c, 3.5);
       rr(c, -len / 2 + 6, -3, len - 12, 6, 3); c.fillStyle = '#C9EDB4'; c.fill();
     } else if (kind === 'avocado') {
-      rr(c, -len / 2, -10, len, 20, 10); c.fillStyle = '#C8E26F'; c.fill(); ink(c, 3.5);
-      c.beginPath(); c.moveTo(-len / 2 + 8, 7); c.lineTo(len / 2 - 8, 7); c.strokeStyle = '#7FB23D'; c.lineWidth = 4; c.stroke();
+      var ag = c.createLinearGradient(0, -11, 0, 11); ag.addColorStop(0, '#F4F2A8'); ag.addColorStop(0.6, '#DCEA86'); ag.addColorStop(1, '#A6D05A');
+      rr(c, -len / 2, -11, len, 22, 11); c.fillStyle = ag; c.fill();
+      c.beginPath(); c.moveTo(-len / 2 + 10, 8); c.lineTo(len / 2 - 10, 8); c.strokeStyle = '#5E8F33'; c.lineWidth = 3; c.stroke();
+      rr(c, -len / 2, -11, len, 22, 11); ink(c, 3.5);
     } else {
       rr(c, -len / 2, -11, len, 22, 6); c.fillStyle = '#FF8A5B'; c.fill();
       c.save(); c.clip(); c.strokeStyle = '#FFD3BD'; c.lineWidth = 4;
@@ -239,8 +244,9 @@
       c.beginPath(); c.arc(0, 0, 9, 0, TAU); c.fillStyle = '#DDF6CF'; c.fill();
       c.fillStyle = '#9CCB86'; for (var i = 0; i < 3; i++) { c.beginPath(); c.arc(Math.cos(i * 2.1) * 3.5, Math.sin(i * 2.1) * 3.5, 1.6, 0, TAU); c.fill(); }
     } else if (kind === 'avocado') {
-      c.beginPath(); c.ellipse(0, 0, 18, 10, 0, 0, TAU); c.fillStyle = '#C8E26F'; c.fill(); ink(c, 3);
-      c.beginPath(); c.ellipse(0, 3, 14, 4, 0, 0, Math.PI); c.strokeStyle = '#7FB23D'; c.lineWidth = 3; c.stroke();
+      c.beginPath(); c.moveTo(-19, 5); c.quadraticCurveTo(0, -18, 19, 5); c.quadraticCurveTo(0, 12, -19, 5); c.closePath();
+      c.fillStyle = '#E8EE98'; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(-16, 6); c.quadraticCurveTo(0, 11, 16, 6); c.strokeStyle = '#4E7F2C'; c.lineWidth = 3.5; c.stroke();
     } else {
       rr(c, -15, -9, 30, 18, 4); c.fillStyle = '#FF8A5B'; c.fill(); ink(c, 3);
       c.beginPath(); c.moveTo(-8, -7); c.lineTo(0, 7); c.moveTo(4, -7); c.lineTo(11, 6); c.strokeStyle = '#FFD3BD'; c.lineWidth = 3; c.stroke();
@@ -302,7 +308,7 @@
     rr(c, -24, -26, 34, 22, 5); c.fillStyle = '#FF8A5B'; c.fill(); ink(c, 3.5);
     c.beginPath(); c.moveTo(-18, -24); c.lineTo(-10, -6); c.moveTo(-4, -24); c.lineTo(4, -6); c.strokeStyle = '#FFD3BD'; c.lineWidth = 3.5; c.stroke();
     // avocado
-    c.beginPath(); c.ellipse(-8, 12, 18, 11, 0.3, 0, TAU); c.fillStyle = '#C8E26F'; c.fill(); ink(c, 3.5);
+    c.beginPath(); c.ellipse(-8, 12, 18, 11, 0.3, 0, TAU); c.fillStyle = '#E8EE98'; c.fill(); ink(c, 3.5);
     c.beginPath(); c.ellipse(-8, 15, 13, 5, 0.3, 0, Math.PI); c.strokeStyle = '#7FB23D'; c.lineWidth = 3; c.stroke();
     // cucumber
     rr(c, 10, -6, 20, 20, 4); c.fillStyle = '#4FAE5E'; c.fill(); ink(c, 3.5);
@@ -365,6 +371,7 @@
     var cx = 320, cy = 300, RX = 214, RY = 64, rx = 186, ry = 50;
     var rnd = seeded(7), grains = [];
     for (var i = 0; i < 1100; i++) grains.push({ r: Math.sqrt(rnd()) * 0.96, th: rnd() * TAU, a: rnd() * Math.PI, l: 10 + rnd() * 3 });
+    var tickAcc = 0;
     var phase = 'pour', pour = 0, stir = 0, holding = false, bottleT = 0, lastAng = null, paddle = null, speed = 0, done = false;
     var stirLoop = Sound.loop('stir'), pourLoop = Sound.loop('pour');
     var REST = { x: 560, y: 190 }, POUR = { x: 440, y: 168 };
@@ -438,6 +445,11 @@
         }
         speed *= Math.pow(0.08, dt);
         stirLoop.set(speed);
+        if (speed > 0.05 && !done) {
+          tickAcc += dt * 80 * speed;
+          while (tickAcc >= 1) { tickAcc -= 1; Sound.riceTick(); }
+          if (Math.random() < dt * 5 * speed) Sound.squish();
+        }
         if (stir >= 1 && !done) {
           done = true; stirLoop.set(0); Sound.chime(); buzz(20);
           burst(cx, cy, 26, { colors: ['#FFC93C', '#FFFFFF', '#FF7EB6'], speed: 260, life: 0.9 });
@@ -497,7 +509,7 @@
   /* =============== STEP 2: CHOP =============== */
   var ING = {
     cucumber: { len: 440, h: 96, cuts: 5, body: '#4FAE5E', face: '#DDF6CF', ring: '#4FAE5E', round: 48, label: 'cucumber' },
-    avocado: { len: 390, h: 116, cuts: 4, body: '#C8E26F', face: '#E7F2A0', ring: '#7FB23D', round: 58, label: 'avocado' },
+    avocado: { len: 380, h: 136, cuts: 4, body: '#3E6B2A', face: '#E2EC8C', ring: '#3E6B2A', round: 60, label: 'avocado', shape: 'pear' },
     salmon: { len: 420, h: 104, cuts: 4, body: '#FF8A5B', face: '#FFA27E', ring: '#FF8A5B', round: 20, label: 'salmon' }
   };
 
@@ -516,7 +528,16 @@
       say(i === 0 ? 'Swipe down to slice!' : 'Slice the ' + d.label + '!');
     }
 
+    /* avocado half: a pear shape with a big round end (right) and a smaller round end (left) */
+    function pearH(d, x) {
+      var L = d.len / 2, Rb = d.h / 2, Rs = Rb * 0.62, xb = L - Rb, xs = -L + Rs, h = 0;
+      if (Math.abs(x - xb) < Rb) h = Math.max(h, Math.sqrt(Rb * Rb - (x - xb) * (x - xb)));
+      if (Math.abs(x - xs) < Rs) h = Math.max(h, Math.sqrt(Rs * Rs - (x - xs) * (x - xs)));
+      if (x >= xs && x <= xb) h = Math.max(h, lerp(Rs, Rb, (x - xs) / (xb - xs)));
+      return h;
+    }
     function halfH(d, x) {
+      if (d.shape === 'pear') return pearH(d, x);
       var L = d.len / 2, R = d.round, h = d.h / 2;
       var ax = Math.abs(x);
       if (ax <= L - R) return h;
@@ -524,7 +545,14 @@
       return Math.max(0, (h - R) + Math.sqrt(Math.max(0, R * R - dx * dx)));
     }
 
-    function bodyPath(c, d) { rr(c, -d.len / 2, -d.h / 2, d.len, d.h, d.round); }
+    function bodyPath(c, d) {
+      if (d.shape !== 'pear') { rr(c, -d.len / 2, -d.h / 2, d.len, d.h, d.round); return; }
+      var L = d.len / 2, n = 96, i, x;
+      c.beginPath();
+      for (i = 0; i <= n; i++) { x = -L + 2 * L * i / n; c.lineTo(x, -pearH(d, x)); }
+      for (i = n; i >= 0; i--) { x = -L + 2 * L * i / n; c.lineTo(x, pearH(d, x)); }
+      c.closePath();
+    }
 
     function drawBody(c, cur) {
       var d = cur.d, k = cur.kind;
@@ -535,8 +563,17 @@
         c.fillStyle = '#2F7D3E';
         var rnd = seeded(3); for (var i = 0; i < 26; i++) { c.beginPath(); c.arc((rnd() - 0.5) * d.len * 0.95, (rnd() - 0.5) * d.h * 0.8, 3, 0, TAU); c.fill(); }
       } else if (k === 'avocado') {
-        c.strokeStyle = '#3D6B2C'; c.lineWidth = 16; bodyPath(c, d); c.stroke();
-        c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-60, -22, 110, 14, 0, 0, TAU); c.fill();
+        // cut side up: dark skin rim, creamy flesh, and the hollow where the stone was
+        var pitX = d.len / 2 - d.h / 2 - 2, pitR = d.h * 0.25;
+        c.save(); c.translate(pitX * 0.3, 0); c.scale(0.9, 0.8); c.translate(-pitX * 0.3, 0);
+        var fg = c.createRadialGradient(pitX, 0, pitR * 0.6, pitX, 0, d.len * 0.5);
+        fg.addColorStop(0, '#F7F3AE'); fg.addColorStop(0.45, '#E2EC8C'); fg.addColorStop(1, '#9CCB52');
+        bodyPath(c, d); c.fillStyle = fg; c.fill();
+        c.restore();
+        c.beginPath(); c.arc(pitX, 0, pitR, 0, TAU); c.fillStyle = '#D9D47C'; c.fill();
+        c.beginPath(); c.arc(pitX - 3, -4, pitR - 5, 0, TAU); c.fillStyle = '#EFEBA4'; c.fill();
+        c.beginPath(); c.arc(pitX, 0, pitR, 0, TAU); c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 2.5; c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-d.len * 0.18, -d.h * 0.16, d.len * 0.16, 6, -0.12, 0, TAU); c.fill();
       } else {
         c.strokeStyle = '#FFD3BD'; c.lineWidth = 7;
         for (var x = -d.len / 2 - 60; x < d.len / 2 + 60; x += 34) { c.beginPath(); c.moveTo(x, -d.h / 2); c.quadraticCurveTo(x + 30, 0, x + 10, d.h / 2); c.stroke(); }
@@ -548,7 +585,9 @@
     function drawCutFace(c, cur, x) {
       var d = cur.d, hh = halfH(d, x) * 0.92;
       if (hh < 4) return;
-      c.beginPath(); c.ellipse(x, 0, 7, hh, 0, 0, TAU); c.fillStyle = d.face; c.fill(); ink(c, 3);
+      c.beginPath(); c.ellipse(x, 0, 7, hh, 0, 0, TAU); c.fillStyle = d.face; c.fill();
+      if (d.shape === 'pear') { c.strokeStyle = d.ring; c.lineWidth = 5; c.stroke(); }
+      ink(c, 3);
     }
 
     function drawIngredient(c) {
@@ -683,21 +722,8 @@
           c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 10; c.lineCap = 'round'; c.stroke();
         }
         if (knife) drawKnife(c, knife);
-        if (allDone) { c.save(); c.globalAlpha = 0.9; drawHandIcon(c, 320, 290); c.restore(); }
       }
     };
-  }
-
-  function drawHandIcon(c, x, y) {
-    // a little smiling onigiri-style sticker for "all done"
-    c.save(); c.translate(x, y);
-    c.beginPath(); c.moveTo(0, -80); c.quadraticCurveTo(90, 40, 60, 70); c.lineTo(-60, 70); c.quadraticCurveTo(-90, 40, 0, -80); c.closePath();
-    c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 5);
-    rr(c, -40, 30, 80, 40, 6); c.fillStyle = NORI; c.fill(); ink(c, 4);
-    c.fillStyle = INK; c.beginPath(); c.arc(-18, 0, 5, 0, TAU); c.arc(18, 0, 5, 0, TAU); c.fill();
-    c.beginPath(); c.arc(0, 8, 9, 0.2, Math.PI - 0.2); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
-    c.fillStyle = '#FF8FAB'; c.beginPath(); c.ellipse(-32, 14, 8, 5, 0, 0, TAU); c.ellipse(32, 14, 8, 5, 0, 0, TAU); c.fill();
-    c.restore();
   }
 
   /* =============== STEP 3: ROLL =============== */
@@ -719,7 +745,7 @@
 
     var phase = 'rice', bowls = [1, 1, 1], placed = [], roll = 0, rollStart = null, rollBase = 0, rubbing = null, done = false, settle = 0;
     var rubLoop = Sound.loop('rub');
-    var rubSpeed = 0, lastP = null;
+    var rubSpeed = 0, lastP = null, tickAcc = 0;
     var LINE = { salmon: 290, cucumber: 316, avocado: 342 }, FILL_X = 320, FILL_LEN = 380;
 
     function coverage() { return cells.filter(function (c) { return c.on; }).length / cells.length; }
@@ -795,6 +821,11 @@
           if (cell.on && cell.t >= 1 && !cell.baked) bake(cell);
         });
         rubSpeed *= Math.pow(0.05, dt); rubLoop.set(rubSpeed);
+        if (rubSpeed > 0.05 && phase === 'rice') {
+          tickAcc += dt * 45 * rubSpeed;
+          while (tickAcc >= 1) { tickAcc -= 1; Sound.riceTick(); }
+          if (Math.random() < dt * 2.5 * rubSpeed) Sound.squish();
+        }
         placed.forEach(function (pl) {
           pl.t = Math.min(1, pl.t + dt * 2.2);
           if (pl.t >= 1 && !pl.landed) { pl.landed = true; Sound.pop(); burst(FILL_X, LINE[pl.kind], 6, { colors: ['#FFC93C', '#FFFFFF'], speed: 120, life: 0.5 }); }
@@ -879,14 +910,25 @@
     for (var i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * 20, 0); c.lineTo(i * 20 + 14, -18); c.moveTo(i * 20, 0); c.lineTo(i * 20 + 14, 18); c.stroke(); }
     c.restore();
   }
+  /* pickled sushi ginger: a little pile of thin, wavy, pale pink slices */
+  function gingerSlice(c, x, y, rx, ry, rot, seed) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    c.beginPath();
+    for (var i = 0; i <= 24; i++) {
+      var th = i / 24 * TAU, w = 1 + 0.12 * Math.sin(th * 3 + seed) + 0.06 * Math.sin(th * 5 + seed * 2);
+      c.lineTo(Math.cos(th) * rx * w, Math.sin(th) * ry * w);
+    }
+    c.closePath(); c.fillStyle = 'rgba(255,214,222,.92)'; c.fill();
+    c.strokeStyle = '#D9839A'; c.lineWidth = 2.5; c.stroke();
+    c.strokeStyle = 'rgba(232,140,165,.6)'; c.lineWidth = 1.5;
+    for (var k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(-rx * 0.6, k * ry * 0.35); c.quadraticCurveTo(0, k * ry * 0.35 + 4, rx * 0.6, k * ry * 0.3); c.stroke(); }
+    c.restore();
+  }
   function drawGinger(c, x, y, a) {
     c.save(); c.translate(x, y); c.rotate(a);
-    for (var i = 0; i < 5; i++) {
-      c.save(); c.rotate(i / 5 * TAU);
-      c.beginPath(); c.ellipse(0, -14, 11, 17, 0, 0, TAU); c.fillStyle = i % 2 ? '#FFB3C7' : '#FFC9D6'; c.fill(); ink(c, 2.5);
-      c.restore();
-    }
-    c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.fillStyle = '#FF9AB4'; c.fill(); ink(c, 2.5);
+    gingerSlice(c, -9, 4, 22, 14, 0.4, 1);
+    gingerSlice(c, 9, 2, 21, 13, -0.5, 2);
+    gingerSlice(c, 0, -8, 20, 13, 0.1, 3);
     c.restore();
   }
   function drawWasabi(c, x, y) {
@@ -902,7 +944,7 @@
     leaf: '<svg viewBox="0 0 40 40"><path d="M4 22 Q20 2 36 18 Q20 38 4 22 Z" fill="#5CC46B" stroke="#2A2340" stroke-width="3"/><path d="M6 22 L34 18" stroke="#3E9B54" stroke-width="2.5"/></svg>',
     sesame: '<svg viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="26" rx="6" fill="#FFF4D6" stroke="#2A2340" stroke-width="3"/><rect x="11" y="4" width="18" height="8" rx="3" fill="#FF6B57" stroke="#2A2340" stroke-width="3"/><ellipse cx="17" cy="24" rx="3" ry="1.8" fill="#2A2340"/><ellipse cx="23" cy="28" rx="3" ry="1.8" fill="#E8D3A6" stroke="#2A2340"/><ellipse cx="22" cy="20" rx="3" ry="1.8" fill="#E8D3A6" stroke="#2A2340"/></svg>',
     soy: '<svg viewBox="0 0 40 40"><path d="M14 4 H26 V10 Q34 14 33 24 V34 Q33 37 30 37 H10 Q7 37 7 34 V24 Q6 14 14 10 Z" fill="#5A2A12" stroke="#2A2340" stroke-width="3"/><rect x="12" y="2" width="16" height="6" rx="2" fill="#FF6B57" stroke="#2A2340" stroke-width="2.5"/><rect x="11" y="20" width="18" height="10" rx="2" fill="#fff"/></svg>',
-    ginger: '<svg viewBox="0 0 40 40"><g stroke="#2A2340" stroke-width="2"><ellipse cx="20" cy="11" rx="7" ry="9" fill="#FFC9D6"/><ellipse cx="29" cy="20" rx="9" ry="7" fill="#FFB3C7"/><ellipse cx="20" cy="29" rx="7" ry="9" fill="#FFC9D6"/><ellipse cx="11" cy="20" rx="9" ry="7" fill="#FFB3C7"/><circle cx="20" cy="20" r="5" fill="#FF9AB4"/></g></svg>',
+    ginger: '<svg viewBox="0 0 40 40"><g stroke="#D9839A" stroke-width="2" fill="#FFD6DE"><path d="M4 24 Q6 15 15 16 Q22 14 24 22 Q22 30 13 29 Q5 30 4 24 Z" transform="rotate(20 14 23)"/><path d="M16 26 Q18 17 27 18 Q35 18 36 26 Q33 33 25 32 Q17 33 16 26 Z" transform="rotate(-25 26 25)"/><path d="M10 15 Q12 6 21 7 Q29 7 30 14 Q28 21 20 21 Q11 22 10 15 Z"/></g></svg>',
     wasabi: '<svg viewBox="0 0 40 40"><path d="M6 26 Q4 14 15 13 Q20 2 26 13 Q37 14 34 26 Q20 33 6 26 Z" fill="#9BD45A" stroke="#2A2340" stroke-width="3"/></svg>'
   };
   var TOOL_SAY = { leaf: 'Tap the plate for a leaf', sesame: 'Drag to sprinkle sesame', soy: 'Hold to pour soy sauce', ginger: 'Tap to add ginger', wasabi: 'Tap to add wasabi' };
@@ -951,9 +993,9 @@
       },
       down: function (p) {
         down = true; pointer = p;
-        if (tool === 'leaf' && onPlate(p, 50)) { place(dish.leaves, { x: p.x, y: p.y, a: Math.random() * TAU }, 3); Sound.plop(); countAction(); }
-        if (tool === 'ginger' && onPlate(p, 30)) { place(dish.ginger, { x: p.x, y: p.y, a: Math.random() * TAU }, 4); Sound.pop(); countAction(); }
-        if (tool === 'wasabi' && onPlate(p, 30)) { place(dish.wasabi, { x: p.x, y: p.y }, 3); Sound.plop(); countAction(); }
+        if (tool === 'leaf' && onPlate(p, 50)) { place(dish.leaves, { x: p.x, y: p.y, a: Math.random() * TAU }, 12); Sound.plop(); countAction(); }
+        if (tool === 'ginger' && onPlate(p, 30)) { place(dish.ginger, { x: p.x, y: p.y, a: Math.random() * TAU }, 10); Sound.pop(); countAction(); }
+        if (tool === 'wasabi' && onPlate(p, 30)) { place(dish.wasabi, { x: p.x, y: p.y }, 8); Sound.plop(); countAction(); }
         if (tool === 'soy') soyHold = true;
         if (tool === 'sesame') emit = 1;
       },
