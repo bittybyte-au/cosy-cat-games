@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About Cosy Cat Games</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A little collection of calm, colourful games for kids. No ads, no tracking, no pop-ups.">
+<meta name="theme-color" content="#9EDCFF">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: same sunny sky as the home page; one readable cream card with short sections. Single bright look by design. */
+:root {
+  --sky: #9EDCFF;
+  --grass: #7BD389;
+  --ink: #2A2340;
+  --cream: #FFF8EC;
+  --sun: #FFC93C;
+  --muted: #5E5675;
+  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: linear-gradient(var(--sky) 0 60%, #BFE8FF) fixed; color: var(--ink);
+  font-family: var(--body); font-size: 17px; line-height: 1.55;
+}
+.wrap {
+  max-width: 720px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 48px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 52px; padding: 0 18px;
+  border: 3px solid var(--ink); border-radius: 999px; background: var(--cream); color: var(--ink);
+  font: 800 1rem var(--body); text-decoration: none; box-shadow: 0 4px 0 var(--ink);
+}
+.back:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.back:focus-visible, a:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+.hero { display: flex; align-items: center; gap: 12px; }
+.hero svg { width: 96px; height: auto; flex: none; }
+h1 {
+  margin: 0; font: 800 clamp(2rem, 7vw, 3rem)/1.05 var(--display); color: var(--cream);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); text-wrap: balance;
+}
+.card {
+  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
+  padding: 22px clamp(18px, 4vw, 30px); display: flex; flex-direction: column; gap: 22px;
+}
+section { display: flex; flex-direction: column; gap: 6px; }
+h2 { margin: 0; font: 800 1.5rem/1.15 var(--display); }
+p { margin: 0; max-width: 62ch; }
+ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+.promise { list-style: none; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+.promise li {
+  background: #fff; border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; font-weight: 800;
+}
+.lead { font-size: 1.1rem; font-weight: 800; }
+.small { color: var(--muted); font-size: .95rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to games
+  </a>
+
+  <div class="hero">
+    <svg viewBox="0 0 170 136" aria-hidden="true"><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 92 Q76 98 80 92 Q84 98 88 92" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g></svg>
+    <h1>About Cosy Cat Games</h1>
+  </div>
+
+  <main class="card">
+    <section>
+      <p class="lead">Cosy Cat Games is a little collection of calm, colourful games for kids, made at home by a family.</p>
+      <p>The games are designed with the help of a young game designer, who tests every change and sends in plenty of feedback.</p>
+    </section>
+
+    <section aria-labelledby="h-promise">
+      <h2 id="h-promise">Our promise</h2>
+      <ul class="promise">
+        <li>No ads</li>
+        <li>No tracking</li>
+        <li>No pop-ups</li>
+        <li>No chat with strangers</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="h-games">
+      <h2 id="h-games">The games</h2>
+      <ul>
+        <li><strong>Cosy Kitchen:</strong> chop, mix and cook sushi hand rolls, pancakes and burgers, then decorate the plate.</li>
+        <li><strong>Kitty Pop:</strong> a gentle matching game where you line up cats to pop them.</li>
+      </ul>
+      <p>More games and recipes are on the way.</p>
+    </section>
+
+    <section aria-labelledby="h-privacy">
+      <h2 id="h-privacy">Your child's privacy</h2>
+      <p>Players are just a first name and an animal picture. They are saved only on the device being played on, along with scores and finished dishes. None of it is sent to us or anyone else.</p>
+      <p>We don't use analytics or advertising cookies. The only outside service the site loads is Google Fonts, for its lettering.</p>
+    </section>
+
+    <section aria-labelledby="h-tips">
+      <h2 id="h-tips">Tips for grown-ups</h2>
+      <ul>
+        <li><strong>Add it to your Home Screen</strong> so it opens like an app. On iPhone or iPad, tap Share in Safari, then Add to Home Screen. On Android, open Chrome's menu and choose Add to Home screen.</li>
+        <li><strong>It works offline</strong> once it has been opened with an internet connection.</li>
+        <li><strong>Clearing your browser's data</strong> for this site removes saved players and progress.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<script src="../shared/store.js"></script>
+</body>
+</html>
