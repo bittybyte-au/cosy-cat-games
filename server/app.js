@@ -37,6 +37,7 @@ export const LIMITS = {
   pinLockSec: 60 * 60,
   remindDaysBefore: 14,
   progressBytes: 30000,
+  gamesPerProfile: 60,
   inactiveDays: 730,
   deleteWarnDays: 30,
   emailChangeEveryDays: 30,
@@ -58,7 +59,7 @@ export function validTz(tz) {
 export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }) {
   const SITE = (env.SITE_URL || '').replace(/\/$/, '');
   const PRICE_CENTS = parseInt(env.PASS_PRICE_CENTS || '599', 10);
-  const SECRET = env.CODE_SECRET || env.STRIPE_WEBHOOK_SECRET || 'dev-only-secret';
+  const SECRET = env.CODE_SECRET || 'dev-only-secret'; // api/index.js refuses to start without CODE_SECRET
 
   /* ---------- helpers ---------- */
   const json = (data, status = 200) => new Response(JSON.stringify(data), {
@@ -86,11 +87,17 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
   async function withLock(name, fn) {
     const key = 'lock:' + name;
     for (let i = 0; i < 50; i++) {
-      const got = await redis.set(key, '1', { nx: true, ex: 10 });
-      if (got) { try { return await fn(); } finally { await redis.del(key); } }
+      const mine = crypto.randomBytes(9).toString('base64url');
+      const got = await redis.set(key, mine, { nx: true, ex: 10 });
+      if (got) { try { return await fn(); } finally { await unlock(key, mine); } }
       await sleep(100);
     }
     throw new Error('busy');
+  }
+  /* only remove the lock if it is still ours (it may have timed out and been taken by another request) */
+  async function unlock(key, mine) {
+    if (redis.eval) { await redis.eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", [key], [mine]); return; }
+    if ((await redis.get(key)) === mine) await redis.del(key);
   }
   const getAcct = (id) => getJSON('acct:' + id);
   const putAcct = (a) => setJSON('acct:' + a.id, a);
@@ -98,11 +105,11 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
   const editAcct = (id, fn) => withLock('a:' + id, async () => { const a = await getAcct(id); return fn(a); });
 
   async function rateOk(key, max, windowSec) {
-    const n = await redis.incr('rl:' + key);
-    if (n === 1) await redis.expire('rl:' + key, windowSec);
-    return n <= max;
+    // create the counter with its expiry first, so it can never be left without one
+    await redis.set('rl:' + key, '0', { nx: true, ex: windowSec });
+    return (await redis.incr('rl:' + key)) <= max;
   }
-  const ipOf = (request) => (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+  const ipOf = (request) => (request.headers.get('x-real-ip') || (request.headers.get('x-forwarded-for') || '').split(',')[0]).trim() || 'unknown';
 
   /* ---------- PIN ---------- */
   const PBKDF2_ITER = 100000;
@@ -161,7 +168,7 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
   }
 
   /* ---------- devices and sessions ---------- */
-  async function addDevice(acctId, deviceId, name) {
+  async function addDevice(acctId, deviceId, name, opts = {}) {
     return editAcct(acctId, async (a) => {
       if (!a) return { missing: true };
       a.devices = a.devices || [];
@@ -169,8 +176,8 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       if (!existing && a.devices.length >= LIMITS.devices) return { limit: true, acct: a };
       const token = randomToken();
       const th = sha(token);
-      if (existing) { await redis.del('dev:' + existing.th); existing.th = th; existing.lastSeen = now(); if (name) existing.name = cleanName(name); }
-      else a.devices.push({ id: deviceId, name: cleanName(name), th, shared: false, addedAt: now(), lastSeen: now() });
+      if (existing) { await redis.del('dev:' + existing.th); existing.th = th; existing.lastSeen = now(); if (name) existing.name = cleanName(name); if (opts.payer) existing.payer = true; }
+      else a.devices.push({ id: deviceId, name: cleanName(name), th, shared: false, addedAt: now(), lastSeen: now(), ...(opts.payer ? { payer: true } : {}) });
       a.lastUsedAt = now(); a.warnedAt = null;
       await setJSON('dev:' + th, { acct: a.id, id: deviceId });
       await putAcct(a);
@@ -198,7 +205,13 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
   }
   const newManage = (acctId) => newSession('manage', { acct: acctId }, LIMITS.manageTtlSec);
   /* parent session from the dashboard, or a device-full "manage" pass for device changes only */
-  async function parentOf(body) { const s = await fromSession('parent', body.parent); return s ? s.acct : null; }
+  async function parentOf(body) {
+    const s = await fromSession('parent', body.parent);
+    if (!s) return null;
+    const a = await getAcct(s.acct);
+    if (!a || !a.pin || a.pin.salt !== s.pinAt || !(a.devices || []).some((d) => d.id === s.device)) return null;
+    return a.id;
+  }
 
   async function deleteAccount(a) {
     for (const d of a.devices || []) await redis.del('dev:' + d.th);
@@ -211,22 +224,27 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
   /* ---------- email codes ---------- */
   async function sendCode(purpose, email, extra = {}) {
     const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
-    await setJSON('code:' + purpose + ':' + email, { h: hmac(purpose + ':' + email + ':' + code), tries: 0, ...extra }, LIMITS.codeTtlSec);
+    await setJSON('code:' + purpose + ':' + email, { h: hmac(purpose + ':' + email + ':' + code), ...extra }, LIMITS.codeTtlSec);
+    await redis.set('codetry:' + purpose + ':' + email, '0', { ex: LIMITS.codeTtlSec });
     await mailer.send({ to: email, ...E.codeEmail(code, purpose) });
   }
   /* returns { rec } when the code is right, or { res } with the error to send back */
   async function checkCode(purpose, email, code) {
-    const key = 'code:' + purpose + ':' + email;
+    const key = 'code:' + purpose + ':' + email, tryKey = 'codetry:' + purpose + ':' + email;
     const rec = await getJSON(key);
     if (!rec) return { res: fail('code_expired') };
+    // count the try first (atomically), so many guesses sent at once still only get 5 between them
+    const n = await redis.incr(tryKey);
+    if (n > LIMITS.codeTries) { await redis.del(key); return { res: fail('too_many_tries') }; }
     const clean = String(code || '').replace(/\D/g, '');
-    if (hmac(purpose + ':' + email + ':' + clean) !== rec.h) {
-      rec.tries++;
-      if (rec.tries >= LIMITS.codeTries) { await redis.del(key); return { res: fail('too_many_tries') }; }
-      await setJSON(key, rec, LIMITS.codeTtlSec);
-      return { res: fail('wrong_code', 400, { triesLeft: LIMITS.codeTries - rec.tries }) };
+    const a = Buffer.from(hmac(purpose + ':' + email + ':' + clean), 'hex'), b = Buffer.from(String(rec.h), 'hex');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      if (n >= LIMITS.codeTries) { await redis.del(key); return { res: fail('too_many_tries') }; }
+      return { res: fail('wrong_code', 400, { triesLeft: LIMITS.codeTries - n }) };
     }
-    await redis.del(key);
+    // only one request can use a code, even if two arrive together
+    if (!(await redis.del(key))) return { res: fail('code_expired') };
+    await redis.del(tryKey);
     return { rec };
   }
 
@@ -236,6 +254,8 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
     const md = session.metadata || {};
     const email = normEmail(md.email || (session.customer_details && session.customer_details.email) || session.customer_email);
     if (!validEmail(email)) return null;
+    const seen = await redis.get('paid:' + session.id);
+    if (seen) return getAcct(String(seen)).then((a) => a || null);
     const acct = await withLock('e:' + email, async () => {
       let id = await redis.get('email:' + email);
       if (!id) {
@@ -250,7 +270,9 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
         await redis.sadd('accounts', id);
       }
       return editAcct(String(id), async (a) => {
-        if (!a.purchases.some((p) => p.id === session.id)) {
+        // remembered forever, so a deleted or renamed family can't replay an old payment for another year
+        const first = await redis.set('paid:' + session.id, a.id, { nx: true });
+        if (first && !a.purchases.some((p) => p.id === session.id)) {
           a.expiresAt = Math.max(now(), a.expiresAt || 0) + YEAR;
           a.purchases.push({ id: session.id, at: now(), amount: session.amount_total || 0, currency: session.currency || 'aud' });
           a.remindedFor = null;
@@ -281,29 +303,33 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       const purpose = String(body.purpose || 'login');
       if (!CODE_PURPOSES.includes(purpose)) return fail('bad_purpose');
       let email = normEmail(body.email), acctId = null;
+      if (!(await rateOk('code-ip:' + ipOf(request), 20, 3600)) || !(await rateOk('code-all', 2000, 86400))) return fail('slow_down', 429);
       if (purpose === 'delete' || purpose === 'email-change') {
         acctId = await parentOf(body);
         if (!acctId) return fail('signed_out', 401);
         const a = await getAcct(acctId);
+        // a just-changed email can't be used to delete the family before the old address has had its 7 days to undo
+        if (a.emailChangedAt && now() - a.emailChangedAt < LIMITS.undoDays * DAY) return fail('changed_recently', 429, { nextAt: a.emailChangedAt + LIMITS.undoDays * DAY });
         if (purpose === 'delete') email = a.email;
         else {
+          if (a.emailChangedAt && now() - a.emailChangedAt < LIMITS.emailChangeEveryDays * DAY) return fail('changed_recently', 429, { nextAt: a.emailChangedAt + LIMITS.emailChangeEveryDays * DAY });
           if (!validEmail(email)) return fail('bad_email');
           if (email === a.email) return fail('same_email');
           if (await redis.get('email:' + email)) return fail('email_taken', 409);
-          if (a.emailChangedAt && now() - a.emailChangedAt < LIMITS.emailChangeEveryDays * DAY) return fail('changed_recently', 429, { nextAt: a.emailChangedAt + LIMITS.emailChangeEveryDays * DAY });
         }
       }
       if (!validEmail(email)) return fail('bad_email');
-      if (!(await rateOk('code-ip:' + ipOf(request), 20, 3600)) || !(await rateOk('code-email:' + email, 5, 3600))) return fail('slow_down', 429);
+      if (!(await rateOk('code-email:' + email, 5, 3600))) return fail('slow_down', 429);
       if (purpose === 'pay' || purpose === 'delete' || purpose === 'email-change') await sendCode(purpose, email, acctId ? { acct: acctId } : {});
       else if (await redis.get('email:' + email)) await sendCode(purpose, email);
       // the same answer whether or not the email has an account, so nobody can use this to look families up
       return json({ ok: true });
     },
 
-    'POST /api/code/verify': async (body) => {
+    'POST /api/code/verify': async (body, request) => {
       const purpose = String(body.purpose || 'login');
       if (!CODE_PURPOSES.includes(purpose)) return fail('bad_purpose');
+      if (!(await rateOk('verify-ip:' + ipOf(request), 60, 3600))) return fail('slow_down', 429);
       let email = normEmail(body.email), acctId = null;
       if (purpose === 'delete' || purpose === 'email-change') {
         acctId = await parentOf(body);
@@ -340,15 +366,18 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       }
       if (purpose === 'email-change') {
         if (c.rec.acct !== acctId) return fail('code_expired');
+        if (await redis.get('email:' + email)) return fail('email_taken', 409);
+        const before = await getAcct(acctId);
+        const undo = await newSession('undo', { acct: acctId, old: before.email, new: email }, LIMITS.undoDays * 86400);
+        // tell the old address first: if that email can't be sent, nothing changes
+        await mailer.send({ to: before.email, ...E.emailChangedEmail(E.maskEmail(email), SITE + '/account/?undo=' + undo) });
         return withLock('e:' + email, () => editAcct(acctId, async (a) => {
           if (await redis.get('email:' + email)) return fail('email_taken', 409);
           const old = a.email;
-          const undo = await newSession('undo', { acct: a.id, old, new: email }, LIMITS.undoDays * 86400);
           a.email = email; a.emailChangedAt = now();
           await putAcct(a);
           await redis.set('email:' + email, a.id);
           await redis.del('email:' + old);
-          await mailer.send({ to: old, ...E.emailChangedEmail(E.maskEmail(email), SITE + '/account/?undo=' + undo) });
           return json({ ok: true, account: publicAccount(a) });
         }));
       }
@@ -377,16 +406,17 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
     'POST /api/checkout': async (body) => {
       let email = null, reqId = null;
       if (body.request) {
-        const req = await getJSON('req:' + String(body.request).slice(0, 64));
-        if (!req) return fail('request_expired', 410);
-        reqId = String(body.request); email = req.email;
+        reqId = String(body.request).slice(0, 64);
+        const req = await getJSON('req:' + sha(reqId));
+        if (!req || req.status !== 'waiting') return fail('request_expired', 410);
+        email = req.email;
       } else {
         const t = await fromSession('ticket', body.ticket);
         if (!t || t.purpose !== 'pay') return fail('check_email_first', 401);
         email = t.email;
       }
       const metadata = { email };
-      if (reqId) metadata.request = reqId;
+      if (reqId) metadata.request = sha(reqId);
       if (validTz(body.timezone)) metadata.tz = body.timezone;
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
@@ -403,19 +433,29 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
     },
 
     /* the paying device comes back here; it joins the family straight away */
-    'POST /api/claim': async (body) => {
+    'POST /api/claim': async (body, request) => {
       if (!validDevice(body.device)) return fail('bad_device');
       const id = String(body.session || '');
       if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return fail('bad_session');
+      if (!(await rateOk('claim-ip:' + ipOf(request), 30, 3600))) return fail('slow_down', 429);
       const session = await stripe.checkout.sessions.retrieve(id);
+      // a success link is only good for a day after paying
+      if (session.created && now() - session.created * 1000 > DAY) return fail('link_expired', 410);
       const acct = await fulfill(session);
       if (!acct) return fail('not_paid', 402);
-      if (session.metadata && session.metadata.request) return json({ ok: true, forOtherDevice: true, pass: publicAccount(acct).pass });
+      if (session.metadata && session.metadata.request) {
+        // paid from an "ask a grown-up" email: the waiting child device joins by itself; this phone may join too
+        const first = await redis.set('claimed:' + id, body.device, { nx: true, ex: 2 * 86400 });
+        if (!first && String(await redis.get('claimed:' + id)) !== body.device) return json({ ok: true, forOtherDevice: true, pass: publicAccount(acct).pass });
+        const r = await addDevice(acct.id, body.device, body.name, { payer: true });
+        if (!r.token) return json({ ok: true, forOtherDevice: true, pass: publicAccount(acct).pass });
+        return json({ ok: true, forOtherDevice: true, token: r.token, account: publicAccount(r.acct, body.device), needsPin: !r.acct.pin });
+      }
       // each payment can add the device that paid, once; the link can't be passed around to add more
       const claimKey = 'claimed:' + id;
-      const first = await redis.set(claimKey, body.device, { nx: true, ex: 60 * 60 * 24 * 30 });
+      const first = await redis.set(claimKey, body.device, { nx: true, ex: 2 * 86400 });
       if (!first) { const by = await redis.get(claimKey); if (String(by) !== body.device) return fail('already_claimed', 409); }
-      const r = await addDevice(acct.id, body.device, body.name);
+      const r = await addDevice(acct.id, body.device, body.name, { payer: true });
       if (r.limit) return json({ ok: false, error: 'device_limit', manage: await newManage(acct.id), devices: publicDevices(r.acct) });
       return json({ ok: true, token: r.token, account: publicAccount(r.acct, body.device), needsPin: !r.acct.pin });
     },
@@ -429,24 +469,28 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
         (await rateOk('ask-dev:' + body.device, 3, 3600)) &&
         (await rateOk('ask-email:' + email, 3, 86400));
       if (!ok) return fail('slow_down', 429);
-      const id = crypto.randomBytes(16).toString('base64url');
-      await setJSON('req:' + id, { email, device: body.device, name: cleanName(body.name), status: 'waiting', at: now() }, LIMITS.requestTtlSec);
+      if (!(await rateOk('ask-all', 500, 86400))) return fail('slow_down', 429);
+      // two secrets: the link in the email (only the inbox owner can pay) and the device's own (only it can collect)
+      const id = randomToken(), poll = randomToken();
+      await setJSON('req:' + sha(id), { email, device: body.device, ps: sha(poll), name: cleanName(body.name), status: 'waiting', at: now() }, LIMITS.requestTtlSec);
+      await setJSON('reqpoll:' + sha(poll), { req: sha(id) }, LIMITS.requestTtlSec);
       await mailer.send({ to: email, ...E.askEmail(SITE + '/account/?r=' + id, cleanName(body.name)) });
-      return json({ ok: true, request: id });
+      return json({ ok: true, poll });
     },
     'POST /api/ask/status': async (body) => {
-      const id = String(body.request || '').slice(0, 64);
-      const req = await getJSON('req:' + id);
+      const p = await fromSession('reqpoll', body.poll);
+      if (!p) return json({ ok: true, status: 'expired' });
+      const req = await getJSON('req:' + p.req);
       if (!req) return json({ ok: true, status: 'expired' });
       if (req.device !== body.device) return fail('wrong_device', 403);
       if (req.status !== 'paid') return json({ ok: true, status: 'waiting' });
       const r = await addDevice(req.acct, req.device, req.name);
-      await redis.del('req:' + id);
+      await redis.del('req:' + p.req); await redis.del('reqpoll:' + sha(body.poll));
       if (r.limit || r.missing) return json({ ok: true, status: 'device_limit' });
       return json({ ok: true, status: 'joined', token: r.token, account: publicAccount(r.acct, req.device) });
     },
     'POST /api/ask/info': async (body) => {
-      const req = await getJSON('req:' + String(body.request || '').slice(0, 64));
+      const req = await getJSON('req:' + sha(String(body.request || '').slice(0, 64)));
       if (!req) return json({ ok: true, status: 'expired' });
       return json({ ok: true, status: req.status, deviceName: req.name, price: '$' + (PRICE_CENTS / 100).toFixed(2) });
     },
@@ -476,7 +520,7 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       const acctId = await parentOf(body);
       if (!acctId) return fail('signed_out', 401);
       if (!(await rateOk('join-approve:' + acctId, 20, 3600))) return fail('slow_down', 429);
-      const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').slice(0, 6);
+      const code = String(body.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
       const key = 'join:' + code;
       const j = await getJSON(key);
       if (!j || j.status !== 'waiting') return fail('join_expired');
@@ -486,7 +530,8 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       await setJSON(key, j, LIMITS.joinTtlSec);
       return json({ ok: true, deviceName: j.name });
     },
-    'POST /api/join/poll': async (body) => {
+    'POST /api/join/poll': async (body, request) => {
+      if (!(await rateOk('poll-ip:' + ipOf(request), 900, 3600))) return fail('slow_down', 429);
       const code = String(body.code || '').toUpperCase().slice(0, 6);
       const key = 'join:' + code;
       const j = await getJSON(key);
@@ -507,7 +552,8 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       const parent = await parentOf(body);
       const ticket = await fromSession('ticket', body.ticket);
       return editAcct(t.acctId, async (a) => {
-        const allowed = !a.pin || parent === a.id || (ticket && ticket.purpose === 'pin-reset' && ticket.acct === a.id);
+        const me = a.devices.find((d) => d.id === t.id) || {};
+        const allowed = (!a.pin && me.payer) || parent === a.id || (ticket && ticket.purpose === 'pin-reset' && ticket.acct === a.id);
         if (!allowed) return fail('not_allowed', 403);
         a.pin = makePin(body.pin);
         await putAcct(a);
@@ -525,9 +571,11 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       const lockKey = 'pinlock:' + a.id + ':' + t.id, failKey = 'pinfail:' + a.id + ':' + t.id;
       const until = await redis.get(lockKey);
       if (until) return fail('pin_locked', 423, { until: Number(until) });
+      // count the try before checking, so a burst of guesses can't all slip in before the lock
+      await redis.set(failKey, '0', { nx: true, ex: LIMITS.pinLockSec });
+      const n = await redis.incr(failKey);
+      if (n > LIMITS.pinTries) return fail('pin_locked', 423, { until: Number(await redis.get(lockKey)) || now() + LIMITS.pinLockSec * 1000 });
       if (!pinMatches(a.pin, String(body.pin || ''))) {
-        const n = await redis.incr(failKey);
-        if (n === 1) await redis.expire(failKey, LIMITS.pinLockSec);
         if (n >= LIMITS.pinTries) {
           const end = now() + LIMITS.pinLockSec * 1000;
           await redis.set(lockKey, String(end), { ex: LIMITS.pinLockSec });
@@ -538,7 +586,7 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
         return fail('wrong_pin', 400, { triesLeft: LIMITS.pinTries - n });
       }
       await redis.del(failKey);
-      const parent = await newSession('parent', { acct: a.id, device: t.id }, LIMITS.parentTtlSec);
+      const parent = await newSession('parent', { acct: a.id, device: t.id, pinAt: a.pin.salt }, LIMITS.parentTtlSec);
       return json({ ok: true, parent, expiresIn: LIMITS.parentTtlSec, account: publicAccount(a, t.id) });
     },
     /* a device that locked itself while offline tells us when it is back, so the parent still gets the email */
@@ -595,12 +643,13 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
             const size = JSON.stringify(it.data === undefined ? null : it.data).length;
             if (size > LIMITS.progressBytes) { conflicts.push({ profile: pid, game: it.game, error: 'too_big' }); continue; }
             const cur = map[it.game];
+            if (!cur && Object.keys(map).length >= LIMITS.gamesPerProfile) { conflicts.push({ profile: pid, game: it.game, error: 'too_many_games' }); continue; }
             const base = it.base == null ? 0 : Number(it.base);
             if ((cur ? cur.rev : 0) === base) {
               map[it.game] = { rev: base + 1, data: it.data === undefined ? null : it.data, at: now() };
               accepted.push({ profile: pid, game: it.game, rev: base + 1 });
               changed = true;
-            } else conflicts.push({ profile: pid, game: it.game, rev: cur.rev, data: cur.data });
+            } else conflicts.push({ profile: pid, game: it.game, rev: cur ? cur.rev : 0, data: cur ? cur.data : null });
           }
           if (changed) await setJSON(key, map);
         });
@@ -617,7 +666,7 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
         await withLock('s:' + a.id + ':' + pid, async () => {
           const key = 'stats:' + a.id + ':' + pid;
           const m = (await getJSON(key)) || {};
-          for (const [n, v] of statsBy[pid]) m[n] = Math.max(m[n] || 0, v);
+          for (const [n, v] of statsBy[pid]) if (m[n] !== undefined || Object.keys(m).length < 300) m[n] = Math.max(m[n] || 0, v);
           await setJSON(key, m);
         });
       }
@@ -794,6 +843,7 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
       const ids = await redis.smembers('accounts');
       let reminded = 0, warned = 0, deleted = 0;
       for (const id of ids) {
+        try {
         const a = await getAcct(id);
         if (!a) { await redis.srem('accounts', id); continue; }
         const tz = tzOf(a);
@@ -810,10 +860,15 @@ export function createApp({ redis, stripe, mailer, env, now = () => Date.now() }
             await editAcct(id, async (b) => { if (b) { b.warnedAt = now(); await putAcct(b); } });
             warned++;
           } else if (now() - a.warnedAt > LIMITS.deleteWarnDays * DAY) {
-            await withLock('a:' + id, () => deleteAccount(a));
-            deleted++;
+            const gone = await withLock('a:' + id, async () => {
+              const b = await getAcct(id); // look again: they may have come back a moment ago
+              if (!b || !b.warnedAt || now() - (b.lastUsedAt || 0) <= LIMITS.inactiveDays * DAY) return false;
+              await deleteAccount(b); return true;
+            });
+            if (gone) deleted++;
           }
         }
+        } catch (e) { console.error('cron', id, e); }
       }
       return json({ ok: true, sent: reminded, reminded, warned, deleted });
     }

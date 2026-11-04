@@ -9,7 +9,7 @@ let app = null;
 
 function build() {
   const env = process.env;
-  const missing = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'RESEND_API_KEY', 'EMAIL_FROM', 'SITE_URL']
+  const missing = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'RESEND_API_KEY', 'EMAIL_FROM', 'SITE_URL', 'CODE_SECRET']
     .filter((k) => !env[k]);
   const url = env.KV_REST_API_URL || env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN || env.UPSTASH_REDIS_REST_TOKEN;

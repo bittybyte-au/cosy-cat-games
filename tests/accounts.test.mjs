@@ -424,23 +424,74 @@ test('reminders two weeks before the pass ends; unused families are warned, then
   assert.equal((await a.call('POST', '/api/status', { token: s.token })).signedIn, false);
 });
 
-test('ask a grown-up: email link, pay on their phone, the child device joins itself', async () => {
+test('ask a grown-up: only the emailed link can pay; the child device joins itself; the paying phone sets the PIN', async () => {
   const a = setup();
   let r = await a.call('POST', '/api/ask', { email: 'dad@example.com', device: dev(9), name: 'iPad' });
-  const reqId = r.request;
-  assert.match(a.mail.at(-1).html, /cosy\.test\/account\/\?r=/);
-  assert.equal((await a.call('POST', '/api/ask/status', { request: reqId, device: dev(9) })).status, 'waiting');
-  assert.equal((await a.call('POST', '/api/ask/status', { request: reqId, device: dev(8) })).status, 403);
-  await a.call('POST', '/api/checkout', { request: reqId });
+  const poll = r.poll; assert.ok(poll); assert.equal(r.request, undefined);
+  const link = a.mail.at(-1).text.match(/\?r=([\w-]+)/)[1];
+  assert.notEqual(link, poll);
+  // the child device's own secret can't start a payment (that was a way into someone else's family)
+  assert.equal((await a.call('POST', '/api/checkout', { request: poll })).error, 'request_expired');
+  assert.equal((await a.call('POST', '/api/ask/status', { poll, device: dev(9) })).status, 'waiting');
+  assert.equal((await a.call('POST', '/api/ask/status', { poll, device: dev(8) })).status, 403);
+  assert.equal((await a.call('POST', '/api/ask/info', { request: link })).deviceName, 'iPad');
+  await a.call('POST', '/api/checkout', { request: link });
   const id = [...a.sessions.keys()].pop();
   assert.equal(a.sessions.get(id).customer_email, 'dad@example.com');
   a.pay(id);
-  r = await a.call('POST', '/api/claim', { session: id, device: dev(20) });
-  assert.equal(r.forOtherDevice, true); assert.equal(r.token, undefined);
-  r = await a.call('POST', '/api/ask/status', { request: reqId, device: dev(9) });
-  assert.equal(r.status, 'joined'); assert.ok(r.token); assert.equal(r.account.pinSet, false);
+  r = await a.call('POST', '/api/claim', { session: id, device: dev(20), name: 'Dad’s phone' });
+  assert.equal(r.forOtherDevice, true); assert.ok(r.token); assert.equal(r.needsPin, true);
+  r = await a.call('POST', '/api/ask/status', { poll, device: dev(9) });
+  assert.equal(r.status, 'joined'); assert.ok(r.token);
+  // the child's device can't set the first PIN; Dad's phone (which paid) can
+  assert.equal((await a.call('POST', '/api/pin/set', { token: r.token, pin: '123456' })).error, 'not_allowed');
+  assert.equal((await a.call('POST', '/api/pin/set', { token: (await a.call('POST', '/api/claim', { session: id, device: dev(20) })).token, pin: '123456' })).ok, true);
   for (let i = 0; i < 2; i++) await a.call('POST', '/api/ask', { email: 'dad@example.com', device: dev(10), name: 'iPad' });
   assert.equal((await a.call('POST', '/api/ask', { email: 'dad@example.com', device: dev(11), name: 'iPad' })).status, 429);
+});
+
+test('guesses sent all at once still only get 5 tries at an email code', async () => {
+  const a = setup();
+  await signUp(a);
+  await a.call('POST', '/api/code/send', { purpose: 'login', email: 'mum@example.com' });
+  const code = a.lastCode();
+  const guesses = [];
+  for (let i = 0; i < 40; i++) { const g = String(i).padStart(6, '0'); if (g !== code) guesses.push(a.call('POST', '/api/code/verify', { purpose: 'login', email: 'mum@example.com', code: g, device: dev(30) })); }
+  const rs = await Promise.all(guesses);
+  assert.ok(rs.filter((r) => r.error === 'wrong_code').length <= 5);
+  assert.equal((await a.call('POST', '/api/code/verify', { purpose: 'login', email: 'mum@example.com', code, device: dev(30) })).ok, false);
+});
+
+test('a paid Stripe session adds a year once, even after the family is deleted; old success links stop working', async () => {
+  const a = setup();
+  const f = await family(a);
+  const id = [...a.sessions.keys()][0];
+  await a.call('POST', '/api/code/send', { purpose: 'delete', parent: f.parent });
+  await a.call('POST', '/api/code/verify', { purpose: 'delete', parent: f.parent, code: a.lastCode() });
+  const r = await a.call('POST', '/api/claim', { session: id, device: dev(1) });
+  assert.equal(r.ok, false);
+  // a link more than a day old is refused
+  const b = setup();
+  await b.call('POST', '/api/code/send', { purpose: 'pay', email: 'x@example.com' });
+  const v = await b.call('POST', '/api/code/verify', { purpose: 'pay', email: 'x@example.com', code: b.lastCode() });
+  await b.call('POST', '/api/checkout', { ticket: v.ticket });
+  const sid = [...b.sessions.keys()][0]; b.pay(sid); b.sessions.get(sid).created = Math.floor(b.clock.t / 1000) - 2 * 86400;
+  assert.equal((await b.call('POST', '/api/claim', { session: sid, device: dev(1) })).error, 'link_expired');
+});
+
+test('parent sessions end when the PIN changes or that device is removed; PIN guesses at once still lock', async () => {
+  const a = setup();
+  const f = await family(a);
+  assert.equal((await a.call('POST', '/api/pin/set', { token: f.token, parent: f.parent, pin: '111222' })).ok, true);
+  assert.equal((await a.call('POST', '/api/account/export', { parent: f.parent })).error, 'signed_out');
+  const kid = (await login(a, 'mum@example.com', dev(2))).token;
+  const rs = await Promise.all(Array.from({ length: 20 }, (_, i) => a.call('POST', '/api/parent/start', { token: kid, pin: String(900000 + i) })));
+  assert.ok(rs.filter((r) => r.error === 'wrong_pin').length <= 3);
+  assert.equal((await a.call('POST', '/api/parent/start', { token: kid, pin: '111222' })).error, 'pin_locked');
+  // a sync about a game the server has never seen, with an old base, doesn't crash
+  const pid = (await a.call('POST', '/api/profiles/save', { parent: (await a.call('POST', '/api/parent/start', { token: f.token, pin: '111222' })).parent, profile: { nickname: 'Lily' } })).profile.id;
+  const r = await a.call('POST', '/api/sync', { token: f.token, progress: [{ profile: pid, game: 'yarn', data: { level: 2 }, base: 4 }] });
+  assert.equal(r.ok, true); assert.deepEqual(r.results.conflicts[0], { profile: pid, game: 'yarn', rev: 0, data: null });
 });
 
 test('bad input is turned away', async () => {
