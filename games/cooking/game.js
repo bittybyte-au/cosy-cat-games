@@ -1468,7 +1468,7 @@
       draw: function (c) {
         // pan
         c.beginPath(); c.ellipse(PX + 6, PY + 16, PR2 + 8, PR2 * 0.98, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
-        c.save(); c.translate(PX, PY); c.rotate(0.75);
+        c.save(); c.translate(PX, PY); c.rotate(2.39);
         rr(c, PR2 - 20, -16, 190, 32, 16); c.fillStyle = '#2A2340'; c.fill();
         rr(c, PR2 + 60, -11, 100, 22, 11); c.fillStyle = '#FF6B57'; c.fill(); ink(c, 3.5);
         c.restore();
@@ -1792,7 +1792,7 @@
       },
       draw: function (c) {
         c.beginPath(); c.ellipse(PX + 6, PY + 16, PR2 + 8, PR2 * 0.98, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
-        c.save(); c.translate(PX, PY); c.rotate(0.75);
+        c.save(); c.translate(PX, PY); c.rotate(2.39);
         rr(c, PR2 - 20, -16, 190, 32, 16); c.fillStyle = '#2A2340'; c.fill();
         rr(c, PR2 + 60, -11, 100, 22, 11); c.fillStyle = '#3FA7F5'; c.fill(); ink(c, 3.5);
         c.restore();
