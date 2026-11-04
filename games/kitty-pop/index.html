@@ -59,7 +59,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .middle { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .level { font: 800 1rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px 2px; }
 .goalpanel {
-  flex-basis: 100%; min-width: 0; margin-top: 6px; background: var(--cream); border: 3px solid var(--ink); border-radius: 22px;
+  flex-basis: 100%; max-width: 560px; min-width: 0; margin: 6px auto 0; background: var(--cream); border: 3px solid var(--ink); border-radius: 22px;
   box-shadow: 0 4px 0 var(--ink); padding: 6px 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .goalpanel h2 { margin: 0; font: 800 1.05rem/1.1 var(--display); color: var(--muted); }
@@ -120,6 +120,16 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   .goal .count { font-size: 1.1rem; }
   .goal .count small { font-size: .78rem; }
   .goals { gap: 6px; }
+}
+/* tablets and computers: home, level, goals and sound all on one row, leaving more room for the board */
+@media (min-width: 600px) {
+  .topbar { padding-bottom: 4px; }
+  .goalpanel { flex-direction: row; justify-content: center; gap: 12px; padding: 6px 12px; margin-top: 4px; }
+  .goalpanel h2 { white-space: nowrap; }
+  .goals { width: auto; flex: 1; }
+  .middle { flex: none; order: 1; }
+  .goalpanel { order: 2; flex: 1 1 auto; margin: 0 auto; }
+  #soundBtn { order: 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card, .card .faces img, .goal.bump { animation: none; }

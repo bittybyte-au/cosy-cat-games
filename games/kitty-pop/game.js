@@ -272,6 +272,9 @@
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', function () { setTimeout(resize, 200); });
+  // the goal panel changes height (new level, fonts loading), so re-place the board whenever the top bar changes size
+  if (window.ResizeObserver) new ResizeObserver(function () { resize(); }).observe(topbar);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
 
   function cellCenter(r, c) { return { x: BX + (c + 0.5) * T, y: BY + (r + 0.5) * T }; }
   function cellAt(x, y) {
@@ -617,6 +620,7 @@
       return { el: d, img: img, b: b, bar: bar };
     });
     level.goals.forEach(function (g, i) { renderGoal(i, false); });
+    resize();
   }
   function renderGoal(i, bump) {
     var g = level.goals[i], e = goalEls[i];
