@@ -397,11 +397,23 @@
   }
 
   /* ---------- belt ---------- */
-  function spawnCat() {
+  var recentKinds = [];
+  function spawnCat(forceKind) {
     var shown = shownKinds();
     var kind;
-    if (shown.length && Math.random() < level.fair) kind = shown[Math.floor(Math.random() * shown.length)];
-    else kind = level.colours[Math.floor(Math.random() * level.colours.length)];
+    function choose() {
+      if (shown.length && Math.random() < level.fair) return shown[Math.floor(Math.random() * shown.length)];
+      return level.colours[Math.floor(Math.random() * level.colours.length)];
+    }
+    if (forceKind !== undefined) kind = forceKind;
+    else {
+      // no colour more than twice in a row
+      for (var tries = 0; tries < 8; tries++) {
+        kind = choose();
+        if (!(recentKinds.length >= 2 && recentKinds[0] === kind && recentKinds[1] === kind)) break;
+      }
+    }
+    recentKinds.unshift(kind); recentKinds.length = Math.min(recentKinds.length, 2);
     var c = newCat(kind);
     c.bx = L.beltX0 - L.catS * 0.7;
     cats.push(c);
@@ -460,7 +472,7 @@
     level = levelDef(n);
     cats = []; mat = []; held = null; parts = [];
     for (var i = 0; i < MAT_SPOTS; i++) mat.push(null);
-    tucked = 0; spawnDist = 0; nextGap = 0; idle = 0;
+    tucked = 0; spawnDist = 0; nextGap = 0; idle = 0; recentKinds = [];
     $('levelLabel').textContent = 'Level ' + n;
     $('cardWrap').hidden = true;
     layout();
@@ -659,7 +671,9 @@
         mode = 'play';
         // start with a few cats already riding along, so there's something to do straight away
         var x = Math.min(cw * 0.55, L.catS * (0.6 + level.gap * 2.2));
-        for (var k = 0; k < 3; k++) { spawnCat(); cats[cats.length - 1].bx = x; x -= rand(level.gap, level.gap * 1.3) * L.catS; }
+        // the first three are one of each cubby's colour, in a random order
+        var opening = shuffle(shownKinds().slice()).slice(0, 3);
+        for (var k = 0; k < 3; k++) { spawnCat(opening[k]); cats[cats.length - 1].bx = x; x -= rand(level.gap, level.gap * 1.3) * L.catS; }
         spawnDist = 0; nextGap = rand(level.gap, level.gap * 1.3);
       }
     }
