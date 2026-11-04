@@ -566,6 +566,41 @@
     }
   }
 
+  /* Find a clear spot on the belt for a cat, away from the cats already riding it. */
+  function freeBeltX(near) {
+    var taken = cats.filter(function (c) { return c.where === 'belt' || c.where === 'held' || (c.where === 'flying' && c.returning); }).map(function (c) { return c.bx; });
+    var minGap = L.catS * 1.05;
+    var lo = L.catS * 0.6, hi = cw * 0.7;
+    var best = null, bestD = Infinity;
+    for (var x = lo; x <= hi; x += L.catS * 0.25) {
+      if (taken.some(function (t) { return Math.abs(t - x) < minGap; })) continue;
+      var d = Math.abs(x - near);
+      if (d < bestD) { bestD = d; best = x; }
+    }
+    if (best === null) {
+      // belt is crowded: queue up just before the start
+      var first = taken.length ? Math.min.apply(null, taken) : lo;
+      best = Math.min(first, lo) - minGap;
+    }
+    return best;
+  }
+
+  function emptyCubby(cb) {
+    var out = cb.cats.slice();
+    cb.cats = [];
+    tucked = Math.max(0, tucked - out.length);
+    renderTally(true);
+    say('Oops! Everyone back on the belt!', 1.6);
+    out.forEach(function (c, i) {
+      c.cubby = null; c.face = 'surprised'; c.wake = 1.2;
+      c.bx = freeBeltX(cb.x + (i - 1) * L.catS);
+      c.returning = true;
+      setTimeout(function () { Sound.boing(); }, 120 + i * 90);
+      fly(c, c.bx, L.beltY - L.catS * 0.12, 0.45 + i * 0.08, L.catS * 1.1, function () { c.where = 'belt'; c.returning = false; });
+      sparkle(c.x, c.y, CATS[c.kind].fill, 5);
+    });
+  }
+
   function dropHeldBack() {
     var h = held; held = null;
     h.cat.x = h.x; h.cat.y = h.y;
@@ -626,7 +661,11 @@
     var moved = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 10;
     var cb = cubbyAt(e.clientX, e.clientY) || cubbyAt(h.x, h.y);
     if (cb && cb.kind === cat.kind && cb.cats.length < 3) { placeInCubby(cat, cb); return; }
-    if (cb) { cb.shake = 0.45; Sound.nope(); cat.wig = 0.45; Sound.mrrp(0.15); }
+    if (cb) {
+      cb.shake = 0.45; Sound.nope(); cat.wig = 0.45; Sound.mrrp(0.15);
+      // from level 2, a wrong cat wakes up the whole cubby and everyone goes back on the belt
+      if (level.n >= 2 && cb.cats.length && cb.cats.length < 3) emptyCubby(cb);
+    }
     else if (!moved) { cat.wig = 0.4; Sound.mrrp(); showHintFor = cat; hintT = 0; }
     returnCat(cat, h.from);
   }
