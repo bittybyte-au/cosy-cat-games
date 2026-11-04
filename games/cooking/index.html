@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cozy Kitchen</title>
+<meta name="theme-color" content="#FFE3CC">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: a full-screen kitchen counter (canvas) with a slim top bar and a fixed tool tray at the bottom. Single bright look by design. */
+:root {
+  --wall: #FFE3CC;
+  --ink: #2A2340;
+  --cream: #FFF8EC;
+  --tomato: #FF6B57;
+  --sun: #FFC93C;
+  --grass: #7BD389;
+  --sea: #3FA7F5;
+  --muted: #6E6080;
+  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tray-h: 156px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--wall); color: var(--ink); font-family: var(--body); font-size: 17px;
+  overflow: hidden; overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
+button { font-family: var(--body); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-offset: 3px; }
+
+/* Top bar */
+.topbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 5;
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.round {
+  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink);
+  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+  text-decoration: none; color: var(--ink);
+}
+.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.round svg { width: 30px; height: 30px; }
+.round.wide { width: auto; padding: 0 16px; border-radius: 999px; font: 800 1rem var(--body); gap: 6px; display: flex; align-items: center; }
+.title { flex: 1; min-width: 0; text-align: center; font: 800 clamp(1.4rem, 5vw, 2rem)/1 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.steps { flex: 1; display: flex; justify-content: center; gap: 6px; min-width: 0; }
+.step {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font: 800 .72rem var(--body); color: var(--muted);
+  min-width: 0;
+}
+.step i {
+  width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--ink); background: var(--cream); display: grid; place-items: center;
+}
+.step i svg { width: 24px; height: 24px; }
+.step.now { color: var(--ink); }
+.step.now i { background: var(--sun); transform: scale(1.12); }
+.step.done i { background: var(--grass); }
+
+/* Bottom tray */
+.tray {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; height: calc(var(--tray-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-top: 8px;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 10px;
+  pointer-events: none;
+}
+.tray > * { pointer-events: auto; }
+.say-row { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px; }
+.say {
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 20px;
+  font: 800 clamp(1.15rem, 4.6vw, 1.5rem)/1.15 var(--body); text-align: center; box-shadow: 0 4px 0 var(--ink);
+  max-width: 100%;
+}
+.say:empty { display: none; }
+.next {
+  min-height: 64px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass);
+  font: 800 1.4rem var(--display); box-shadow: 0 5px 0 var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; flex: none;
+  animation: bob 1.2s ease-in-out infinite;
+}
+.next:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); animation: none; }
+.next svg { width: 26px; height: 26px; }
+@keyframes bob { 50% { transform: translateY(-4px) scale(1.04); } }
+.tools {
+  display: flex; gap: 10px; justify-content: center; overflow-x: auto; padding: 4px 4px 8px; scrollbar-width: none;
+}
+.tools::-webkit-scrollbar { display: none; }
+.tool {
+  flex: none; width: 70px; height: 76px; border-radius: 20px; border: 3px solid var(--ink); background: var(--cream);
+  box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font: 800 .78rem var(--body); padding: 4px 2px;
+}
+.tool svg { width: 40px; height: 40px; }
+.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 8px 0 var(--ink); }
+.tool:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+
+/* Kawaii chef cat */
+.cat {
+  position: fixed; z-index: 8; right: max(10px, env(safe-area-inset-right, 0px)); bottom: calc(var(--tray-h) - 30px + env(safe-area-inset-bottom, 0px));
+  width: 150px; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(70%) rotate(8deg);
+  transition: transform .45s cubic-bezier(.3, 1.6, .5, 1), opacity .25s ease, visibility 0s linear .45s;
+}
+.cat.show { opacity: 1; visibility: visible; transform: translateY(0) rotate(0); transition: transform .45s cubic-bezier(.3, 1.6, .5, 1), opacity .15s ease, visibility 0s; }
+.cat svg { width: 150px; height: auto; display: block; }
+.cat .bubble {
+  position: absolute; right: 118px; top: -6px; background: #fff; border: 3px solid var(--ink); border-radius: 22px;
+  padding: 8px 14px; font: 800 1.25rem/1.1 var(--display); white-space: nowrap; box-shadow: 0 4px 0 var(--ink);
+}
+.cat .bubble::after {
+  content: ""; position: absolute; right: -14px; top: 22px; border: 8px solid transparent; border-left: 12px solid var(--ink);
+}
+.cat .paw { transform-origin: 140px 125px; animation: thumbs .5s ease-in-out infinite alternate; }
+@keyframes thumbs { to { transform: rotate(-12deg); } }
+
+/* Menu and finish screens */
+.screen {
+  position: fixed; inset: 0; z-index: 6; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-top: calc(84px + env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.screen .inner { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.screen h2 { margin: 0; font: 800 clamp(1.7rem, 6vw, 2.4rem)/1.05 var(--display); text-wrap: balance; }
+.screen h3 { margin: 6px 0 0; font: 800 1.5rem/1 var(--display); }
+.recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 16px; }
+.recipe {
+  position: relative; border: 4px solid var(--ink); border-radius: 26px; background: #fff; padding: 12px 12px 16px; text-align: center;
+  box-shadow: 0 6px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font: 800 1.25rem var(--display); color: var(--ink);
+}
+.recipe:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.recipe svg { width: 100%; max-width: 180px; height: auto; }
+.recipe.hero { background: #CFF0FF; }
+.recipe small { font: 800 .95rem var(--body); color: var(--muted); }
+.recipe.locked { background: rgba(255, 255, 255, .5); border-style: dashed; box-shadow: none; cursor: default; color: var(--muted); }
+.recipe.locked svg { opacity: .45; filter: grayscale(.6); }
+.recipe .soon {
+  position: absolute; top: -12px; right: 12px; background: var(--sun); color: var(--ink); border: 3px solid var(--ink); border-radius: 999px; padding: 2px 10px; font: 800 .85rem var(--body);
+}
+.book { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.book figure { margin: 0; background: #fff; border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; }
+.book img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.book figcaption { font: 800 .8rem var(--body); text-align: center; padding: 4px; color: var(--muted); }
+.empty { margin: 0; font-weight: 800; color: var(--muted); }
+
+.finish .inner { align-items: center; text-align: center; }
+.finish .dish {
+  width: min(78vw, 46vh, 420px); aspect-ratio: 1; border-radius: 50%; border: 5px solid var(--ink); overflow: hidden; background: #fff;
+  box-shadow: 0 8px 0 var(--ink); animation: present .7s cubic-bezier(.3, 1.6, .5, 1);
+}
+.finish .dish img { width: 100%; height: 100%; display: block; }
+.finish p { margin: 0; font: 800 1.2rem var(--body); }
+.btnrow { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.big {
+  min-height: 64px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--ink); background: var(--sun); box-shadow: 0 5px 0 var(--ink);
+  font: 800 1.3rem var(--display); cursor: pointer;
+}
+.big.go { background: var(--grass); }
+.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+@keyframes present { from { transform: scale(.4) rotate(-20deg); } }
+
+@media (max-width: 440px) {
+  .tools { gap: 6px; justify-content: flex-start; }
+  .tool { width: 54px; height: 68px; border-radius: 16px; font-size: .7rem; }
+  .tool svg { width: 32px; height: 32px; }
+}
+@media (max-height: 560px) {
+  :root { --tray-h: 136px; }
+  .tool { height: 64px; width: 62px; }
+  .tool svg { width: 32px; height: 32px; }
+  .say-row { min-height: 54px; }
+  .next { min-height: 54px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .next, .cat .paw, .finish .dish { animation: none; }
+  .cat { transition: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="Kitchen counter"></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><path d="M5 15 L16 5 L27 15 M9 13 V27 H23 V13" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.5" y="19" width="5" height="8" fill="#2A2340"/></svg>
+  </a>
+  <button class="round wide" id="backBtn" type="button" hidden>
+    <svg viewBox="0 0 32 32" style="width:22px;height:22px"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="backLabel">Kitchen</span>
+  </button>
+  <div class="title" id="title">Cozy Kitchen</div>
+  <nav class="steps" id="steps" hidden aria-label="Cooking steps"></nav>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="tray" id="tray" hidden>
+  <div class="say-row"><div class="say" id="say" aria-live="polite"></div><button class="next" id="nextBtn" type="button" hidden><span id="nextLabel">Next</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+  <div class="tools" id="tools"></div>
+</div>
+
+<section class="screen" id="menu" aria-labelledby="menuTitle">
+  <div class="inner">
+    <h2 id="menuTitle">What shall we cook?</h2>
+    <div class="recipes" id="recipes"></div>
+    <h3>My cookbook</h3>
+    <div class="book" id="book"></div>
+  </div>
+</section>
+
+<section class="screen finish" id="finish" hidden aria-labelledby="finishTitle">
+  <div class="inner">
+    <h2 id="finishTitle">Sushi handroll!</h2>
+    <div class="dish"><img id="dishImg" alt="Your sushi handroll on a plate"></div>
+    <p id="finishNote"></p>
+    <div class="btnrow">
+      <button class="big go" id="againBtn" type="button">Cook again</button>
+      <button class="big" id="toMenuBtn" type="button">Kitchen</button>
+    </div>
+  </div>
+</section>
+
+<div class="cat" id="cat" aria-live="polite">
+  <div class="bubble" id="catSays">Great job!</div>
+  <svg viewBox="0 0 170 180" aria-hidden="true">
+    <path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#2A2340" stroke-width="14" stroke-linecap="round"/>
+    <path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#FFB26B" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="80" cy="148" rx="50" ry="32" fill="#fff" stroke="#2A2340" stroke-width="5"/>
+    <ellipse cx="62" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/>
+    <ellipse cx="98" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/>
+    <path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/>
+    <path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/>
+    <ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/>
+    <path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/>
+    <ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/>
+    <g stroke="#2A2340" stroke-width="4">
+      <circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/>
+      <rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/>
+    </g>
+    <path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/>
+    <path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="46" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/>
+    <path d="M72 94 Q76 100 80 94 Q84 100 88 94" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/>
+    <g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="88" x2="38" y2="91"/><line x1="24" y1="99" x2="38" y2="98"/><line x1="138" y1="88" x2="122" y2="91"/><line x1="136" y1="99" x2="122" y2="98"/></g>
+    <g class="paw">
+      <path d="M118 150 Q140 140 140 122" fill="none" stroke="#2A2340" stroke-width="20" stroke-linecap="round"/>
+      <path d="M118 150 Q140 140 140 122" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/>
+      <rect x="125" y="108" width="30" height="26" rx="12" fill="#fff" stroke="#2A2340" stroke-width="4.5"/>
+      <rect x="128" y="84" width="13" height="30" rx="6.5" fill="#fff" stroke="#2A2340" stroke-width="4.5"/>
+      <line x1="141" y1="118" x2="153" y2="118" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/>
+      <line x1="141" y1="126" x2="153" y2="126" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </svg>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
