@@ -1,10 +1,11 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v13';
+const VERSION = 'ccg-v14';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './shared/store.js',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
-  './games/cooking/', './games/cooking/index.html', './games/cooking/game.js'
+  './games/cooking/', './games/cooking/index.html', './games/cooking/game.js',
+  './games/kitty-pop/', './games/kitty-pop/index.html', './games/kitty-pop/game.js', './games/kitty-pop/specials.js'
 ];
 
 self.addEventListener('install', (e) => {
