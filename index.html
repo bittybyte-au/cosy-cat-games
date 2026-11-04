@@ -76,21 +76,6 @@ h1 {
   text-shadow: 0 5px 0 var(--ink);
   letter-spacing: .5px;
 }
-.head-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.toddler-chip {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px 0 8px;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
-  font: 800 1rem var(--body); color: var(--ink); cursor: pointer;
-}
-.toddler-chip .knob { position: relative; width: 44px; height: 26px; border-radius: 999px; background: #D8D2E4; border: 3px solid var(--ink); flex: none; }
-.toddler-chip .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); transition: left .2s ease; }
-.toddler-chip[aria-pressed="true"] { background: var(--sun); }
-.toddler-chip[aria-pressed="true"] .knob { background: var(--grass); }
-.toddler-chip[aria-pressed="true"] .knob::after { left: 20px; }
-.toddler-chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.toddler-chip:focus-visible { outline: 4px solid var(--sun); outline-offset: 4px; }
-.sum-q { margin: 0; text-align: center; font: 800 1.4rem var(--body); }
-#sumIn { width: 100%; min-height: 60px; border: 3px solid var(--ink); border-radius: 18px; padding: 0 16px; font: 800 1.4rem var(--body); color: var(--ink); background: #fff; text-align: center; }
 .player-chip {
   display: flex; align-items: center; gap: 10px;
   background: var(--cream); border: 3px solid var(--ink); border-radius: 999px;
@@ -239,10 +224,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
 <div class="wrap">
   <header>
     <h1>Cosy Cat Games</h1>
-    <div class="head-btns">
-      <button class="toddler-chip" id="toddlerBtn" type="button" aria-pressed="false"><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
-      <button class="player-chip" id="playerChip" type="button" aria-label="Change player"></button>
-    </div>
+    <button class="player-chip" id="playerChip" type="button" aria-label="Change player"></button>
   </header>
   <div class="hello"><svg class="mascot" viewBox="0 -8 170 188" aria-hidden="true"><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#2A2340" stroke-width="14" stroke-linecap="round"/><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#FFB26B" stroke-width="7" stroke-linecap="round"/><ellipse cx="80" cy="148" rx="50" ry="32" fill="#fff" stroke="#2A2340" stroke-width="5"/><ellipse cx="62" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="98" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 94 Q76 100 80 94 Q84 100 88 94" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="88" x2="38" y2="91"/><line x1="24" y1="99" x2="38" y2="98"/><line x1="138" y1="88" x2="122" y2="91"/><line x1="136" y1="99" x2="122" y2="98"/></g><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g><g class="wave"><path d="M118 150 Q140 140 142 116" fill="none" stroke="#2A2340" stroke-width="20" stroke-linecap="round"/><path d="M118 150 Q140 140 142 116" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><ellipse cx="144" cy="106" rx="16" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><g fill="#FFB3C7"><circle cx="144" cy="110" r="5"/><circle cx="136" cy="100" r="2.6"/><circle cx="144" cy="97" r="2.6"/><circle cx="152" cy="100" r="2.6"/></g></g></svg><p class="greeting" id="greeting"></p></div>
 
@@ -441,43 +423,6 @@ window.addEventListener('ggpass', function (e) {
     chip.innerHTML = fully ? '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="3" fill="#2A2340"/><path d="M8 10 V7 a4 4 0 0 1 8 0 V10" fill="none" stroke="#2A2340" stroke-width="2.6"/></svg>Needs a pass' : 'Free to try';
   });
 });
-</script>
-<script>
-/* Toddler mode: one switch for this device. Turning it on is a tap; turning it off needs a grown-up's sum. */
-(function () {
-  var btn = document.getElementById('toddlerBtn');
-  var overlay = document.getElementById('overlay'), panel = document.getElementById('panel');
-  function render() {
-    var on = !!GG.getSetting('toddler', false);
-    btn.setAttribute('aria-pressed', String(on));
-    document.getElementById('toddlerLabel').textContent = on ? 'Toddler mode on' : 'Toddler mode';
-  }
-  function askSum() {
-    var a = 6 + Math.floor(Math.random() * 4), b = 3 + Math.floor(Math.random() * 6);
-    panel.classList.remove('whos');
-    panel.innerHTML = '<h2 id="panelTitle">Turn off toddler mode?</h2>' +
-      '<p class="sum-q">Grown-ups: what is ' + a + ' \u00d7 ' + b + '?</p>' +
-      '<input id="sumIn" inputmode="numeric" autocomplete="off" aria-label="Answer">' +
-      '<p class="note" id="sumMsg"></p>' +
-      '<div class="row"><button class="btn plain" type="button" id="sumNo">Keep it on</button><button class="btn go" type="button" id="sumYes">Turn off</button></div>';
-    overlay.hidden = false;
-    var input = document.getElementById('sumIn');
-    setTimeout(function () { input.focus(); }, 50);
-    function check() {
-      if (parseInt(input.value, 10) === a * b) { GG.setSetting('toddler', false); overlay.hidden = true; render(); }
-      else { document.getElementById('sumMsg').textContent = 'Not quite. Try this one.'; setTimeout(askSum, 900); }
-    }
-    document.getElementById('sumYes').addEventListener('click', check);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') check(); });
-    document.getElementById('sumNo').addEventListener('click', function () { overlay.hidden = true; });
-  }
-  btn.addEventListener('click', function () {
-    if (GG.getSetting('toddler', false)) askSum();
-    else { GG.setSetting('toddler', true); render(); }
-  });
-  window.addEventListener('pageshow', function () { GG.reload(); render(); });
-  render();
-})();
 </script>
 </body>
 </html>
