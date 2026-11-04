@@ -2,7 +2,7 @@
    Bump VERSION whenever files change so devices pick up the new copy. */
 const VERSION = 'ccg-v47';
 const FILES = [
-  './', './index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
+  './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './about/', './about/index.html', './faq/', './faq/index.html', './shared/games.js', './shared/install.js',
   './games/cooking/', './games/cooking/index.html', './games/cooking/game.js',

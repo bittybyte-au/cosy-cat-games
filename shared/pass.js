@@ -118,7 +118,7 @@
     if (!GAME || FREE[GAME] !== undefined) return;
     if (state().unlocked) { var l = document.getElementById('ggLock'); if (l && l.dataset.whole) l.remove(); return; }
     if (document.getElementById('ggLock')) return;
-    var el = lockScreen({ title: 'This game needs a pass', text: 'A grown-up can unlock every game for a year.', backLabel: 'Home', onBack: function () { location.href = new URL('index.html', ROOT).href; } });
+    var el = lockScreen({ title: 'This game needs a pass', text: 'A grown-up can unlock every game for a year.', backLabel: 'Home', onBack: function () { location.href = new URL('play/index.html', ROOT).href; } });
     el.dataset.whole = '1';
   }
 

@@ -2,7 +2,7 @@
   "name": "Cosy Cat Games",
   "short_name": "Cosy Cat Games",
   "description": "Our family's little collection of games.",
-  "start_url": "./index.html",
+  "start_url": "./play/index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
