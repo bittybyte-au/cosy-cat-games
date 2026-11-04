@@ -83,6 +83,8 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   pointer-events: none;
 }
 .tray > * { pointer-events: auto; }
+.tray.notools { height: calc(86px + env(safe-area-inset-bottom, 0px)); }
+.tray.notools .tools { display: none; }
 .say-row { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px; }
 .say {
   background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 20px;

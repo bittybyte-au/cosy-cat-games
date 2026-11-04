@@ -147,7 +147,8 @@
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
     var top = topbar.getBoundingClientRect().bottom + 4;
-    var bot = tray.hidden ? ch - 8 : tray.getBoundingClientRect().top + 24;
+    // the play area stops above the tray so nothing at the bottom is hidden behind it
+    var bot = tray.hidden ? ch - 8 : tray.getBoundingClientRect().top - 4;
     var avail = Math.max(160, bot - top);
     S = Math.min((cw - 8) / SIZE, avail / SIZE);
     OX = (cw - SIZE * S) / 2; OY = top + (avail - SIZE * S) / 2;
@@ -2059,12 +2060,15 @@
   }
   function leaveScene() { if (scene && scene.leave) scene.leave(); scene = null; Cat.hide(); hideNext(); pointerId = null; }
   function nextStep() { goStep(stepIdx + 1); }
+  /* the tray is shorter on steps without a tool row, which leaves more room for the food */
+  function fitTray() { tray.classList.toggle('notools', !toolsEl.children.length); resize(); }
   function goStep(i) {
     leaveScene();
     stepIdx = i; renderSteps();
     toolsEl.innerHTML = '';
     scene = recipe.steps[i].make(); idle = 0; hintT = 0; parts = [];
     if (scene.enter) scene.enter();
+    fitTray();
   }
 
   /* ---------- screens ---------- */
