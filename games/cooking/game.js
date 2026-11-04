@@ -255,6 +255,13 @@
       c.beginPath(); c.moveTo(-19, 5); c.quadraticCurveTo(0, -18, 19, 5); c.quadraticCurveTo(0, 12, -19, 5); c.closePath();
       c.fillStyle = '#E8EE98'; c.fill(); ink(c, 3);
       c.beginPath(); c.moveTo(-16, 6); c.quadraticCurveTo(0, 11, 16, 6); c.strokeStyle = '#4E7F2C'; c.lineWidth = 3.5; c.stroke();
+    } else if (kind === 'tomato') {
+      c.beginPath(); c.arc(0, 0, 13, 0, TAU); c.fillStyle = '#FF4D3D'; c.fill(); ink(c, 3);
+      c.beginPath(); c.arc(0, 0, 8.5, 0, TAU); c.fillStyle = '#FF9A80'; c.fill();
+      c.fillStyle = '#FFE7A0'; [[-3, -2], [3, -2], [0, 3.5]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 1.3, 2, 0, 0, TAU); c.fill(); });
+    } else if (kind === 'onion') {
+      c.beginPath(); c.arc(0, 0, 12, 0, TAU); c.strokeStyle = INK; c.lineWidth = 7; c.stroke(); c.strokeStyle = '#F7F0E3'; c.lineWidth = 3.5; c.stroke();
+      c.beginPath(); c.arc(0, 0, 12, 0, TAU); c.strokeStyle = 'rgba(181,87,155,.5)'; c.lineWidth = 1.2; c.stroke();
     } else if (kind === 'banana') {
       c.beginPath(); c.arc(0, 0, 13, 0, TAU); c.fillStyle = '#FFF4C2'; c.fill(); ink(c, 3);
       c.beginPath(); c.arc(0, 0, 5, 0, TAU); c.fillStyle = '#F3E2A0'; c.fill();
@@ -381,7 +388,7 @@
 
   /* ---------- the dish being made ---------- */
   var dish = null;
-  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [] }; }
+  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false }; }
 
   /* =============== STEP 1: RICE =============== */
   function RiceScene() {
@@ -528,6 +535,8 @@
     cucumber: { len: 440, h: 96, cuts: 5, body: '#4FAE5E', face: '#DDF6CF', ring: '#4FAE5E', round: 48, label: 'cucumber' },
     avocado: { len: 380, h: 136, cuts: 4, body: '#3E6B2A', face: '#E2EC8C', ring: '#3E6B2A', round: 60, label: 'avocado', shape: 'pear' },
     salmon: { len: 420, h: 104, cuts: 4, body: '#FF8A5B', face: '#FFA27E', ring: '#FF8A5B', round: 20, label: 'salmon' },
+    tomato: { len: 230, h: 200, cuts: 4, body: '#FF4D3D', face: '#FF8A70', face2: '#FFC9B0', ring: '#E8322B', round: 100, label: 'tomato' },
+    onion: { len: 230, h: 200, cuts: 4, body: '#F4E9D8', face: '#FBF6EA', ring: '#E2CFAF', round: 100, label: 'onion', rings: true },
     banana: { len: 440, h: 84, cuts: 6, body: '#FFF0A8', face: '#FFF7D6', face2: '#F3E2A0', ring: '#E9D27A', round: 42, label: 'banana' },
     strawberry: { len: 280, h: 170, cuts: 3, body: '#FF4D5E', face: '#FF8F9C', face2: '#FFE0E4', ring: '#E83A4E', round: 60, label: 'strawberry', shape: 'pear', ratio: 0.2 }
   };
@@ -594,6 +603,12 @@
         c.beginPath(); c.arc(pitX - 3, -4, pitR - 5, 0, TAU); c.fillStyle = '#EFEBA4'; c.fill();
         c.beginPath(); c.arc(pitX, 0, pitR, 0, TAU); c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 2.5; c.stroke();
         c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-d.len * 0.18, -d.h * 0.16, d.len * 0.16, 6, -0.12, 0, TAU); c.fill();
+      } else if (k === 'tomato') {
+        c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(-40, -50, 40, 16, -0.5, 0, TAU); c.fill();
+      } else if (k === 'onion') {
+        c.strokeStyle = '#E2CFAF'; c.lineWidth = 4;
+        [-60, -25, 25, 60].forEach(function (ox) { c.beginPath(); c.moveTo(ox * 0.3, -d.h / 2); c.quadraticCurveTo(ox * 1.5, 0, ox * 0.3, d.h / 2); c.stroke(); });
+        c.fillStyle = 'rgba(181,87,155,.18)'; c.beginPath(); c.ellipse(30, 20, 60, 50, 0, 0, TAU); c.fill();
       } else if (k === 'banana') {
         c.strokeStyle = '#F2DE8C'; c.lineWidth = 4;
         [-0.2, 0.15].forEach(function (f) { c.beginPath(); c.moveTo(-d.len / 2, d.h * f); c.quadraticCurveTo(0, d.h * f - 8, d.len / 2, d.h * f); c.stroke(); });
@@ -608,6 +623,12 @@
       }
       c.restore();
       bodyPath(c, d); ink(c, 5);
+      if (k === 'tomato') {
+        c.save(); c.translate(0, -d.h / 2 + 6);
+        for (var ti = 0; ti < 5; ti++) { c.save(); c.rotate(ti / 5 * TAU); c.beginPath(); c.ellipse(0, -12, 6, 14, 0, 0, TAU); c.fillStyle = '#4FAE5E'; c.fill(); ink(c, 2.5); c.restore(); }
+        c.beginPath(); c.arc(0, 0, 5, 0, TAU); c.fillStyle = '#3E9B54'; c.fill(); ink(c, 2.5); c.restore();
+      }
+      if (k === 'onion') { c.save(); c.translate(0, -d.h / 2); c.beginPath(); c.moveTo(-8, 4); c.quadraticCurveTo(0, -22, 8, 4); c.closePath(); c.fillStyle = '#C9A26E'; c.fill(); ink(c, 2.5); c.restore(); }
       if (k === 'banana') { c.fillStyle = '#8A5A2B'; c.beginPath(); c.ellipse(-d.len / 2 + 6, 0, 7, 10, 0, 0, TAU); c.ellipse(d.len / 2 - 6, 0, 7, 10, 0, 0, TAU); c.fill(); }
       if (k === 'strawberry') {
         // leafy green top on the wide end
@@ -629,6 +650,7 @@
       if (d.shape === 'pear') { c.strokeStyle = d.ring; c.lineWidth = 5; c.stroke(); }
       ink(c, 3);
       if (d.face2) { c.beginPath(); c.ellipse(x, 0, 4, hh * 0.5, 0, 0, TAU); c.fillStyle = d.face2; c.fill(); }
+      if (d.rings) { [0.72, 0.45, 0.2].forEach(function (f) { c.beginPath(); c.ellipse(x, 0, 6 * f + 1, hh * f, 0, 0, TAU); c.strokeStyle = 'rgba(181,87,155,.55)'; c.lineWidth = 2; c.stroke(); }); }
     }
 
     function drawIngredient(c) {
@@ -1664,6 +1686,291 @@
     };
   }
 
+  /* =============== BURGER =============== */
+  var PATTY_TONES = {
+    rare: { top: '#C4707A', side: '#B5606A', spots: 'rgba(255,190,200,.55)' },
+    perfect: { top: '#7A4425', side: '#6A3A1E', spots: 'rgba(160,100,60,.6)' },
+    burnt: { top: '#3A2015', side: '#2E190F', spots: 'rgba(10,5,2,.6)' }
+  };
+
+  /* top-down patty in the pan. cooked: tone of the side facing up, or null if raw. edge: 0..1 browning, burn: 0..1 */
+  function drawPattyTop(c, x, y, r, cooked, edge, burn) {
+    c.save(); c.translate(x, y);
+    c.beginPath();
+    for (var i = 0; i <= 28; i++) { var a = i / 28 * TAU, w = 1 + 0.035 * Math.sin(a * 7) + 0.02 * Math.sin(a * 11); c.lineTo(Math.cos(a) * r * w, Math.sin(a) * r * w); }
+    c.closePath();
+    if (cooked) {
+      var T = PATTY_TONES[cooked];
+      c.fillStyle = T.top; c.fill(); ink(c, 4);
+      c.save(); c.clip(); c.strokeStyle = 'rgba(30,15,8,.55)'; c.lineWidth = 9;
+      for (var k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(-r, k * 30 - 20); c.lineTo(r, k * 30 + 20); c.stroke(); }
+      c.restore();
+      c.fillStyle = T.spots; var sr = seeded(17);
+      for (var s = 0; s < 14; s++) { c.beginPath(); c.arc((sr() - 0.5) * r * 1.3, (sr() - 0.5) * r * 1.3, 2 + sr() * 3, 0, TAU); c.fill(); }
+    } else {
+      c.fillStyle = '#E37C86'; c.fill();
+      c.lineWidth = 6 + edge * 10 + burn * 6; c.strokeStyle = burn > 0 ? mixHex('#8A5030', '#2E190F', burn) : mixHex('#E37C86', '#8A5030', edge); c.stroke();
+      ink(c, 3.5);
+      c.fillStyle = 'rgba(255,220,225,.7)'; var mr = seeded(23);
+      for (var m = 0; m < 22; m++) { c.beginPath(); c.arc((mr() - 0.5) * r * 1.4, (mr() - 0.5) * r * 1.4, 2 + mr() * 2.5, 0, TAU); c.fill(); }
+    }
+    c.restore();
+  }
+
+  /* ---- Step 1: cook the patty, both sides ---- */
+  function GrillScene() {
+    var PX = 290, PY = 300, PR2 = 180, R = 112;
+    var T_OK = 2.6, T_BURN = 5.4, T_MAX = 8;
+    var SIDE = { x: 548, y: 560 };
+    var phase = 'wait', t = 0, fly = 0, flip = 0, side = 1, tones = [], said = 0, swipe = null, offT = 0;
+    var sizzle = Sound.loop('sizzle');
+
+    function grade(tt) { return tt < T_OK ? 'rare' : tt <= T_BURN ? 'perfect' : 'burnt'; }
+    function drawGauge(c) {
+      var x0 = PX - 165, w = 330, y = 62, h = 34, z1 = w * T_OK / T_MAX, z2 = w * T_BURN / T_MAX;
+      c.save(); rr(c, x0, y, w, h, 12); c.clip();
+      c.fillStyle = '#F2A3AB'; c.fillRect(x0, y, z1, h); c.fillStyle = '#7BD389'; c.fillRect(x0 + z1, y, z2 - z1, h); c.fillStyle = '#3A2015'; c.fillRect(x0 + z2, y, w - z2, h);
+      c.restore(); rr(c, x0, y, w, h, 12); ink(c, 3.5);
+      c.save(); c.translate(x0 + (z1 + z2) / 2, y + h / 2); c.fillStyle = '#FFFFFF'; star(c, 12); c.fill(); c.restore();
+      var mx = x0 + w * clamp(t / T_MAX, 0, 1);
+      c.beginPath(); c.moveTo(mx, y - 4); c.lineTo(mx - 10, y - 18); c.lineTo(mx + 10, y - 18); c.closePath(); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(mx, y - 2); c.lineTo(mx, y + h + 2); c.strokeStyle = INK; c.lineWidth = 4; c.stroke();
+    }
+    function swipeDone() {
+      var g = grade(t);
+      tones.push(g);
+      if (g === 'perfect') { Cat.show(side === 1 ? 'Perfect flip!' : 'Juicy!'); burst(PX, PY, 14, { colors: ['#FFC93C', '#FFFFFF'], speed: 200, life: 0.7 }); }
+      if (side === 1) { phase = 'flip'; flip = 0; Sound.whoosh(); buzz(15); }
+      else { phase = 'off'; offT = 0; Sound.whoosh(); }
+      say(g === 'perfect' ? 'Nicely browned!' : g === 'rare' ? 'Too early! Still pink.' : 'Oops, a bit burnt!');
+    }
+
+    return {
+      enter: function () { say('Tap the patty to cook it'); },
+      leave: function () { sizzle.stop(); },
+      hint: function (k) {
+        if (phase === 'wait') return { x: SIDE.x, y: SIDE.y - 10, press: (k % 1.2) < 0.6 };
+        if (phase === 'cook' && t >= T_OK) { var q = (k % 1.3) / 1.3; return { x: PX, y: PY + 90 - q * 200, press: q < 0.9 }; }
+        return null;
+      },
+      down: function (p) {
+        if (phase === 'wait' && dist(p, SIDE) < 90) { phase = 'fly'; fly = 0; Sound.whoosh(); }
+        if (phase === 'cook' && t > 0.4) swipe = p;
+      },
+      move: function (p) { if (swipe && phase === 'cook' && swipe.y - p.y > 60) { swipe = null; swipeDone(); } },
+      up: function () { swipe = null; },
+      update: function (dt) {
+        var hot = phase === 'cook' || phase === 'flip';
+        sizzle.set(hot ? (t > T_BURN && phase === 'cook' ? 1.8 : 1.3) : 0);
+        if (hot && Math.random() < dt * (t > T_BURN ? 34 : 20)) Sound.riceTick();
+        if (phase === 'fly') {
+          fly = Math.min(1, fly + dt * 2.2);
+          if (fly >= 1) { phase = 'cook'; t = 0; said = 0; Sound.squish(); buzz(12); say('Wait until it’s brown...'); }
+        }
+        if (phase === 'cook') {
+          t = Math.min(T_MAX + 4, t + dt);
+          if (t >= T_OK && said < 1) { said = 1; Sound.pop(); say(side === 1 ? 'Brown! Swipe up to flip!' : 'Done! Swipe up to serve!'); }
+          if (t >= T_BURN && said < 2) { said = 2; say('Quick, it’s burning!'); }
+          if (t > T_BURN && Math.random() < dt * 6) burst(PX + (Math.random() - 0.5) * R, PY - R * 0.3, 1, { colors: ['rgba(120,110,125,.55)'], shape: 'dot', size: 26, speed: 25, gravity: -90, life: 1.4 });
+          if (Math.random() < dt * 4) burst(PX + (Math.random() - 0.5) * R * 2, PY + (Math.random() - 0.5) * R * 2, 1, { colors: ['rgba(255,255,255,.7)'], shape: 'dot', size: 5, speed: 60, gravity: 200, up: 60, life: 0.4 });
+        }
+        if (phase === 'flip') {
+          flip = Math.min(1, flip + dt * 1.6);
+          if (flip >= 1) { phase = 'cook'; side = 2; t = 0; said = 0; Sound.plop(); say('Now cook the other side...'); }
+        }
+        if (phase === 'off') {
+          offT = Math.min(1, offT + dt * 1.6);
+          if (offT >= 1) {
+            phase = 'done'; Sound.plop();
+            dish.patty = tones.indexOf('burnt') >= 0 ? 'burnt' : tones.indexOf('rare') >= 0 ? 'rare' : 'perfect';
+            Sound.chime();
+            if (dish.patty === 'perfect') { Cat.show('Juicy burger!'); say('Perfectly cooked!'); }
+            else say(dish.patty === 'rare' ? 'A bit pink inside!' : 'A little crispy!');
+            showNext('Next', nextStep);
+          }
+        }
+      },
+      draw: function (c) {
+        c.beginPath(); c.ellipse(PX + 6, PY + 16, PR2 + 8, PR2 * 0.98, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
+        c.save(); c.translate(PX, PY); c.rotate(0.75);
+        rr(c, PR2 - 20, -16, 190, 32, 16); c.fillStyle = '#2A2340'; c.fill();
+        rr(c, PR2 + 60, -11, 100, 22, 11); c.fillStyle = '#3FA7F5'; c.fill(); ink(c, 3.5);
+        c.restore();
+        c.beginPath(); c.arc(PX, PY, PR2, 0, TAU); c.fillStyle = '#3B3F4A'; c.fill(); ink(c, 5);
+        c.beginPath(); c.arc(PX, PY, PR2 - 18, 0, TAU); c.fillStyle = '#4C5260'; c.fill();
+        c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 6;
+        for (var g = -3; g <= 3; g++) { var gx = PX + g * 40, hh = Math.sqrt(Math.max(0, (PR2 - 24) * (PR2 - 24) - (g * 40) * (g * 40))); c.beginPath(); c.moveTo(gx, PY - hh); c.lineTo(gx, PY + hh); c.stroke(); }
+        // side plate with the bun waiting
+        c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 80, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+        var showBun = phase === 'off' || phase === 'done';
+        if (showBun || phase === 'wait' || phase === 'fly') {
+          if (showBun) drawBunBottom(c, SIDE.x, SIDE.y + 4, 0.42);
+        }
+        if (phase === 'cook') drawGauge(c);
+        var burn = phase === 'cook' ? clamp((t - T_BURN) / 2, 0, 1) : 0;
+        var edge = phase === 'cook' ? clamp(t / T_OK, 0, 1) : 0;
+        if (phase === 'wait') drawPattyTop(c, SIDE.x, SIDE.y - 4, R * 0.52, null, 0, 0);
+        else if (phase === 'fly') {
+          var k = easeOut(fly); c.save(); c.translate(lerp(SIDE.x, PX, k), lerp(SIDE.y - 4, PY, k) - Math.sin(k * Math.PI) * 90); c.scale(lerp(0.52, 1, k), lerp(0.52, 1, k)); drawPattyTop(c, 0, 0, R, null, 0, 0); c.restore();
+        } else if (phase === 'cook') {
+          drawPattyTop(c, PX, PY, R, side === 2 ? tones[0] : null, edge, burn);
+          if (t >= T_OK) {
+            var pulse = 0.5 + 0.5 * Math.sin(performance.now() / (t > T_BURN ? 90 : 180)), col = t > T_BURN ? '255,107,87' : '255,201,60';
+            c.beginPath(); c.arc(PX, PY, R + 14 + pulse * 6, 0, TAU); c.strokeStyle = 'rgba(' + col + ',' + (0.5 + pulse * 0.4) + ')'; c.lineWidth = 6; c.stroke();
+          }
+        } else if (phase === 'flip') {
+          var sy = Math.abs(Math.cos(flip * Math.PI)), lift = Math.sin(flip * Math.PI) * 140;
+          c.save(); c.translate(PX, PY - lift); c.scale(1, Math.max(0.04, sy)); drawPattyTop(c, 0, 0, R, flip > 0.5 ? tones[0] : null, 1, 0); c.restore();
+        } else if (phase === 'off') {
+          var k2 = easeOut(offT); c.save(); c.translate(lerp(PX, SIDE.x, k2), lerp(PY, SIDE.y - 14, k2) - Math.sin(k2 * Math.PI) * 90); c.scale(lerp(1, 0.5, k2), lerp(1, 0.3, k2));
+          drawPattyTop(c, 0, 0, R, tones[1] || tones[0], 1, 0); c.restore();
+        } else if (phase === 'done') {
+          drawLayer(c, { kind: 'patty', tone: dish.patty }, SIDE.x, SIDE.y - 10, 0.42);
+        }
+      }
+    };
+  }
+
+  /* ---- burger layers, side view. (x, y) is the bottom centre of the layer; returns the layer height ---- */
+  var LAYER_H = { patty: 40, lettuce: 20, tomato: 16, cheese: 9, onion: 13, ketchup: 8, mustard: 7 };
+  function drawBunBottom(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    c.beginPath(); c.moveTo(-150, -34); c.lineTo(150, -34); c.quadraticCurveTo(156, 0, 120, 4); c.lineTo(-120, 4); c.quadraticCurveTo(-156, 0, -150, -34); c.closePath();
+    c.fillStyle = '#E3A057'; c.fill(); ink(c, 5);
+    rr(c, -150, -40, 300, 16, 8); c.fillStyle = '#F7DDA8'; c.fill(); ink(c, 4);
+    c.restore();
+  }
+  function drawBunTop(c, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s);
+    rr(c, -152, -16, 304, 18, 9); c.fillStyle = '#F7DDA8'; c.fill(); ink(c, 4);
+    c.beginPath(); c.moveTo(-156, -10); c.bezierCurveTo(-160, -120, 160, -120, 156, -10); c.closePath();
+    var g = c.createLinearGradient(0, -100, 0, -10); g.addColorStop(0, '#F2B866'); g.addColorStop(1, '#D98E3E');
+    c.fillStyle = g; c.fill(); ink(c, 5);
+    c.beginPath(); c.ellipse(-50, -70, 50, 12, -0.2, 0, TAU); c.fillStyle = 'rgba(255,255,255,.3)'; c.fill();
+    var sr = seeded(41); c.fillStyle = '#FFF4D6';
+    for (var i = 0; i < 16; i++) { var a = sr() * Math.PI, rx = 130 * Math.cos(a) * (0.3 + 0.7 * sr()), ry = -20 - 70 * Math.sin(a) * (0.4 + 0.6 * sr()); c.beginPath(); c.ellipse(rx, ry, 5, 3, sr() * 2, 0, TAU); c.fill(); }
+    c.restore();
+  }
+  function drawLayer(c, L, x, y, s) {
+    s = s || 1;
+    c.save(); c.translate(x, y); c.scale(s, s);
+    var k = L.kind;
+    if (k === 'patty') {
+      var T = PATTY_TONES[L.tone || 'perfect'];
+      c.beginPath(); c.moveTo(-148, -40);
+      for (var i = 0; i <= 20; i++) c.lineTo(-148 + i * 14.8, -40 - (i % 2 ? 4 : 0));
+      c.quadraticCurveTo(162, -20, 148, 0); c.lineTo(-148, 0); c.quadraticCurveTo(-162, -20, -148, -40); c.closePath();
+      c.fillStyle = T.side; c.fill(); ink(c, 5);
+      c.fillStyle = T.spots; var sr = seeded(13);
+      for (var j = 0; j < 22; j++) { c.beginPath(); c.arc(-140 + sr() * 280, -34 + sr() * 30, 2 + sr() * 3, 0, TAU); c.fill(); }
+    } else if (k === 'lettuce') {
+      c.beginPath(); c.moveTo(-170, -6);
+      for (var a = 0; a <= 34; a++) { var lx = -170 + a * 10; c.lineTo(lx, (a % 2 ? -22 : -14) + Math.sin(a) * 2); }
+      for (var b = 34; b >= 0; b--) { var bx = -170 + b * 10; c.lineTo(bx, (b % 2 ? 2 : -6)); }
+      c.closePath(); c.fillStyle = '#7BD389'; c.fill(); ink(c, 4);
+      c.strokeStyle = '#B8EBA8'; c.lineWidth = 3; c.beginPath(); c.moveTo(-150, -10); c.quadraticCurveTo(0, -16, 150, -10); c.stroke();
+    } else if (k === 'tomato') {
+      [-92, 0, 92].forEach(function (tx, n) {
+        rr(c, tx - 52, -16 + (n === 1 ? -2 : 0), 104, 16, 8); c.fillStyle = '#FF4D3D'; c.fill(); ink(c, 3.5);
+        rr(c, tx - 42, -12 + (n === 1 ? -2 : 0), 84, 7, 3.5); c.fillStyle = '#FF9A80'; c.fill();
+      });
+    } else if (k === 'cheese') {
+      c.beginPath(); c.moveTo(-158, -9); c.lineTo(158, -9); c.lineTo(158, 0); c.lineTo(132, 0); c.lineTo(120, 22); c.lineTo(108, 0); c.lineTo(-104, 0); c.lineTo(-120, 26); c.lineTo(-132, 0); c.lineTo(-158, 0); c.closePath();
+      c.fillStyle = '#FFC93C'; c.fill(); ink(c, 3.5);
+    } else if (k === 'onion') {
+      [-100, -34, 34, 100].forEach(function (ox) {
+        c.beginPath(); c.ellipse(ox, -6, 34, 6, 0, 0, TAU); c.strokeStyle = INK; c.lineWidth = 8; c.stroke(); c.strokeStyle = '#F7F0E3'; c.lineWidth = 4; c.stroke();
+        c.beginPath(); c.ellipse(ox, -6, 34, 6, 0, 0, TAU); c.strokeStyle = 'rgba(181,87,155,.5)'; c.lineWidth = 1.5; c.stroke();
+      });
+    } else if (k === 'ketchup' || k === 'mustard') {
+      var col = k === 'ketchup' ? '#E8322B' : '#F2C200';
+      c.beginPath(); c.moveTo(-140, -6);
+      for (var z = 0; z <= 14; z++) c.lineTo(-140 + z * 20, z % 2 ? -10 : -2);
+      c.strokeStyle = INK; c.lineWidth = 11; c.lineCap = 'round'; c.lineJoin = 'round'; c.stroke(); c.strokeStyle = col; c.lineWidth = 6; c.stroke();
+      if (k === 'ketchup') { [-80, 30, 110].forEach(function (dx) { c.beginPath(); c.moveTo(dx - 5, -2); c.quadraticCurveTo(dx, 18, dx + 5, -2); c.fillStyle = col; c.fill(); }); }
+    }
+    c.restore();
+  }
+
+  var BX = 320, BY = 548;
+  function drawBurgerScene(c, d, extra) {
+    extra = extra || {};
+    var pl = PLATES[d.plate];
+    c.beginPath(); c.ellipse(BX, BY + 14, 270, 70, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
+    c.beginPath(); c.ellipse(BX, BY, 270, 70, 0, 0, TAU); c.fillStyle = pl.fill; c.fill(); ink(c, 5);
+    c.beginPath(); c.ellipse(BX, BY + 2, 228, 52, 0, 0, TAU); c.strokeStyle = pl.rim; c.globalAlpha = 0.35; c.lineWidth = 4; c.stroke(); c.globalAlpha = 1;
+    drawBunBottom(c, BX, BY - 4, 1);
+    var y = BY - 44;
+    var layers = [{ kind: 'patty', tone: d.patty }].concat(d.layers);
+    layers.forEach(function (L, i) {
+      var drop = L.t !== undefined ? easeBack(L.t) : 1;
+      var yy = y - (1 - drop) * 260;
+      if (drop > 0) { c.save(); c.globalAlpha = Math.min(1, drop * 2 + 0.2); drawLayer(c, L, BX + (L.dx || 0), yy); c.restore(); }
+      y -= LAYER_H[L.kind] || 12;
+    });
+    if (d.topBun) { var tb = d.topBunT !== undefined ? easeBack(d.topBunT) : 1; drawBunTop(c, BX, y + 2 - (1 - tb) * 300); }
+    return y;
+  }
+
+  var BURGER_TOOLS = ['lettuce', 'tomato', 'cheese', 'onion', 'ketchup', 'mustard'];
+  var BURGER_LABEL = { lettuce: 'Lettuce', tomato: 'Tomato', cheese: 'Cheese', onion: 'Onion', ketchup: 'Sauce', mustard: 'Mustard' };
+  var BURGER_ICONS = {
+    lettuce: '<svg viewBox="0 0 40 40"><path d="M4 22 Q8 12 14 16 Q18 8 24 14 Q30 8 34 16 Q38 20 36 26 Q20 34 4 26 Z" fill="#7BD389" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M10 24 Q20 20 30 24" fill="none" stroke="#B8EBA8" stroke-width="2.5"/></svg>',
+    tomato: '<svg viewBox="0 0 40 40"><circle cx="20" cy="21" r="15" fill="#FF4D3D" stroke="#2A2340" stroke-width="3"/><circle cx="20" cy="21" r="9" fill="#FF9A80"/><g fill="#FFE7A0"><ellipse cx="16" cy="19" rx="1.6" ry="2.6"/><ellipse cx="24" cy="19" rx="1.6" ry="2.6"/><ellipse cx="20" cy="25" rx="2.6" ry="1.6"/></g></svg>',
+    cheese: '<svg viewBox="0 0 40 40"><path d="M4 10 H36 V24 L30 24 L27 33 L24 24 L12 24 L9 34 L6 24 L4 24 Z" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.5" fill="#F2A900"/><circle cx="27" cy="14" r="2" fill="#F2A900"/></svg>',
+    onion: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="none" stroke="#2A2340" stroke-width="7"/><circle cx="20" cy="20" r="15" fill="none" stroke="#F7F0E3" stroke-width="3.5"/><circle cx="20" cy="20" r="8" fill="none" stroke="#2A2340" stroke-width="6"/><circle cx="20" cy="20" r="8" fill="none" stroke="#E9C6E2" stroke-width="2.5"/></svg>',
+    ketchup: '<svg viewBox="0 0 40 40"><path d="M15 3 H25 L24 9 Q33 12 32 22 V34 Q32 37 29 37 H11 Q8 37 8 34 V22 Q7 12 16 9 Z" fill="#E8322B" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><rect x="11" y="20" width="18" height="9" rx="2" fill="#fff"/></svg>',
+    mustard: '<svg viewBox="0 0 40 40"><path d="M15 3 H25 L24 9 Q33 12 32 22 V34 Q32 37 29 37 H11 Q8 37 8 34 V22 Q7 12 16 9 Z" fill="#F2C200" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><rect x="11" y="20" width="18" height="9" rx="2" fill="#fff"/></svg>'
+  };
+
+  /* ---- Step 3: build it, any toppings, any order ---- */
+  function BuildScene() {
+    var MAX = 10, timers = [], praised = false;
+    function later(s, fn) { timers.push({ t: s, fn: fn }); }
+    function add(kind) {
+      if (dish.topBun) return;
+      if (dish.layers.length >= MAX) { say('That’s a huge burger!'); return; }
+      var prev = dish.layers[dish.layers.length - 1];
+      dish.layers.push({ kind: kind, t: 0, dx: (Math.random() - 0.5) * 10 });
+      if (kind === 'ketchup' || kind === 'mustard') Sound.squish(); else Sound.whoosh();
+      say(pick(['Yum!', 'Stack it up!', 'Ooh, nice!', 'What next?']));
+      if (!praised && dish.layers.length >= 4) { praised = true; later(0.6, function () { Cat.show('Looks tasty!'); }); }
+      if (prev && prev.kind === kind) say('Double ' + BURGER_LABEL[kind].toLowerCase() + '!');
+    }
+    function undo() {
+      if (dish.topBun || !dish.layers.length) return;
+      dish.layers.pop(); Sound.pop(); say('Taken off');
+    }
+    return {
+      enter: function () {
+        toolsEl.innerHTML = BURGER_TOOLS.map(function (t) {
+          return '<button class="tool" type="button" data-tool="' + t + '">' + BURGER_ICONS[t] + '<span>' + BURGER_LABEL[t] + '</span></button>';
+        }).join('');
+        toolsEl.querySelectorAll('.tool').forEach(function (b) {
+          b.addEventListener('click', function () { Sound.init(); add(b.dataset.tool); });
+        });
+        say('Tap to add toppings!');
+        showNext('Done', function () {
+          if (!dish.topBun) { dish.topBun = true; dish.topBunT = 0; Sound.whoosh(); }
+          later(0.9, finishDish);
+        });
+      },
+      leave: function () { toolsEl.innerHTML = ''; },
+      hint: function () { return null; },
+      down: function (p) {
+        // tap the top of the burger to take the last topping off
+        var topY = BY - 44 - LAYER_H.patty - dish.layers.reduce(function (n, L) { return n + (LAYER_H[L.kind] || 12); }, 0);
+        if (dish.layers.length && Math.abs(p.x - BX) < 170 && p.y > topY - 30 && p.y < topY + 30) undo();
+      },
+      update: function (dt) {
+        for (var i = timers.length - 1; i >= 0; i--) { timers[i].t -= dt; if (timers[i].t <= 0) { var f = timers[i].fn; timers.splice(i, 1); f(); } }
+        dish.layers.forEach(function (L) { if (L.t !== undefined && L.t < 1) { L.t = Math.min(1, L.t + dt * 3); if (L.t >= 1) { Sound.plop(); delete L.t; } } });
+        if (dish.topBun && dish.topBunT !== undefined) { dish.topBunT = Math.min(1, dish.topBunT + dt * 2.2); if (dish.topBunT >= 1) { delete dish.topBunT; Sound.plop(); buzz(15); } }
+      },
+      draw: function (c) { drawBurgerScene(c, dish); }
+    };
+  }
+
   /* ---------- finishing ---------- */
   function snapshot() {
     var out = document.createElement('canvas'); out.width = 360; out.height = 360;
@@ -1726,6 +2033,17 @@
       draw: function (c, d) { drawStackScene(c, d); }, frame: { x: 320, y: 420, span: 556 }
     }
   };
+  ICONS.grill = '<svg viewBox="0 0 24 24"><rect x="15" y="11" width="9" height="3.5" rx="1.7" fill="#2A2340"/><circle cx="10" cy="12.5" r="8" fill="#3B3F4A" stroke="#2A2340" stroke-width="2"/><circle cx="10" cy="12.5" r="5" fill="#7A4425"/><path d="M7 10 L13 15 M7 13 L11 16.5" stroke="#2E190F" stroke-width="1.5"/></svg>';
+  ICONS.build = '<svg viewBox="0 0 24 24"><path d="M3 11 Q12 0 21 11 Z" fill="#E9A85A" stroke="#2A2340" stroke-width="1.6"/><path d="M2 13 Q6 11 9 13 Q12 11 15 13 Q18 11 22 13" fill="none" stroke="#4FB868" stroke-width="2.5"/><rect x="3" y="14" width="18" height="4" rx="2" fill="#7A4425" stroke="#2A2340" stroke-width="1.4"/><rect x="3" y="18.5" width="18" height="3.5" rx="1.7" fill="#E3A057" stroke="#2A2340" stroke-width="1.4"/></svg>';
+  RECIPE_DEFS.burger = {
+    id: 'burger', name: 'Burger', title: 'Burger!',
+    steps: [
+      { name: 'Cook', icon: ICONS.grill, make: function () { return GrillScene(); } },
+      { name: 'Chop', icon: ICONS.chop, make: function () { return ChopScene(['tomato', 'onion'], nextStep); } },
+      { name: 'Build', icon: ICONS.build, make: function () { return BuildScene(); } }
+    ],
+    draw: function (c, d) { drawBurgerScene(c, d); }, frame: { x: 320, y: 410, span: 540 }
+  };
   var recipe = RECIPE_DEFS.handroll;
   var scene = null, stepIdx = -1, hintT = 0, idle = 0, pointerId = null;
 
@@ -1766,6 +2084,7 @@
   var RECIPES = [
     { id: 'handroll', name: 'Sushi Handroll', ready: true },
     { id: 'pancakes', name: 'Pancakes', ready: true },
+    { id: 'burger', name: 'Burger', ready: true },
     { id: 'omurice', name: 'Omurice' },
     { id: 'brigadeiros', name: 'Brigadeiros' }
   ];
@@ -1773,6 +2092,7 @@
     handroll: '<svg viewBox="16 46 208 102"><ellipse cx="120" cy="122" rx="100" ry="22" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="120" cy="119" rx="74" ry="12" fill="#FFE3EC"/><g transform="rotate(-14 120 90)"><path d="M168 62 H70 A17 28 0 0 0 70 118 H168 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="62" y="69" width="100" height="8" rx="4" fill="#3D6450"/><ellipse cx="168" cy="90" rx="17.5" ry="28" fill="#2E4A3A" stroke="#2A2340" stroke-width="4"/><ellipse cx="168" cy="90" rx="14.5" ry="23.5" fill="#fff"/><rect x="160" y="77" width="11" height="9" rx="2" fill="#FF8A5B" stroke="#2A2340" stroke-width="2"/><rect x="168" y="88" width="7" height="8" rx="1.5" fill="#4FAE5E" stroke="#2A2340" stroke-width="2"/><ellipse cx="164" cy="98" rx="6" ry="4" fill="#C8E26F" stroke="#2A2340" stroke-width="2"/></g><ellipse cx="178" cy="125" rx="18" ry="7" fill="#fff" stroke="#2A2340" stroke-width="3"/><ellipse cx="178" cy="124.5" rx="11.5" ry="4" fill="#5A2A12"/></svg>',
     pancakes: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="102" rx="78" ry="15" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="3.5"><path d="M36 86 V94 A54 13 0 0 0 144 94 V86 Z" fill="#D38A3E"/><ellipse cx="90" cy="86" rx="54" ry="13" fill="#DE9A48"/><path d="M34 72 V80 A54 13 0 0 0 142 80 V72 Z" fill="#D38A3E"/><ellipse cx="88" cy="72" rx="54" ry="13" fill="#E3A552"/><path d="M38 58 V66 A54 13 0 0 0 146 66 V58 Z" fill="#D38A3E"/><ellipse cx="92" cy="58" rx="54" ry="13" fill="#F2C06C"/></g><path d="M62 56 Q76 64 92 56 Q108 50 120 60" fill="none" stroke="#A85814" stroke-width="6" stroke-linecap="round"/><path d="M130 62 V74" stroke="#A85814" stroke-width="5" stroke-linecap="round"/><path d="M80 52 L80 47 L94 43 L104 47 L104 52 L94 56 Z" fill="#FFF3A6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M66 60 Q58 54 62 50 Q66 48 70 50 Q74 54 66 60 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="2"/><path d="M114 58 Q106 52 110 48 Q114 46 118 48 Q122 52 114 58 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="2"/></svg>',
     omurice: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 90 Q30 36 90 34 Q150 36 150 90 Z" fill="#FFD84D" stroke="#2A2340" stroke-width="4"/><path d="M60 60 Q75 50 90 62 Q105 50 120 60" fill="none" stroke="#FF4D3D" stroke-width="6" stroke-linecap="round"/></svg>',
+    burger: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="104" rx="80" ry="13" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M40 86 H140 Q144 98 128 100 H52 Q36 98 40 86 Z" fill="#E3A057" stroke="#2A2340" stroke-width="3.5"/><path d="M38 80 L142 80 Q150 90 138 88 L42 88 Q30 90 38 80 Z" fill="#6A3A1E" stroke="#2A2340" stroke-width="3.5"/><path d="M36 76 H144 V80 H136 L132 90 L128 80 H52 L47 92 L42 80 H36 Z" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><rect x="44" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><rect x="102" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><path d="M34 66 Q40 60 46 66 Q52 60 58 66 Q64 60 70 66 Q76 60 82 66 Q88 60 94 66 Q100 60 106 66 Q112 60 118 66 Q124 60 130 66 Q136 60 146 66 L146 70 L34 70 Z" fill="#7BD389" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M36 62 Q34 22 90 20 Q146 22 144 62 Z" fill="#EBA65A" stroke="#2A2340" stroke-width="4"/><g fill="#FFF4D6"><ellipse cx="70" cy="36" rx="3" ry="2"/><ellipse cx="92" cy="30" rx="3" ry="2"/><ellipse cx="112" cy="38" rx="3" ry="2"/><ellipse cx="80" cy="48" rx="3" ry="2"/><ellipse cx="104" cy="50" rx="3" ry="2"/></g></svg>',
     brigadeiros: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="100" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="4"><circle cx="60" cy="74" r="22" fill="#6B3A22"/><circle cx="120" cy="74" r="22" fill="#6B3A22"/><circle cx="90" cy="56" r="22" fill="#7A4428"/></g></svg>'
   };
 
