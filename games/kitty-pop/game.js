@@ -365,17 +365,17 @@
   /* ---------- levels ----------
      Gentle ramp: more colours and bigger goals as levels go up. There is no move limit. */
   /* Goal sizes: mixed amounts that grow slowly.
-     Levels 1-2: one goal (10, 12). Levels 3-8: two goals (5 & 10 up to 10 & 20).
-     Level 9 on: three goals (5, 10, 15), each creeping up to a cap. */
+     Levels 1-2: one goal (15, 18). Levels 3-8: two goals (8 & 14 up to 13 & 24).
+     Level 9 on: three goals (8, 12, 18), each creeping up to a cap. */
   function goalAmounts(n) {
-    if (n <= 2) return [8 + n * 2];
-    if (n <= 8) return [5 + (n - 3), 10 + (n - 3) * 2];
+    if (n <= 2) return [12 + n * 3];
+    if (n <= 8) return [8 + (n - 3), 14 + (n - 3) * 2];
     var k = Math.min(n - 9, 12);
-    return [5 + k, 10 + k, 15 + Math.round(k * 1.5)];
+    return [8 + k, 12 + k, 18 + Math.round(k * 1.5)];
   }
   function levelDef(n) {
     var rnd = seeded(n * 7919 + 13);
-    var colours = n <= 3 ? 4 : n <= 10 ? 5 : 6;
+    var colours = n <= 8 ? 5 : 6;
     var amounts = shuffle(goalAmounts(n), rnd);
     var pool = shuffle([0, 1, 2, 3, 4, 5], rnd).slice(0, colours);
     var goals = amounts.map(function (each, i) { return { kind: pool[i], target: each, left: each, shown: each }; });
@@ -532,6 +532,16 @@
     });
   }
 
+  /* New cats that drop in usually avoid making a line by themselves, so the player's own swaps do the work.
+     Now and then (LUCKY_CHANCE) a lucky chain is allowed, which keeps it fun. */
+  var LUCKY_CHANCE = 0.12;
+  function refillKind(r, c) {
+    if (Math.random() < LUCKY_CHANCE) return randomKind();
+    var options = shuffle(level.colours.slice());
+    for (var i = 0; i < options.length; i++) if (!lineAt(r, c, options[i])) return options[i];
+    return options[0];
+  }
+
   function dropAndRefill() {
     for (var c = 0; c < COLS; c++) {
       var write = ROWS - 1;
@@ -544,7 +554,7 @@
       var spawn = 0;
       for (var r2 = write; r2 >= 0; r2--) {
         spawn++;
-        var n = newTile(randomKind(), r2, c);
+        var n = newTile(refillKind(r2, c), r2, c);
         n.dr = -spawn - 0.15; n.falling = true; n.vy = 0;
         grid[r2][c] = n;
       }
