@@ -845,7 +845,7 @@
     { fill: '#FFFFFF', rim: '#3FA7F5' }, { fill: '#FFD6E0', rim: '#FF7EB6' }, { fill: '#D7EEFF', rim: '#2A2340' },
     { fill: '#FFF1B8', rim: '#FF6B57' }, { fill: '#DDF6CF', rim: '#4FAE5E' }, { fill: '#2A2340', rim: '#FFC93C' }
   ];
-  var PCX = 300, PCY = 300, PR = 226, SOY = { x: 562, y: 560, r: 62 };
+  var PCX = 300, PCY = 300, PR = 226, SOY = { x: 405, y: 420, r: 50 };
 
   function drawPlateScene(c, d, extra) {
     extra = extra || {};
@@ -1014,7 +1014,7 @@
     var out = document.createElement('canvas'); out.width = 360; out.height = 360;
     var c = out.getContext('2d');
     c.fillStyle = '#E9B57F'; c.fillRect(0, 0, 360, 360);
-    var k = 360 / 520; c.scale(k, k); c.translate(-40, -40);
+    var span = PR * 2 + 24, k = 360 / span; c.scale(k, k); c.translate(-(PCX - span / 2), -(PCY - span / 2));
     drawPlateScene(c, dish);
     try { return out.toDataURL('image/jpeg', 0.82); } catch (e) { return ''; }
   }
