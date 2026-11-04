@@ -1,10 +1,10 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v45';
+const VERSION = 'ccg-v46';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
-  './about/', './about/index.html',
+  './about/', './about/index.html', './faq/', './faq/index.html', './shared/games.js', './shared/install.js',
   './games/cooking/', './games/cooking/index.html', './games/cooking/game.js',
   './games/kitty-pop/', './games/kitty-pop/index.html', './games/kitty-pop/game.js', './games/kitty-pop/specials.js',
   './games/cubbies/', './games/cubbies/index.html', './games/cubbies/game.js',

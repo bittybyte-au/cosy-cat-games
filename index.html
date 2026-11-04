@@ -131,10 +131,9 @@ a.tile:focus-visible, .player-chip:focus-visible, button:focus-visible { outline
   background: var(--sun); border: 3px solid var(--ink); border-radius: 999px;
   padding: 4px 12px; font: 800 .95rem var(--body);
 }
-.tile.cooking { background: var(--tile); }
-.tile.kitty { --tile: #FFC2DA; background: var(--tile); }
-.tile.cubbies { --tile: #BFE0FF; background: var(--tile); }
-.tile.yarn { --tile: #DCC8FF; background: var(--tile); }
+.tile[data-game] { background: var(--tile); }
+.tile.coming { filter: saturate(.35); opacity: .8; box-shadow: 0 8px 0 rgba(42,35,64,.5); }
+.tile.coming .badge { background: #fff; }
 .tile.soon {
   background: rgba(255, 248, 236, .55); border-style: dashed; box-shadow: none; color: var(--muted);
   justify-content: center; align-items: center; text-align: center;
@@ -228,51 +227,16 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   </header>
   <div class="hello"><svg class="mascot" viewBox="0 -8 170 188" aria-hidden="true"><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#2A2340" stroke-width="14" stroke-linecap="round"/><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#FFB26B" stroke-width="7" stroke-linecap="round"/><ellipse cx="80" cy="148" rx="50" ry="32" fill="#fff" stroke="#2A2340" stroke-width="5"/><ellipse cx="62" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="98" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 94 Q76 100 80 94 Q84 100 88 94" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="88" x2="38" y2="91"/><line x1="24" y1="99" x2="38" y2="98"/><line x1="138" y1="88" x2="122" y2="91"/><line x1="136" y1="99" x2="122" y2="98"/></g><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g><g class="wave"><path d="M118 150 Q140 140 142 116" fill="none" stroke="#2A2340" stroke-width="20" stroke-linecap="round"/><path d="M118 150 Q140 140 142 116" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><ellipse cx="144" cy="106" rx="16" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><g fill="#FFB3C7"><circle cx="144" cy="110" r="5"/><circle cx="136" cy="100" r="2.6"/><circle cx="144" cy="97" r="2.6"/><circle cx="152" cy="100" r="2.6"/></g></g></svg><p class="greeting" id="greeting"></p></div>
 
-  <main class="tiles">
-    <a class="tile cooking" href="games/cooking/index.html" id="tileCooking">
-      <svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg><svg class="ear r" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>
-      <span class="badge" id="cookingBadge" hidden></span>
-      <div class="art" aria-hidden="true">
-        <svg viewBox="0 0 240 150"><ellipse cx="120" cy="122" rx="100" ry="22" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="120" cy="119" rx="74" ry="12" fill="#FFE3EC"/><g transform="rotate(-14 120 90)"><path d="M168 62 H70 A17 28 0 0 0 70 118 H168 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="62" y="69" width="100" height="8" rx="4" fill="#3D6450"/><ellipse cx="168" cy="90" rx="17.5" ry="28" fill="#2E4A3A" stroke="#2A2340" stroke-width="4"/><ellipse cx="168" cy="90" rx="14.5" ry="23.5" fill="#fff"/><rect x="160" y="77" width="11" height="9" rx="2" fill="#FF8A5B" stroke="#2A2340" stroke-width="2"/><rect x="168" y="88" width="7" height="8" rx="1.5" fill="#4FAE5E" stroke="#2A2340" stroke-width="2"/><ellipse cx="164" cy="98" rx="6" ry="4" fill="#C8E26F" stroke="#2A2340" stroke-width="2"/></g><ellipse cx="178" cy="125" rx="18" ry="7" fill="#fff" stroke="#2A2340" stroke-width="3"/><ellipse cx="178" cy="124.5" rx="11.5" ry="4" fill="#5A2A12"/></svg>
-      </div>
-      <h2>Cosy Kitchen</h2>
-      <p>Chop, mix and cook yummy dishes</p>
-    </a>
-    <a class="tile kitty" href="games/kitty-pop/index.html" id="tileKitty">
-      <svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg><svg class="ear r" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>
-      <span class="badge" id="kittyBadge" hidden></span>
-      <div class="art" aria-hidden="true">
-        <svg viewBox="0 0 240 150"><rect x="14" y="36" width="212" height="92" rx="26" fill="#FFF8EC" stroke="#2A2340" stroke-width="4"/><g transform="translate(52 78)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#FFA94D" stroke="#2A2340" stroke-width="4"/><path d="M-7 -20 V-12 M0 -21 V-10 M7 -20 V-12" stroke="#E07B1F" stroke-width="3.5" stroke-linecap="round"/><path d="M-17 2 Q-12 -4 -7 2 M7 2 Q12 -4 17 2" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="-20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><path d="M-7 12 Q0 22 7 12 Z" fill="#7A2E4A" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></g><g transform="translate(120 78)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#FFA94D" stroke="#2A2340" stroke-width="4"/><path d="M-7 -20 V-12 M0 -21 V-10 M7 -20 V-12" stroke="#E07B1F" stroke-width="3.5" stroke-linecap="round"/><path d="M-17 2 Q-12 -4 -7 2 M7 2 Q12 -4 17 2" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="-20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><path d="M-7 12 Q0 22 7 12 Z" fill="#7A2E4A" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></g><g transform="translate(188 78)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#FFA94D" stroke="#2A2340" stroke-width="4"/><path d="M-7 -20 V-12 M0 -21 V-10 M7 -20 V-12" stroke="#E07B1F" stroke-width="3.5" stroke-linecap="round"/><path d="M-17 2 Q-12 -4 -7 2 M7 2 Q12 -4 17 2" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="-20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="13" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><path d="M-7 12 Q0 22 7 12 Z" fill="#7A2E4A" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></g><g fill="#FFC93C" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"><path d="M86 20 L89 29 L98 30 L91 35 L93 44 L86 39 L79 44 L81 35 L74 30 L83 29 Z"/><path d="M156 12 L158 18 L164 19 L159 22 L161 28 L156 25 L151 28 L153 22 L148 19 L154 18 Z"/></g><g fill="#7CC4FF" stroke="#2A2340" stroke-width="3"><circle cx="30" cy="132" r="9"/></g><g fill="#B48CFF" stroke="#2A2340" stroke-width="3"><circle cx="212" cy="132" r="9"/></g></svg>
-      </div>
-      <h2>Kitty Pop</h2>
-      <p>Line up cats to pop them</p>
-    </a>
-    <a class="tile cubbies" href="games/cubbies/index.html" id="tileCubbies">
-      <svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg><svg class="ear r" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>
-      <span class="badge" id="cubbiesBadge" hidden></span>
-      <div class="art" aria-hidden="true">
-        <svg viewBox="0 0 240 150"><rect x="14" y="14" width="64" height="62" rx="10" fill="#E6B98A" stroke="#2A2340" stroke-width="4"/><rect x="20" y="24" width="52" height="44" rx="7" fill="#FFF3E4" stroke="#2A2340" stroke-width="3"/><ellipse cx="46" cy="62" rx="22" ry="6" fill="#FFA94D" stroke="#2A2340" stroke-width="3"/><g transform="translate(46 52) scale(.62)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#FFA94D" stroke="#2A2340" stroke-width="5"/><path d="M-7 -20 V-12 M0 -21 V-10 M7 -20 V-12" stroke="#E07B1F" stroke-width="4" stroke-linecap="round"/><path d="M-18 4 Q-12 9 -6 4 M6 4 Q12 9 18 4" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round"/><ellipse cx="-20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/></g><rect x="88" y="14" width="64" height="62" rx="10" fill="#E6B98A" stroke="#2A2340" stroke-width="4"/><rect x="94" y="24" width="52" height="44" rx="7" fill="#FFF3E4" stroke="#2A2340" stroke-width="3"/><ellipse cx="120" cy="62" rx="22" ry="6" fill="#B48CFF" stroke="#2A2340" stroke-width="3"/><g transform="translate(120 52) scale(.62)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#B48CFF" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#B48CFF" stroke="#2A2340" stroke-width="5"/><path d="M-18 4 Q-12 9 -6 4 M6 4 Q12 9 18 4" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round"/><ellipse cx="-20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/></g><rect x="162" y="14" width="64" height="62" rx="10" fill="#E6B98A" stroke="#2A2340" stroke-width="4"/><rect x="168" y="24" width="52" height="44" rx="7" fill="#FFF3E4" stroke="#2A2340" stroke-width="3"/><ellipse cx="194" cy="62" rx="22" ry="6" fill="#7CC4FF" stroke="#2A2340" stroke-width="3"/><rect x="4" y="112" width="232" height="22" rx="11" fill="#6E6487" stroke="#2A2340" stroke-width="4"/><g fill="#B9AED0" stroke="#2A2340" stroke-width="2.5"><circle cx="30" cy="126" r="4"/><circle cx="90" cy="126" r="4"/><circle cx="150" cy="126" r="4"/><circle cx="210" cy="126" r="4"/></g><ellipse cx="170" cy="106" rx="26" ry="10" fill="#F2DCC3" stroke="#2A2340" stroke-width="3.5"/><g transform="translate(168 96) scale(.62)"><path d="M-30 -2 Q-33 -27 -27 -33 Q-18 -29 -6 -23 Z M30 -2 Q33 -27 27 -33 Q18 -29 6 -23 Z" fill="#7CC4FF" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><ellipse cx="0" cy="5" rx="33" ry="28" fill="#7CC4FF" stroke="#2A2340" stroke-width="5"/><path d="M-18 4 Q-12 9 -6 4 M6 4 Q12 9 18 4" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round"/><ellipse cx="-20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/><ellipse cx="20" cy="14" rx="5" ry="3" fill="#FF7FA6" opacity=".6"/></g><path d="M146 106 Q170 118 194 106 Q170 112 146 106 Z" fill="#F7E6D2" stroke="#2A2340" stroke-width="3.5" stroke-linejoin="round"/><path d="M170 84 Q176 70 174 56" fill="none" stroke="#2A2340" stroke-width="3" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M168 60 L174 52 L180 60" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <h2>Cosy Cubbies</h2>
-      <p>Tuck sleepy cats into their beds</p>
-    </a>
-    <a class="tile yarn" href="games/yarn/index.html" id="tileYarn">
-      <svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg><svg class="ear r" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>
-      <span class="badge" id="yarnBadge" hidden></span>
-      <div class="art" aria-hidden="true">
-        <svg viewBox="0 -14 240 164"><rect x="26" y="22" width="34" height="112" rx="17" fill="#fff" fill-opacity=".6"/><g transform="translate(43 118)"><circle r="13" fill="#FF5A5F"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#C7343A" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(43 91)"><circle r="13" fill="#4D8BFF"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2459C2" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(43 65)"><circle r="13" fill="#5CCB75"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2E9447" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><rect x="26" y="22" width="34" height="112" rx="17" fill="none" stroke="#2A2340" stroke-width="4"/><rect x="22" y="16" width="42" height="12" rx="6" fill="#E6B98A" stroke="#2A2340" stroke-width="3.5"/><rect x="76" y="22" width="34" height="112" rx="17" fill="#fff" fill-opacity=".6"/><g transform="translate(93 118)"><circle r="13" fill="#4D8BFF"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2459C2" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(93 91)"><circle r="13" fill="#FFD93F"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#C9A20C" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(93 65)"><circle r="13" fill="#FF5A5F"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#C7343A" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(93 39)"><circle r="13" fill="#4D8BFF"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2459C2" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><rect x="76" y="22" width="34" height="112" rx="17" fill="none" stroke="#2A2340" stroke-width="4"/><rect x="72" y="16" width="42" height="12" rx="6" fill="#E6B98A" stroke="#2A2340" stroke-width="3.5"/><rect x="121" y="22" width="34" height="112" rx="17" fill="#fff" fill-opacity=".6"/><g transform="translate(138 118)"><circle r="13" fill="#5CCB75"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2E9447" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(138 91)"><circle r="13" fill="#5CCB75"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2E9447" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(138 65)"><circle r="13" fill="#5CCB75"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2E9447" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(138 39)"><circle r="13" fill="#5CCB75"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#2E9447" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><rect x="121" y="22" width="34" height="112" rx="17" fill="none" stroke="#2A2340" stroke-width="4"/><rect x="117" y="16" width="42" height="12" rx="6" fill="#E6B98A" stroke="#2A2340" stroke-width="3.5"/><rect x="170" y="22" width="34" height="112" rx="17" fill="#fff" fill-opacity=".6"/><g transform="translate(187 118)"><circle r="13" fill="#FFD93F"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#C9A20C" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><g transform="translate(187 91)"><circle r="13" fill="#FF5A5F"/><path d="M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7" fill="none" stroke="#C7343A" stroke-width="2.4" stroke-linecap="round"/><circle r="13" fill="none" stroke="#2A2340" stroke-width="3"/></g><rect x="170" y="22" width="34" height="112" rx="17" fill="none" stroke="#2A2340" stroke-width="4"/><rect x="166" y="16" width="42" height="12" rx="6" fill="#E6B98A" stroke="#2A2340" stroke-width="3.5"/><g transform="translate(138 2)"><path d="M-17 4 L-15 -14 L-5 -6 Z M17 4 L15 -14 L5 -6 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><ellipse cx="0" cy="6" rx="19" ry="14" fill="#FFA94D" stroke="#2A2340" stroke-width="3"/><path d="M-10 5 Q-6 9 -2 5 M2 5 Q6 9 10 5" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="-11" cy="12" rx="4" ry="2.5" fill="#FF7FA6" opacity=".6"/><ellipse cx="11" cy="12" rx="4" ry="2.5" fill="#FF7FA6" opacity=".6"/><ellipse cx="-9" cy="20" rx="6" ry="4" fill="#FFA94D" stroke="#2A2340" stroke-width="2.5"/><ellipse cx="9" cy="20" rx="6" ry="4" fill="#FFA94D" stroke="#2A2340" stroke-width="2.5"/></g></svg>
-      </div>
-      <h2>Yarn Sort</h2>
-      <p>Sort the wool into tubes</p>
-    </a>
+  <main class="tiles" id="tiles">
     <div class="tile soon" aria-label="More games coming soon">
       <svg class="sleepy" viewBox="0 0 190 120" aria-hidden="true"><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#2A2340" stroke-width="13" stroke-linecap="round"/><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#FFB26B" stroke-width="6" stroke-linecap="round"/><ellipse cx="88" cy="86" rx="58" ry="28" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M110 58 L114 34 L128 48 Z M146 50 L156 30 L160 54 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M146 50 L156 30 L160 54 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="136" cy="78" rx="32" ry="26" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M120 78 Q125 82 130 78 M142 78 Q147 82 152 78" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><ellipse cx="118" cy="88" rx="5" ry="3" fill="#FF8FAB"/><ellipse cx="156" cy="88" rx="5" ry="3" fill="#FF8FAB"/><path d="M132 88 Q136 91 140 88" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"/><text x="160" y="34" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="172" y="18" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="24" fill="#5E5675">Z</text></svg>
       <h2>More games</h2>
       <p>coming soon</p>
     </div>
   </main>
+  <div id="installBanner" hidden></div>
   <p class="foot"><span class="foot-note"><svg class="paw" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="10" ry="8.5"/><circle cx="9" cy="16" r="4.6"/><circle cx="16" cy="9" r="4.6"/><circle cx="24" cy="9" r="4.6"/><circle cx="31" cy="16" r="4.6"/></svg>Progress is saved on this device only.</span></p>
-  <footer class="site-foot"><a class="foot-link pass-link" id="passLink" href="unlock/index.html" hidden>Unlock all games</a><a class="foot-link" href="about/index.html">About Cosy Cat Games</a></footer>
+  <footer class="site-foot"><a class="foot-link pass-link" id="passLink" href="unlock/index.html" hidden>Unlock all games</a><a class="foot-link" href="about/index.html">About Cosy Cat Games</a><a class="foot-link" href="faq/index.html">Questions (FAQ)</a></footer>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -280,6 +244,8 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
 </div>
 
 <script src="shared/store.js"></script>
+<script src="shared/games.js"></script>
+<script src="shared/install.js"></script>
 <script>
 (function () {
   var chip = document.getElementById('playerChip');
@@ -299,23 +265,12 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       chip.innerHTML = '<span class="plus" style="width:46px;height:46px;font-size:1.8rem">+</span><span>Who’s playing?</span>';
       greet.textContent = 'Pick a game.';
     }
-    var prog = GG.getProgress('cooking');
-    var made = prog.made || 0;
-    var badge = document.getElementById('cookingBadge');
-    badge.hidden = !made;
-    badge.textContent = made + (made === 1 ? ' dish made' : ' dishes made');
-    var kp = GG.getProgress('kittypop');
-    var yp = GG.getProgress('yarn');
-    var yb = document.getElementById('yarnBadge');
-    yb.hidden = !(yp.level > 1);
-    yb.textContent = 'Level ' + (yp.level || 1);
-    var cp = GG.getProgress('cubbies');
-    var cbb = document.getElementById('cubbiesBadge');
-    cbb.hidden = !(cp.level > 1);
-    cbb.textContent = 'Level ' + (cp.level || 1);
-    var kb = document.getElementById('kittyBadge');
-    kb.hidden = !(kp.level > 1);
-    kb.textContent = 'Level ' + (kp.level || 1);
+    GGGames.all.forEach(function (g) {
+      var b = document.querySelector('.tile[data-game="' + g.id + '"] .badge');
+      if (!b || !g.badge) return;
+      var txt = g.badge(GG.getProgress(g.save));
+      b.hidden = !txt; b.textContent = txt;
+    });
   }
 
   function open() { overlay.hidden = false; }
@@ -392,16 +347,33 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   }
 
   chip.addEventListener('click', showPeople);
-  ['tileCooking', 'tileKitty', 'tileCubbies', 'tileYarn'].forEach(function (id) {
-    document.getElementById(id).addEventListener('click', function (e) {
-      if (!GG.current() && GG.players().length) { e.preventDefault(); showPeople(); }
+  var EAR = '<svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>';
+  function renderTiles() {
+    var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.soon');
+    GGGames.visible().forEach(function (g) {
+      var ok = GGGames.playable(g);
+      var t = document.createElement(ok ? 'a' : 'div');
+      t.className = 'tile' + (ok ? '' : ' coming');
+      t.dataset.game = g.id;
+      t.style.setProperty('--tile', g.colour);
+      if (ok) t.href = 'games/' + g.id + '/index.html';
+      else t.setAttribute('aria-label', g.name + ', coming soon');
+      t.innerHTML = EAR + EAR.replace('ear l', 'ear r') +
+        '<span class="badge"' + (ok ? ' hidden' : '') + '>' + (ok ? '' : 'Coming soon') + '</span>' +
+        '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2><p>' + esc(g.blurb) + '</p>';
+      if (ok) t.addEventListener('click', function (e) {
+        if (!GG.current() && GG.players().length) { e.preventDefault(); showPeople(); }
+      });
+      box.insertBefore(t, sleepy);
     });
-  });
+  }
+  renderTiles();
   overlay.addEventListener('click', function (e) { if (e.target === overlay && GG.current()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden && GG.current()) close(); });
   window.addEventListener('pageshow', function () { GG.reload(); renderHeader(); });
 
   renderHeader();
+  GGInstall.banner(document.getElementById('installBanner'));
   if (!GG.current()) showPeople();
 })();
 </script>
