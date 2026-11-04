@@ -411,13 +411,20 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
 
   // where a ball sits: slot 0 is the bottom of the tube
+  /* A tube being dragged is drawn away from its home spot by this much. */
+  var drag = null;   // { t, ox, oy, target, back }
+  function off(t) { return drag && drag.t === t ? { x: drag.ox, y: drag.oy } : { x: 0, y: 0 }; }
   function slotXY(t, s) {
-    var p = L.pos[t];
-    return { x: p.x, y: p.y + L.tubeH - L.tubeW * 0.48 - s * L.tubeW * 0.84 };
+    var p = L.pos[t], o = off(t);
+    return { x: p.x + o.x, y: p.y + o.y + L.tubeH - L.tubeW * 0.48 - s * L.tubeW * 0.84 };
   }
   function liftXY(t, i) {
-    var p = L.pos[t];
-    return { x: p.x, y: p.y - L.tubeW * 0.5 - i * L.tubeW * 0.25 };
+    if (drag && drag.t === t && drag.target >= 0) {
+      var tp = L.pos[drag.target];
+      return { x: tp.x + drag.side * L.tubeW * 0.15 * (1 + i * 0.5), y: tp.y - L.tubeW * 0.35 - i * L.tubeW * 0.2 };
+    }
+    var p = L.pos[t], o = off(t);
+    return { x: p.x + o.x, y: p.y + o.y - L.tubeW * 0.5 - i * L.tubeW * 0.25 };
   }
 
   /* ---------- state ---------- */
@@ -477,7 +484,7 @@
   }
   function reset() {
     tubes = level.start.map(function (t) { return t.slice(); });
-    history = []; selected = -1; busy = false; won = false; extraUsed = false; flying = []; doneCats = {}; hint = null; idle = 0;
+    history = []; selected = -1; drag = null; busy = false; won = false; extraUsed = false; flying = []; doneCats = {}; hint = null; idle = 0;
     rebuildBalls();
     $('cardWrap').hidden = true;
     clearNudge();
@@ -562,7 +569,7 @@
     Sound.init();
     if (!history.length || busy || won) return;
     var s = history.pop();
-    tubes = s.tubes; extraUsed = s.extra;
+    tubes = s.tubes; extraUsed = s.extra; drag = null;
     rebuildBalls(); selected = -1; hint = null; idle = 0;
     clearNudge(); layout(); refreshDone(false); renderButtons();
     Sound.undo();
@@ -602,7 +609,7 @@
     if (down || busy || won) return;
     idle = 0; hint = null;
     var t = tubeAt(e.clientX, e.clientY);
-    down = { id: e.pointerId, t: t, x: e.clientX, y: e.clientY, wasSelected: selected };
+    down = { id: e.pointerId, t: t, x: e.clientX, y: e.clientY, wasSelected: selected, dragging: false };
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     if (t < 0) { if (selected >= 0) { selected = -1; Sound.drop(); } return; }
     if (selected < 0) {
@@ -611,10 +618,42 @@
     }
     e.preventDefault();
   });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!down || down.id !== e.pointerId || busy || won) return;
+    // pressing on the lifted tube and moving picks the whole tube up
+    if (!down.dragging) {
+      if (selected < 0 || down.t !== selected) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < 12) return;
+      down.dragging = true;
+      drag = { t: selected, ox: 0, oy: 0, fx: 0, fy: 0, tilt: 0, target: -1, back: false };
+    }
+    drag.fx = e.clientX - down.x; drag.fy = e.clientY - down.y;
+    if (reduceMotion) { drag.ox = drag.fx; drag.oy = drag.fy; }
+    drag.side = 1;
+    // the tube under the finger (ignoring the one being carried) is where it would pour
+    var hit = -1, bd = Infinity;
+    for (var i = 0; i < tubes.length; i++) {
+      if (i === drag.t || !L.pos[i]) continue;
+      var p = L.pos[i];
+      var cx = p.x, cy = p.y + L.tubeH / 2;
+      var d = Math.hypot((e.clientX - cx) / (L.tubeW * 1.1), (e.clientY - cy) / (L.tubeH * 0.75));
+      if (d < 1 && d < bd) { bd = d; hit = i; }
+    }
+    if (hit !== drag.target && hit >= 0) Sound.lift();
+    drag.target = hit;
+    if (hit >= 0) drag.side = e.clientX < L.pos[hit].x ? -1 : 1;
+  });
   canvas.addEventListener('pointerup', function (e) {
     if (!down || down.id !== e.pointerId) return;
     var d = down; down = null;
     if (busy || won) return;
+    if (d.dragging && drag) {
+      var target = drag.target, from = drag.t;
+      if (target >= 0) tryMove(from, target);
+      else { selected = -1; Sound.drop(); }
+      if (drag) { drag.back = true; drag.target = -1; }
+      return;
+    }
     var t = tubeAt(e.clientX, e.clientY);
     var moved = Math.hypot(e.clientX - d.x, e.clientY - d.y) > 14;
     if (d.wasSelected >= 0) {
@@ -626,7 +665,7 @@
     // drag from one tube to another
     if (moved && selected >= 0 && t >= 0 && t !== selected) tryMove(selected, t);
   });
-  canvas.addEventListener('pointercancel', function () { down = null; });
+  canvas.addEventListener('pointercancel', function () { down = null; if (drag) { drag.back = true; drag.target = -1; selected = -1; } });
   document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
 
   /* ---------- sound button ---------- */
@@ -677,6 +716,27 @@
     tubes.forEach(function (t, i) {
       (balls[i] || []).forEach(function (b) { if (b.land < 1) b.land = Math.min(1, b.land + dt * 4); });
       if (shakeT[i] > 0) shakeT[i] = Math.max(0, shakeT[i] - dt);
+      if (drag && !drag.back && drag.t === i) {
+        // follow the finger; over a tube, hop up beside it and lean in as if pouring
+        var gx = drag.fx, gy = drag.fy, gt = 0;
+        if (drag.target >= 0) {
+          // tip the tube so its open top sits just above the target's mouth, body off to one side
+          var tp = L.pos[drag.target], sp = L.pos[i];
+          gt = -drag.side * 0.75;
+          var mx = tp.x + drag.side * L.tubeW * 0.15, my = tp.y - L.tubeW * 0.5;
+          var hh = L.tubeH / 2;
+          var cx = mx - hh * Math.sin(gt), cy = my + hh * Math.cos(gt);
+          gx = cx - sp.x; gy = cy - (sp.y + hh);
+        } else gt = clamp(drag.fx / (L.tubeW * 8), -0.18, 0.18);
+        var kk = Math.min(1, dt * 18);
+        drag.ox = lerp(drag.ox, gx, kk); drag.oy = lerp(drag.oy, gy, kk); drag.tilt = lerp(drag.tilt, gt, kk);
+      }
+      if (drag && drag.back && drag.t === i) {
+        drag.tilt = lerp(drag.tilt, 0, Math.min(1, dt * 14));
+        var k = Math.min(1, dt * 14);
+        drag.ox = lerp(drag.ox, 0, k); drag.oy = lerp(drag.oy, 0, k);
+        if (Math.abs(drag.ox) < 0.5 && Math.abs(drag.oy) < 0.5) drag = null;
+      }
       if (doneCats[i] && doneCats[i].t < 1) doneCats[i].t = Math.min(1, doneCats[i].t + dt * 2.2);
     });
     for (var j = parts.length - 1; j >= 0; j--) {
@@ -691,8 +751,23 @@
     var p = L.pos[i]; if (!p) return;
     var w = L.tubeW, h = L.tubeH;
     var sx = shakeT[i] > 0 ? Math.sin(shakeT[i] * 45) * w * 0.08 * (shakeT[i] / 0.4) : 0;
-    var x = p.x - w / 2 + sx, y = p.y;
+    var o = off(i);
+    var x = p.x - w / 2 + sx + o.x, y = p.y + o.y;
     var isHint = hint && !hint.none && (hint.a === i || hint.b === i);
+    // a tube that a carried tube is hovering over: green if the yarn can go there
+    if (drag && !drag.back && drag.target === i) {
+      var okMove = canMove(tubes, drag.t, i, level.cap) > 0;
+      c.save(); c.globalAlpha = 0.75;
+      rr(c, x - 8, y - 8, w + 16, h + 16, w * 0.6); c.fillStyle = okMove ? '#9BE8A8' : 'rgba(255,255,255,.6)'; c.fill();
+      c.restore();
+    }
+    var carried = drag && drag.t === i && !drag.back;
+    if (carried) {
+      // lean a little in the direction it's being carried, around the tube's middle
+      c.save();
+      var tilt = drag.tilt;
+      c.translate(x + w / 2, y + h / 2); c.rotate(tilt); c.translate(-(x + w / 2), -(y + h / 2));
+    }
     // glow for selection and hints
     if (selected === i || isHint) {
       c.save();
@@ -710,7 +785,7 @@
     for (var s = 0; s < bs.length; s++) {
       var b = bs[s];
       if (b.hidden) continue;
-      if (selected === i && s >= bs.length - topRun(tubes[i])) continue; // lifted ones are drawn above
+      if (selected === i && !(drag && drag.t === i) && s >= bs.length - topRun(tubes[i])) continue; // lifted ones are drawn above
       var q = slotXY(i, s);
       var sq = b.land < 1 && !reduceMotion ? Math.sin(b.land * Math.PI) * (1 - b.land) * 0.16 : 0;
       c.save(); c.translate(q.x + sx, q.y + sq * L.r * 0.4); c.scale(1 + sq, 1 - sq);
@@ -744,10 +819,11 @@
       });
       c.restore();
     }
+    if (carried) c.restore();
   }
 
   function drawLifted(c) {
-    if (selected < 0) return;
+    if (selected < 0 || (drag && drag.t === selected)) return;
     var t = tubes[selected], bs = balls[selected];
     var n = topRun(t);
     // the lifted group hovers above the tube; the top ball of the stack sits highest
@@ -790,7 +866,8 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
     if (level) {
-      for (var i = 0; i < tubes.length; i++) drawTube(ctx, i);
+      for (var i = 0; i < tubes.length; i++) if (!drag || drag.t !== i) drawTube(ctx, i);
+      if (drag && drag.t < tubes.length) drawTube(ctx, drag.t);
       drawLifted(ctx);
       drawFlying(ctx);
       drawParts(ctx);
@@ -811,6 +888,7 @@
     won: function () { return won; },
     solve: function () { return solve(tubes, level.cap, 60000); },
     pos: function (i) { return L.pos[i]; },
+    dragging: function () { return drag; },
     tubeH: function () { return L.tubeH; },
     start: function (n) { startLevel(n); }
   };

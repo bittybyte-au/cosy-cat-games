@@ -9,6 +9,10 @@
   var INK = '#2A2340';
   var TAU = Math.PI * 2;
   var MAT_SPOTS = 5;
+  /* The belt is always this many cat-widths long, on every screen, so cats take the same time to cross
+     on a phone, a tablet or a computer. */
+  var BELT_CATS = 6.0;
+  var DOOR_CATS = 0.5;  // the cat house at the start overlaps the belt by this much
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- helpers ---------- */
@@ -318,18 +322,19 @@
     // four cubbies on a narrow screen go in a 2 x 2 grid so they're bigger targets
     var cols = n === 4 && cw < 600 ? 2 : n, rows = Math.ceil(n / cols);
     var cubW = Math.min((availW - gap * (cols - 1)) / cols, cols === 2 ? 175 : 200);
-    var catS = clamp(Math.min(cw / 5.6, rows === 1 ? cubW * 0.66 : 100), 46, 100);
+    var catS = clamp(Math.min((cw - 14) / (BELT_CATS + DOOR_CATS), rows === 1 ? cubW * 0.66 : 100), 40, 100);
     var rowGap = gap * 1.8, gapA = catS * 0.75, cubH, matH, beltH, blockH;
     // fit everything vertically: cubbies, a gap, the mat, the belt
     for (var tries = 0; tries < 14; tries++) {
       cubH = cubW * 0.92; matH = catS * 1.15; beltH = catS * 1.25;
       blockH = rows * cubH + (rows - 1) * rowGap;
       if (blockH + gapA + matH + beltH + catS * 0.4 <= bottom - top) break;
-      cubW *= 0.93; catS = Math.max(40, catS * 0.95); gapA = catS * 0.75;
+      cubW *= 0.93; catS = Math.max(36, catS * 0.95); gapA = catS * 0.75;
     }
     L.catS = catS; L.cubW = cubW; L.cubH = cubH;
     L.beltH = beltH;
-    L.beltX0 = 0; L.beltX1 = cw;
+    var beltLen = BELT_CATS * catS;
+    L.beltX0 = (cw - beltLen - DOOR_CATS * catS) / 2 + DOOR_CATS * catS; L.beltX1 = L.beltX0 + beltLen;
     // keep cubbies, mat and belt close together (short drags), a little below the middle of the screen
     var group = blockH + gapA + matH + beltH;
     var spare = Math.max(0, (bottom - top) - group);
@@ -342,9 +347,9 @@
     }
     L.matY = gTop + blockH + gapA + matH / 2;
     L.beltY = L.matY + matH / 2 + beltH / 2 + catS * 0.12;
-    L.spotGap = Math.min(catS * 1.2, (cw - 32) / MAT_SPOTS);
+    L.spotGap = Math.min(catS * 1.2, (beltLen - catS * 0.4) / MAT_SPOTS);
     L.matX = [];
-    for (var s = 0; s < MAT_SPOTS; s++) L.matX.push(cw / 2 + (s - (MAT_SPOTS - 1) / 2) * L.spotGap);
+    for (var s = 0; s < MAT_SPOTS; s++) L.matX.push((L.beltX0 + L.beltX1) / 2 + (s - (MAT_SPOTS - 1) / 2) * L.spotGap);
     L.matH = matH;
     buildSprites(catS * dpr, cubW * 0.34 * dpr);
     // cubbies that are resting snap to their new places
@@ -415,7 +420,7 @@
     }
     recentKinds.unshift(kind); recentKinds.length = Math.min(recentKinds.length, 2);
     var c = newCat(kind);
-    c.bx = L.beltX0 - L.catS * 0.7;
+    c.bx = L.beltX0 - L.catS * 0.05;
     cats.push(c);
   }
   function beltSpeed() {
@@ -570,7 +575,7 @@
   function freeBeltX(near) {
     var taken = cats.filter(function (c) { return c.where === 'belt' || c.where === 'held' || (c.where === 'flying' && c.returning); }).map(function (c) { return c.bx; });
     var minGap = L.catS * 1.05;
-    var lo = L.catS * 0.6, hi = cw * 0.7;
+    var lo = L.beltX0 + L.catS * 0.9, hi = L.beltX0 + (L.beltX1 - L.beltX0) * 0.7;
     var best = null, bestD = Infinity;
     for (var x = lo; x <= hi; x += L.catS * 0.25) {
       if (taken.some(function (t) { return Math.abs(t - x) < minGap; })) continue;
@@ -696,7 +701,7 @@
   var showHintFor = null, hintT = 0;
   function hintTarget() {
     var cand = showHintFor && (showHintFor.where === 'belt' || showHintFor.where === 'mat') ? showHintFor : null;
-    var list = cand ? [cand] : cats.filter(function (c) { return (c.where === 'mat' || (c.where === 'belt' && c.bx > L.catS && c.bx < cw - L.catS)); });
+    var list = cand ? [cand] : cats.filter(function (c) { return (c.where === 'mat' || (c.where === 'belt' && c.bx > L.beltX0 + L.catS * 0.6 && c.bx < L.beltX1 - L.catS)); });
     for (var i = 0; i < list.length; i++) {
       var c = list[i];
       for (var j = 0; j < cubbies.length; j++) {
@@ -716,7 +721,7 @@
       if (readyT > 1.2) {
         mode = 'play';
         // start with a few cats already riding along, so there's something to do straight away
-        var x = Math.min(cw * 0.55, L.catS * (0.6 + level.gap * 2.2));
+        var x = L.beltX0 + Math.min((L.beltX1 - L.beltX0) * 0.55, L.catS * (0.6 + level.gap * 2.2));
         // the first three are one of each cubby's colour, in a random order
         var opening = shuffle(shownKinds().slice()).slice(0, 3);
         for (var k = 0; k < 3; k++) { spawnCat(opening[k]); cats[cats.length - 1].bx = x; x -= rand(level.gap, level.gap * 1.3) * L.catS; }
@@ -731,7 +736,7 @@
     if (playing && tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal + 4) {
       spawnDist += v * dt;
       // wait for a clear space at the start of the belt (cats sent back from cubbies can be sitting there)
-      var startClear = !cats.some(function (c) { return (c.where === 'belt' || (c.where === 'flying' && c.returning)) && c.bx < L.catS * 0.45 + L.catS * 1.05 - L.catS * 0.7 && c.bx > -L.catS * 2; });
+      var startClear = !cats.some(function (c) { return (c.where === 'belt' || (c.where === 'flying' && c.returning)) && c.bx < L.beltX0 + L.catS * 0.85 && c.bx > L.beltX0 - L.catS * 2; });
       if (spawnDist >= nextGap * L.catS && startClear) {
         spawnDist = 0;
         nextGap = rand(level.gap, level.gap * 1.3);
@@ -855,7 +860,7 @@
 
   function drawMat(c) {
     var w = L.spotGap * MAT_SPOTS + L.catS * 0.3, h = L.matH * 0.62;
-    var x = cw / 2 - w / 2, y = L.matY - h / 2 + L.catS * 0.22;
+    var x = (L.beltX0 + L.beltX1) / 2 - w / 2, y = L.matY - h / 2 + L.catS * 0.22;
     var full = matCount();
     rr(c, x, y + 4, w, h, h / 2); c.fillStyle = INK; c.fill();
     rr(c, x, y, w, h, h / 2); c.fillStyle = full >= MAT_SPOTS - 1 ? '#FFD2C8' : '#D8F0D5'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
@@ -872,26 +877,45 @@
   function drawBelt(c) {
     var y = L.beltY, h = L.beltH * 0.42;
     var top = y + L.catS * 0.18;
+    var x0 = L.beltX0 - L.catS * 0.3, x1 = L.beltX1 + L.catS * 0.05, bw = x1 - x0;
     // legs
     c.fillStyle = '#9C8FB3';
-    for (var lx = L.catS; lx < cw; lx += L.catS * 3) { rr(c, lx, top + h - 4, 10, L.beltH * 0.5, 4); c.fill(); }
+    for (var lx = x0 + L.catS * 0.6; lx < x1 - L.catS * 0.3; lx += L.catS * 2.2) { rr(c, lx, top + h - 4, 10, L.beltH * 0.5, 4); c.fill(); }
     // belt body
-    rr(c, -10, top + 4, cw + 20, h, h / 2); c.fillStyle = INK; c.fill();
-    rr(c, -10, top, cw + 20, h, h / 2); c.fillStyle = '#6E6487'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
+    rr(c, x0, top + 4, bw, h, h / 2); c.fillStyle = INK; c.fill();
+    rr(c, x0, top, bw, h, h / 2); c.fillStyle = '#6E6487'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
     // moving stripes
     c.save();
-    rr(c, -10, top + 5, cw + 20, h * 0.45, h * 0.2); c.clip();
+    rr(c, x0 + 4, top + 5, bw - 8, h * 0.45, h * 0.2); c.clip();
     c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = L.catS * 0.08;
     var step = L.catS * 0.5;
-    for (var sx = -step + beltOffset; sx < cw + step; sx += step) { c.beginPath(); c.moveTo(sx, top); c.lineTo(sx - h * 0.4, top + h); c.stroke(); }
+    for (var sx = x0 - step + beltOffset; sx < x1 + step; sx += step) { c.beginPath(); c.moveTo(sx, top); c.lineTo(sx - h * 0.4, top + h); c.stroke(); }
     c.restore();
     // rollers
-    for (var rx = L.catS * 0.6; rx < cw; rx += L.catS * 1.2) {
+    for (var rx = x0 + L.catS * 0.5; rx < x1 - L.catS * 0.2; rx += L.catS * 1.2) {
       c.save(); c.translate(rx, top + h * 0.72); c.rotate((beltOffset / (L.catS * 0.5)) * TAU);
       c.beginPath(); c.arc(0, 0, h * 0.18, 0, TAU); c.fillStyle = '#B9AED0'; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
       c.beginPath(); c.moveTo(-h * 0.12, 0); c.lineTo(h * 0.12, 0); c.stroke();
       c.restore();
     }
+  }
+
+  /* The little house at the start of the belt that cats come out of (drawn over the cats). */
+  function drawCatDoor(c) {
+    var s = L.catS;
+    var w = s * 0.92, h = s * 1.05;
+    var x = L.beltX0 - s * 0.5, y = L.beltY + s * 0.18 + L.beltH * 0.42 - h - 2;
+    c.save();
+    // house
+    rr(c, x, y + 4, w, h, s * 0.12); c.fillStyle = INK; c.fill();
+    rr(c, x, y, w, h, s * 0.12); c.fillStyle = '#F2C38E'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
+    // roof
+    c.beginPath(); c.moveTo(x - s * 0.1, y + s * 0.08); c.lineTo(x + w / 2, y - s * 0.32); c.lineTo(x + w + s * 0.1, y + s * 0.08); c.closePath();
+    c.fillStyle = '#FF8FAB'; c.fill(); c.lineWidth = 3.5; c.stroke();
+    // round doorway facing the belt, with a little curtain
+    c.beginPath(); c.moveTo(x + w * 0.62, y + h); c.lineTo(x + w * 0.62, y + h * 0.5); c.arc(x + w * 0.82, y + h * 0.5, w * 0.2, Math.PI, 0); c.lineTo(x + w * 1.02, y + h);
+    c.fillStyle = '#5B4E78'; c.fill(); c.lineWidth = 3; c.stroke();
+    c.restore();
   }
 
   function drawBeltCat(c2, cat) {
@@ -965,6 +989,7 @@
       drawMat(ctx);
       drawBelt(ctx);
       cats.forEach(function (cat) { if (cat.where === 'belt' || cat.where === 'mat') drawBeltCat(ctx, cat); });
+      drawCatDoor(ctx);
       cats.forEach(function (cat) { if (cat.where === 'flying') drawBeltCat(ctx, cat); });
       drawHint(ctx);
       if (held) drawBeltCat(ctx, held.cat);
