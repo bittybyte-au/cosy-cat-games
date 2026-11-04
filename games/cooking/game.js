@@ -149,6 +149,8 @@
     var top = topbar.getBoundingClientRect().bottom + 4;
     // the play area stops above the tray so nothing at the bottom is hidden behind it
     var bot = tray.hidden ? ch - 8 : tray.getBoundingClientRect().top - 4;
+    // the bar sizes itself to its buttons; the cat sits just above it
+    if (!tray.hidden) document.documentElement.style.setProperty('--tray-h', Math.round(ch - tray.getBoundingClientRect().top) + 'px');
     var avail = Math.max(160, bot - top);
     S = Math.min((cw - 8) / SIZE, avail / SIZE);
     OX = (cw - SIZE * S) / 2; OY = top + (avail - SIZE * S) / 2;

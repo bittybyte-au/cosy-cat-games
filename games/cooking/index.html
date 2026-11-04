@@ -74,7 +74,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 
 /* Bottom tray */
 .tray {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; height: calc(var(--tray-h) + env(safe-area-inset-bottom, 0px));
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; height: auto;
   padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(12px, env(safe-area-inset-right, 0px));
@@ -83,7 +83,6 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   pointer-events: none;
 }
 .tray > * { pointer-events: auto; }
-.tray.notools { height: calc(86px + env(safe-area-inset-bottom, 0px)); }
 .tray.notools .tools { display: none; }
 .say-row { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 64px; }
 .say {
@@ -101,7 +100,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .next svg { width: 26px; height: 26px; }
 @keyframes bob { 50% { transform: translateY(-4px) scale(1.04); } }
 .tools {
-  display: flex; gap: 10px; justify-content: center; overflow-x: auto; padding: 4px 4px 8px; scrollbar-width: none;
+  display: flex; gap: 10px; justify-content: center; overflow-x: auto; padding: 10px 4px 10px; scrollbar-width: none;
 }
 .tools::-webkit-scrollbar { display: none; }
 .tool {
