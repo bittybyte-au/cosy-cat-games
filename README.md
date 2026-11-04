@@ -7,6 +7,7 @@ Our family's private collection of browser games. No ads, no tracking.
 - `games/cooking/` – Cosy Kitchen, the sushi handroll cooking game
 - `games/kitty-pop/` – Kitty Pop, a gentle match-3 with cat heads (no move limits, no losing). Special cats live in `specials.js`; set `ENABLED = false` there to switch them off.
 - `games/cubbies/` – Cosy Cubbies: sleepy cats ride a belt and you drag them into the cubby of their colour. Belt gets faster each level; if the waiting mat overflows, the level restarts.
+- `games/yarn/` – Yarn Sort: sort yarn balls so each tube holds one colour (water-sort style). Every level is solver-checked; unlimited undo and one extra tube per level.
 - `manifest.webmanifest`, `icons/` – "Add to Home Screen" support
 - `sw.js` – offline support. Bump `VERSION` in it whenever files change.
 
