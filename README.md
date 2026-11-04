@@ -1,22 +1,23 @@
 # Cosy Cat Games
 
-Our family's private collection of browser games. No ads, no tracking.
+Calm little browser games for kids. No ads, no tracking, nothing loaded from other companies.
 
-- `index.html` – home page with one tile per game and the "Who's playing?" profiles
-- `shared/store.js` – player profiles and progress, saved in the browser on each device (nothing is sent anywhere)
-- `games/cooking/` – Cosy Kitchen, the sushi handroll cooking game
-- `games/kitty-pop/` – Kitty Pop, a gentle match-3 with cat heads (no move limits, no losing). Special cats live in `specials.js`; set `ENABLED = false` there to switch them off.
-- `games/cubbies/` – Cosy Cubbies: sleepy cats ride a belt and you drag them into the cubby of their colour. Belt gets faster each level; if the waiting mat overflows, the level restarts.
-- `games/yarn/` – Yarn Sort: sort yarn balls so each tube holds one colour (water-sort style). Every level is solver-checked; unlimited undo and one extra tube per level.
-- `manifest.webmanifest`, `icons/` – "Add to Home Screen" support
+- `index.html` – landing page with "Try the games" (families who already play, and the installed app, go straight to `/play/`; `/?welcome` always shows it)
+- `play/` – the games home: one tile per game, built from `shared/games.js`
+- `shared/store.js` – the device's one player and their progress, saved in the browser only (nothing is sent anywhere)
+- `shared/games.js` – the game list: ages, toddler flag, status (`live`, `soon` = Coming soon tile, `dev` = hidden on the live site)
+- `shared/install.js` – the "make it an app" home screen helper
+- `games/cooking/` – Cosy Kitchen
+- `games/kitty-pop/` – Kitty Pop (special cats live in `specials.js`; set `ENABLED = false` there to switch them off)
+- `games/cubbies/` – Cosy Cubbies
+- `games/yarn/` – Yarn Sort
+- `about/`, `faq/`, `feedback/` – information pages; the feedback form sends through Web3Forms (access key at the top of the script in `feedback/index.html`)
+- `fonts/` – Baloo 2 and Nunito, served from this site (SIL Open Font License)
+- `manifest.webmanifest`, `icons/` – home screen app support
 - `sw.js` – offline support. Bump `VERSION` in it whenever files change.
 
-The games are plain static files with no build step. The only server code is the one-year pass in `api/` and `server/`.
+Toddler mode (toddler games only; a grown-up's sum to turn it off) appears on the games home once there are 3 live games marked `toddler: true` in `shared/games.js`.
 
-## One-year pass
+The games are plain static files with no build step and no server.
 
-- `shared/pass.js` – the pass on each device: checks it, shows padlocks, and holds the list of what's free (`FREE`). Any game not in that list is locked automatically.
-- `unlock/` – the unlock page: grown-up check, buy, send to a grown-up's email, sign in with a code, manage devices.
-- `api/index.js` + `server/` – the server side on Vercel (Stripe checkout and webhook, emailed codes via Resend, devices, daily reminder emails). Storage is Upstash Redis.
-- Switched on and off with the `PASS_REQUIRED` setting in Vercel. Setup steps: `docs/pass-setup.md`.
-- `npm test` runs the pass tests; `npm run rehearse` runs a local copy with pretend Stripe and email.
+Family accounts, syncing and the one-year pass are built and tested on the `accounts` branch (plan: Postgres on Neon, Stripe, Resend). They come back once the free version has been tested.

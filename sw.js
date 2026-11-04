@@ -1,10 +1,11 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v47';
+const VERSION = 'ccg-v49';
 const FILES = [
-  './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
+  './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js',
+  './fonts/fonts.css', './fonts/baloo-2-latin-600-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/nunito-latin-700-normal.woff2', './fonts/nunito-latin-800-normal.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
-  './about/', './about/index.html', './faq/', './faq/index.html', './shared/games.js', './shared/install.js',
+  './about/', './about/index.html', './faq/', './faq/index.html', './feedback/', './feedback/index.html', './shared/games.js', './shared/install.js',
   './games/cooking/', './games/cooking/index.html', './games/cooking/game.js',
   './games/kitty-pop/', './games/kitty-pop/index.html', './games/kitty-pop/game.js', './games/kitty-pop/specials.js',
   './games/cubbies/', './games/cubbies/index.html', './games/cubbies/game.js',
@@ -23,24 +24,16 @@ self.addEventListener('activate', (e) => {
 });
 
 /* Network first for our own pages (so updates show up), cache as the offline fallback.
-   Fonts are cached the first time they load. */
+   Everything, fonts included, comes from this site. */
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-  if (url.origin !== location.origin && !isFont) return;
-  if (url.pathname.startsWith('/api/')) return; // pass checks always go to the network
-  if (isFont) {
-    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res;
-    })));
-    return;
-  }
+  if (url.origin !== location.origin) return;
   e.respondWith(
     fetch(req).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
       return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('./index.html')))
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('./play/index.html')))
   );
 });

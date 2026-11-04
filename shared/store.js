@@ -1,5 +1,5 @@
-/* Cosy Cat Games – player profiles and progress, saved on this device only.
-   Everything lives in one localStorage key. Nothing is sent anywhere. */
+/* Cosy Cat Games – the player and their progress, saved on this device only.
+   One player per device. Everything lives in one localStorage key. Nothing is sent anywhere. */
 (function () {
   var KEY = 'cosyCatGames.v1';
 
@@ -14,6 +14,14 @@
       d.players = Array.isArray(d.players) ? d.players : b.players;
       d.progress = d.progress && typeof d.progress === 'object' ? d.progress : b.progress;
       d.settings = d.settings && typeof d.settings === 'object' ? d.settings : b.settings;
+      // one player per device: keep the one used most recently (earlier versions allowed several)
+      if (d.players.length > 1) {
+        var keep = d.players.filter(function (p) { return p.id === d.current; })[0] || d.players[d.players.length - 1];
+        d.players = [keep];
+        var kept = {}; kept[keep.id] = d.progress[keep.id] || {}; d.progress = kept;
+        try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, d, { current: keep.id }))); } catch (e) {}
+      }
+      d.current = d.players.length ? d.players[0].id : null;
       return d;
     } catch (e) { return blank(); }
   }
@@ -64,10 +72,22 @@
       return null;
     },
     setCurrent: function (id) { data.current = id; save(); },
+    /* makes this device's player (there is only ever one); anything played before keeps its progress */
     addPlayer: function (name, avatar, color) {
+      if (data.players.length) return GG.updatePlayer(name, avatar, color);
       var p = { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(name).slice(0, 16), avatar: avatar, color: color };
-      data.players.push(p);
+      data.players = [p];
       data.current = p.id;
+      if (data.progress.guest) { data.progress[p.id] = data.progress.guest; delete data.progress.guest; }
+      save();
+      return p;
+    },
+    updatePlayer: function (name, avatar, color) {
+      var p = data.players[0];
+      if (!p) return null;
+      if (name) p.name = String(name).slice(0, 16);
+      if (avatar) p.avatar = avatar;
+      if (color) p.color = color;
       save();
       return p;
     },
@@ -94,13 +114,10 @@
     reload: function () { data = load(); }
   };
 
-  /* The one-year pass (shared/pass.js) is loaded on every page that loads this file. */
+  /* Ask the browser not to clear our saved data when space is low (granted quietly to home screen apps). */
   try {
-    if (!window.GGPass && document.currentScript && document.currentScript.src) {
-      var ps = document.createElement('script');
-      ps.src = new URL('pass.js', document.currentScript.src).href;
-      document.head.appendChild(ps);
-    }
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    if (standalone && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
   } catch (e) {}
 
   /* Offline support: harmless if service workers are unavailable. */

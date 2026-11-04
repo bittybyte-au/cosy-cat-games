@@ -1,0 +1,6 @@
+/* Fonts are served from this site (no Google Fonts), so pages load nothing from anyone else.
+   Baloo 2 and Nunito, SIL Open Font License (see OFL-*.txt), latin subset. */
+@font-face { font-family: "Baloo 2"; font-style: normal; font-weight: 600; font-display: swap; src: url(baloo-2-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Baloo 2"; font-style: normal; font-weight: 800; font-display: swap; src: url(baloo-2-latin-800-normal.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-style: normal; font-weight: 700; font-display: swap; src: url(nunito-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Nunito"; font-style: normal; font-weight: 800; font-display: swap; src: url(nunito-latin-800-normal.woff2) format("woff2"); }

@@ -13,9 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cosy Cat Games">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 /* Layout: a sunny garden sky; big sticker-style game tiles sit on a grassy hill. Single bright look by design. */
 :root {
@@ -76,6 +74,23 @@ h1 {
   text-shadow: 0 5px 0 var(--ink);
   letter-spacing: .5px;
 }
+.toddler-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px 0 8px;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 1rem var(--body); color: var(--ink); cursor: pointer;
+}
+.toddler-chip .knob { position: relative; width: 44px; height: 26px; border-radius: 999px; background: #D8D2E4; border: 3px solid var(--ink); flex: none; }
+.toddler-chip .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); transition: left .2s ease; }
+.toddler-chip[aria-pressed="true"] { background: var(--sun); }
+.toddler-chip[aria-pressed="true"] .knob { background: var(--grass); }
+.toddler-chip[aria-pressed="true"] .knob::after { left: 20px; }
+.toddler-chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.toddler-chip:focus-visible { outline: 4px solid var(--sun); outline-offset: 4px; }
+.sum-q { margin: 0; text-align: center; font: 800 1.4rem var(--body); }
+#sumIn { width: 100%; min-height: 60px; border: 3px solid var(--ink); border-radius: 18px; padding: 0 16px; font: 800 1.4rem var(--body); color: var(--ink); background: #fff; text-align: center; }
+body.toddler .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+body.toddler .tile h2 { font-size: 2.2rem; }
+.head-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .player-chip {
   display: flex; align-items: center; gap: 10px;
   background: var(--cream); border: 3px solid var(--ink); border-radius: 999px;
@@ -143,11 +158,6 @@ a.tile:focus-visible, .player-chip:focus-visible, button:focus-visible { outline
 .foot { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 18px; text-align: center; font-weight: 800; color: var(--ink); font-size: .95rem; margin: 8px 0 0; }
 .foot-note { display: inline-flex; align-items: center; gap: 8px; opacity: .75; }
 .site-foot { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding-top: 24px; }
-.foot-link.pass-link { background: var(--sun); }
-.tile .pass-chip {
-  position: absolute; top: 12px; left: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 4px;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 2px 10px; font: 800 .9rem var(--body); color: var(--ink);
-}
 .foot-link { color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: .95rem; text-decoration: none; padding: 10px 18px; }
 .foot-link:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .foot-link:focus-visible { outline: 4px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
@@ -223,10 +233,14 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
 <div class="wrap">
   <header>
     <h1>Cosy Cat Games</h1>
-    <button class="player-chip" id="playerChip" type="button" aria-label="Change player"></button>
+    <div class="head-btns">
+      <button class="toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
+      <button class="player-chip" id="playerChip" type="button" aria-label="Change your name or animal"></button>
+    </div>
   </header>
   <div class="hello"><svg class="mascot" viewBox="0 -8 170 188" aria-hidden="true"><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#2A2340" stroke-width="14" stroke-linecap="round"/><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#FFB26B" stroke-width="7" stroke-linecap="round"/><ellipse cx="80" cy="148" rx="50" ry="32" fill="#fff" stroke="#2A2340" stroke-width="5"/><ellipse cx="62" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="98" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 94 Q76 100 80 94 Q84 100 88 94" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="88" x2="38" y2="91"/><line x1="24" y1="99" x2="38" y2="98"/><line x1="138" y1="88" x2="122" y2="91"/><line x1="136" y1="99" x2="122" y2="98"/></g><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g><g class="wave"><path d="M118 150 Q140 140 142 116" fill="none" stroke="#2A2340" stroke-width="20" stroke-linecap="round"/><path d="M118 150 Q140 140 142 116" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><ellipse cx="144" cy="106" rx="16" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><g fill="#FFB3C7"><circle cx="144" cy="110" r="5"/><circle cx="136" cy="100" r="2.6"/><circle cx="144" cy="97" r="2.6"/><circle cx="152" cy="100" r="2.6"/></g></g></svg><p class="greeting" id="greeting"></p></div>
 
+  <div id="installBanner" hidden></div>
   <main class="tiles" id="tiles">
     <div class="tile soon" aria-label="More games coming soon">
       <svg class="sleepy" viewBox="0 0 190 120" aria-hidden="true"><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#2A2340" stroke-width="13" stroke-linecap="round"/><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#FFB26B" stroke-width="6" stroke-linecap="round"/><ellipse cx="88" cy="86" rx="58" ry="28" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M110 58 L114 34 L128 48 Z M146 50 L156 30 L160 54 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M146 50 L156 30 L160 54 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="136" cy="78" rx="32" ry="26" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M120 78 Q125 82 130 78 M142 78 Q147 82 152 78" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><ellipse cx="118" cy="88" rx="5" ry="3" fill="#FF8FAB"/><ellipse cx="156" cy="88" rx="5" ry="3" fill="#FF8FAB"/><path d="M132 88 Q136 91 140 88" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"/><text x="160" y="34" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="172" y="18" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="24" fill="#5E5675">Z</text></svg>
@@ -234,9 +248,8 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       <p>coming soon</p>
     </div>
   </main>
-  <div id="installBanner" hidden></div>
   <p class="foot"><span class="foot-note"><svg class="paw" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="10" ry="8.5"/><circle cx="9" cy="16" r="4.6"/><circle cx="16" cy="9" r="4.6"/><circle cx="24" cy="9" r="4.6"/><circle cx="31" cy="16" r="4.6"/></svg>Progress is saved on this device only.</span></p>
-  <footer class="site-foot"><a class="foot-link pass-link" id="passLink" href="../unlock/index.html" hidden>Unlock all games</a><a class="foot-link" href="../about/index.html">About Cosy Cat Games</a><a class="foot-link" href="../faq/index.html">Questions (FAQ)</a></footer>
+  <footer class="site-foot"><a class="foot-link" href="../about/index.html">About Cosy Cat Games</a><a class="foot-link" href="../faq/index.html">Questions (FAQ)</a><a class="foot-link" href="../feedback/index.html">Send feedback</a></footer>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -252,7 +265,6 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   var greet = document.getElementById('greeting');
   var overlay = document.getElementById('overlay');
   var panel = document.getElementById('panel');
-  var editing = false;
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
@@ -262,7 +274,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       chip.innerHTML = GG.avatarSVG(p.avatar, p.color, 46) + '<span>' + esc(p.name) + '</span>';
       greet.textContent = 'Hi ' + p.name + '! Pick a game.';
     } else {
-      chip.innerHTML = '<span class="plus" style="width:46px;height:46px;font-size:1.8rem">+</span><span>Who’s playing?</span>';
+      chip.innerHTML = '<span class="plus" style="width:46px;height:46px;font-size:1.8rem">+</span><span>Add your name</span>';
       greet.textContent = 'Pick a game.';
     }
     GGGames.all.forEach(function (g) {
@@ -274,64 +286,25 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   }
 
   function open() { overlay.hidden = false; }
-  function close() { overlay.hidden = true; editing = false; renderHeader(); }
+  function close() { overlay.hidden = true; renderHeader(); }
 
-  function showPeople() {
-    var list = GG.players();
-    var cur = GG.current();
+  /* one player per device: the first visit asks for a name and an animal; the chip changes them later */
+  function showSetup() {
+    var p = GG.current();
+    var avatar = p ? p.avatar : GG.AVATARS[Math.floor(Math.random() * GG.AVATARS.length)];
+    var color = p ? p.color : GG.COLORS[Math.floor(Math.random() * GG.COLORS.length)];
     panel.classList.add('whos');
-    var html = '<svg class="peek" viewBox="0 0 170 136" aria-hidden="true"><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><circle cx="60" cy="78" r="6" fill="#2A2340"/><circle cx="100" cy="78" r="6" fill="#2A2340"/><circle cx="62" cy="76" r="2" fill="#fff"/><circle cx="102" cy="76" r="2" fill="#fff"/><ellipse cx="46" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 92 Q76 98 80 92 Q84 98 88 92" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="86" x2="38" y2="89"/><line x1="24" y1="97" x2="38" y2="96"/><line x1="138" y1="86" x2="122" y2="89"/><line x1="136" y1="97" x2="122" y2="96"/></g><g fill="#fff" stroke="#2A2340" stroke-width="4.5"><ellipse cx="46" cy="122" rx="20" ry="13"/><ellipse cx="114" cy="122" rx="20" ry="13"/></g><g stroke="#2A2340" stroke-width="3" stroke-linecap="round"><line x1="40" y1="128" x2="40" y2="134"/><line x1="52" y1="128" x2="52" y2="134"/><line x1="108" y1="128" x2="108" y2="134"/><line x1="120" y1="128" x2="120" y2="134"/></g></svg><h2 id="panelTitle">Who\u2019s playing?</h2><div class="people">';
-    list.forEach(function (p) {
-      html += '<div class="person' + (cur && cur.id === p.id ? ' selected' : '') + '" role="button" tabindex="0" data-id="' + p.id + '">' +
-        GG.avatarSVG(p.avatar, p.color, 72) + '<span>' + esc(p.name) + '</span>' +
-        (editing ? '<button class="del" type="button" data-del="' + p.id + '" aria-label="Remove ' + esc(p.name) + '">✕</button>' : '') +
-        '</div>';
-    });
-    html += '<button class="person add" type="button" id="addBtn"><span class="plus">+</span><span>New player</span></button></div>';
-    html += '<div class="row">' + (list.length ? '<button class="btn plain" type="button" id="editBtn">' + (editing ? 'Done' : 'Edit players') + '</button>' : '') +
-      (cur ? '<button class="btn go" type="button" id="closeBtn">Play!</button>' : '') + '</div>';
-    html += '<p class="note">Players are saved only on this device. No sign-up needed.</p>';
-    panel.innerHTML = html;
-    open();
-
-    panel.querySelectorAll('.person[data-id]').forEach(function (el) {
-      function choose(e) {
-        if (e.target.closest('.del')) return;
-        if (editing) return;
-        GG.setCurrent(el.dataset.id); close();
-      }
-      el.addEventListener('click', choose);
-      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(e); } });
-    });
-    panel.querySelectorAll('[data-del]').forEach(function (b) {
-      b.addEventListener('click', function (e) { e.stopPropagation(); confirmRemove(b.dataset.del); });
-    });
-    document.getElementById('addBtn').addEventListener('click', function () { editing = false; showAdd(); });
-    var eb = document.getElementById('editBtn'); if (eb) eb.addEventListener('click', function () { editing = !editing; showPeople(); });
-    var cb = document.getElementById('closeBtn'); if (cb) cb.addEventListener('click', close);
-  }
-
-  function confirmRemove(id) {
-    var p = GG.players().filter(function (x) { return x.id === id; })[0];
-    if (!p) return;
-    panel.innerHTML = '<h2 id="panelTitle">Remove ' + esc(p.name) + '?</h2>' +
-      '<div class="row">' + GG.avatarSVG(p.avatar, p.color, 96) + '</div>' +
-      '<p class="confirm-text">Their saved dishes will be removed too.</p>' +
-      '<div class="row"><button class="btn plain" type="button" id="noBtn">Keep</button><button class="btn warn" type="button" id="yesBtn">Remove</button></div>';
-    document.getElementById('noBtn').addEventListener('click', showPeople);
-    document.getElementById('yesBtn').addEventListener('click', function () { GG.removePlayer(id); showPeople(); });
-  }
-
-  function showAdd() {
-    var avatar = GG.AVATARS[Math.floor(Math.random() * GG.AVATARS.length)];
-    var color = GG.COLORS[Math.floor(Math.random() * GG.COLORS.length)];
-    panel.innerHTML = '<h2 id="panelTitle">New player</h2>' +
+    panel.innerHTML = '<svg class="peek" viewBox="0 0 170 136" aria-hidden="true"><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><circle cx="60" cy="78" r="6" fill="#2A2340"/><circle cx="100" cy="78" r="6" fill="#2A2340"/><circle cx="62" cy="76" r="2" fill="#fff"/><circle cx="102" cy="76" r="2" fill="#fff"/><ellipse cx="46" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 92 Q76 98 80 92 Q84 98 88 92" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="86" x2="38" y2="89"/><line x1="24" y1="97" x2="38" y2="96"/><line x1="138" y1="86" x2="122" y2="89"/><line x1="136" y1="97" x2="122" y2="96"/></g><g fill="#fff" stroke="#2A2340" stroke-width="4.5"><ellipse cx="46" cy="122" rx="20" ry="13"/><ellipse cx="114" cy="122" rx="20" ry="13"/></g><g stroke="#2A2340" stroke-width="3" stroke-linecap="round"><line x1="40" y1="128" x2="40" y2="134"/><line x1="52" y1="128" x2="52" y2="134"/><line x1="108" y1="128" x2="108" y2="134"/><line x1="120" y1="128" x2="120" y2="134"/></g></svg><h2 id="panelTitle">' + (p ? 'Your player' : 'Hello! What’s your name?') + '</h2>' +
       '<div><label class="lab" for="nameInput">Your name</label><input id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false"></div>' +
       '<div><span class="lab">Pick an animal</span><div class="pick" id="pickAnimal"></div></div>' +
       '<div><span class="lab">Pick a colour</span><div class="pick swatches" id="pickColor"></div></div>' +
-      '<div class="row"><button class="btn plain" type="button" id="backBtn">Back</button><button class="btn go" type="button" id="saveBtn" disabled>Save</button></div>';
+      '<div class="row">' + (p ? '<button class="btn plain" type="button" id="backBtn">Cancel</button>' : '') +
+      '<button class="btn go" type="button" id="saveBtn">' + (p ? 'Save' : 'Let’s play!') + '</button></div>' +
+      '<p class="note">Saved on this device only. No sign-up needed.</p>';
+    open();
     var pa = document.getElementById('pickAnimal'), pc = document.getElementById('pickColor');
     var input = document.getElementById('nameInput'), save = document.getElementById('saveBtn');
+    input.value = p ? p.name : '';
     function draw() {
       pa.innerHTML = GG.AVATARS.map(function (a) { return '<button type="button" aria-label="' + a + '" aria-pressed="' + (a === avatar) + '" data-a="' + a + '">' + GG.avatarSVG(a, color, 56) + '</button>'; }).join('');
       pc.innerHTML = GG.COLORS.map(function (c) { return '<button type="button" aria-label="colour" aria-pressed="' + (c === color) + '" data-c="' + c + '" style="background:' + c + '"></button>'; }).join('');
@@ -339,18 +312,32 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       pc.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { color = b.dataset.c; draw(); }); });
     }
     draw();
-    input.addEventListener('input', function () { save.disabled = !input.value.trim(); });
+    function ready() { save.disabled = !input.value.trim(); }
+    ready();
+    input.addEventListener('input', ready);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) save.click(); });
-    document.getElementById('backBtn').addEventListener('click', function () { if (GG.players().length) showPeople(); else showPeople(); });
+    var back = document.getElementById('backBtn'); if (back) back.addEventListener('click', close);
     save.addEventListener('click', function () { GG.addPlayer(input.value.trim(), avatar, color); close(); });
-    setTimeout(function () { input.focus(); }, 50);
+    if (!p) setTimeout(function () { input.focus(); }, 50);
   }
 
-  chip.addEventListener('click', showPeople);
+  chip.addEventListener('click', showSetup);
   var EAR = '<svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>';
+  /* Toddler mode shows only toddler games. The switch stays hidden until there are 3 toddler games to play. */
+  function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
+  function toddlerReady() { return toddlerGames().length >= 3; }
+  function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
   function renderTiles() {
     var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.soon');
-    GGGames.visible().forEach(function (g) {
+    box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });
+    var tod = toddlerOn();
+    document.body.classList.toggle('toddler', tod);
+    sleepy.hidden = tod;
+    var tb = document.getElementById('toddlerBtn');
+    tb.hidden = !toddlerReady();
+    tb.setAttribute('aria-pressed', String(tod));
+    document.getElementById('toddlerLabel').textContent = tod ? 'Toddler mode on' : 'Toddler mode';
+    GGGames.visible(tod ? { toddler: true } : {}).forEach(function (g) {
       var ok = GGGames.playable(g);
       var t = document.createElement(ok ? 'a' : 'div');
       t.className = 'tile' + (ok ? '' : ' coming');
@@ -362,39 +349,52 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
         '<span class="badge"' + (ok ? ' hidden' : '') + '>' + (ok ? '' : 'Coming soon') + '</span>' +
         '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2><p>' + esc(g.blurb) + '</p>';
       if (ok) t.addEventListener('click', function (e) {
-        if (!GG.current() && GG.players().length) { e.preventDefault(); showPeople(); }
+        if (!GG.current()) { e.preventDefault(); showSetup(); }
       });
       box.insertBefore(t, sleepy);
     });
   }
   renderTiles();
+
+  document.getElementById('toddlerBtn').addEventListener('click', function () {
+    panel.classList.remove('whos');
+    if (!toddlerOn()) {
+      panel.innerHTML = '<h2 id="panelTitle">Turn on toddler mode?</h2>' +
+        '<p class="confirm-text">Only the simplest games will show, made for little ones under 5.</p>' +
+        '<p class="note">To turn it off again, a grown-up answers a quick sum.</p>' +
+        '<div class="row"><button class="btn plain" type="button" id="todNo">Not now</button><button class="btn go" type="button" id="todYes">Turn on</button></div>';
+      open();
+      document.getElementById('todNo').addEventListener('click', close);
+      document.getElementById('todYes').addEventListener('click', function () { GG.setSetting('toddler', true); close(); renderTiles(); });
+      return;
+    }
+    (function ask() {
+      var x = 4 + Math.floor(Math.random() * 6), y = 3 + Math.floor(Math.random() * 7);
+      panel.innerHTML = '<h2 id="panelTitle">Turn off toddler mode?</h2>' +
+        '<p class="sum-q">Grown-ups: what is ' + x + ' + ' + y + '?</p>' +
+        '<input id="sumIn" inputmode="numeric" autocomplete="off" aria-label="Answer">' +
+        '<p class="note" id="sumMsg"></p>' +
+        '<div class="row"><button class="btn plain" type="button" id="sumNo">Keep it on</button><button class="btn go" type="button" id="sumYes">Turn off</button></div>';
+      open();
+      var input = document.getElementById('sumIn');
+      setTimeout(function () { input.focus(); }, 50);
+      function check() {
+        if (parseInt(input.value, 10) === x + y) { GG.setSetting('toddler', false); close(); renderTiles(); }
+        else { document.getElementById('sumMsg').textContent = 'Not quite. Try this one.'; setTimeout(ask, 900); }
+      }
+      document.getElementById('sumYes').addEventListener('click', check);
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') check(); });
+      document.getElementById('sumNo').addEventListener('click', close);
+    })();
+  });
   overlay.addEventListener('click', function (e) { if (e.target === overlay && GG.current()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden && GG.current()) close(); });
   window.addEventListener('pageshow', function () { GG.reload(); renderHeader(); });
 
   renderHeader();
   GGInstall.banner(document.getElementById('installBanner'));
-  if (!GG.current()) showPeople();
+  if (!GG.current()) showSetup();
 })();
-</script>
-<script>
-/* one-year pass: padlocks on games that need it, and an "Unlock all games" button (see shared/pass.js) */
-window.addEventListener('ggpass', function (e) {
-  var st = e.detail, P = window.GGPass;
-  var link = document.getElementById('passLink');
-  link.hidden = !st.required && !st.signedIn;
-  link.textContent = st.unlocked ? (st.signedIn ? 'Your pass' : 'Unlock all games') : 'Unlock all games';
-  if (!st.required) link.hidden = !st.signedIn;
-  document.querySelectorAll('a.tile[href*="games/"]').forEach(function (t) {
-    var slug = (t.getAttribute('href').match(/games\/([^\/]+)\//) || [])[1];
-    var chip = t.querySelector('.pass-chip');
-    var fully = slug && P.FREE[slug] === undefined && !st.unlocked;
-    var partly = slug && P.FREE[slug] !== undefined && !st.unlocked;
-    if (!fully && !partly) { if (chip) chip.remove(); return; }
-    if (!chip) { chip = document.createElement('span'); chip.className = 'pass-chip'; t.appendChild(chip); }
-    chip.innerHTML = fully ? '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="3" fill="#2A2340"/><path d="M8 10 V7 a4 4 0 0 1 8 0 V10" fill="none" stroke="#2A2340" stroke-width="2.6"/></svg>Needs a pass' : 'Free to try';
-  });
-});
 </script>
 </body>
 </html>

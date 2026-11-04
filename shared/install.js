@@ -45,6 +45,7 @@
     '.gg-ig li svg{flex:none;width:40px;height:40px}' +
     '.gg-ig .gi-note{margin:0;font-size:.95rem;color:#5E5675;text-align:center}' +
     '.gg-ig .gi-row{display:flex;justify-content:center}';
+  var TEXT = 'Keep your progress and avatar safe: make Cosy Cat Games an app on your home screen.';
   var styled = false;
   function style() { if (styled) return; styled = true; var s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
 
@@ -68,7 +69,7 @@
       list: [[ICON_SHARE, 'Tap the <b>Share</b> button. On newer iPhones it’s inside the <b>•••</b> menu at the bottom.'],
              [ICON_ADD, 'Scroll down and tap <b>Add to Home Screen</b>.'],
              [ICON_CAT, 'Tap <b>Add</b>. The cat icon appears on your home screen.']],
-      note: 'It then opens full screen like an app, and works offline.'
+      note: 'It then opens full screen like an app, works offline, and your progress is kept safe. (Safari can clear saved games after a week away; the app doesn\u2019t.)'
     };
     if (isAndroid) return {
       title: 'Add to your home screen',
@@ -119,8 +120,8 @@
     el.classList.add('gg-install');
     el.hidden = false;
     function draw() {
-      el.innerHTML = '<span class="gi-text">Put Cosy Cat Games on your home screen</span>' +
-        '<button class="gi-btn" type="button">' + (deferred && !inApp ? 'Install' : 'Show me how') + '</button>' +
+      el.innerHTML = '<span class="gi-text">' + TEXT + '</span>' +
+        '<button class="gi-btn" type="button">' + (deferred && !inApp ? 'Make it an app' : 'Show me how') + '</button>' +
         (closable ? '<button class="gi-x" type="button" aria-label="Close">✕</button>' : '');
       el.querySelector('.gi-btn').addEventListener('click', go);
       var x = el.querySelector('.gi-x');

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cosy Cat Games</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Calm little cat games for kids. No ads, no pop-ups, no tracking. Made by a mum of three.">
+<meta name="description" content="Calm little cat games for kids, free for a limited time. No ads, no pop-ups, no tracking. Made by a mum of three.">
 <meta name="theme-color" content="#9EDCFF">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -24,9 +24,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Landing page: the same sunny sticker world as the games. The one bold moment is the
    "What you won't find here" stickers, each struck through with a red crayon line. Single bright look by design. */
@@ -61,6 +59,12 @@ h1 {
   -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 var(--ink); text-wrap: balance;
 }
 .lede { margin: 22px 0 0; max-width: 34ch; font-size: 1.2rem; }
+.free {
+  display: inline-block; margin: 0 0 18px; padding: 8px 18px; transform: rotate(-3deg);
+  background: var(--sun); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 1.2rem/1.1 var(--display);
+}
+.free-note { margin: 18px auto 0; max-width: 44ch; font-size: 1.1rem; }
 .cta-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 28px; }
 .try {
   display: inline-flex; align-items: center; gap: 12px; min-height: 68px; padding: 0 32px; border: 4px solid var(--ink); border-radius: 999px;
@@ -172,11 +176,12 @@ footer { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; pad
 <main>
   <div class="wrap hero">
     <div>
+      <p class="free">Free for a limited time</p>
       <h1>Cosy little games, and nothing else.</h1>
       <p class="lede">Calm cat games for kids aged about 5 to 10. No ads, no pop-ups, and nothing trying to sell them anything.</p>
       <div class="cta-row">
         <a class="try" href="play/index.html"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#FFF8EC" stroke="#2A2340" stroke-width="3.5"/><path d="M16 12 L29 20 L16 28 Z" fill="#2A2340" stroke="#2A2340" stroke-width="2" stroke-linejoin="round"/></svg>Try the games</a>
-        <span class="small">No sign-up needed.</span>
+        <span class="small">No sign-up, no app store, nothing to pay.</span>
       </div>
     </div>
     <div class="device" aria-hidden="true">
@@ -229,7 +234,8 @@ footer { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; pad
     <div class="wrap last">
       <h2>Ready when they are</h2>
       <a class="try" href="play/index.html" style="background:var(--sun)"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#FFF8EC" stroke="#2A2340" stroke-width="3.5"/><path d="M16 12 L29 20 L16 28 Z" fill="#2A2340" stroke="#2A2340" stroke-width="2" stroke-linejoin="round"/></svg>Try the games</a>
-      <footer><a class="pill" href="about/index.html">Our story</a><a class="pill" href="faq/index.html">Questions (FAQ)</a></footer>
+      <p class="free-note">Every game is free while we test them and add more. Found a bug or have an idea? We’d love to hear it.</p>
+      <footer><a class="pill" href="about/index.html">Our story</a><a class="pill" href="faq/index.html">Questions (FAQ)</a><a class="pill" href="feedback/index.html">Send feedback</a></footer>
     </div>
   </div>
 </main>

@@ -10,9 +10,7 @@
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<link rel="stylesheet" href="../fonts/fonts.css">
 <style>
 /* Layout: same sunny sky as the home page; one readable cream card with short sections. Single bright look by design. */
 :root {
@@ -67,6 +65,8 @@ ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap:
 .lead { font-size: 1.1rem; font-weight: 800; }
 .small { color: var(--muted); font-size: .95rem; }
 .qa { font-weight: 800; color: var(--muted); }
+.foot-links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.foot-links a { color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; text-decoration: none; padding: 10px 18px; }
 </style>
 </head>
 <body>
@@ -105,6 +105,8 @@ ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap:
       <ul>
         <li><strong>Cosy Kitchen:</strong> chop, mix and cook sushi hand rolls, pancakes and burgers, then decorate the plate.</li>
         <li><strong>Kitty Pop:</strong> a gentle matching game where you line up cats to pop them.</li>
+        <li><strong>Cosy Cubbies:</strong> tuck sleepy cats into the beds that match their colour.</li>
+        <li><strong>Yarn Sort:</strong> sort the balls of wool so each tube holds one colour.</li>
       </ul>
       <p>More games and recipes are on the way.</p>
     </section>
@@ -112,7 +114,7 @@ ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap:
     <section aria-labelledby="h-privacy">
       <h2 id="h-privacy">Your child's privacy</h2>
       <p>Players are just a first name and an animal picture. They are saved only on the device being played on, along with scores and finished dishes. None of it is sent to us or anyone else.</p>
-      <p>We don't use analytics or advertising cookies. The only outside service the site loads is Google Fonts, for its lettering.</p>
+      <p>We don't use analytics or advertising cookies, and the site doesn't load anything from other companies, not even its lettering. The only time anything leaves your device is if you choose to send us feedback.</p>
     </section>
 
     <section aria-labelledby="h-tips">
@@ -124,6 +126,7 @@ ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap:
       </ul>
     </section>
   </main>
+  <nav class="foot-links"><a href="../faq/index.html">Questions (FAQ)</a><a href="../feedback/index.html">Send feedback</a></nav>
 </div>
 <script src="../shared/store.js"></script>
 </body>
