@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cosy Cubbies</title>
+<meta name="theme-color" content="#E4F1FF">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: a calm blue bedroom wall; slim top bar with the level and how many cats are tucked in;
+   the canvas holds the cubbies, the waiting mat and the conveyor belt. Single bright look by design. */
+:root {
+  --wall: #E4F1FF;
+  --wall2: #D3E7FC;
+  --ink: #2A2340;
+  --cream: #FFF8EC;
+  --sun: #FFC93C;
+  --grass: #7BD389;
+  --sea: #3FA7F5;
+  --tomato: #FF6B57;
+  --muted: #6E6080;
+  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  color: var(--ink); font-family: var(--body); font-size: 17px; overflow: hidden; overscroll-behavior: none;
+  background: var(--wall) linear-gradient(90deg, transparent 0 46px, var(--wall2) 46px 56px) 0 0 / 56px 100%;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
+button { font-family: var(--body); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-offset: 3px; }
+
+.topbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 7;
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+.round {
+  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink);
+  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+  text-decoration: none; color: var(--ink);
+}
+.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.round svg { width: 30px; height: 30px; }
+
+.middle { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.level { font: 800 1.05rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 12px 4px; white-space: nowrap; }
+.tally {
+  display: flex; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--ink); border-radius: 999px;
+  padding: 3px 14px 3px 4px; box-shadow: 0 3px 0 var(--ink); min-width: 0;
+}
+.tally img { width: 40px; height: 40px; display: block; flex: none; }
+.tally .info { display: flex; flex-direction: column; gap: 3px; min-width: 92px; }
+.tally .lab { font: 800 .72rem/1 var(--body); color: var(--muted); }
+.tally .count { font: 800 1.3rem/1 var(--display); white-space: nowrap; }
+.tally .count small { font-size: .9rem; color: var(--muted); }
+.tally .bar { height: 9px; border-radius: 99px; border: 2px solid var(--ink); background: #EEE6F6; overflow: hidden; }
+.tally .bar i { display: block; height: 100%; width: 0; background: var(--sun); transition: width .25s ease; }
+.tally.bump { animation: bump .25s ease; }
+@keyframes bump { 50% { transform: scale(1.1); } }
+
+.say {
+  position: fixed; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%);
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 clamp(1.1rem, 4.4vw, 1.45rem)/1.15 var(--body); text-align: center; pointer-events: none; max-width: calc(100% - 32px);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.say.hide { opacity: 0; transform: translate(-50%, -50%) scale(.9); }
+
+.card-wrap {
+  position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(42, 35, 64, .35);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.card {
+  width: min(420px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink);
+  padding: 22px 18px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  animation: present .55s cubic-bezier(.3, 1.6, .5, 1);
+}
+.card h2 { margin: 0; font: 800 clamp(1.8rem, 7vw, 2.4rem)/1 var(--display); text-wrap: balance; }
+.card p { margin: 0; font: 800 1.15rem var(--body); color: var(--muted); text-wrap: balance; }
+.card .faces { display: flex; gap: 4px; justify-content: center; }
+.card .faces img { width: 56px; height: 56px; animation: hop .6s ease-in-out infinite alternate; }
+.card .faces img:nth-child(2) { animation-delay: .12s; } .card .faces img:nth-child(3) { animation-delay: .24s; }
+.card .faces img:nth-child(4) { animation-delay: .36s; } .card .faces img:nth-child(5) { animation-delay: .48s; }
+.big {
+  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink);
+  font: 800 1.45rem var(--display); cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.big.again { background: var(--sun); }
+.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.big svg { width: 26px; height: 26px; }
+@keyframes present { from { transform: scale(.5) rotate(-8deg); opacity: 0; } }
+@keyframes hop { to { transform: translateY(-8px); } }
+
+@media (max-width: 400px) {
+  .round { width: 48px; height: 48px; }
+  .middle { gap: 6px; }
+  .level { font-size: .9rem; padding: 5px 9px 3px; }
+  .tally .info { min-width: 76px; }
+  .tally img { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .card .faces img, .tally.bump { animation: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="Cats in beds ride along a belt. Drag each cat into the cubby with its colour."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><path d="M5 15 L16 5 L27 15 M9 13 V27 H23 V13" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.5" y="19" width="5" height="8" fill="#2A2340"/></svg>
+  </a>
+  <div class="middle">
+    <div class="level" id="levelLabel">Level 1</div>
+    <div class="tally" id="tally" aria-live="polite">
+      <img id="tallyImg" alt="">
+      <div class="info">
+        <span class="lab">Tucked in</span>
+        <span class="count"><b id="tallyNum">0</b> <small>/ <span id="tallyGoal">9</span></small></span>
+        <span class="bar"><i id="tallyBar"></i></span>
+      </div>
+    </div>
+  </div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="card-wrap" id="cardWrap" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <div class="faces" id="cardFaces"></div>
+    <h2 id="cardTitle">Hooray!</h2>
+    <p id="cardNote">Level 1 done</p>
+    <button class="big" id="cardBtn" type="button"><span id="cardBtnLabel">Next level</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
