@@ -219,8 +219,11 @@
   /* ---------- tray (instructions, Next, tools) ---------- */
   var sayEl = $('say'), nextBtn = $('nextBtn'), toolsEl = $('tools');
   var onNext = null;
-  function say(text) { sayEl.textContent = text; }
-  function showNext(label, fn) { $('nextLabel').textContent = label || 'Next'; nextBtn.hidden = false; onNext = fn; }
+  /* Toddler mode (switched on from the home page): tapping does each step by itself, nothing burns, no reading */
+  var TODDLER = !!GG.getSetting('toddler', false);
+  var TAP_HTML = '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" style="vertical-align:-7px;margin-right:6px"><circle cx="16" cy="16" r="13" fill="#FFC93C" stroke="#2A2340" stroke-width="3"/><circle cx="16" cy="16" r="6" fill="#fff" stroke="#2A2340" stroke-width="2.5"/></svg>Tap!';
+  function say(text) { if (TODDLER) sayEl.innerHTML = TAP_HTML; else sayEl.textContent = text; }
+  function showNext(label, fn) { $('nextLabel').textContent = label || 'Next'; nextBtn.hidden = false; onNext = fn; if (TODDLER && (label || 'Next') === 'Next') sayEl.textContent = 'Yay!'; }
   function hideNext() { nextBtn.hidden = true; onNext = null; }
   nextBtn.addEventListener('click', function () { Sound.init(); Sound.pop(); var f = onNext; hideNext(); if (f) f(); });
 
@@ -430,6 +433,13 @@
     }
 
     return {
+      // toddler mode: each tap does one chunk of the step by itself
+      tapSpot: function () { return phase === 'pour' ? REST : (done ? null : { x: cx, y: cy + 10 }); },
+      toddler: function () {
+        if (phase === 'pour') return { pts: [REST, REST], dur: 2.8 };
+        if (phase === 'stir' && !done) return circle(cx, cy + 8, 130, 45, 1.6, 1.0);
+        return false;
+      },
       enter: function () { say('Hold the bottle to pour'); },
       leave: function () { stirLoop.stop(); pourLoop.stop(); },
       hint: function (t) {
@@ -725,6 +735,17 @@
     }
 
     return {
+      tapSpot: function () {
+        if (!cur || cur.leave >= 0 || cur.enter < 1) return null;
+        var g = cur.guides.filter(function (q) { return !q.cut; })[0];
+        return g ? { x: cx + g.x, y: cy } : null;
+      },
+      toddler: function () {
+        if (!cur || cur.leave >= 0 || cur.enter < 0.9) return false;
+        var g = cur.guides.filter(function (q) { return !q.cut; })[0]; if (!g) return false;
+        var pts = []; for (var i = 0; i <= 10; i++) pts.push({ x: cx + g.x, y: cy - cur.d.h / 2 - 40 + (cur.d.h + 80) * i / 10 });
+        return { pts: pts, dur: 0.25 };
+      },
       enter: function () { load(0); },
       leave: function () { },
       hint: function (t) {
@@ -853,6 +874,24 @@
     function rollR() { return lerp(12, ROLL_R, easeOut(roll)); }
 
     return {
+      tapSpot: function () {
+        if (phase === 'rice') return { x: ZX + ZW / 2, y: ZY + ZH / 2 };
+        if (phase === 'fill') { var i = bowls.indexOf(1); return i < 0 ? null : { x: BOWL_POS[i].x, y: BOWL_POS[i].y - 10 }; }
+        if (phase === 'roll' && !done) return { x: 320, y: 330 };
+        return null;
+      },
+      toddler: function () {
+        if (phase === 'rice') {
+          var cell = cells.filter(function (c) { return !c.on; })[0]; if (!cell) return false;
+          var pts = [], k;
+          for (k = 0; k <= 12; k++) pts.push({ x: ZX + ZW * k / 12, y: cell.y });
+          for (k = 12; k >= 0; k--) pts.push({ x: ZX + ZW * k / 12, y: Math.min(ZY + ZH - 10, cell.y + CH) });
+          return { pts: pts, dur: 0.7 };
+        }
+        if (phase === 'fill') { var i = bowls.indexOf(1); return i < 0 ? false : { pts: [{ x: BOWL_POS[i].x, y: BOWL_POS[i].y }], dur: 0.05 }; }
+        if (phase === 'roll' && !done) return { pts: swipeUp(320, 450, 300), dur: 0.6 };
+        return false;
+      },
       enter: function () { say('Rub to spread the rice'); },
       leave: function () { rubLoop.stop(); },
       hint: function (t) {
@@ -1057,6 +1096,13 @@
     function place(list, item, max) { list.push(item); if (list.length > max) list.shift(); }
 
     return {
+      tapSpot: function () { return { x: PCX, y: PCY + 60 }; },
+      toddler: function (p) {
+        if (Math.hypot(p.x - PCX, p.y - PCY) > PR - 90) { var a = Math.random() * TAU, r = Math.random() * (PR - 100); p = { x: PCX + Math.cos(a) * r, y: PCY + Math.sin(a) * r }; }
+        var t = pick(['leaf', 'ginger', 'wasabi', 'sesame', 'sesame', 'soy']);
+        if (t === 'soy' && dish.soy >= 1) t = 'sesame';
+        return { before: function () { setTool(t); }, pts: t === 'sesame' ? circlePts(p.x, p.y, 30, 20, 1, 24) : [p, p], dur: t === 'soy' ? 1.2 : t === 'sesame' ? 0.6 : 0.05 };
+      },
       enter: function () {
         toolsEl.innerHTML = ['plate', 'leaf', 'sesame', 'soy', 'ginger', 'wasabi'].map(function (t) {
           var lbl = { plate: 'Plate', leaf: 'Leaf', sesame: 'Sesame', soy: 'Soy', ginger: 'Ginger', wasabi: 'Wasabi' }[t];
@@ -1198,6 +1244,22 @@
     }
 
     return {
+      tapSpot: function () {
+        if (phase === 'milk') return REST;
+        if (phase === 'eggs') { var e = eggs.filter(function (q) { return q.state === 'wait'; })[0]; return e ? { x: e.x, y: e.y } : null; }
+        if (phase === 'whisk' && !done) return { x: cx, y: cy + 10 };
+        return null;
+      },
+      toddler: function () {
+        if (phase === 'milk') return { pts: [REST, REST], dur: 2.8 };
+        if (phase === 'eggs') {
+          if (eggs.some(function (e) { return e.state === 'fly' || e.state === 'crack'; })) return false;
+          var e = eggs.filter(function (q) { return q.state === 'wait'; })[0];
+          return e ? { pts: [{ x: e.x, y: e.y }], dur: 0.05 } : false;
+        }
+        if (phase === 'whisk' && !done) return circle(cx, cy + 8, 130, 45, 1.6, 1.0);
+        return false;
+      },
       enter: function () { say('Hold the jug to pour milk'); },
       leave: function () { pourLoop.stop(); slosh.stop(); },
       hint: function (t) {
@@ -1425,6 +1487,17 @@
     }
 
     return {
+      tapSpot: function () {
+        if (!cake || cake.phase === 'pour') return made < NEED ? { x: PX, y: PY } : null;
+        if (cake.phase === 'cook1') return { x: PX, y: PY };
+        return null;
+      },
+      toddler: function () {
+        if ((!cake || cake.phase === 'pour') && made < NEED) return { pts: [{ x: PX, y: PY }, { x: PX, y: PY }], dur: 2.0 };
+        // no waiting and no burning: a tap flips it perfectly golden
+        if (cake && cake.phase === 'cook1') return { before: function () { if (cake.t < T_OK + 0.3) cake.t = T_OK + 0.3; }, pts: swipeUp(PX, PY + 90, 200), dur: 0.3 };
+        return false;
+      },
       enter: function () { cake = null; say('Hold to pour the batter'); },
       leave: function () { pourLoop.stop(); sizzle.stop(); },
       hint: function (t) {
@@ -1461,6 +1534,7 @@
         if (!cake) return;
         if (cake.phase === 'cook1') {
           cake.t = Math.min(T_MAX + 4, cake.t + dt);
+          if (TODDLER) cake.t = Math.min(cake.t, T_BURN - 0.3);
           if (Math.random() < dt * 9) { var a = Math.random() * TAU, rr3 = Math.sqrt(Math.random()) * 0.78; cake.bubbles.push({ x: Math.cos(a) * rr3, y: Math.sin(a) * rr3, life: 0, max: 0.6 + Math.random() * 0.6 }); }
           if (cake.t >= T_OK && cake.said < 1) { cake.said = 1; say('Golden! Swipe up to flip!'); Sound.pop(); burst(PX, PY - cake.r, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 120, life: 0.6 }); }
           if (cake.t >= T_BURN && cake.said < 2) { cake.said = 2; say('Quick, it’s burning!'); }
@@ -1647,6 +1721,15 @@
       }
     }
     return {
+      tapSpot: function () { var t = stackTop(); return { x: t.x, y: t.y }; },
+      toddler: function () {
+        var top = stackTop(), k, pts = [];
+        var t = pick(['syrup', 'strawberry', 'banana', 'strawberry', 'banana', 'sugar', 'butter']);
+        var q = { x: top.x + (Math.random() - 0.5) * top.rx * 1.2, y: top.y + (Math.random() - 0.5) * top.ry * 0.8 };
+        if (t === 'syrup') { for (k = 0; k <= 20; k++) pts.push({ x: top.x - top.rx * 0.6 + top.rx * 1.2 * k / 20, y: top.y + Math.sin(k / 2) * top.ry * 0.4 }); return { before: function () { setTool('syrup'); }, pts: pts, dur: 0.7 }; }
+        if (t === 'sugar') return { before: function () { setTool('sugar'); }, pts: circlePts(q.x, q.y - 20, 30, 10, 1, 20), dur: 0.6 };
+        return { before: function () { setTool(t); }, pts: [q], dur: 0.05 };
+      },
       enter: function () {
         toolsEl.innerHTML = ['plate', 'syrup', 'butter', 'strawberry', 'banana', 'sugar'].map(function (t) {
           var lbl = { plate: 'Plate', syrup: 'Syrup', butter: 'Butter', strawberry: 'Berry', banana: 'Banana', sugar: 'Sugar' }[t];
@@ -1778,6 +1861,16 @@
     }
 
     return {
+      tapSpot: function () {
+        if (phase === 'wait') return { x: SIDE.x, y: SIDE.y - 10 };
+        if (phase === 'cook') return { x: PX, y: PY };
+        return null;
+      },
+      toddler: function () {
+        if (phase === 'wait') return { pts: [{ x: SIDE.x, y: SIDE.y }], dur: 0.05 };
+        if (phase === 'cook') return { before: function () { if (t < T_OK + 0.3) t = T_OK + 0.3; }, pts: swipeUp(PX, PY + 90, 200), dur: 0.3 };
+        return false;
+      },
       enter: function () { say('Tap the patty to cook it'); },
       leave: function () { sizzle.stop(); },
       hint: function (k) {
@@ -1801,6 +1894,7 @@
         }
         if (phase === 'cook') {
           t = Math.min(T_MAX + 4, t + dt);
+          if (TODDLER) t = Math.min(t, T_BURN - 0.3);
           if (t >= T_OK && said < 1) { said = 1; Sound.pop(); say(side === 1 ? 'Brown! Swipe up to flip!' : 'Done! Swipe up to serve!'); }
           if (t >= T_BURN && said < 2) { said = 2; say('Quick, it’s burning!'); }
           if (t > T_BURN && Math.random() < dt * 6) burst(PX + (Math.random() - 0.5) * R, PY - R * 0.3, 1, { colors: ['rgba(120,110,125,.55)'], shape: 'dot', size: 26, speed: 25, gravity: -90, life: 1.4 });
@@ -1979,6 +2073,8 @@
       dish.layers.pop(); Sound.pop(); say('Taken off'); refreshUndo();
     }
     return {
+      tapSpot: function () { return { x: BX, y: BY - 120 }; },
+      toddler: function () { if (dish.topBun) return false; return { before: function () { add(pick(BURGER_TOOLS)); }, pts: [] }; },
       enter: function () {
         toolsEl.innerHTML = BURGER_TOOLS.map(function (t) {
           return '<button class="tool" type="button" data-tool="' + t + '">' + BURGER_ICONS[t] + '<span>' + BURGER_LABEL[t] + '</span></button>';
@@ -2090,7 +2186,7 @@
       return '<div class="step ' + (i < stepIdx ? 'done' : i === stepIdx ? 'now' : '') + '"><i>' + s.icon + '</i><span>' + s.name + '</span></div>';
     }).join('');
   }
-  function leaveScene() { if (scene && scene.leave) scene.leave(); scene = null; Cat.hide(); hideNext(); setUndo(null); pointerId = null; }
+  function leaveScene() { auto = null; if (scene && scene.leave) scene.leave(); scene = null; Cat.hide(); hideNext(); setUndo(null); pointerId = null; }
   function nextStep() { goStep(stepIdx + 1); }
   /* the tray is shorter on steps without a tool row, which leaves more room for the food */
   function fitTray() { tray.classList.toggle('notools', !toolsEl.children.length); resize(); }
@@ -2247,9 +2343,35 @@
   soundBtn.addEventListener('click', function () { Sound.init(); Sound.setOn(!Sound.isOn()); renderSound(); if (Sound.isOn()) Sound.pop(); });
   renderSound();
 
+  /* ---------- toddler mode: play a gesture by itself ---------- */
+  var auto = null;
+  function circlePts(x, y, rx, ry, turns, n) { var pts = []; for (var i = 0; i <= n; i++) { var a = i / n * TAU * turns; pts.push({ x: x + Math.cos(a) * rx, y: y + Math.sin(a) * ry }); } return pts; }
+  function circle(x, y, rx, ry, turns, dur) { return { pts: circlePts(x, y, rx, ry, turns, Math.round(40 * turns)), dur: dur }; }
+  function swipeUp(x, y, len) { var pts = []; for (var i = 0; i <= 8; i++) pts.push({ x: x, y: y - len * i / 8 }); return pts; }
+  function playGesture(g) {
+    if (!g || !scene) return;
+    if (g.before) g.before();
+    if (!g.pts || !g.pts.length) return;
+    auto = { pts: g.pts, dur: g.dur || 0.05, t: 0, i: 0 };
+    if (scene.down) scene.down(g.pts[0]);
+  }
+  function updateAuto(dt) {
+    if (!auto || !scene) { auto = null; return; }
+    auto.t += dt;
+    var target = Math.min(auto.pts.length - 1, Math.floor(auto.t / auto.dur * (auto.pts.length - 1)));
+    while (auto.i < target) { auto.i++; if (scene.move) scene.move(auto.pts[auto.i]); }
+    if (auto.t >= auto.dur) { var a = auto; auto = null; if (scene.up) scene.up(a.pts[a.pts.length - 1]); }
+  }
+  window.addEventListener('pageshow', function () { var t = !!GG.getSetting('toddler', false); if (t !== TODDLER) location.reload(); });
+
   /* ---------- input ---------- */
   canvas.addEventListener('pointerdown', function (e) {
     if (mode !== 'play' || !scene) return;
+    if (TODDLER && scene.toddler) {
+      Sound.init(); idle = 0; e.preventDefault();
+      if (!auto) playGesture(scene.toddler(toLogical(e)));
+      return;
+    }
     if (pointerId !== null && pointerId !== e.pointerId) return;
     Sound.init();
     pointerId = e.pointerId;
@@ -2277,6 +2399,19 @@
 
   /* ---------- hint finger ---------- */
   function drawHint(c, dt) {
+    if (TODDLER && scene && scene.tapSpot) {
+      // toddler mode: a pulsing "tap here" dot, shown quickly
+      if (auto) { idle = 0; return; }
+      idle += dt; if (idle < 1) { hintT = 0; return; }
+      hintT += dt;
+      var sp = scene.tapSpot(); if (!sp) return;
+      var k = (hintT % 1), r = 22 + Math.sin(k * Math.PI) * 10;
+      c.save(); c.globalAlpha = Math.min(1, (idle - 1) * 2) * 0.95;
+      c.beginPath(); c.arc(sp.x, sp.y, r + 14, 0, TAU); c.fillStyle = 'rgba(255,201,60,.35)'; c.fill();
+      c.beginPath(); c.arc(sp.x, sp.y, r, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+      c.restore();
+      return;
+    }
     if (!scene || !scene.hint || pointerId !== null) return;
     idle += dt;
     if (idle < 2.2) { hintT = 0; return; }
@@ -2294,6 +2429,7 @@
   var last = performance.now();
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    updateAuto(dt);
     if (scene && scene.update) scene.update(dt);
     updateParts(dt);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
