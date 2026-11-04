@@ -291,9 +291,9 @@
       n: n,
       colours: shuffle([0, 1, 2, 3, 4, 5], rnd).slice(0, colours),
       cubbies: cubbies,
-      goal: Math.min(45, 9 + (n - 1) * 3),
-      speed: Math.min(1.7, 0.5 * Math.pow(1.1, n - 1)),
-      gap: Math.max(1.25, 2.5 - (n - 1) * 0.12),
+      goal: Math.min(48, 12 + (n - 1) * 3),
+      speed: Math.min(2.0, 0.8 * Math.pow(1.08, n - 1)),
+      gap: Math.max(1.05, 1.7 - (n - 1) * 0.07),
       // how often a new cat matches a cubby that's on the shelf right now
       fair: Math.max(0.62, 0.86 - (n - 1) * 0.02)
     };
@@ -655,7 +655,13 @@
     time += dt;
     if (mode === 'ready') {
       readyT += dt;
-      if (readyT > 1.2) { mode = 'play'; spawnCat(); spawnDist = 0; nextGap = rand(level.gap, level.gap * 1.45); }
+      if (readyT > 1.2) {
+        mode = 'play';
+        // start with a few cats already riding along, so there's something to do straight away
+        var x = Math.min(cw * 0.55, L.catS * (0.6 + level.gap * 2.2));
+        for (var k = 0; k < 3; k++) { spawnCat(); cats[cats.length - 1].bx = x; x -= rand(level.gap, level.gap * 1.3) * L.catS; }
+        spawnDist = 0; nextGap = rand(level.gap, level.gap * 1.3);
+      }
     }
     var playing = mode === 'play';
     var v = playing ? beltSpeed() : 0;
@@ -666,7 +672,7 @@
       spawnDist += v * dt;
       if (spawnDist >= nextGap * L.catS) {
         spawnDist = 0;
-        nextGap = rand(level.gap, level.gap * 1.45);
+        nextGap = rand(level.gap, level.gap * 1.3);
         spawnCat();
       }
     }
