@@ -2142,6 +2142,8 @@
     var p = GG.current();
     $('menuTitle').textContent = p ? 'What shall we cook, ' + p.name + '?' : 'What shall we cook?';
     $('recipes').innerHTML = RECIPES.map(function (r) {
+      var lockedR = window.GGPass && !window.GGPass.allows('cooking', r.id);
+      if (r.ready && lockedR) return '<button class="recipe hero needs-pass" type="button" data-id="' + r.id + '"><span class="soon">' + PADLOCK + 'Unlock</span>' + RECIPE_ART[r.id] + '<span>' + r.name + '</span><small>Needs a pass</small></button>';
       return r.ready
         ? '<button class="recipe hero" type="button" data-id="' + r.id + '">' + RECIPE_ART[r.id] + '<span>' + r.name + '</span><small>' + RECIPE_DEFS[r.id].steps.map(function (st) { return st.name; }).join(' \u00b7 ') + '</small></button>'
         : '<div class="recipe locked"><span class="soon">Soon</span>' + RECIPE_ART[r.id] + '<span>' + r.name + '</span></div>';
@@ -2196,7 +2198,16 @@
     if (dx > 60) $('viewPrev').click(); else if (dx < -60) $('viewNext').click();
   });
 
-  function startCooking(id) { recipe = RECIPE_DEFS[id] || recipe; dish = newDish(); showScreen('play'); goStep(0); }
+  var PADLOCK = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><rect x="4" y="10" width="16" height="12" rx="3" fill="#2A2340"/><path d="M8 10 V7 a4 4 0 0 1 8 0 V10" fill="none" stroke="#2A2340" stroke-width="2.6"/></svg>';
+  function startCooking(id) {
+    // recipes other than the free one need the one-year pass (shared/pass.js)
+    if (window.GGPass && !window.GGPass.allows('cooking', id)) {
+      window.GGPass.lockScreen({ title: (RECIPE_DEFS[id] ? RECIPE_DEFS[id].name : 'This recipe') + ' needs a pass', text: 'The sushi hand roll is free. A grown-up can unlock every recipe and game for a year.' });
+      return;
+    }
+    recipe = RECIPE_DEFS[id] || recipe; dish = newDish(); showScreen('play'); goStep(0);
+  }
+  window.addEventListener('ggpass', function () { if (mode === 'menu') renderMenu(); });
 
   /* Leaving mid-dish takes two taps so a stray finger doesn't lose the dish. */
   var leaveArmed = false, leaveTimer = null;

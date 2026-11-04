@@ -2,7 +2,7 @@
    Bump VERSION whenever files change so devices pick up the new copy. */
 const VERSION = 'ccg-v40';
 const FILES = [
-  './', './index.html', './manifest.webmanifest', './shared/store.js',
+  './', './index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
   './about/', './about/index.html',
   './games/cooking/', './games/cooking/index.html', './games/cooking/game.js',
@@ -30,6 +30,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   if (url.origin !== location.origin && !isFont) return;
+  if (url.pathname.startsWith('/api/')) return; // pass checks always go to the network
   if (isFont) {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
       const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res;

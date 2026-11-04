@@ -11,4 +11,12 @@ Our family's private collection of browser games. No ads, no tracking.
 - `manifest.webmanifest`, `icons/` – "Add to Home Screen" support
 - `sw.js` – offline support. Bump `VERSION` in it whenever files change.
 
-It's a plain static site with no build step, so Vercel serves the files as they are.
+The games are plain static files with no build step. The only server code is the one-year pass in `api/` and `server/`.
+
+## One-year pass
+
+- `shared/pass.js` – the pass on each device: checks it, shows padlocks, and holds the list of what's free (`FREE`). Any game not in that list is locked automatically.
+- `unlock/` – the unlock page: grown-up check, buy, send to a grown-up's email, sign in with a code, manage devices.
+- `api/index.js` + `server/` – the server side on Vercel (Stripe checkout and webhook, emailed codes via Resend, devices, daily reminder emails). Storage is Upstash Redis.
+- Switched on and off with the `PASS_REQUIRED` setting in Vercel. Setup steps: `docs/pass-setup.md`.
+- `npm test` runs the pass tests; `npm run rehearse` runs a local copy with pretend Stripe and email.

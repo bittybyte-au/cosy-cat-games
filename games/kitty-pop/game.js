@@ -707,7 +707,14 @@
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('kittypop'); p.level = p.level || 1; return p; }
 
+  /* levels past the free ones need the one-year pass (shared/pass.js): the last free level replays underneath */
+  function passBlocks(n) { return !!(window.GGPass && !window.GGPass.allows('kitty-pop', n)); }
+  function showPassLock() {
+    window.GGPass.lockScreen({ title: 'You\u2019ve finished the free levels!', text: 'A grown-up can unlock every Kitty Pop level, and all the other games, for a year.', backLabel: 'Keep playing' });
+  }
+
   function startLevel(n) {
+    if (passBlocks(n)) { n = window.GGPass.FREE['kitty-pop']; showPassLock(); }
     level = levelDef(n);
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
     $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
@@ -1005,6 +1012,7 @@
 
   resize();
   startLevel(progress().level);
+  window.addEventListener('ggpass', function () { if (level && passBlocks(level.n)) startLevel(level.n); });
   requestAnimationFrame(frame);
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
 

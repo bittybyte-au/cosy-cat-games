@@ -153,6 +153,9 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .recipe svg { width: 100%; max-width: 180px; height: auto; }
 .recipe.hero { background: #CFF0FF; }
 .recipe small { font: 800 .95rem var(--body); color: var(--muted); }
+.recipe.needs-pass > svg { opacity: .55; }
+.recipe .soon svg { width: 14px; height: 14px; max-width: none; opacity: 1; }
+.recipe.needs-pass small { color: var(--ink); }
 .recipe.locked { background: rgba(255, 255, 255, .5); border-style: dashed; box-shadow: none; cursor: default; color: var(--muted); }
 .recipe.locked svg { opacity: .45; filter: grayscale(.6); }
 .recipe .soon {

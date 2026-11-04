@@ -94,6 +94,15 @@
     reload: function () { data = load(); }
   };
 
+  /* The one-year pass (shared/pass.js) is loaded on every page that loads this file. */
+  try {
+    if (!window.GGPass && document.currentScript && document.currentScript.src) {
+      var ps = document.createElement('script');
+      ps.src = new URL('pass.js', document.currentScript.src).href;
+      document.head.appendChild(ps);
+    }
+  } catch (e) {}
+
   /* Offline support: harmless if service workers are unavailable. */
   try {
     if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude/.test(location.hostname)) {

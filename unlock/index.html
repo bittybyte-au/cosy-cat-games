@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unlock Cosy Cat Games</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#9EDCFF">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
+<style>
+/* Layout: the same sunny sky as the home page; one cream card that changes step by step. Single bright look by design. */
+:root {
+  --sky: #9EDCFF;
+  --grass: #7BD389;
+  --ink: #2A2340;
+  --cream: #FFF8EC;
+  --sun: #FFC93C;
+  --tomato: #FF6B57;
+  --muted: #5E5675;
+  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: linear-gradient(var(--sky) 0 60%, #BFE8FF) fixed; color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.5; }
+.wrap {
+  max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100svh;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px; display: flex; flex-direction: column; gap: 18px;
+}
+.back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 52px; padding: 0 18px;
+  border: 3px solid var(--ink); border-radius: 999px; background: var(--cream); color: var(--ink);
+  font: 800 1rem var(--body); text-decoration: none; box-shadow: 0 4px 0 var(--ink); cursor: pointer;
+}
+.card {
+  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
+  padding: 24px clamp(18px, 5vw, 30px); display: flex; flex-direction: column; gap: 14px; align-items: stretch;
+}
+.card > svg { align-self: center; }
+h1 { margin: 0; font: 800 clamp(1.7rem, 6vw, 2.2rem)/1.1 var(--display); text-align: center; text-wrap: balance; }
+p { margin: 0; }
+.center { text-align: center; }
+.muted { color: var(--muted); font-weight: 700; font-size: .95rem; }
+.facts { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.facts li { background: #fff; border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: .95rem; }
+.price { font: 800 2.4rem/1 var(--display); text-align: center; }
+.price small { font: 800 1rem var(--body); color: var(--muted); }
+.btn {
+  min-height: 60px; padding: 0 22px; border-radius: 999px; border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
+  font: 800 1.15rem var(--body); color: var(--ink); background: #fff; cursor: pointer; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; text-align: center;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn.go { background: var(--grass); }
+.btn.sun { background: var(--sun); }
+.btn.warn { background: var(--tomato); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:focus-visible, .back:focus-visible, input:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+.link { background: none; border: 0; padding: 10px; font: 800 1rem var(--body); color: var(--ink); text-decoration: underline; cursor: pointer; }
+label { font-weight: 800; }
+input {
+  width: 100%; min-height: 58px; border: 3px solid var(--ink); border-radius: 16px; padding: 0 14px;
+  font: 800 1.25rem var(--body); color: var(--ink); background: #fff;
+}
+input.code { text-align: center; letter-spacing: .4em; font-size: 1.8rem; }
+.err { color: #B3261E; font-weight: 800; min-height: 1.2em; text-align: center; }
+.devices { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.devices li { display: flex; align-items: center; gap: 10px; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 10px 12px; }
+.devices .name { flex: 1; min-width: 0; font-weight: 800; }
+.devices .name small { display: block; font-weight: 700; color: var(--muted); }
+.devices button { flex: none; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 3px solid var(--ink); background: var(--tomato); color: #fff; font: 800 .95rem var(--body); cursor: pointer; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.dots span { display: inline-block; animation: blink 1.4s infinite both; }
+.dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dots span { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" id="backHome" href="../index.html">
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to games
+  </a>
+  <main class="card" id="card" aria-live="polite"><p class="center muted">Loading<span class="dots"><span>.</span><span>.</span><span>.</span></span></p></main>
+</div>
+
+<script src="../shared/store.js"></script>
+<script>
+(function () {
+  var card = document.getElementById('card');
+  var params = new URLSearchParams(location.search);
+  var P = null; // GGPass, once loaded
+  var pollTimer = null;
+
+  var CAT = '<svg width="120" height="96" viewBox="0 -8 170 144" aria-hidden="true"><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 92 Q76 98 80 92 Q84 98 88 92" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g></svg>';
+  var SLEEPY = '<svg width="150" height="96" viewBox="0 0 190 120" aria-hidden="true"><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#2A2340" stroke-width="13" stroke-linecap="round"/><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#FFB26B" stroke-width="6" stroke-linecap="round"/><ellipse cx="88" cy="86" rx="58" ry="28" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M110 58 L114 34 L128 48 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M146 50 L156 30 L160 54 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="136" cy="78" rx="32" ry="26" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M120 78 Q125 82 130 78 M142 78 Q147 82 152 78" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><text x="160" y="34" font-family="Baloo 2, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="172" y="18" font-family="Baloo 2, sans-serif" font-weight="800" font-size="24" fill="#5E5675">Z</text></svg>';
+
+  var ERR = {
+    bad_email: 'That email doesn’t look quite right.',
+    slow_down: 'Too many tries. Please wait a little while and try again.',
+    code_expired: 'That code has run out. Send a new one.',
+    wrong_code: 'That code isn’t right. Check the email and try again.',
+    too_many_tries: 'Too many wrong codes. Send a new one.',
+    no_pass: 'There’s no pass for that email yet.',
+    removal_limit: 'You’ve removed 3 devices this month. Try again later, or remove this device instead.',
+    already_claimed: 'This payment has already unlocked another device. Use “I already have a pass” instead.',
+    request_expired: 'This link has run out. Ask your child to send a new one.',
+    not_paid: 'The payment hasn’t gone through yet.',
+    not_set_up: 'Unlocking isn’t available yet.',
+    server_error: 'Something went wrong. Please try again.',
+    offline: 'You seem to be offline. Connect to the internet and try again.'
+  };
+  function errText(r) { return ERR[r && r.error] || ERR.server_error; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmtDate(t) { return new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }); }
+  function call(path, body) { return P.api(path, body).catch(function () { return { ok: false, error: 'offline' }; }); }
+
+  function show(html, onShow) {
+    clearTimeout(pollTimer);
+    card.innerHTML = html;
+    var f = card.querySelector('[autofocus]'); if (f) setTimeout(function () { f.focus(); }, 30);
+    if (onShow) onShow();
+  }
+  function $(id) { return document.getElementById(id); }
+  function busy(btn, on) { if (btn) { btn.disabled = on; if (on) btn.dataset.label = btn.textContent, btn.textContent = 'One moment…'; else if (btn.dataset.label) btn.textContent = btn.dataset.label; } }
+
+  /* ---------- grown-up check ---------- */
+  function gate(next) {
+    var a = 6 + Math.floor(Math.random() * 4), b = 3 + Math.floor(Math.random() * 6);
+    show(CAT + '<h1>Grown-ups only</h1><p class="center">Please ask a grown-up to help with this part.</p>' +
+      '<label for="gateIn">What is ' + a + ' × ' + b + '?</label>' +
+      '<input id="gateIn" inputmode="numeric" autocomplete="off" autofocus>' +
+      '<p class="err" id="err"></p><button class="btn go" id="gateGo" type="button">Continue</button>', function () {
+      function check() {
+        if (parseInt($('gateIn').value, 10) === a * b) next();
+        else { $('err').textContent = 'Not quite. Here’s another one.'; setTimeout(function () { gate(next); }, 900); }
+      }
+      $('gateGo').addEventListener('click', check);
+      $('gateIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') check(); });
+    });
+  }
+
+  /* ---------- screens ---------- */
+  function facts(st) {
+    return '<ul class="facts"><li>Every game</li><li>Up to ' + st.deviceLimit + ' devices</li><li>One year</li><li>Doesn’t auto-renew</li></ul>';
+  }
+
+  function choose() {
+    var st = P.state();
+    show(CAT + '<h1>Unlock all the games</h1>' +
+      '<p class="price">' + esc(st.price) + ' <small>for a whole year</small></p>' + facts(st) +
+      '<div class="stack">' +
+      '<button class="btn go" id="buyHere" type="button">Buy on this device</button>' +
+      '<button class="btn sun" id="askBtn" type="button">Send to a grown-up’s email</button>' +
+      '<button class="btn" id="haveBtn" type="button">I already have a pass</button>' +
+      '</div><p class="err" id="err"></p>' +
+      '<p class="muted center">Payment is handled securely by Stripe. Have a promo code? You can enter it on the payment page.</p>', function () {
+      $('buyHere').addEventListener('click', function () { checkout({}, this); });
+      $('askBtn').addEventListener('click', askForm);
+      $('haveBtn').addEventListener('click', codeEmailForm);
+    });
+  }
+
+  function checkout(body, btn) {
+    busy(btn, true);
+    call('checkout', body).then(function (r) {
+      if (r.ok && r.url) location.href = r.url;
+      else { busy(btn, false); var e = $('err'); if (e) e.textContent = errText(r); }
+    });
+  }
+
+  function askForm() {
+    show(CAT + '<h1>Send to a grown-up</h1><p class="center">We’ll email them a link to buy the pass on their own phone. This ' + esc(P.deviceName()) + ' unlocks by itself once they’ve paid.</p>' +
+      '<label for="askEmail">Grown-up’s email</label><input id="askEmail" type="email" inputmode="email" autocomplete="email" autofocus>' +
+      '<p class="err" id="err"></p><button class="btn go" id="askGo" type="button">Send</button>' +
+      '<button class="link" id="backChoose" type="button">Back</button>', function () {
+      $('backChoose').addEventListener('click', choose);
+      function send() {
+        var btn = $('askGo'); busy(btn, true);
+        call('ask', { email: $('askEmail').value, device: P.device, name: P.deviceName() }).then(function (r) {
+          if (r.ok) { P.setRequest(r.request); waiting(r.request); }
+          else { busy(btn, false); $('err').textContent = errText(r); }
+        });
+      }
+      $('askGo').addEventListener('click', send);
+      $('askEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+    });
+  }
+
+  function waiting(reqId) {
+    show(SLEEPY + '<h1>Waiting for a grown-up<span class="dots"><span>.</span><span>.</span><span>.</span></span></h1>' +
+      '<p class="center">We’ve sent them an email. As soon as they’ve paid, this ' + esc(P.deviceName()) + ' unlocks by itself.</p>' +
+      '<p class="muted center">You can keep playing the free games while you wait.</p>' +
+      '<a class="btn" href="../index.html">Play free games</a><button class="link" id="cancelAsk" type="button">Cancel</button>', function () {
+      $('cancelAsk').addEventListener('click', function () { P.setRequest(null); choose(); });
+      function poll() {
+        call('ask/status', { request: reqId, device: P.device }).then(function (r) {
+          if (r.status === 'unlocked') { P.setRequest(null); P.setPass(r.token, r.pass); unlocked(); }
+          else if (r.status === 'expired') { P.setRequest(null); show(CAT + '<h1>That request ran out</h1><p class="center">Requests last 24 hours. You can send a new one.</p><button class="btn go" id="again" type="button">Try again</button>', function () { $('again').addEventListener('click', askForm); }); }
+          else if (r.status === 'device_limit') { P.setRequest(null); show(CAT + '<h1>All devices are in use</h1><p class="center">This pass already has ' + P.state().deviceLimit + ' devices. A grown-up can remove one, then use “I already have a pass” on this device.</p><button class="btn go" id="have" type="button">I already have a pass</button>', function () { $('have').addEventListener('click', codeEmailForm); }); }
+          else pollTimer = setTimeout(poll, 4000);
+        });
+      }
+      pollTimer = setTimeout(poll, 2000);
+    });
+  }
+
+  function codeEmailForm() {
+    show(CAT + '<h1>Sign in with a code</h1><p class="center">Type the email you used to buy the pass. We’ll send a 6-digit code, which you can read on your own phone.</p>' +
+      '<label for="ce">Email</label><input id="ce" type="email" inputmode="email" autocomplete="email" autofocus>' +
+      '<p class="err" id="err"></p><button class="btn go" id="sendCode" type="button">Send code</button>' +
+      '<button class="link" id="backChoose" type="button">Back</button>', function () {
+      $('backChoose').addEventListener('click', start);
+      function send() {
+        var email = $('ce').value, btn = $('sendCode'); busy(btn, true);
+        call('code/send', { email: email }).then(function (r) {
+          if (r.ok) codeEnter(email); else { busy(btn, false); $('err').textContent = errText(r); }
+        });
+      }
+      $('sendCode').addEventListener('click', send);
+      $('ce').addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+    });
+  }
+
+  function codeEnter(email) {
+    show(CAT + '<h1>Type the code</h1><p class="center">If there’s a pass for <b>' + esc(email) + '</b>, a code is on its way. It works for 10 minutes.</p>' +
+      '<label for="code">6-digit code</label><input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" autofocus>' +
+      '<p class="err" id="err"></p><button class="btn go" id="verify" type="button">Unlock this device</button>' +
+      '<button class="link" id="resend" type="button">Use a different email</button>', function () {
+      $('resend').addEventListener('click', codeEmailForm);
+      function go() {
+        var btn = $('verify'); busy(btn, true);
+        call('code/verify', { email: email, code: $('code').value, device: P.device, name: P.deviceName() }).then(function (r) {
+          if (r.ok) { P.setPass(r.token, r.pass); unlocked(); }
+          else if (r.error === 'device_limit') devicesFull(r);
+          else { busy(btn, false); $('err').textContent = errText(r); if (r.error === 'code_expired' || r.error === 'too_many_tries') $('verify').disabled = true; }
+        });
+      }
+      $('verify').addEventListener('click', go);
+      $('code').addEventListener('input', function () { if (this.value.replace(/\D/g, '').length === 6) go(); });
+    });
+  }
+
+  function deviceList(devices, removable) {
+    return '<ul class="devices">' + devices.map(function (d) {
+      return '<li><span class="name">' + esc(d.name) + (d.thisDevice ? ' (this one)' : '') +
+        '<small>Added ' + fmtDate(d.addedAt) + (d.lastSeen ? ' · last used ' + fmtDate(d.lastSeen) : '') + '</small></span>' +
+        (removable ? '<button type="button" data-id="' + esc(d.id) + '">' + (d.thisDevice ? 'Sign out' : 'Remove') + '</button>' : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+
+  /* the pass is full: pick a device to remove, then this one is added */
+  function devicesFull(r) {
+    show(CAT + '<h1>All ' + r.devices.length + ' devices are in use</h1><p class="center">Remove one you don’t use any more to make room for this ' + esc(P.deviceName()) + '.</p>' +
+      deviceList(r.devices, true) + '<p class="err" id="err"></p><p class="muted center">You can remove up to 3 devices a month.</p>', function () {
+      card.querySelectorAll('.devices button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          busy(b, true);
+          call('devices/remove', { manage: r.manage, id: b.dataset.id }).then(function (x) {
+            if (!x.ok) { busy(b, false); $('err').textContent = errText(x); return; }
+            call('devices/add', { manage: r.manage, device: P.device, name: P.deviceName() }).then(function (y) {
+              if (y.ok) { P.setPass(y.token, y.pass); unlocked(); } else $('err').textContent = errText(y);
+            });
+          });
+        });
+      });
+    });
+  }
+
+  function unlocked() {
+    var st = P.state();
+    show(CAT + '<h1>All unlocked!</h1><p class="center">Every game is unlocked on this ' + esc(P.deviceName()) + (st.pass && st.pass.never ? '.' : ' until ' + fmtDate(st.pass.expiresAt) + '.') + '</p>' +
+      '<a class="btn go" href="../index.html" autofocus>Let’s play!</a>');
+  }
+
+  function status() {
+    var st = P.state(), p = st.pass;
+    var ended = !st.active;
+    var soon = !ended && !p.never && p.expiresAt - Date.now() < 30 * 86400000;
+    show(CAT + '<h1>' + (ended ? 'Your pass has ended' : 'Your pass is active') + '</h1>' +
+      '<p class="center">' + (p.never ? 'This pass never runs out.' : (ended ? 'It ended on ' : 'All games are unlocked until ') + '<b>' + fmtDate(p.expiresAt) + '</b>.') + '</p>' +
+      '<p class="muted center">' + esc(p.email) + ' · ' + p.deviceCount + ' of ' + p.deviceLimit + ' devices</p>' +
+      '<div class="stack">' +
+      (ended || soon ? '<button class="btn go" id="renew" type="button">Renew for another year (' + esc(st.price) + ')</button>' : '') +
+      (ended ? '<button class="btn sun" id="askRenew" type="button">Send to a grown-up’s email</button>' : '<a class="btn go" href="../index.html">Back to the games</a>') +
+      '<button class="btn" id="manage" type="button">Manage devices</button>' +
+      (!ended && !soon && !p.never ? '<button class="link" id="renewEarly" type="button">Renew early (adds a year on)</button>' : '') +
+      '</div><p class="err" id="err"></p>', function () {
+      var r1 = $('renew'), r2 = $('renewEarly');
+      [r1, r2].forEach(function (b) { if (b) b.addEventListener('click', function () { gate(function () { renewScreen(); }); }); });
+      if ($('askRenew')) $('askRenew').addEventListener('click', askForm);
+      $('manage').addEventListener('click', function () { gate(manageDevices); });
+    });
+  }
+
+  function renewScreen() {
+    var st = P.state();
+    show(CAT + '<h1>Renew your pass</h1><p class="price">' + esc(st.price) + ' <small>for another year</small></p>' +
+      '<p class="center">The new year starts when your current pass ends, so you don’t lose any days.</p>' +
+      '<button class="btn go" id="pay" type="button">Continue to payment</button><p class="err" id="err"></p><button class="link" id="b" type="button">Back</button>', function () {
+      $('pay').addEventListener('click', function () { checkout({ token: P.token() }, this); });
+      $('b').addEventListener('click', status);
+    });
+  }
+
+  function manageDevices() {
+    show('<p class="center muted">Loading devices…</p>');
+    call('devices', { token: P.token() }).then(function (r) {
+      if (!r.ok) { P.signOut(); start(); return; }
+      show('<h1>Devices on this pass</h1><p class="center">' + r.devices.length + ' of ' + r.pass.deviceLimit + ' devices. Removed devices are signed out next time they go online.</p>' +
+        deviceList(r.devices, true) + '<p class="err" id="err"></p><p class="muted center">You can remove up to 3 other devices a month.</p><button class="link" id="b" type="button">Done</button>', function () {
+        $('b').addEventListener('click', status);
+        card.querySelectorAll('.devices button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var mine = b.textContent === 'Sign out';
+            busy(b, true);
+            call('devices/remove', { token: P.token(), id: b.dataset.id }).then(function (x) {
+              if (!x.ok) { busy(b, false); $('err').textContent = errText(x); return; }
+              if (mine) { P.signOut(); start(); } else manageDevices();
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /* a grown-up opened the emailed link on their own phone */
+  function parentBuy(reqId) {
+    call('ask/info', { request: reqId }).then(function (r) {
+      var st = P.state();
+      if (!r.ok || r.status === 'expired') { show(CAT + '<h1>This link has run out</h1><p class="center">Links last 24 hours. Your child can send a new one from their device.</p>'); return; }
+      if (r.status === 'paid') { thanks(); return; }
+      show(CAT + '<h1>Unlock Cosy Cat Games</h1><p class="center">Your child asked to unlock the games on their <b>' + esc(r.deviceName) + '</b>.</p>' +
+        '<p class="price">' + esc(r.price || st.price) + ' <small>for a whole year</small></p>' + facts(st) +
+        '<p class="center">No ads, no tracking, no pop-ups. The pass doesn’t renew automatically; we’ll email you a reminder before it ends.</p>' +
+        '<button class="btn go" id="pay" type="button">Continue to payment</button><p class="err" id="err"></p>' +
+        '<p class="muted center">Payment is handled securely by Stripe. Have a promo code? You can enter it on the payment page.</p>', function () {
+        $('pay').addEventListener('click', function () { checkout({ request: reqId }, this); });
+      });
+    });
+  }
+  function thanks() {
+    show(CAT + '<h1>Thank you!</h1><p class="center">The pass is paid. Your child’s device unlocks by itself in a few seconds. You can close this page.</p>' +
+      '<p class="muted center">To unlock another device, open the games on it and choose “I already have a pass”.</p>');
+  }
+
+  /* back from Stripe after paying */
+  function paidReturn(sessionId, reqId) {
+    show(CAT + '<h1>Finishing up<span class="dots"><span>.</span><span>.</span><span>.</span></span></h1>');
+    var tries = 0;
+    (function attempt() {
+      call('claim', { session: sessionId, device: P.device, name: P.deviceName() }).then(function (r) {
+        history.replaceState(null, '', location.pathname);
+        if (r.ok && r.forOtherDevice) thanks();
+        else if (r.ok) { P.setPass(r.token, r.pass); unlocked(); }
+        else if (r.error === 'device_limit') devicesFull(r);
+        else if (r.error === 'not_paid' && tries++ < 5) setTimeout(attempt, 2000);
+        else show(CAT + '<h1>Hmm, that didn’t work</h1><p class="center">' + esc(errText(r)) + '</p><button class="btn go" id="have" type="button">I already have a pass</button>', function () { $('have').addEventListener('click', codeEmailForm); });
+      });
+    })();
+  }
+
+  function start() {
+    var st = P.state();
+    if (params.get('paid')) return paidReturn(params.get('paid'), params.get('r'));
+    if (params.get('r')) return parentBuy(params.get('r'));
+    if (!st.required && !st.signedIn) {
+      show(CAT + '<h1>Everything is free right now</h1><p class="center">There’s nothing to unlock. Enjoy the games!</p><a class="btn go" href="../index.html">Let’s play!</a>');
+      return;
+    }
+    if (st.signedIn) return status();
+    if (P.request()) return waiting(P.request());
+    gate(choose);
+  }
+
+  function ready() {
+    P = window.GGPass;
+    show('<p class="center muted">Checking<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>');
+    P.refresh().then(start);
+  }
+  (function wait() { if (window.GGPass) ready(); else setTimeout(wait, 30); })();
+})();
+</script>
+</body>
+</html>
