@@ -1160,7 +1160,11 @@
       down: function (p) {
         if (phase === 'milk') { if (dist(p, REST) < 110 || dist(p, jugPos()) < 110) holding = true; }
         else if (phase === 'eggs') {
-          eggs.forEach(function (e) { if (e.state === 'wait' && dist(p, e) < 60) { e.state = 'fly'; e.t = 0; Sound.whoosh(); } });
+          // one egg at a time: only the egg nearest the finger, and only when no other egg is cracking
+          var busy = eggs.some(function (e) { return e.state === 'fly' || e.state === 'crack'; });
+          var best = null;
+          eggs.forEach(function (e) { if (e.state === 'wait' && dist(p, e) < 60 && (!best || dist(p, e) < dist(p, best))) best = e; });
+          if (best && !busy) { best.state = 'fly'; best.t = 0; Sound.whoosh(); }
         } else if (phase === 'whisk' && !done) { lastAng = null; tool = p; this.move(p); }
       },
       move: function (p) {
