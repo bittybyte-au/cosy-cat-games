@@ -1888,8 +1888,9 @@
       });
     } else if (k === 'ketchup' || k === 'mustard') {
       var col = k === 'ketchup' ? '#E8322B' : '#F2C200';
-      c.beginPath(); c.moveTo(-140, -6);
-      for (var z = 0; z <= 14; z++) c.lineTo(-140 + z * 20, z % 2 ? -10 : -2);
+      // a smooth, wavy squeeze line
+      c.beginPath();
+      for (var z = 0; z <= 70; z++) { var zx = -140 + z * 4; c.lineTo(zx, -6 - 5 * Math.sin(zx / 13 + (k === 'mustard' ? 1.6 : 0))); }
       c.strokeStyle = INK; c.lineWidth = 11; c.lineCap = 'round'; c.lineJoin = 'round'; c.stroke(); c.strokeStyle = col; c.lineWidth = 6; c.stroke();
       if (k === 'ketchup') { [-80, 30, 110].forEach(function (dx) { c.beginPath(); c.moveTo(dx - 5, -2); c.quadraticCurveTo(dx, 18, dx + 5, -2); c.fillStyle = col; c.fill(); }); }
     }
