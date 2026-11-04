@@ -344,14 +344,21 @@
 
   /* ---------- levels ----------
      Gentle ramp: more colours and bigger goals as levels go up. There is no move limit. */
+  /* Goal sizes: mixed amounts that grow slowly.
+     Levels 1-2: one goal (10, 12). Levels 3-8: two goals (5 & 10 up to 10 & 20).
+     Level 9 on: three goals (5, 10, 15), each creeping up to a cap. */
+  function goalAmounts(n) {
+    if (n <= 2) return [8 + n * 2];
+    if (n <= 8) return [5 + (n - 3), 10 + (n - 3) * 2];
+    var k = Math.min(n - 9, 12);
+    return [5 + k, 10 + k, 15 + Math.round(k * 1.5)];
+  }
   function levelDef(n) {
     var rnd = seeded(n * 7919 + 13);
     var colours = n <= 3 ? 4 : n <= 10 ? 5 : 6;
-    var nGoals = n <= 2 ? 1 : n <= 8 ? 2 : 3;
-    var each = Math.min(36, 8 + n * 2);
-    if (nGoals === 3) each = Math.min(30, 6 + n);
+    var amounts = shuffle(goalAmounts(n), rnd);
     var pool = shuffle([0, 1, 2, 3, 4, 5], rnd).slice(0, colours);
-    var goals = pool.slice(0, nGoals).map(function (k) { return { kind: k, target: each, left: each, shown: each }; });
+    var goals = amounts.map(function (each, i) { return { kind: pool[i], target: each, left: each, shown: each }; });
     return { n: n, colours: pool, goals: goals };
   }
 
