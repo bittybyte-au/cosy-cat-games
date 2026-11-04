@@ -585,18 +585,17 @@
     return best;
   }
 
-  function emptyCubby(cb) {
+  function emptyCubby(cb, delay) {
     var out = cb.cats.slice();
     cb.cats = [];
     tucked = Math.max(0, tucked - out.length);
     renderTally(true);
-    say('Oops! Everyone back on the belt!', 1.6);
     out.forEach(function (c, i) {
       c.cubby = null; c.face = 'surprised'; c.wake = 1.2;
       c.bx = freeBeltX(cb.x + (i - 1) * L.catS);
       c.returning = true;
-      setTimeout(function () { Sound.boing(); }, 120 + i * 90);
-      fly(c, c.bx, L.beltY - L.catS * 0.12, 0.45 + i * 0.08, L.catS * 1.1, function () { c.where = 'belt'; c.returning = false; });
+      setTimeout(function () { Sound.boing(); }, 120 + (delay + i * 0.09) * 1000);
+      fly(c, c.bx, L.beltY - L.catS * 0.12, 0.45 + delay + i * 0.08, L.catS * 1.1, function () { c.where = 'belt'; c.returning = false; });
       sparkle(c.x, c.y, CATS[c.kind].fill, 5);
     });
   }
@@ -663,8 +662,16 @@
     if (cb && cb.kind === cat.kind && cb.cats.length < 3) { placeInCubby(cat, cb); return; }
     if (cb) {
       cb.shake = 0.45; Sound.nope(); cat.wig = 0.45; Sound.mrrp(0.15);
-      // from level 2, a wrong cat wakes up the whole cubby and everyone goes back on the belt
-      if (level.n >= 2 && cb.cats.length && cb.cats.length < 3) emptyCubby(cb);
+      // levels 2-4: a wrong cat wakes up that cubby and its cats go back on the belt.
+      // level 5 on: it wakes up every cubby.
+      if (level.n >= 5) {
+        var woke = cubbies.filter(function (k) { return k.state === 'in' && k.cats.length && k.cats.length < 3; });
+        woke.forEach(function (k, i) { k.shake = 0.45; emptyCubby(k, i * 0.12); });
+        if (woke.length) say(woke.length > 1 ? 'Oh no! Everyone woke up!' : 'Oops! Everyone back on the belt!', 1.8);
+      } else if (level.n >= 2 && cb.cats.length && cb.cats.length < 3) {
+        emptyCubby(cb, 0);
+        say('Oops! Everyone back on the belt!', 1.6);
+      }
     }
     else if (!moved) { cat.wig = 0.4; Sound.mrrp(); showHintFor = cat; hintT = 0; }
     returnCat(cat, h.from);
@@ -723,7 +730,9 @@
 
     if (playing && tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal + 4) {
       spawnDist += v * dt;
-      if (spawnDist >= nextGap * L.catS) {
+      // wait for a clear space at the start of the belt (cats sent back from cubbies can be sitting there)
+      var startClear = !cats.some(function (c) { return (c.where === 'belt' || (c.where === 'flying' && c.returning)) && c.bx < L.catS * 0.45 + L.catS * 1.05 - L.catS * 0.7 && c.bx > -L.catS * 2; });
+      if (spawnDist >= nextGap * L.catS && startClear) {
         spawnDist = 0;
         nextGap = rand(level.gap, level.gap * 1.3);
         spawnCat();
