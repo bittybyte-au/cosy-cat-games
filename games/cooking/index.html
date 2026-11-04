@@ -91,6 +91,8 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   max-width: 100%;
 }
 .say:empty { display: none; }
+.undo { flex: none; }
+.undo:disabled { opacity: .35; cursor: default; box-shadow: 0 2px 0 var(--ink); }
 .next {
   min-height: 64px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass);
   font: 800 1.4rem var(--display); box-shadow: 0 5px 0 var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; flex: none;
@@ -234,7 +236,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 </div>
 
 <div class="tray" id="tray" hidden>
-  <div class="say-row"><div class="say" id="say" aria-live="polite"></div><button class="next" id="nextBtn" type="button" hidden><span id="nextLabel">Next</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+  <div class="say-row"><button class="round undo" id="undoBtn" type="button" aria-label="Undo" title="Undo" hidden><svg viewBox="0 0 32 32"><path d="M11 9 L5 15 L11 21" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15 H19 Q27 15 27 22 Q27 27 21 27" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/></svg></button><div class="say" id="say" aria-live="polite"></div><button class="next" id="nextBtn" type="button" hidden><span id="nextLabel">Next</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="tools" id="tools"></div>
 </div>
 

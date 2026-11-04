@@ -942,6 +942,26 @@
     { fill: '#FFFFFF', rim: '#3FA7F5' }, { fill: '#FFD6E0', rim: '#FF7EB6' }, { fill: '#D7EEFF', rim: '#2A2340' },
     { fill: '#FFF1B8', rim: '#FF6B57' }, { fill: '#DDF6CF', rim: '#4FAE5E' }, { fill: '#2A2340', rim: '#FFC93C' }
   ];
+  /* Undo history for the decorating steps: snapshots of the parts of the dish a step can change */
+  function History(keys) {
+    var stack = [], pending = null;
+    function snap() { var o = {}; keys.forEach(function (k) { o[k] = JSON.parse(JSON.stringify(dish[k])); }); return o; }
+    var h = {
+      snap: snap,
+      push: function (o) { stack.push(o); if (stack.length > 60) stack.shift(); refreshUndo(); },
+      now: function () { h.push(snap()); },
+      begin: function () { pending = snap(); },
+      end: function (changed) { if (pending && changed) h.push(pending); pending = null; },
+      canUndo: function () { return stack.length > 0; },
+      undo: function () { if (!stack.length) return false; var o = stack.pop(); keys.forEach(function (k) { dish[k] = o[k]; }); refreshUndo(); return true; }
+    };
+    return h;
+  }
+  var undoBtn = $('undoBtn'), undoHandler = null;
+  function setUndo(hd) { undoHandler = hd; undoBtn.hidden = !hd; refreshUndo(); }
+  function refreshUndo() { if (undoHandler) undoBtn.disabled = !undoHandler.canUndo(); }
+  undoBtn.addEventListener('click', function () { Sound.init(); if (undoHandler && undoHandler.canUndo()) { undoHandler.undo(); Sound.pop(); } });
+
   var PCX = 300, PCY = 300, PR = 226, SOY = { x: 405, y: 420, r: 50 };
 
   function drawPlateScene(c, d, extra) {
@@ -1019,6 +1039,7 @@
     var tool = 'sesame', down = false, pointer = null, emit = 0, soyHold = false, bottleT = 0, ripple = 0, praised = false, actions = 0;
     var falling = [];
     var pourLoop = Sound.loop('pour');
+    var hist = History(['leaves', 'ginger', 'wasabi', 'seeds', 'soy', 'plate']), changed = false;
 
     function setTool(t) {
       tool = t;
@@ -1044,13 +1065,14 @@
         toolsEl.querySelectorAll('.tool').forEach(function (b) {
           b.addEventListener('click', function () {
             Sound.init();
-            if (b.dataset.tool === 'plate') { dish.plate = (dish.plate + 1) % PLATES.length; Sound.pop(); burst(PCX, PCY - PR + 10, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 140, life: 0.5 }); say('New plate!'); return; }
+            if (b.dataset.tool === 'plate') { hist.now(); dish.plate = (dish.plate + 1) % PLATES.length; Sound.pop(); burst(PCX, PCY - PR + 10, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 140, life: 0.5 }); say('New plate!'); return; }
             Sound.pop(); setTool(b.dataset.tool);
           });
         });
         setTool('sesame');
         say('Decorate your plate!');
         showNext('Done', finishDish);
+        setUndo({ canUndo: hist.canUndo, undo: function () { if (hist.undo()) { falling.length = 0; say('Undone'); } } });
       },
       leave: function () { pourLoop.stop(); toolsEl.innerHTML = ''; },
       hint: function (t) {
@@ -1059,6 +1081,8 @@
       },
       down: function (p) {
         down = true; pointer = p;
+        if ((tool === 'leaf' && onPlate(p, 50)) || ((tool === 'ginger' || tool === 'wasabi') && onPlate(p, 30))) hist.now();
+        if (tool === 'soy' || tool === 'sesame') { hist.begin(); changed = false; }
         if (tool === 'leaf' && onPlate(p, 50)) { place(dish.leaves, { x: p.x, y: p.y, a: Math.random() * TAU }, 12); Sound.plop(); countAction(); }
         if (tool === 'ginger' && onPlate(p, 30)) { place(dish.ginger, { x: p.x, y: p.y, a: Math.random() * TAU }, 10); Sound.pop(); countAction(); }
         if (tool === 'wasabi' && onPlate(p, 30)) { place(dish.wasabi, { x: p.x, y: p.y }, 8); Sound.plop(); countAction(); }
@@ -1066,7 +1090,7 @@
         if (tool === 'sesame') emit = 1;
       },
       move: function (p) { pointer = p; },
-      up: function () { down = false; soyHold = false; emit = 0; },
+      up: function () { if (tool === 'soy' || tool === 'sesame') hist.end(changed); down = false; soyHold = false; emit = 0; },
       update: function (dt) {
         for (var i = timers.length - 1; i >= 0; i--) { timers[i].t -= dt; if (timers[i].t <= 0) { var f = timers[i].fn; timers.splice(i, 1); f(); } }
         // sesame
@@ -1074,7 +1098,7 @@
           emit += dt * 30;
           while (emit >= 1) {
             emit -= 1;
-            if (falling.length + dish.seeds.length < 500) falling.push({ x: pointer.x + (Math.random() - 0.5) * 34, y: pointer.y - 30 + (Math.random() - 0.5) * 10, vy: 40 + Math.random() * 40, land: pointer.y + 10 + Math.random() * 30, a: Math.random() * TAU, dark: Math.random() < 0.3 });
+            if (falling.length + dish.seeds.length < 500) changed = true, falling.push({ x: pointer.x + (Math.random() - 0.5) * 34, y: pointer.y - 30 + (Math.random() - 0.5) * 10, vy: 40 + Math.random() * 40, land: pointer.y + 10 + Math.random() * 30, a: Math.random() * TAU, dark: Math.random() < 0.3 });
           }
           if (Math.random() < dt * 10) Sound.sprinkle();
         }
@@ -1088,7 +1112,7 @@
         // soy
         bottleT += ((soyHold ? 1 : 0) - bottleT) * Math.min(1, dt * 8);
         var pouring = soyHold && bottleT > 0.7 && dish.soy < 1;
-        if (pouring) { dish.soy = Math.min(1, dish.soy + dt * 0.4); ripple = (ripple + dt * 1.5) % 1; if (dish.soy >= 1) { countAction(); countAction(); } }
+        if (pouring) { changed = true; dish.soy = Math.min(1, dish.soy + dt * 0.4); ripple = (ripple + dt * 1.5) % 1; if (dish.soy >= 1) { countAction(); countAction(); } }
         pourLoop.set(pouring ? 0.7 : 0);
       },
       draw: function (c) {
@@ -1589,6 +1613,7 @@
   function DecorateScene() {
     var tool = 'syrup', down = false, pointer = null, emit = 0, actions = 0, praised = false, lastSyrup = null, falling = [];
     var pourLoop = Sound.loop('pour');
+    var hist = History(['plate', 'syrup', 'drips', 'tops', 'sugar']), changed = false;
     var timers = [];
     function later(s, fn) { timers.push({ t: s, fn: fn }); }
     function setTool(t) {
@@ -1603,6 +1628,7 @@
       var top = onStackTop(p, 16);
       if (!top && (!onPlate(p) || overStackSide(p))) return false;
       var list = dish.tops.filter(function (t) { return t.kind === kind; });
+      hist.now();
       if (list.length >= max) dish.tops.splice(dish.tops.indexOf(list[0]), 1);
       dish.tops.push({ kind: kind, x: p.x, y: p.y, a: (Math.random() - 0.5) * 1.2, onTop: top });
       return true;
@@ -1613,7 +1639,7 @@
       var last = lastSyrup[lastSyrup.length - 1];
       if (last && dist(last, p) < 6) return;
       if (dish.syrup.reduce(function (n, s) { return n + s.length; }, 0) > 500) return;
-      lastSyrup.push({ x: p.x, y: p.y });
+      lastSyrup.push({ x: p.x, y: p.y }); changed = true;
       var t = stackTop(), nx = (p.x - t.x) / t.rx, ny = (p.y - t.y) / t.ry;
       if (ny > 0.1 && nx * nx + ny * ny > 0.5 && dish.drips.length < 16 && Math.random() < 0.25) {
         var ex = t.x + nx / Math.hypot(nx, ny) * t.rx * 0.98, ey = t.y + ny / Math.hypot(nx, ny) * t.ry * 0.98;
@@ -1629,13 +1655,14 @@
         toolsEl.querySelectorAll('.tool').forEach(function (b) {
           b.addEventListener('click', function () {
             Sound.init();
-            if (b.dataset.tool === 'plate') { dish.plate = (dish.plate + 1) % PLATES.length; Sound.pop(); burst(PLATE2.x, PLATE2.y + 60, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 140, life: 0.5 }); say('New plate!'); return; }
+            if (b.dataset.tool === 'plate') { hist.now(); dish.plate = (dish.plate + 1) % PLATES.length; Sound.pop(); burst(PLATE2.x, PLATE2.y + 60, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 140, life: 0.5 }); say('New plate!'); return; }
             Sound.pop(); setTool(b.dataset.tool);
           });
         });
         setTool('syrup');
         say('Decorate your pancakes!');
         showNext('Done', finishDish);
+        setUndo({ canUndo: hist.canUndo, undo: function () { if (hist.undo()) { falling.length = 0; lastSyrup = null; say('Undone'); } } });
       },
       leave: function () { pourLoop.stop(); toolsEl.innerHTML = ''; },
       hint: function (t) {
@@ -1645,6 +1672,7 @@
       },
       down: function (p) {
         down = true; pointer = p; lastSyrup = null;
+        if (tool === 'syrup' || tool === 'sugar') { hist.begin(); changed = false; }
         if (tool === 'syrup') addSyrup(p);
         if (tool === 'butter' && place('butter', p, 3)) { Sound.plop(); countAction(); }
         if (tool === 'strawberry' && place('strawberry', p, 16)) { Sound.pop(); countAction(); }
@@ -1653,6 +1681,7 @@
       move: function (p) { pointer = p; if (down && tool === 'syrup') addSyrup(p); },
       up: function () {
         if (down && tool === 'syrup' && lastSyrup && lastSyrup.length > 3) countAction();
+        if (down && (tool === 'syrup' || tool === 'sugar')) hist.end(changed);
         down = false; lastSyrup = null;
       },
       update: function (dt) {
@@ -1661,7 +1690,7 @@
         dish.drips.forEach(function (dr) { if (dr.len < dr.max) dr.len = Math.min(dr.max, dr.len + dt * 30); });
         if (down && tool === 'sugar' && pointer) {
           emit += dt * 40;
-          while (emit >= 1) { emit -= 1; if (dish.sugar.length + falling.length < 700) falling.push({ x: pointer.x + (Math.random() - 0.5) * 40, y: pointer.y - 30, vy: 20 + Math.random() * 30, land: pointer.y + Math.random() * 26, r: 1.6 + Math.random() * 1.6 }); }
+          while (emit >= 1) { emit -= 1; if (dish.sugar.length + falling.length < 700) changed = true, falling.push({ x: pointer.x + (Math.random() - 0.5) * 40, y: pointer.y - 30, vy: 20 + Math.random() * 30, land: pointer.y + Math.random() * 26, r: 1.6 + Math.random() * 1.6 }); }
           if (Math.random() < dt * 8) Sound.sprinkle();
         }
         for (var j = falling.length - 1; j >= 0; j--) {
@@ -1939,7 +1968,7 @@
       if (dish.topBun) return;
       if (dish.layers.length >= MAX) { say('That’s a huge burger!'); return; }
       var prev = dish.layers[dish.layers.length - 1];
-      dish.layers.push({ kind: kind, t: 0, dx: (Math.random() - 0.5) * 10 });
+      dish.layers.push({ kind: kind, t: 0, dx: (Math.random() - 0.5) * 10 }); refreshUndo();
       if (kind === 'ketchup' || kind === 'mustard') Sound.squish(); else Sound.whoosh();
       say(pick(['Yum!', 'Stack it up!', 'Ooh, nice!', 'What next?']));
       if (!praised && dish.layers.length >= 4) { praised = true; later(0.6, function () { Cat.show('Looks tasty!'); }); }
@@ -1947,7 +1976,7 @@
     }
     function undo() {
       if (dish.topBun || !dish.layers.length) return;
-      dish.layers.pop(); Sound.pop(); say('Taken off');
+      dish.layers.pop(); Sound.pop(); say('Taken off'); refreshUndo();
     }
     return {
       enter: function () {
@@ -1958,8 +1987,9 @@
           b.addEventListener('click', function () { Sound.init(); add(b.dataset.tool); });
         });
         say('Tap to add toppings!');
+        setUndo({ canUndo: function () { return !dish.topBun && dish.layers.length > 0; }, undo: undo });
         showNext('Done', function () {
-          if (!dish.topBun) { dish.topBun = true; dish.topBunT = 0; Sound.whoosh(); }
+          if (!dish.topBun) { dish.topBun = true; dish.topBunT = 0; Sound.whoosh(); refreshUndo(); }
           later(0.9, finishDish);
         });
       },
@@ -2060,7 +2090,7 @@
       return '<div class="step ' + (i < stepIdx ? 'done' : i === stepIdx ? 'now' : '') + '"><i>' + s.icon + '</i><span>' + s.name + '</span></div>';
     }).join('');
   }
-  function leaveScene() { if (scene && scene.leave) scene.leave(); scene = null; Cat.hide(); hideNext(); pointerId = null; }
+  function leaveScene() { if (scene && scene.leave) scene.leave(); scene = null; Cat.hide(); hideNext(); setUndo(null); pointerId = null; }
   function nextStep() { goStep(stepIdx + 1); }
   /* the tray is shorter on steps without a tool row, which leaves more room for the food */
   function fitTray() { tray.classList.toggle('notools', !toolsEl.children.length); resize(); }
