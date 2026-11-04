@@ -1864,11 +1864,15 @@
       c.fillStyle = T.spots; var sr = seeded(13);
       for (var j = 0; j < 22; j++) { c.beginPath(); c.arc(-140 + sr() * 280, -34 + sr() * 30, 2 + sr() * 3, 0, TAU); c.fill(); }
     } else if (k === 'lettuce') {
-      c.beginPath(); c.moveTo(-170, -6);
-      for (var a = 0; a <= 34; a++) { var lx = -170 + a * 10; c.lineTo(lx, (a % 2 ? -22 : -14) + Math.sin(a) * 2); }
-      for (var b = 34; b >= 0; b--) { var bx = -170 + b * 10; c.lineTo(bx, (b % 2 ? 2 : -6)); }
+      // soft, ruffled leaf edges: smooth waves, drooping a little over the sides
+      var droop = function (x) { var o = Math.abs(x) - 130; return o > 0 ? o * 0.45 : 0; };
+      c.beginPath();
+      for (var a = 0; a <= 80; a++) { var lx = -172 + a * 4.3; var tip = Math.max(0, Math.abs(lx) - 156); c.lineTo(lx, -15 - 6 * Math.sin(lx / 11) - 2.5 * Math.sin(lx / 4.7 + 1) + droop(lx) + tip * 1.1); }
+      for (var b = 80; b >= 0; b--) { var bx = -172 + b * 4.3; c.lineTo(bx, 2 + 4 * Math.sin(bx / 17 + 1) + droop(bx) * 1.2); }
       c.closePath(); c.fillStyle = '#7BD389'; c.fill(); ink(c, 4);
-      c.strokeStyle = '#B8EBA8'; c.lineWidth = 3; c.beginPath(); c.moveTo(-150, -10); c.quadraticCurveTo(0, -16, 150, -10); c.stroke();
+      c.beginPath();
+      for (var v = 0; v <= 60; v++) { var vx = -150 + v * 5; c.lineTo(vx, -8 - 2.5 * Math.sin(vx / 11) + droop(vx) * 1.1); }
+      c.strokeStyle = '#B8EBA8'; c.lineWidth = 3; c.lineCap = 'round'; c.stroke();
     } else if (k === 'tomato') {
       [-92, 0, 92].forEach(function (tx, n) {
         rr(c, tx - 52, -16 + (n === 1 ? -2 : 0), 104, 16, 8); c.fillStyle = '#FF4D3D'; c.fill(); ink(c, 3.5);
