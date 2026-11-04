@@ -381,7 +381,7 @@
 
   /* ---------- the dish being made ---------- */
   var dish = null;
-  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [] }; }
+  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [] }; }
 
   /* =============== STEP 1: RICE =============== */
   function RiceScene() {
@@ -1114,7 +1114,7 @@
   function BatterScene() {
     var cx = 320, cy = 300, RX = 214, RY = 64, rx = 186, ry = 50;
     var phase = 'milk', milk = 0, holding = false, jugT = 0, whisk = 0, spin = 0, lastAng = null, tool = null, speed = 0, done = false, tickAcc = 0;
-    var eggs = [{ x: 520, y: 190, state: 'wait', t: 0 }, { x: 585, y: 240, state: 'wait', t: 0 }], yolks = [];
+    var EB = { x: 566, y: 552 }, eggs = [{ x: 545, y: 520, rot: -0.25, state: 'wait', t: 0 }, { x: 589, y: 516, rot: 0.25, state: 'wait', t: 0 }], yolks = [];
     var pourLoop = Sound.loop('pour'), slosh = Sound.loop('stir');
     var REST = { x: 560, y: 210 }, POUR = { x: 470, y: 160 };
     var rnd = seeded(13), flour = [];
@@ -1188,11 +1188,11 @@
           if (e.state === 'fly') { e.t = Math.min(1, e.t + dt * 2.5); if (e.t >= 1) { e.state = 'crack'; e.t = 0; Sound.crack(); buzz(10); } }
           else if (e.state === 'crack') {
             e.t = Math.min(1, e.t + dt * 1.6);
-            if (e.t >= 0.5 && !e.dropped) { e.dropped = true; yolks.push({ x: eggTarget(i).x, y: cy + 4, t: 0 }); }
+            if (e.t >= 0.5 && !e.dropped) { e.dropped = true; yolks.push({ x: eggTarget(i).x, y: cy + 4, t: 0, wt: 0, seed: i * 3 + 1 }); }
             if (e.t >= 1) e.state = 'gone';
           }
         });
-        yolks.forEach(function (y) { if (y.t < 1) { y.t = Math.min(1, y.t + dt * 3); if (y.t >= 1) Sound.plop(); } });
+        yolks.forEach(function (y) { if (y.t < 1) { y.t = Math.min(1, y.t + dt * 3); if (y.t >= 1) Sound.plop(); } else if (y.wt < 1) y.wt = Math.min(1, y.wt + dt * 3); });
         if (phase === 'eggs' && eggs.every(function (e) { return e.state === 'gone'; })) { phase = 'whisk'; say('Whisk in circles!'); }
         speed *= Math.pow(0.08, dt); slosh.set(speed * 0.8);
         if (speed > 0.05 && !done) { tickAcc += dt * 14 * speed; while (tickAcc >= 1) { tickAcc -= 1; Sound.clink(); } if (Math.random() < dt * 3 * speed) Sound.squish(); }
@@ -1205,13 +1205,20 @@
         }
       },
       draw: function (c) {
+        // little bowl holding the eggs until it's their turn
+        c.beginPath(); c.ellipse(EB.x, EB.y + 34, 62, 12, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill();
+        c.beginPath(); c.ellipse(EB.x, EB.y, 64, 18, 0, 0, TAU); c.fillStyle = '#FFE7C2'; c.fill(); ink(c, 4.5);
+        eggs.forEach(function (e) { if (e.state === 'wait') drawEgg(c, e.x, e.y, e.rot, 0); });
+        c.beginPath(); c.moveTo(EB.x - 64, EB.y); c.bezierCurveTo(EB.x - 64, EB.y + 46, EB.x + 64, EB.y + 46, EB.x + 64, EB.y);
+        c.bezierCurveTo(EB.x + 40, EB.y + 14, EB.x - 40, EB.y + 14, EB.x - 64, EB.y); c.closePath();
+        c.fillStyle = '#FF9F6B'; c.fill(); ink(c, 4.5);
         // bowl (same shape as the rice bowl, in blue)
         c.beginPath(); c.ellipse(cx, cy + 230, 150, 22, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
         c.beginPath(); c.ellipse(cx, cy + 214, 96, 20, 0, 0, TAU); c.fillStyle = '#2E86C9'; c.fill(); ink(c, 5);
         c.beginPath(); c.moveTo(cx - RX, cy); c.bezierCurveTo(cx - RX, cy + 180, cx - 110, cy + 216, cx, cy + 216);
         c.bezierCurveTo(cx + 110, cy + 216, cx + RX, cy + 180, cx + RX, cy); c.closePath(); c.fillStyle = '#5EB7F0'; c.fill(); ink(c, 5);
         c.save(); c.clip(); c.strokeStyle = '#FFFFFF'; c.lineWidth = 8;
-        for (var k = 0; k < 3; k++) { c.beginPath(); c.moveTo(cx - RX, cy + 70 + k * 34); c.quadraticCurveTo(cx, cy + 96 + k * 34, cx + RX, cy + 70 + k * 34); c.stroke(); }
+        for (var k = 0; k < 3; k++) { c.beginPath(); c.ellipse(cx, cy + 34 + k * 38, RX + 4, 52 - k * 6, 0, 0.08, Math.PI - 0.08); c.stroke(); }
         c.restore();
         c.beginPath(); c.ellipse(cx, cy, RX, RY, 0, 0, TAU); c.fillStyle = '#DDF0FF'; c.fill(); ink(c, 5);
         // milk / batter
@@ -1226,6 +1233,23 @@
           c.fillStyle = '#EDE6D6'; flour.forEach(function (f) { c.fillRect(f.x, f.y - 6, 2, 2); });
           c.restore();
         }
+        // egg whites: clear, glossy puddles around each yolk, mixed away by whisking
+        yolks.forEach(function (y) {
+          var drop = easeOut(y.t), yy = lerp(cy - 120, y.y, drop);
+          c.save(); c.globalAlpha = 1 - whisk;
+          if (y.t < 1) {
+            c.beginPath(); c.ellipse(y.x, yy - 16, 13, 24, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill();
+            c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 2.5; c.stroke();
+          } else {
+            var wr = 14 + 24 * easeOut(y.wt);
+            c.beginPath();
+            for (var wi = 0; wi <= 20; wi++) { var wa = wi / 20 * TAU, wk = 1 + 0.13 * Math.sin(wa * 3 + y.seed) + 0.07 * Math.sin(wa * 5 + y.seed); c.lineTo(y.x + Math.cos(wa) * wr * 1.35 * wk, y.y + Math.sin(wa) * wr * 0.55 * wk); }
+            c.closePath(); c.fillStyle = 'rgba(255,255,255,.82)'; c.fill();
+            c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 2.5; c.stroke();
+            c.beginPath(); c.ellipse(y.x - wr * 0.6, y.y - wr * 0.18, wr * 0.3, 3, -0.2, 0, TAU); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill();
+          }
+          c.restore();
+        });
         // yolks, smeared into swirls while whisking
         yolks.forEach(function (y, i) {
           var drop = easeOut(y.t), yy = lerp(cy - 120, y.y, drop);
@@ -1262,9 +1286,8 @@
         eggs.forEach(function (e, i) {
           if (e.state === 'gone') return;
           var tg = eggTarget(i);
-          if (e.state === 'wait' && phase === 'eggs') drawEgg(c, e.x, e.y, 0.2, 0);
-          else if (e.state === 'wait') { c.save(); c.globalAlpha = 0.35; drawEgg(c, e.x, e.y, 0.2, 0); c.restore(); }
-          else if (e.state === 'fly') { var k2 = easeOut(e.t); drawEgg(c, lerp(e.x, tg.x, k2), lerp(e.y, tg.y, k2) - Math.sin(k2 * Math.PI) * 60, lerp(0.2, 0, k2), 0); }
+          if (e.state === 'wait') return;
+          if (e.state === 'fly') { var k2 = easeOut(e.t); drawEgg(c, lerp(e.x, tg.x, k2), lerp(e.y, tg.y, k2) - Math.sin(k2 * Math.PI) * 80, lerp(e.rot, 0, k2), 0); }
           else { c.save(); c.globalAlpha = 1 - Math.max(0, e.t - 0.6) / 0.4; drawEgg(c, tg.x, tg.y, 0, easeOut(Math.min(1, e.t * 2))); c.restore(); }
         });
         // progress ring
@@ -1370,7 +1393,7 @@
         if (cake.phase === 'slide') {
           cake.t = Math.min(1, cake.t + dt * 1.8);
           if (cake.t >= 1) {
-            made++; Sound.plop(); burst(SIDE.x, SIDE.y - 20 - made * 10, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 120, life: 0.5 });
+            dish.cakes.push(cake.r); made++; Sound.plop(); burst(SIDE.x, SIDE.y - 20 - made * 10, 8, { colors: ['#FFFFFF', '#FFC93C'], speed: 120, life: 0.5 });
             cake = null;
             if (made < NEED) say(made === 1 ? 'Yum! Pour another one' : 'One more!');
             else { Sound.chime(); Cat.show('Fluffy pancakes!'); say('A stack of pancakes!'); showNext('Next', nextStep); }
@@ -1389,7 +1412,7 @@
         c.beginPath(); c.arc(PX, PY, PR2 - 30, -2.6, -1.6); c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = 10; c.lineCap = 'round'; c.stroke();
         // side plate with the finished stack
         c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 76, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
-        for (var i = 0; i < made; i++) drawStackCake(c, SIDE.x, SIDE.y - i * 13, 54, 16, 12);
+        for (var i = 0; i < made; i++) { var sc = (dish.cakes[i] || 145) / 145; drawStackCake(c, SIDE.x, SIDE.y - i * 13, 58 * sc, 17 * sc, 12); }
         if (cake) {
           var cookAmt = cake.phase === 'pour' ? 0 : cake.phase === 'cook1' ? Math.min(1, cake.t / 3.2) : 1;
           if (cake.phase === 'flip') {
@@ -1429,8 +1452,12 @@
 
   /* ---- Step 4: decorate the stack ---- */
   var SX = 320, SY0 = 430, SRX = 172, SRY = 50, STH = 28;
-  var STACK = [{ dx: 0, rx: 172 }, { dx: -6, rx: 166 }, { dx: 5, rx: 170 }];
-  function stackTop() { return { x: SX + STACK[2].dx, y: SY0 - 3 * STH, rx: STACK[2].rx, ry: SRY }; }
+  /* the stack uses the size of each pancake that was poured (bottom one first) */
+  function stackOf(d) {
+    var rs = d && d.cakes && d.cakes.length ? d.cakes : [145, 140, 144], jit = [0, -6, 5];
+    return rs.map(function (r, k) { var f = clamp(r / 145, 0.42, 1.05); return { dx: jit[k % 3], rx: SRX * f, ry: SRY * f }; });
+  }
+  function stackTop(d) { var st = stackOf(d || dish), t = st[st.length - 1]; return { x: SX + t.dx, y: SY0 - st.length * STH, rx: t.rx, ry: t.ry }; }
   function onStackTop(p, pad) { var t = stackTop(); var nx = (p.x - t.x) / (t.rx - (pad || 0)), ny = (p.y - t.y) / (t.ry - (pad || 0) * 0.3); return nx * nx + ny * ny < 1; }
   var PLATE2 = { x: 320, y: 470, rx: 270, ry: 92 };
 
@@ -1455,9 +1482,9 @@
     for (var i = 0; i < 28; i++) { var a = i / 28 * TAU; c.beginPath(); c.arc(PLATE2.x + Math.cos(a) * (PLATE2.rx - 20), PLATE2.y + Math.sin(a) * (PLATE2.ry - 8), 4, 0, TAU); c.fill(); }
     // plate toppings behind the stack
     d.tops.filter(function (t) { return !t.onTop && t.y < SY0; }).forEach(function (t) { drawTopping(c, t); });
-    STACK.forEach(function (s, k) { drawStackCake(c, SX + s.dx, SY0 - k * STH, s.rx, SRY, STH); });
+    stackOf(d).forEach(function (s, k) { drawStackCake(c, SX + s.dx, SY0 - k * STH, s.rx, s.ry, STH); });
     // syrup
-    var top = stackTop();
+    var top = stackTop(d);
     d.drips.forEach(function (dr) {
       c.beginPath(); c.moveTo(dr.x, dr.y); c.lineTo(dr.x, dr.y + dr.len);
       c.strokeStyle = 'rgba(168,88,20,.92)'; c.lineWidth = 12; c.lineCap = 'round'; c.stroke();
@@ -1500,7 +1527,7 @@
     }
     function countAction() { actions++; if (!praised && actions >= 6) { praised = true; later(0.3, function () { Cat.show(pick(['Looks yummy!', 'So pretty!'])); }); } }
     function onPlate(p) { var nx = (p.x - PLATE2.x) / (PLATE2.rx - 24), ny = (p.y - PLATE2.y) / (PLATE2.ry - 10); return nx * nx + ny * ny < 1; }
-    function overStackSide(p) { return Math.abs(p.x - SX) < SRX && p.y > SY0 - 3 * STH && p.y < SY0 + SRY; }
+    function overStackSide(p) { var st = stackOf(dish), w = Math.max.apply(null, st.map(function (q) { return q.rx; })); return Math.abs(p.x - SX) < w && p.y > SY0 - st.length * STH && p.y < SY0 + SRY; }
     function place(kind, p, max) {
       var top = onStackTop(p, 16);
       if (!top && (!onPlate(p) || overStackSide(p))) return false;
