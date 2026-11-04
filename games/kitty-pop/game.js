@@ -716,14 +716,16 @@
     if (busy || won) return;
     var cell = cellAt(e.clientX, e.clientY);
     if (!cell) { selected = null; return; }
-    down = { id: e.pointerId, x: e.clientX, y: e.clientY, cell: cell, moved: false };
+    down = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0, cell: cell, moved: false };
+    Sound.pick(); buzz(8);
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     e.preventDefault();
   });
   canvas.addEventListener('pointermove', function (e) {
     if (!down || down.id !== e.pointerId || down.moved) return;
     var dx = e.clientX - down.x, dy = e.clientY - down.y;
-    if (Math.hypot(dx, dy) < T * 0.32) return;
+    down.dx = dx; down.dy = dy;
+    if (Math.hypot(dx, dy) < T * 0.4) return;
     down.moved = true;
     var r = down.cell.r, c = down.cell.c, r2 = r, c2 = c;
     if (Math.abs(dx) > Math.abs(dy)) c2 += dx > 0 ? 1 : -1; else r2 += dy > 0 ? 1 : -1;
@@ -740,7 +742,7 @@
     } else if (selected && selected.r === cell.r && selected.c === cell.c) {
       selected = null;
     } else {
-      selected = cell; Sound.pick();
+      selected = cell;
     }
   }
   canvas.addEventListener('pointerup', release);
@@ -834,26 +836,58 @@
     return 'open';
   }
 
+  function heldInfo() {
+    if (!down || down.moved || busy || won) return null;
+    var dx = down.dx, dy = down.dy, d = Math.hypot(dx, dy);
+    var info = { r: down.cell.r, c: down.cell.c, ox: 0, oy: 0, tr: -1, tc: -1 };
+    if (d > T * 0.12) {
+      var horiz = Math.abs(dx) > Math.abs(dy);
+      var amt = Math.min(d, T * 0.4);
+      if (horiz) { info.ox = (dx > 0 ? 1 : -1) * amt; info.tc = down.cell.c + (dx > 0 ? 1 : -1); info.tr = down.cell.r; }
+      else { info.oy = (dy > 0 ? 1 : -1) * amt; info.tr = down.cell.r + (dy > 0 ? 1 : -1); info.tc = down.cell.c; }
+      if (info.tr < 0 || info.tc < 0 || info.tr >= ROWS || info.tc >= COLS) { info.tr = info.tc = -1; info.ox *= 0.4; info.oy *= 0.4; }
+    }
+    return info;
+  }
+
   function drawTiles(c) {
     c.save();
     // keep falling cats inside the board
     rr(c, BX - 2, BY - 2, T * COLS + 4, T * ROWS + 4, T * 0.3); c.clip();
     var size = T * 0.86;
     var hint = hintMove && !busy ? hintMove : null;
-    var lifted = [];
+    var held = heldInfo();
+    // light up the square the held cat is heading to
+    if (held && held.tr >= 0) {
+      var tx = BX + held.tc * T, ty = BY + held.tr * T;
+      rr(c, tx + 3, ty + 3, T - 6, T - 6, T * 0.22);
+      c.fillStyle = 'rgba(255,201,60,.6)'; c.fill();
+      c.lineWidth = 3; c.setLineDash([T * 0.12, T * 0.08]); c.lineDashOffset = -time * 30; c.strokeStyle = '#E8A400'; c.stroke(); c.setLineDash([]);
+    }
+    var lifted = [], heldTile = null;
     for (var r = 0; r < ROWS; r++) for (var col = 0; col < COLS; col++) {
       var t = grid[r][col];
       if (!t) continue;
+      if (held && held.r === r && held.c === col) { heldTile = t; continue; }
       if (t.lift > 0) { lifted.push(t); continue; }
       drawTile(c, t, size, hint);
     }
     lifted.forEach(function (t) { drawTile(c, t, size, hint); });
+    if (heldTile) drawTile(c, heldTile, size, null, held);
     c.restore();
   }
 
-  function drawTile(c, t, size, hint) {
+  function drawTile(c, t, size, hint, held) {
     var x = BX + (t.dc + 0.5) * T, y = BY + (t.dr + 0.5) * T;
     var sx = 1, sy = 1, rot = 0, alpha = 1;
+    // picked up: glow under the cat, a little bigger, nudging along with the finger
+    if (held) {
+      x += held.ox; y += held.oy;
+      c.save(); c.beginPath(); c.arc(x, y, T * 0.58, 0, TAU); c.fillStyle = 'rgba(255,201,60,.6)'; c.fill();
+      c.lineWidth = 3; c.strokeStyle = '#E8A400'; c.stroke(); c.restore();
+      sx = sy = 1.14;
+      c.save(); c.beginPath(); c.ellipse(x, y + T * 0.36, T * 0.32, T * 0.08, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill(); c.restore();
+    }
     // landing squash and bounce
     if (t.land < 1 && !reduceMotion) { var k = Math.sin(t.land * Math.PI) * (1 - t.land); sx += k * 0.35; sy -= k * 0.35; y += k * T * 0.08; }
     // a newly made special pops in
