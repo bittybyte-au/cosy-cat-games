@@ -1,4 +1,4 @@
-/* Cozy Kitchen – sushi handroll.
+/* Cosy Kitchen – sushi handroll.
    Everything is drawn in code on one canvas. Sounds are made with Web Audio (no files).
    The play area is a 640 x 640 square (logical units) scaled to fit between the top bar and tool tray. */
 (function () {

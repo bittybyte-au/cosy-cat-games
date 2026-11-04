@@ -1,7 +1,7 @@
-/* Game Garden – player profiles and progress, saved on this device only.
+/* Cosy Cat Games – player profiles and progress, saved on this device only.
    Everything lives in one localStorage key. Nothing is sent anywhere. */
 (function () {
-  var KEY = 'gameGarden.v1';
+  var KEY = 'cosyCatGames.v1';
 
   function blank() { return { players: [], current: null, progress: {}, settings: { sound: true } }; }
 
