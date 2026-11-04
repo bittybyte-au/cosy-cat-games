@@ -17,7 +17,8 @@ const redis = {
   async incr(k) { const n = parseInt(await this.get(k) || '0', 10) + 1; const old = m.get(k); m.set(k, { val: String(n), exp: old ? old.exp : 0 }); return n; },
   async expire(k, s) { const v = m.get(k); if (v) v.exp = Date.now() + s * 1000; return 1; },
   async sadd(k, x) { const s = new Set(JSON.parse(await this.get(k) || '[]')); s.add(x); m.set(k, { val: JSON.stringify([...s]), exp: 0 }); return 1; },
-  async smembers(k) { return JSON.parse(await this.get(k) || '[]'); }
+  async smembers(k) { return JSON.parse(await this.get(k) || '[]'); },
+  async srem(k, x) { const s = new Set(JSON.parse(await this.get(k) || '[]')); const had = s.delete(x); m.set(k, { val: JSON.stringify([...s]), exp: 0 }); return had ? 1 : 0; }
 };
 const sessions = new Map(); let n = 0;
 const stripe = {
