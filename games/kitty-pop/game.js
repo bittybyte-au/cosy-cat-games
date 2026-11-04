@@ -351,7 +351,7 @@
     var each = Math.min(36, 8 + n * 2);
     if (nGoals === 3) each = Math.min(30, 6 + n);
     var pool = shuffle([0, 1, 2, 3, 4, 5], rnd).slice(0, colours);
-    var goals = pool.slice(0, nGoals).map(function (k) { return { kind: k, left: each, shown: each }; });
+    var goals = pool.slice(0, nGoals).map(function (k) { return { kind: k, target: each, left: each, shown: each }; });
     return { n: n, colours: pool, goals: goals };
   }
 
@@ -598,24 +598,27 @@
     goalEls = level.goals.map(function (g) {
       var d = document.createElement('div');
       d.className = 'goal';
-      d.setAttribute('aria-label', g.left + ' ' + CATS[g.kind].name + ' cats to pop');
-      var img = document.createElement('img'); img.alt = ''; img.src = catImageURL(g.kind, 'open', 64);
-      var b = document.createElement('b');
+            var img = document.createElement('img'); img.alt = ''; img.src = catImageURL(g.kind, 'open', 64);
+      var info = document.createElement('div'); info.className = 'info';
+      info.innerHTML = '<span class="count"><b></b><small>/ ' + g.target + '</small></span><span class="bar"><i></i></span>';
+      var b = info.querySelector('b'), bar = info.querySelector('.bar i');
       var tick = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       tick.setAttribute('viewBox', '0 0 24 24'); tick.setAttribute('class', 'tick');
       tick.innerHTML = '<path d="M4 13 L10 19 L20 6" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
-      d.appendChild(img); d.appendChild(b); d.appendChild(tick);
+      d.appendChild(img); d.appendChild(info); d.appendChild(tick);
       box.appendChild(d);
-      return { el: d, img: img, b: b };
+      return { el: d, img: img, b: b, bar: bar };
     });
     level.goals.forEach(function (g, i) { renderGoal(i, false); });
   }
   function renderGoal(i, bump) {
     var g = level.goals[i], e = goalEls[i];
     if (!e) return;
-    e.b.textContent = g.shown;
+    var got = g.target - g.shown;
+    e.b.textContent = got;
+    e.bar.style.width = (100 * got / g.target) + '%';
     e.el.classList.toggle('done', g.shown <= 0);
-    e.el.setAttribute('aria-label', g.shown <= 0 ? 'Done' : g.shown + ' ' + CATS[g.kind].name + ' cats to pop');
+    e.el.setAttribute('aria-label', g.shown <= 0 ? 'All ' + g.target + ' ' + CATS[g.kind].name + ' cats popped' : got + ' of ' + g.target + ' ' + CATS[g.kind].name + ' cats popped');
     if (bump && !reduceMotion) { e.el.classList.remove('bump'); void e.el.offsetWidth; e.el.classList.add('bump'); }
   }
   function goalsMet() { return level.goals.every(function (g) { return g.left <= 0; }); }
@@ -677,7 +680,7 @@
     eachTile(function (t, r, c) { t.dr = r - ROWS - 1 - (COLS - c) * 0.15; t.falling = true; t.vy = 0; });
     until(function () { var any = false; eachTile(function (t) { if (t.falling) any = true; }); return !any; }).then(function () { busy = false; });
     var names = level.goals.map(function (g) { return CATS[g.kind].name; });
-    say(level.goals.length === 1 ? 'Pop ' + level.goals[0].left + ' ' + names[0] + ' cats!' : 'Pop the cats at the top!', 2.6);
+    say(level.goals.length === 1 ? 'Pop ' + level.goals[0].target + ' ' + names[0] + ' cats!' : 'Pop the cats at the top!', 2.6);
   }
 
   async function celebrate() {
@@ -977,6 +980,7 @@
     cell: cellCenter,
     set: function (r, c, kind, special, dir) { var t = grid[r][c]; t.kind = kind; t.special = special || null; t.dir = dir; },
     win: function () { level.goals.forEach(function (g) { g.left = 0; g.shown = 0; }); celebrate(); },
+    start: function (n) { startLevel(n); },
     specials: function () { return !!SP; }
   };
 })();
