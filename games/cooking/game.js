@@ -2156,11 +2156,28 @@
     $('book').innerHTML = book.length
       ? book.map(function (e, i) {
         var nm = (RECIPE_DEFS[e.dish] || RECIPE_DEFS.handroll).name;
-        return '<button class="entry" type="button" data-i="' + i + '" aria-label="Open ' + esc(nm) + ' from ' + esc(niceDate(e.at)) + '"><figure>' + (e.img ? '<img alt="" src="' + esc(e.img) + '">' : '') + '<figcaption>' + esc(niceDate(e.at, true)) + '</figcaption></figure></button>';
+        return '<div class="bookitem"><button class="entry" type="button" data-i="' + i + '" aria-label="Open ' + esc(nm) + ' from ' + esc(niceDate(e.at)) + '"><figure>' + (e.img ? '<img alt="" src="' + esc(e.img) + '">' : '') + '<figcaption>' + esc(niceDate(e.at, true)) + '</figcaption></figure></button>' +
+          '<button class="del" type="button" data-del="' + i + '" aria-label="Delete ' + esc(nm) + ' from ' + esc(niceDate(e.at)) + '"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5 L15 15 M15 5 L5 15" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/></svg><span>Delete?</span></button></div>';
       }).join('')
       : '<p class="empty">Dishes you make will show up here.</p>';
     $('book').querySelectorAll('.entry').forEach(function (b) {
       b.addEventListener('click', function () { Sound.init(); Sound.pop(); openViewer(+b.dataset.i); });
+    });
+    // the little cross deletes a dish: first tap asks "Delete?", a second tap removes it
+    $('book').querySelectorAll('.del').forEach(function (b) {
+      b.addEventListener('click', function (ev) {
+        ev.stopPropagation(); Sound.init();
+        if (!b.classList.contains('ask')) {
+          $('book').querySelectorAll('.del.ask').forEach(function (o) { o.classList.remove('ask'); });
+          b.classList.add('ask'); Sound.pop();
+          clearTimeout(b._t); b._t = setTimeout(function () { b.classList.remove('ask'); }, 3000);
+          return;
+        }
+        var pr = GG.getProgress('cooking');
+        if (Array.isArray(pr.book)) { pr.book.splice(+b.dataset.del, 1); GG.setProgress('cooking', pr); }
+        Sound.plop();
+        renderMenu();
+      });
     });
   }
 

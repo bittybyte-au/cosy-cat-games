@@ -163,6 +163,22 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 }
 .book { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
 .book .entry { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 18px; text-align: inherit; }
+/* delete cross: shows on hover with a mouse, always shows (smaller) on touch screens */
+.book .bookitem { position: relative; }
+.book .entry { width: 100%; }
+.book .del {
+  position: absolute; top: -10px; right: -10px; z-index: 1; height: 34px; min-width: 34px; padding: 0 7px; border-radius: 999px;
+  border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 4px; font: 800 .85rem var(--body);
+  opacity: 0; transform: scale(.7); transition: opacity .15s ease, transform .15s ease, background .15s ease;
+}
+.book .del svg { width: 16px; height: 16px; flex: none; }
+.book .del span { display: none; }
+.book .bookitem:hover .del, .book .del:focus-visible, .book .del.ask { opacity: 1; transform: none; }
+.book .del.ask { background: var(--tomato); color: #fff; }
+.book .del.ask svg path { stroke: #fff; }
+.book .del.ask span { display: inline; }
+@media (hover: none) { .book .del { opacity: .9; transform: scale(.85); } }
 .book figure { margin: 0; background: #fff; border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 4px 0 var(--ink); transition: transform .12s ease; }
 .book .entry:hover figure { transform: translateY(-2px) rotate(-1deg); }
 .book .entry:active figure { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
