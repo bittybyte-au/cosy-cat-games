@@ -271,29 +271,64 @@
     c.beginPath(); c.ellipse(0, 0, l / 2, l / 4.2, 0, 0, TAU); c.fill(); c.stroke();
     c.restore();
   }
+  /* Many grains at once: a soft shadow pass, then the white grains on top. Fast enough for hundreds per frame. */
+  function grainBatch(c, list, getX, getY, getA, scale) {
+    scale = scale || 1;
+    for (var pass = 0; pass < 2; pass++) {
+      c.beginPath();
+      for (var i = 0; i < list.length; i++) {
+        var g = list[i], x = getX(g), y = getY(g) + (pass ? 0 : 1.4), a = getA(g), l = g.l * scale;
+        c.moveTo(x + Math.cos(a) * l / 2, y + Math.sin(a) * l / 2);
+        c.ellipse(x, y, l / 2, l / 4.2, a, 0, TAU);
+      }
+      c.fillStyle = pass ? '#FFFFFF' : '#D9CDB4'; c.fill();
+    }
+  }
 
-  /* The finished hand roll (temaki). Local origin is the centre of the opening. */
-  function drawHandroll(c, x, y, scale, rot, sesame) {
+  /* The finished hand roll: a nori-wrapped cylinder lying on its side, the way they're sold in Australia.
+     We see its side and one open end, where the rice ring and the fillings inside show. Local origin is the middle. */
+  var ROLL_R = 62;
+  function rollEnd(c, x, r) {
+    // open end: nori ring, rice, fillings in the middle. Drawn in a circle space squashed into perspective.
+    c.save(); c.translate(x, 0); c.scale(0.62, 1);
+    c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = NORI; c.fill(); ink(c, 5 / 0.8);
+    c.beginPath(); c.arc(0, 0, r * 0.86, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill();
+    var rnd = seeded(21), gs = [];
+    for (var i = 0; i < 70; i++) { var rr2 = r * (0.42 + rnd() * 0.42), th = rnd() * TAU; gs.push({ x: Math.cos(th) * rr2, y: Math.sin(th) * rr2, a: rnd() * Math.PI, l: r * (0.17 + rnd() * 0.05) }); }
+    grainBatch(c, gs, function (g) { return g.x; }, function (g) { return g.y; }, function (g) { return g.a; });
+    var k = r / 62;
+    c.save(); c.scale(k, k);
+    // salmon
+    rr(c, -24, -26, 34, 22, 5); c.fillStyle = '#FF8A5B'; c.fill(); ink(c, 3.5);
+    c.beginPath(); c.moveTo(-18, -24); c.lineTo(-10, -6); c.moveTo(-4, -24); c.lineTo(4, -6); c.strokeStyle = '#FFD3BD'; c.lineWidth = 3.5; c.stroke();
+    // avocado
+    c.beginPath(); c.ellipse(-8, 12, 18, 11, 0.3, 0, TAU); c.fillStyle = '#C8E26F'; c.fill(); ink(c, 3.5);
+    c.beginPath(); c.ellipse(-8, 15, 13, 5, 0.3, 0, Math.PI); c.strokeStyle = '#7FB23D'; c.lineWidth = 3; c.stroke();
+    // cucumber
+    rr(c, 10, -6, 20, 20, 4); c.fillStyle = '#4FAE5E'; c.fill(); ink(c, 3.5);
+    rr(c, 14, -2, 12, 12, 2); c.fillStyle = '#DDF6CF'; c.fill();
+    c.restore();
+    c.restore();
+  }
+  function drawHandroll(c, x, y, scale, rot, len, r) {
+    len = len || 330; r = r || ROLL_R;
+    var L = len / 2, cap = r * 0.62;
     c.save(); c.translate(x, y); c.rotate(rot); c.scale(scale, scale);
-    // back of the cone
-    c.beginPath(); c.moveTo(-102, -2); c.lineTo(14, 230); c.lineTo(102, -2);
-    c.bezierCurveTo(102, -40, -102, -40, -102, -2); c.closePath(); c.fillStyle = NORI; c.fill(); ink(c, 5);
-    // fillings poking out
-    var fills = [['salmon', -36, -0.28], ['cucumber', 6, -0.04], ['avocado', 44, 0.24]];
-    fills.forEach(function (f) { c.save(); c.translate(f[1], -40); c.rotate(-Math.PI / 2 + f[2]); c.translate(48, 0); drawPiece(c, f[0], 120, 1.15); c.restore(); });
-    // rice
-    c.fillStyle = '#FFFFFF';
-    c.beginPath(); c.ellipse(0, 2, 96, 26, 0, 0, TAU); c.fill();
-    for (var i = 0; i < 14; i++) { var a = Math.PI * (i / 13); c.beginPath(); c.arc(Math.cos(a) * 92, 4 + Math.sin(a) * 22, 11, 0, TAU); c.fill(); }
-    c.strokeStyle = '#E2DACB'; c.lineWidth = 1.5; var rnd = seeded(9);
-    for (var j = 0; j < 22; j++) { c.fillStyle = '#FFFFFF'; grain(c, (rnd() - 0.5) * 170, (rnd() - 0.5) * 30, rnd() * 3, 11); }
-    // front wrap
-    c.beginPath(); c.moveTo(-106, 0); c.quadraticCurveTo(-10, 36, 106, 12); c.lineTo(14, 230); c.closePath();
-    c.fillStyle = NORI_LIGHT; c.fill(); ink(c, 5);
-    c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 3;
-    for (var k = 0; k < 4; k++) { c.beginPath(); c.moveTo(-70 + k * 40, 30); c.lineTo(-10 + k * 20, 150); c.stroke(); }
-    // sesame on the roll (optional)
-    if (sesame) sesame.forEach(function (s) { drawSeed(c, s.x, s.y, s.a, s.dark); });
+    // shadow
+    c.beginPath(); c.ellipse(0, r * 0.92, L + cap, r * 0.28, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
+    // body
+    c.beginPath(); c.moveTo(L, -r); c.lineTo(-L, -r); c.ellipse(-L, 0, cap, r, 0, -Math.PI / 2, Math.PI / 2, true); c.lineTo(L, r); c.closePath();
+    c.fillStyle = NORI; c.fill();
+    c.save(); c.clip();
+    rr(c, -L - cap, -r * 0.7, len + cap, r * 0.26, r * 0.13); c.fillStyle = NORI_LIGHT; c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 3;
+    var rnd = seeded(5); for (var i = 0; i < 18; i++) { var tx = (rnd() - 0.5) * len, ty = (rnd() - 0.5) * r * 1.6; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + 26, ty + 4); c.stroke(); }
+    // where the nori overlaps itself
+    c.beginPath(); c.moveTo(-L - cap, r * 0.38); c.quadraticCurveTo(0, r * 0.5, L, r * 0.36); c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 4; c.stroke();
+    c.restore();
+    c.beginPath(); c.moveTo(L, -r); c.lineTo(-L, -r); c.ellipse(-L, 0, cap, r, 0, -Math.PI / 2, Math.PI / 2, true); c.lineTo(L, r);
+    ink(c, 5);
+    rollEnd(c, L, r);
     c.restore();
   }
 
@@ -323,13 +358,13 @@
 
   /* ---------- the dish being made ---------- */
   var dish = null;
-  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], rollSeeds: [], soy: 0 }; }
+  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0 }; }
 
   /* =============== STEP 1: RICE =============== */
   function RiceScene() {
     var cx = 320, cy = 300, RX = 214, RY = 64, rx = 186, ry = 50;
     var rnd = seeded(7), grains = [];
-    for (var i = 0; i < 280; i++) grains.push({ r: Math.sqrt(rnd()) * 0.93, th: rnd() * TAU, a: rnd() * Math.PI, l: 9 + rnd() * 3 });
+    for (var i = 0; i < 1100; i++) grains.push({ r: Math.sqrt(rnd()) * 0.96, th: rnd() * TAU, a: rnd() * Math.PI, l: 10 + rnd() * 3 });
     var phase = 'pour', pour = 0, stir = 0, holding = false, bottleT = 0, lastAng = null, paddle = null, speed = 0, done = false;
     var stirLoop = Sound.loop('stir'), pourLoop = Sound.loop('pour');
     var REST = { x: 560, y: 190 }, POUR = { x: 440, y: 168 };
@@ -425,19 +460,15 @@
         // inside
         c.beginPath(); c.ellipse(cx, cy, RX, RY, 0, 0, TAU); c.fillStyle = '#FFE1D9'; c.fill(); ink(c, 5);
         c.beginPath(); c.ellipse(cx, cy + 8, rx, ry, 0, 0, TAU); c.fillStyle = '#F1EAD9'; c.fill();
-        // vinegar puddle
-        var vin = pour * (1 - stir);
-        if (vin > 0.01) { c.beginPath(); c.ellipse(cx + 20, cy + 8, rx * 0.6 * Math.sqrt(pour), ry * 0.6 * Math.sqrt(pour), 0, 0, TAU); c.fillStyle = 'rgba(245,205,90,' + (0.55 * vin + 0.05) + ')'; c.fill(); }
         // grains
-        c.fillStyle = '#FFFFFF'; c.strokeStyle = '#DDD3BE'; c.lineWidth = 1.4;
-        for (var i = 0; i < grains.length; i++) {
-          var g = grains[i];
-          grain(c, cx + Math.cos(g.th) * g.r * rx, cy + 8 + Math.sin(g.th) * g.r * ry, g.a + g.th, g.l);
-        }
+        grainBatch(c, grains, function (g) { return cx + Math.cos(g.th) * g.r * rx; }, function (g) { return cy + 8 + Math.sin(g.th) * g.r * ry; }, function (g) { return g.a + g.th; });
+        // vinegar soaks in as the rice is mixed
+        var vin = pour * (1 - stir);
+        if (vin > 0.01) { c.beginPath(); c.ellipse(cx + 20, cy + 8, rx * 0.6 * Math.sqrt(pour), ry * 0.6 * Math.sqrt(pour), 0, 0, TAU); c.fillStyle = 'rgba(245,200,80,' + (0.5 * vin + 0.05) + ')'; c.fill(); }
         // shine grows as the rice is mixed
         if (stir > 0.05) {
           c.globalAlpha = stir * 0.9; c.fillStyle = '#FFFFFF';
-          for (var s = 0; s < 14; s++) { var g2 = grains[s * 17]; c.beginPath(); c.arc(cx + Math.cos(g2.th) * g2.r * rx, cy + 4 + Math.sin(g2.th) * g2.r * ry, 2.2, 0, TAU); c.fill(); }
+          for (var s = 0; s < 24; s++) { var g2 = grains[s * 37]; c.beginPath(); c.arc(cx + Math.cos(g2.th) * g2.r * rx, cy + 6 + Math.sin(g2.th) * g2.r * ry, 2.6, 0, TAU); c.fill(); }
           c.globalAlpha = 1;
         }
         // pouring stream
@@ -672,27 +703,31 @@
   /* =============== STEP 3: ROLL =============== */
   function RollScene() {
     var NX = 96, NY = 150, NW = 448, NH = 296;
-    var ZX = 112, ZY = 166, ZW = 220, ZH = 264, COLS = 6, ROWS = 7;
+    // rice covers the nori except a bare strip at the top, which seals the roll
+    var ZX = 108, ZY = 198, ZW = 424, ZH = 236, COLS = 10, ROWS = 6, CW = ZW / COLS, CH = ZH / ROWS;
     var cells = [], rnd = seeded(11);
     for (var r = 0; r < ROWS; r++) for (var q = 0; q < COLS; q++) {
-      var gx = ZX + (q + 0.5) * ZW / COLS, gy = ZY + (r + 0.5) * ZH / ROWS, gs = [];
-      for (var k = 0; k < 13; k++) gs.push({ x: gx + (rnd() - 0.5) * ZW / COLS * 1.3, y: gy + (rnd() - 0.5) * ZH / ROWS * 1.3, a: rnd() * Math.PI, l: 10 + rnd() * 3 });
-      cells.push({ x: gx, y: gy, on: false, t: 0, grains: gs });
+      var gx = ZX + (q + 0.5) * CW, gy = ZY + (r + 0.5) * CH, gs = [];
+      for (var k = 0; k < 34; k++) gs.push({ x: gx + (rnd() - 0.5) * CW * 1.15, y: gy + (rnd() - 0.5) * CH * 1.15, a: rnd() * Math.PI, l: 10 + rnd() * 3 });
+      cells.push({ x: gx, y: gy, on: false, t: 0, baked: false, grains: gs });
     }
-    var phase = 'rice', bowls = [1, 1, 1], placed = [], roll = 0, rollStart = null, rollBase = 0, rubbing = null, done = false;
+    // finished rice is painted once into its own layer so hundreds of grains stay cheap to draw
+    var RS = 2, riceCv = document.createElement('canvas'); riceCv.width = riceCv.height = SIZE * RS;
+    var rc = riceCv.getContext('2d'); rc.scale(RS, RS);
+    function riceBase(c, cell, k) { c.beginPath(); c.ellipse(cell.x, cell.y, CW * 0.66 * k, CH * 0.66 * k, 0, 0, TAU); c.fillStyle = '#F3ECDC'; c.fill(); }
+    function bake(cell) { riceBase(rc, cell, 1); grainBatch(rc, cell.grains, function (g) { return g.x; }, function (g) { return g.y; }, function (g) { return g.a; }); cell.baked = true; }
+
+    var phase = 'rice', bowls = [1, 1, 1], placed = [], roll = 0, rollStart = null, rollBase = 0, rubbing = null, done = false, settle = 0;
     var rubLoop = Sound.loop('rub');
     var rubSpeed = 0, lastP = null;
-    var A = { x: 150, y: 400 }, B = { x: 300, y: 206 };
-    var U = { x: (B.x - A.x), y: (B.y - A.y) }; var UL = Math.hypot(U.x, U.y); U.x /= UL; U.y /= UL;
-    var N = { x: -U.y, y: U.x };
-    var OFFS = { salmon: -24, cucumber: 0, avocado: 24 };
+    var LINE = { salmon: 290, cucumber: 316, avocado: 342 }, FILL_X = 320, FILL_LEN = 380;
 
     function coverage() { return cells.filter(function (c) { return c.on; }).length / cells.length; }
     function rub(p) {
-      cells.forEach(function (cell) { if (!cell.on && Math.hypot(cell.x - p.x, cell.y - p.y) < 44) { cell.on = true; } });
+      cells.forEach(function (cell) { if (!cell.on && Math.hypot(cell.x - p.x, (cell.y - p.y) * 1.1) < 50) cell.on = true; });
       if (lastP) rubSpeed = Math.min(1, rubSpeed + dist(p, lastP) / 60);
       lastP = p;
-      if (coverage() >= 0.82 && phase === 'rice') {
+      if (coverage() >= 0.85 && phase === 'rice') {
         cells.forEach(function (c) { c.on = true; });
         phase = 'fill'; rubLoop.set(0); Sound.chime();
         Cat.show('So fluffy!');
@@ -700,13 +735,7 @@
       }
     }
 
-    function target(kind) {
-      var m = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, o = OFFS[kind];
-      return { x: m.x + N.x * o, y: m.y + N.y * o, a: Math.atan2(U.y, U.x) };
-    }
-
     function drawFlat(c) {
-      // nori
       rr(c, NX, NY, NW, NH, 8); c.fillStyle = NORI; c.fill(); ink(c, 5);
       c.save(); rr(c, NX, NY, NW, NH, 8); c.clip(); c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 3;
       var r2 = seeded(4); for (var i = 0; i < 26; i++) { var x = NX + r2() * NW, y = NY + r2() * NH; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 30, y + 6); c.stroke(); }
@@ -714,26 +743,30 @@
       if (phase === 'rice') {
         c.setLineDash([12, 10]); rr(c, ZX - 4, ZY - 4, ZW + 8, ZH + 8, 18); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 4; c.stroke(); c.setLineDash([]);
       }
-      c.fillStyle = '#FFFFFF'; c.strokeStyle = '#DDD3BE'; c.lineWidth = 1.3;
+      c.drawImage(riceCv, 0, 0, SIZE * RS, SIZE * RS, 0, 0, SIZE, SIZE);
       cells.forEach(function (cell) {
-        if (!cell.on) return;
+        if (!cell.on || cell.baked) return;
         var k = easeBack(cell.t);
-        cell.grains.forEach(function (g) { grain(c, cell.x + (g.x - cell.x) * k, cell.y + (g.y - cell.y) * k, g.a, g.l * Math.max(0.2, k)); });
+        riceBase(c, cell, Math.max(0.05, k));
+        grainBatch(c, cell.grains, function (g) { return cell.x + (g.x - cell.x) * k; }, function (g) { return cell.y + (g.y - cell.y) * k; }, function (g) { return g.a; }, Math.max(0.2, k));
       });
       placed.forEach(function (pl) {
-        var t = easeOut(pl.t), tg = target(pl.kind), from = BOWL_POS[pl.bowl];
-        var x = lerp(from.x, tg.x, t), y = lerp(from.y, tg.y, t) - Math.sin(t * Math.PI) * 90;
-        c.save(); c.translate(x, y); c.rotate(lerp(0, tg.a, t)); drawPiece(c, pl.kind, 170, lerp(0.5, 1, t)); c.restore();
+        var t = easeOut(pl.t), from = BOWL_POS[pl.bowl];
+        var x = lerp(from.x, FILL_X, t), y = lerp(from.y, LINE[pl.kind], t) - Math.sin(t * Math.PI) * 90;
+        c.save(); c.translate(x, y); drawPiece(c, pl.kind, FILL_LEN, lerp(0.35, 1, t)); c.restore();
       });
     }
+
+    function edgeY() { return lerp(NY + NH, NY + 50, easeOut(roll)); }
+    function rollR() { return lerp(12, ROLL_R, easeOut(roll)); }
 
     return {
       enter: function () { say('Rub to spread the rice'); },
       leave: function () { rubLoop.stop(); },
       hint: function (t) {
-        if (phase === 'rice') { var k = (t % 2) / 2; return { x: ZX + 40 + Math.sin(k * TAU * 2) * 70 + 70, y: ZY + 40 + k * (ZH - 80), press: true }; }
+        if (phase === 'rice') { var k = (t % 2.4) / 2.4; return { x: ZX + 60 + (Math.sin(k * TAU * 2) * 0.5 + 0.5) * (ZW - 120), y: ZY + 30 + k * (ZH - 60), press: true }; }
         if (phase === 'fill') { var i = bowls.indexOf(1); if (i < 0) return null; return { x: BOWL_POS[i].x, y: BOWL_POS[i].y - 10, press: (t % 1.2) < 0.6 }; }
-        if (phase === 'roll' && !done) { var k2 = (t % 1.6) / 1.6; return { x: 150 + k2 * 320, y: 470 - k2 * 300, press: k2 < 0.9 }; }
+        if (phase === 'roll' && !done) { var k2 = (t % 1.6) / 1.6; return { x: 320, y: 430 - k2 * 250, press: k2 < 0.9 }; }
         return null;
       },
       down: function (p) {
@@ -750,26 +783,29 @@
       move: function (p) {
         if (phase === 'rice' && rubbing) rub(p);
         else if (phase === 'roll' && rollStart && !done) {
-          var proj = (p.x - rollStart.x) * 0.72 + (rollStart.y - p.y) * 0.72;
-          var nr = clamp(rollBase + proj / 340, roll, 1);
+          var nr = clamp(rollBase + (rollStart.y - p.y) / 240, roll, 1);
           if (nr > roll) rubSpeed = Math.min(1, rubSpeed + (nr - roll) * 8);
           roll = nr;
         }
       },
       up: function () { rubbing = null; lastP = null; rollStart = null; },
       update: function (dt) {
-        cells.forEach(function (cell) { if (cell.on && cell.t < 1) cell.t = Math.min(1, cell.t + dt * 4); });
+        cells.forEach(function (cell) {
+          if (cell.on && cell.t < 1) { cell.t = Math.min(1, cell.t + dt * 4); }
+          if (cell.on && cell.t >= 1 && !cell.baked) bake(cell);
+        });
         rubSpeed *= Math.pow(0.05, dt); rubLoop.set(rubSpeed);
         placed.forEach(function (pl) {
           pl.t = Math.min(1, pl.t + dt * 2.2);
-          if (pl.t >= 1 && !pl.landed) { pl.landed = true; Sound.pop(); var tg = target(pl.kind); burst(tg.x, tg.y, 6, { colors: ['#FFC93C', '#FFFFFF'], speed: 120, life: 0.5 }); }
+          if (pl.t >= 1 && !pl.landed) { pl.landed = true; Sound.pop(); burst(FILL_X, LINE[pl.kind], 6, { colors: ['#FFC93C', '#FFFFFF'], speed: 120, life: 0.5 }); }
         });
         if (phase === 'fill' && placed.length === 3 && placed.every(function (p) { return p.landed; })) {
           phase = 'roll'; say('Swipe up to roll!');
         }
+        if (done) settle = Math.min(1, settle + dt * 2);
         if (phase === 'roll' && roll >= 1 && !done) {
           done = true; rubLoop.set(0); Sound.chime(); buzz(25);
-          burst(320, 280, 30, { colors: ['#FFC93C', '#FF7EB6', '#7BD389', '#FFFFFF'], speed: 300, life: 1 });
+          burst(320, 300, 30, { colors: ['#FFC93C', '#FF7EB6', '#7BD389', '#FFFFFF'], speed: 300, life: 1 });
           Cat.show('Perfect roll!');
           say('You made a hand roll!');
           showNext('Next', function () { goStep(3); });
@@ -779,27 +815,25 @@
         // bamboo mat
         rr(c, 60, 120, 520, 356, 14); c.fillStyle = '#EED9A4'; c.fill(); ink(c, 5);
         c.save(); rr(c, 60, 120, 520, 356, 14); c.clip(); c.strokeStyle = '#D6B877'; c.lineWidth = 3;
-        for (var x = 80; x < 580; x += 22) { c.beginPath(); c.moveTo(x, 120); c.lineTo(x, 476); c.stroke(); }
-        c.strokeStyle = '#B9935A'; c.lineWidth = 4; c.beginPath(); c.moveTo(60, 200); c.lineTo(580, 200); c.moveTo(60, 400); c.lineTo(580, 400); c.stroke();
+        for (var y = 136; y < 476; y += 20) { c.beginPath(); c.moveTo(60, y); c.lineTo(580, y); c.stroke(); }
+        c.strokeStyle = '#B9935A'; c.lineWidth = 4; c.beginPath(); c.moveTo(140, 120); c.lineTo(140, 476); c.moveTo(500, 120); c.lineTo(500, 476); c.stroke();
         c.restore();
         for (var b = 0; b < 3; b++) drawBowl(c, b, FILLINGS[b], bowls[b], phase === 'fill' && bowls[b]);
-        var p = easeOut(roll);
-        if (p < 1) {
-          c.save(); c.globalAlpha = 1 - p;
-          c.translate(ZX, 300); c.scale(1 - 0.55 * p, 1); c.translate(-ZX, -300);
-          drawFlat(c); c.restore();
-        }
-        if (phase === 'roll' && p > 0) {
-          c.save(); c.globalAlpha = Math.min(1, p * 1.6);
-          drawHandroll(c, 330, 230, 0.55 + 0.45 * p, -0.5 + 0.1 * (1 - p), null); c.restore();
+        if (roll <= 0) { drawFlat(c); }
+        else {
+          var ye = edgeY(), r = rollR();
+          if (roll < 1) { c.save(); c.beginPath(); c.rect(0, 0, SIZE, ye); c.clip(); drawFlat(c); c.restore(); }
+          var yc = done ? lerp(ye, 300, easeOut(settle)) : ye;
+          drawHandroll(c, 320, yc, 1, 0, 400, r);
         }
         if (phase === 'roll' && !done) {
-          // curved arrow showing the swipe
           var pulse = 0.6 + 0.4 * Math.sin(performance.now() / 250);
-          c.save(); c.globalAlpha = (1 - p) * pulse;
-          c.beginPath(); c.moveTo(150, 470); c.quadraticCurveTo(200, 230, 470, 170);
-          c.strokeStyle = '#FFFFFF'; c.lineWidth = 12; c.setLineDash([22, 16]); c.lineDashOffset = -performance.now() / 30; c.stroke(); c.setLineDash([]);
-          c.beginPath(); c.moveTo(495, 162); c.lineTo(455, 148); c.lineTo(466, 190); c.closePath(); c.fillStyle = '#FFFFFF'; c.fill();
+          c.save(); c.globalAlpha = (1 - roll) * pulse;
+          [200, 440].forEach(function (x) {
+            c.beginPath(); c.moveTo(x, 430); c.lineTo(x, 200);
+            c.strokeStyle = '#FFFFFF'; c.lineWidth = 12; c.lineCap = 'round'; c.setLineDash([22, 16]); c.lineDashOffset = performance.now() / 30; c.stroke(); c.setLineDash([]);
+            c.beginPath(); c.moveTo(x, 172); c.lineTo(x - 22, 204); c.lineTo(x + 22, 204); c.closePath(); c.fillStyle = '#FFFFFF'; c.fill();
+          });
           c.restore();
         }
       }
@@ -822,7 +856,7 @@
     c.fillStyle = pl.rim;
     for (var i = 0; i < 24; i++) { var a = i / 24 * TAU; c.beginPath(); c.arc(PCX + Math.cos(a) * (PR - 17), PCY + Math.sin(a) * (PR - 17), 4.5, 0, TAU); c.fill(); }
     d.leaves.forEach(function (l) { drawLeaf(c, l.x, l.y, l.a); });
-    drawHandroll(c, PCX - 6, PCY - 40, 0.92, -0.55, d.rollSeeds);
+    drawHandroll(c, PCX + 4, PCY - 6, 1, -0.3, 320);
     d.ginger.forEach(function (g) { drawGinger(c, g.x, g.y, g.a); });
     d.wasabi.forEach(function (w) { drawWasabi(c, w.x, w.y); });
     d.seeds.forEach(function (s) { drawSeed(c, s.x, s.y, s.a, s.dark); });
@@ -1008,7 +1042,7 @@
   var STEPS = [
     { name: 'Rice', make: RiceScene, icon: '<svg viewBox="0 0 24 24"><path d="M3 11 H21 Q20 20 12 20 Q4 20 3 11 Z" fill="#FF7E6B" stroke="#2A2340" stroke-width="2"/><path d="M5 11 Q12 4 19 11" fill="#fff" stroke="#2A2340" stroke-width="2"/></svg>' },
     { name: 'Chop', make: ChopScene, icon: '<svg viewBox="0 0 24 24"><path d="M4 18 L16 6 L19 9 L8 20 Z" fill="#E3E9F0" stroke="#2A2340" stroke-width="2" stroke-linejoin="round"/><rect x="15" y="2" width="5" height="8" rx="2" transform="rotate(45 17.5 6)" fill="#FF6B57" stroke="#2A2340" stroke-width="2"/></svg>' },
-    { name: 'Roll', make: RollScene, icon: '<svg viewBox="0 0 24 24"><path d="M5 7 L13 22 L19 5 Q12 1 5 7 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="2" stroke-linejoin="round"/><ellipse cx="12" cy="6" rx="6" ry="2.5" fill="#fff"/></svg>' },
+    { name: 'Roll', make: RollScene, icon: '<svg viewBox="0 0 24 24"><g transform="rotate(-22 12 12)"><path d="M16 6.5 H6 A3 5.5 0 0 0 6 17.5 H16 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="2" stroke-linejoin="round"/><ellipse cx="16" cy="12" rx="4.2" ry="5.5" fill="#2E4A3A" stroke="#2A2340" stroke-width="2"/><ellipse cx="16" cy="12" rx="3" ry="4.2" fill="#fff"/><circle cx="16" cy="11" r="1.3" fill="#FF8A5B"/><circle cx="16.3" cy="13.4" r="1.1" fill="#4FAE5E"/></g></svg>' },
     { name: 'Plate', make: PlateScene, icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#fff" stroke="#2A2340" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="#3FA7F5" stroke-width="2"/></svg>' }
   ];
   var scene = null, stepIdx = -1, hintT = 0, idle = 0, pointerId = null;
@@ -1052,7 +1086,7 @@
     { id: 'brigadeiros', name: 'Brigadeiros' }
   ];
   var RECIPE_ART = {
-    handroll: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="100" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><g transform="rotate(-28 90 62)"><path d="M48 36 L92 118 L132 36 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="72" y="6" width="11" height="36" rx="5" fill="#4FAE5E" stroke="#2A2340" stroke-width="3"/><rect x="98" y="4" width="13" height="38" rx="5" fill="#FF8A5B" stroke="#2A2340" stroke-width="3"/><rect x="85" y="10" width="11" height="34" rx="5" fill="#C8E26F" stroke="#2A2340" stroke-width="3"/><ellipse cx="90" cy="38" rx="44" ry="13" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M46 40 L136 50 L92 118 Z" fill="#3D6450" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/></g></svg>',
+    handroll: '<svg viewBox="16 46 208 102"><ellipse cx="120" cy="122" rx="100" ry="22" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="120" cy="119" rx="74" ry="12" fill="#FFE3EC"/><g transform="rotate(-14 120 90)"><path d="M168 62 H70 A17 28 0 0 0 70 118 H168 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="62" y="69" width="100" height="8" rx="4" fill="#3D6450"/><ellipse cx="168" cy="90" rx="17.5" ry="28" fill="#2E4A3A" stroke="#2A2340" stroke-width="4"/><ellipse cx="168" cy="90" rx="14.5" ry="23.5" fill="#fff"/><rect x="160" y="77" width="11" height="9" rx="2" fill="#FF8A5B" stroke="#2A2340" stroke-width="2"/><rect x="168" y="88" width="7" height="8" rx="1.5" fill="#4FAE5E" stroke="#2A2340" stroke-width="2"/><ellipse cx="164" cy="98" rx="6" ry="4" fill="#C8E26F" stroke="#2A2340" stroke-width="2"/></g></svg>',
     pancakes: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="102" rx="76" ry="14" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="4"><ellipse cx="90" cy="88" rx="56" ry="14" fill="#F2B45E"/><ellipse cx="90" cy="72" rx="56" ry="14" fill="#F6C273"/><ellipse cx="90" cy="56" rx="56" ry="14" fill="#F9CF85"/></g><rect x="78" y="36" width="24" height="14" rx="3" fill="#FFF1B8" stroke="#2A2340" stroke-width="3"/></svg>',
     omurice: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 90 Q30 36 90 34 Q150 36 150 90 Z" fill="#FFD84D" stroke="#2A2340" stroke-width="4"/><path d="M60 60 Q75 50 90 62 Q105 50 120 60" fill="none" stroke="#FF4D3D" stroke-width="6" stroke-linecap="round"/></svg>',
     brigadeiros: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="100" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="4"><circle cx="60" cy="74" r="22" fill="#6B3A22"/><circle cx="120" cy="74" r="22" fill="#6B3A22"/><circle cx="90" cy="56" r="22" fill="#7A4428"/></g></svg>'
