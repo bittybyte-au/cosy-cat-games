@@ -254,20 +254,37 @@
   var topbar = $('topbar');
   var cw = 0, ch = 0, dpr = 1, T = 60, BX = 0, BY = 0;
 
+  var sideLayout = window.matchMedia('(min-width: 700px) and (min-aspect-ratio: 1/1)');
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     cw = window.innerWidth; ch = window.innerHeight;
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
-    var top = topbar.getBoundingClientRect().bottom + 10;
-    var safeB = 0;
-    try { safeB = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0; } catch (e) {}
-    var bottom = ch - Math.max(16, safeB) - 8;
-    var availW = cw - 24, availH = bottom - top - 12;
-    T = Math.floor(Math.min(availW / COLS, availH / ROWS, 96));
-    T = Math.max(34, T);
-    BX = Math.round((cw - T * COLS) / 2);
-    BY = Math.round(top + Math.max(0, (availH - T * ROWS) / 2));
+    var bottom = ch - 24;
+    var panel = $('goalPanel');
+    if (sideLayout.matches) {
+      // goal card on the left, board on the right, the pair centred together
+      var SW = cw >= 1100 ? 240 : 210, GAP = 24;
+      var rowBottom = topbar.getBoundingClientRect().bottom + 10;
+      var fit = function (top) {
+        var availH = bottom - top - 8, availW = cw - SW - GAP - 40;
+        T = Math.max(34, Math.floor(Math.min(availW / COLS, availH / ROWS, 96)));
+        return { top: top, availH: availH, gx: Math.round((cw - (SW + GAP + T * COLS)) / 2) };
+      };
+      // use the space beside the corner buttons when there's room, otherwise start below them
+      var f = fit(24);
+      if (f.gx < 84) f = fit(rowBottom);
+      BX = f.gx + SW + GAP;
+      BY = Math.round(f.top + Math.max(0, (f.availH - T * ROWS) / 2));
+      panel.style.left = f.gx + 'px'; panel.style.top = BY + 'px'; panel.style.width = SW + 'px';
+    } else {
+      panel.style.left = panel.style.top = panel.style.width = '';
+      var top = topbar.getBoundingClientRect().bottom + 10;
+      var availW = cw - 24, availH = bottom - top - 4;
+      T = Math.max(34, Math.floor(Math.min(availW / COLS, availH / ROWS, 96)));
+      BX = Math.round((cw - T * COLS) / 2);
+      BY = Math.round(top + Math.max(0, (availH - T * ROWS) / 2));
+    }
     buildSprites(T * 0.86 * dpr);
   }
   window.addEventListener('resize', resize);
@@ -683,7 +700,7 @@
   function startLevel(n) {
     level = levelDef(n);
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
-    $('levelLabel').textContent = 'Level ' + n;
+    $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
     $('win').hidden = true;
     renderGoals();
     fillFresh();

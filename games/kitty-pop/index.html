@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap">
 <style>
-/* Layout: a soft pink room; top bar, then a goal panel that stays on screen; the board (canvas) fills the rest. Single bright look by design. */
+/* Layout: a soft pink room; top bar, then a goal panel that stays on screen (beside the board on wide screens); the board (canvas) fills the rest. Single bright look by design. */
 :root {
   --wall: #FFE6F0;
   --wall2: #FFD6E6;
@@ -59,11 +59,11 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .middle { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .level { font: 800 1rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px 2px; }
 .goalpanel {
-  flex-basis: 100%; max-width: 560px; min-width: 0; margin: 6px auto 0; background: var(--cream); border: 3px solid var(--ink); border-radius: 22px;
+  flex-basis: 100%; min-width: 0; margin: 6px 0 0; background: var(--cream); border: 3px solid var(--ink); border-radius: 22px;
   box-shadow: 0 4px 0 var(--ink); padding: 6px 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .goalpanel h2 { margin: 0; font: 800 1.05rem/1.1 var(--display); color: var(--muted); }
-.goals { display: flex; gap: 8px; justify-content: center; width: 100%; min-width: 0; }
+.goals { display: flex; gap: 8px; justify-content: center; width: 100%; max-width: 560px; min-width: 0; }
 .goal {
   position: relative; flex: 1 1 0; max-width: 170px; min-width: 0; display: flex; align-items: center; gap: 6px; background: #fff;
   border: 3px solid var(--ink); border-radius: 18px; padding: 4px 8px 4px 4px; transition: background .2s ease;
@@ -121,15 +121,24 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   .goal .count small { font-size: .78rem; }
   .goals { gap: 6px; }
 }
-/* tablets and computers: home, level, goals and sound all on one row, leaving more room for the board */
-@media (min-width: 600px) {
-  .topbar { padding-bottom: 4px; }
-  .goalpanel { flex-direction: row; justify-content: center; gap: 12px; padding: 6px 12px; margin-top: 4px; }
-  .goalpanel h2 { white-space: nowrap; }
-  .goals { width: auto; flex: 1; }
-  .middle { flex: none; order: 1; }
-  .goalpanel { order: 2; flex: 1 1 auto; margin: 0 auto; }
-  #soundBtn { order: 3; }
+.sidelevel { display: none; }
+/* tablets and computers: the level and goals sit in a tall card beside the board (game.js places it).
+   Home and sound stay in the top corners. */
+@media (min-width: 700px) and (min-aspect-ratio: 1/1) {
+  .middle { display: none; }
+  #soundBtn { margin-left: auto; }
+  .goalpanel {
+    position: fixed; left: 16px; top: 90px; width: 220px; max-width: none; flex-basis: auto; margin: 0;
+    padding: 16px 14px 16px; gap: 12px; border-width: 4px; border-radius: 28px; box-shadow: 0 6px 0 var(--ink);
+  }
+  .sidelevel { display: block; font: 800 1.6rem/1 var(--display); }
+  .goalpanel h2 { font-size: 1.1rem; }
+  .goals { flex-direction: column; gap: 10px; }
+  .goal { flex: none; max-width: none; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 20px; }
+  .goal img { width: 54px; height: 54px; }
+  .goal .count { font-size: 1.7rem; }
+  .goal .count small { font-size: 1.05rem; }
+  .goal .bar { height: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .card, .card .faces img, .goal.bump { animation: none; }
@@ -147,7 +156,8 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
     <div class="level" id="levelLabel">Level 1</div>
   </div>
   <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
-  <section class="goalpanel" aria-labelledby="goalTitle">
+  <section class="goalpanel" id="goalPanel" aria-labelledby="goalTitle">
+    <div class="sidelevel" id="sideLevel">Level 1</div>
     <h2 id="goalTitle">Pop these cats</h2>
     <div class="goals" id="goals" aria-live="polite"></div>
   </section>
