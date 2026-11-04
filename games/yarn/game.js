@@ -254,7 +254,7 @@
     return {
       init: init,
       isOn: function () { return on; },
-      setOn: function (v) { on = v; GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
+      setOn: function (v) { on = v; if (GG.setSetting) GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
       lift: function () { tone({ f: 520, to: 700, dur: 0.07, gain: 0.07, type: 'triangle', slide: 0.05 }); },
       /* soft woolly thump, each ball in a group a note higher */
       land: function (i, delay) {
@@ -500,6 +500,7 @@
     p.level = Math.max(p.level, level.n + 1);
     p.done = (p.done || 0) + 1;
     GG.setProgress('yarn', p);
+    if (GG.stat) GG.stat('yarn', 'levels', 1);
     Sound.chime(); Sound.purr(0.45); buzz(30);
     Object.keys(doneCats).forEach(function (i) { var q = L.pos[i]; sparkle(q.x, q.y, '#FFE58A', 10); });
     setTimeout(function () {

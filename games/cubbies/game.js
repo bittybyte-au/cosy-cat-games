@@ -255,7 +255,7 @@
     return {
       init: init,
       isOn: function () { return on; },
-      setOn: function (v) { on = v; GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
+      setOn: function (v) { on = v; if (GG.setSetting) GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
       mrrp: function (delay) {
         var p = rand(0.9, 1.2);
         tone({ f: 520 * p, to: 820 * p, dur: 0.12, gain: 0.06, type: 'triangle', slide: 0.1, delay: delay });
@@ -497,6 +497,7 @@
     p.level = Math.max(p.level, level.n + 1);
     p.done = (p.done || 0) + 1;
     GG.setProgress('cubbies', p);
+    if (GG.stat) GG.stat('cubbies', 'levels', 1);
     cubbies.forEach(function (cb, i) { cb.glow = 1; sparkle(cb.x, cb.y, CATS[cb.kind].fill, 12); });
     cats.forEach(function (c) { c.face = 'happy'; });
     setTimeout(function () {

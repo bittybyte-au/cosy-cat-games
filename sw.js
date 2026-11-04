@@ -1,6 +1,6 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v46';
+const VERSION = 'ccg-v47';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './shared/store.js', './shared/pass.js', './unlock/', './unlock/index.html',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',

@@ -219,7 +219,7 @@
     return {
       init: init, tone: tone, noise: noise,
       isOn: function () { return on; },
-      setOn: function (v) { on = v; GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
+      setOn: function (v) { on = v; if (GG.setSetting) GG.setSetting('sound', v); if (master) master.gain.setTargetAtTime(v ? 0.9 : 0, ac.currentTime, 0.02); },
       /* a soft bubbly pop; each step of a chain goes a note higher */
       pop: function (chain, delay) {
         var f = SCALE[Math.min(SCALE.length - 1, chain)];
@@ -707,14 +707,20 @@
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('kittypop'); p.level = p.level || 1; return p; }
 
-  /* levels past the free ones need the one-year pass (shared/pass.js): the last free level replays underneath */
-  function passBlocks(n) { return !!(window.GGPass && !window.GGPass.allows('kitty-pop', n)); }
+  /* levels past the free ones need the pass: the last free level replays underneath.
+     Uses GG.allows from the new shared layer, or the older GGPass while that's still in place. */
+  function passBlocks(n) {
+    if (window.GG && typeof GG.allows === 'function') return !GG.allows('kitty-pop', n);
+    return !!(window.GGPass && !window.GGPass.allows('kitty-pop', n));
+  }
+  function lastFreeLevel(n) { while (n > 1 && passBlocks(n)) n--; return n; }
   function showPassLock() {
+    if (!window.GGPass || !window.GGPass.lockScreen) return;
     window.GGPass.lockScreen({ title: 'You\u2019ve finished the free levels!', text: 'A grown-up can unlock every Kitty Pop level, and all the other games, for a year.', backLabel: 'Keep playing' });
   }
 
   function startLevel(n) {
-    if (passBlocks(n)) { n = window.GGPass.FREE['kitty-pop']; showPassLock(); }
+    if (passBlocks(n)) { n = lastFreeLevel(n); showPassLock(); }
     level = levelDef(n);
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
     $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
@@ -738,6 +744,7 @@
     p.level = Math.max(p.level, n + 1);
     p.done = (p.done || 0) + 1;
     GG.setProgress('kittypop', p);
+    if (GG.stat) GG.stat('kitty-pop', 'levels', 1);
     // every cat cheers in a wave
     eachTile(function (t) { t.face = 'happy'; t.cheer = -(t.c * 0.07 + t.r * 0.04); });
     for (var i = 0; i < 6; i++) { var q = cellCenter(Math.floor(Math.random() * ROWS), Math.floor(Math.random() * COLS)); sparkle(q.x, q.y, CATS[level.colours[i % level.colours.length]].fill, 10); }
@@ -1012,7 +1019,9 @@
 
   resize();
   startLevel(progress().level);
-  window.addEventListener('ggpass', function () { if (level && passBlocks(level.n)) startLevel(level.n); });
+  function recheck() { if (level && passBlocks(level.n)) startLevel(level.n); }
+  window.addEventListener('gg-change', recheck);
+  window.addEventListener('ggpass', recheck); // older shared code; harmless once it's gone
   requestAnimationFrame(frame);
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
 
