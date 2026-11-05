@@ -68,6 +68,12 @@ h1 a { color: inherit; text-decoration: none; }
 .tiles .art { min-height: 140px; }
 body.toddler .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 body.toddler .tile h2 { font-size: 2.2rem; }
+/* toddler games carry a little rattle tag between the tile's ears */
+.tile .tod-tag {
+  position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; align-items: center; gap: 5px;
+  background: #C7EBD2; border: 3px solid var(--ink); border-radius: 999px; padding: 3px 11px 3px 6px; font: 800 .9rem var(--body); white-space: nowrap;
+}
+.tile .tod-tag svg { width: 22px; height: 22px; }
 
 /* avatar builder (layout from Lily's sketch) */
 .panel.av-builder {
@@ -319,6 +325,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
   function toddlerReady() { return toddlerGames().length >= 3; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
+  var RATTLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 13.5 L20 20" stroke="#2A2340" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6" fill="#FFD23F" stroke="#2A2340" stroke-width="1.8"/><circle cx="9" cy="9" r="7" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.2"/><circle cx="7" cy="7" r="1.6" fill="#fff"/><circle cx="11" cy="10.5" r="1.3" fill="#fff"/></svg>';
   function renderTiles() {
     var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.more');
     box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });
@@ -339,6 +346,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       else t.setAttribute('aria-label', g.name + ', coming soon');
       t.innerHTML = EAR_L + EAR_R +
         '<span class="badge"' + (ok ? ' hidden' : '') + '>' + (ok ? '' : 'Coming soon') + '</span>' +
+        (g.toddler ? '<span class="tod-tag" title="A game for toddlers">' + RATTLE + 'Toddler</span>' : '') +
         '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2><p>' + esc(g.blurb) + '</p>';
       if (ok) t.addEventListener('click', function (e) {
         if (!GG.current()) { e.preventDefault(); showSetup(); }

@@ -5,7 +5,7 @@
    id        folder name under /games/ (also used by the pass and allow/block lists)
    save      the key the game uses with GG.getProgress / GG.setProgress
    ages      one or more of 'under5', '5-10', '11+' (suggestions only, used by filters)
-   toddler   true = shown on the toddler home
+   toddler   true = shown on the toddler home (and tagged as a toddler game); toddler games have no badge/counter
    free      what guests and expired passes can play: 'all', a list of parts, or a number of levels
    status    'live' playable, 'soon' greyed "Coming soon" tile while testing, 'dev' hidden on the live site
    season    null, or a season id (e.g. 'christmas') for games that only appear in that season
@@ -65,7 +65,6 @@
     {
       id: 'feed', save: 'feed', name: 'Feed the Cat', blurb: 'Give each cat its bowl',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE0B8',
-      badge: function (p) { var n = p && typeof p.fed === 'number' ? p.fed : 0; return n ? n + (n === 1 ? ' cat fed' : ' cats fed') : ''; },
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"0\" y=\"96\" width=\"240\" height=\"54\" fill=\"#E6B98A\"/><path d=\"M0 96 H240\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ color: '#FF4D4D', pose: 'peek', face: 'open', x: 46, y: 66, size: 60 }) + cat({ color: '#3D8BFF', pose: 'peek', face: 'happy', x: 120, y: 66, size: 60 }) + cat({ color: '#FFD23F', pose: 'peek', face: 'open', x: 194, y: 66, size: 60 }) + "<ellipse cx=\"46\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#FF4D4D\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"194\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"120\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#3D8BFF\" stroke=\"#2A2340\" stroke-width=\"3\"/><g transform=\"translate(120 114)\"><path d=\"M-14 -16 Q-2 -26 10 -16 L18 -22 L17 -12 L18 -2 L10 -8 Q-2 2 -14 -8 Z\" fill=\"#FFB26B\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M-24 -12 Q-23 0 -14 0 H14 Q23 0 24 -12 Z\" fill=\"#3D8BFF\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"-26\" y=\"-15\" width=\"52\" height=\"6\" rx=\"3\" fill=\"#2E74DB\" stroke=\"#2A2340\" stroke-width=\"2.5\"/></g></svg>"
     },
     {
@@ -76,8 +75,12 @@
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#CFEFC4',
-      badge: function (p) { var n = p && typeof p.rounds === 'number' ? p.rounds : 0; return n ? n + (n === 1 ? ' picture done' : ' pictures done') : ''; },
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"0\" y=\"0\" width=\"240\" height=\"70\" fill=\"#BFE6FF\"/><rect x=\"0\" y=\"70\" width=\"240\" height=\"80\" fill=\"#9BDC8C\"/><path d=\"M0 70 H240\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"206\" cy=\"26\" r=\"14\" fill=\"#FFE14D\" stroke=\"#2A2340\" stroke-width=\"3\"/><g transform=\"translate(64 70)\"><circle r=\"18\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M-16 -4 Q0 8 16 -4 M-14 6 Q0 16 14 6\" fill=\"none\" stroke=\"#2A2340\" stroke-opacity=\".35\" stroke-width=\"2\"/></g><path d=\"M20 128 Q16 96 40 86 Q56 66 78 80 Q100 70 110 96 Q118 112 112 128 Z\" fill=\"#5CCB75\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/>" + cat({ color: '#FFA94D', face: 'happy', x: 168, y: 86, size: 46 }) + "<path d=\"M128 132 Q124 104 146 98 Q168 86 190 98 Q214 104 210 132 Z\" fill=\"#C9C2D6\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/></svg>"
+    },
+    {
+      id: 'mouse-pop', save: 'mousepop', name: 'Mouse Pop', blurb: 'Tap the mice to pop them',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE0EC',
+      art: "<svg viewBox=\"0 0 240 150\"><ellipse cx=\"120\" cy=\"80\" rx=\"104\" ry=\"60\" fill=\"#FFE7F0\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><g transform=\"translate(70 92) rotate(-20)\"><path d=\"M-26 0 Q-44 -6 -56 4\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"4\"/><path d=\"M-28 0 Q-26 -18 0 -17 Q24 -14 30 0 Q24 14 0 17 Q-26 18 -28 0 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"-16\" r=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"8\" cy=\"16\" r=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"30\" cy=\"0\" r=\"4\" fill=\"#FF7FA6\"/><circle cx=\"20\" cy=\"-6\" r=\"2.8\" fill=\"#2A2340\"/><circle cx=\"20\" cy=\"6\" r=\"2.8\" fill=\"#2A2340\"/></g><g transform=\"translate(176 70) rotate(200)\"><path d=\"M-26 0 Q-44 -6 -56 4\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"4\"/><path d=\"M-28 0 Q-26 -18 0 -17 Q24 -14 30 0 Q24 14 0 17 Q-26 18 -28 0 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"-16\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"8\" cy=\"16\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"30\" cy=\"0\" r=\"4\" fill=\"#FF7FA6\"/><circle cx=\"20\" cy=\"-6\" r=\"2.8\" fill=\"#2A2340\"/><circle cx=\"20\" cy=\"6\" r=\"2.8\" fill=\"#2A2340\"/></g><g transform=\"translate(130 112)\"><circle r=\"16\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"5\"/><circle cx=\"-26\" cy=\"-6\" r=\"7\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"24\" cy=\"-12\" r=\"6\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"6\" cy=\"-28\" r=\"8\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"28\" cy=\"12\" r=\"5\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/></g></svg>"
     }
   ];
 
