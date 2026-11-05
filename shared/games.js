@@ -86,6 +86,11 @@
       id: 'bath', save: 'bath', name: 'Bath Time', blurb: 'Wash a muddy kitten',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#D4EEFB',
       art: "<svg viewBox=\"0 0 240 150\"><path d=\"M40 92 H200 Q200 136 170 136 H70 Q40 136 40 92 Z\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 120, y: 64, size: 70 }) + "<circle cx=\"98\" cy=\"48\" r=\"8\" fill=\"#8A5A34\"/><circle cx=\"104\" cy=\"42\" r=\"5\" fill=\"#8A5A34\"/><path d=\"M36 92 H204\" stroke=\"#2A2340\" stroke-width=\"4\" stroke-linecap=\"round\"/><g fill=\"#fff\" stroke=\"#2A2340\" stroke-opacity=\".35\" stroke-width=\"2\"><circle cx=\"58\" cy=\"90\" r=\"10\"/><circle cx=\"78\" cy=\"88\" r=\"12\"/><circle cx=\"160\" cy=\"88\" r=\"12\"/><circle cx=\"182\" cy=\"90\" r=\"10\"/><circle cx=\"140\" cy=\"40\" r=\"7\"/><circle cx=\"152\" cy=\"30\" r=\"5\"/></g><g transform=\"translate(186 76)\"><path d=\"M-16 0 Q-16 12 0 12 Q14 12 16 2 Q8 4 4 -1 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><circle cx=\"5\" cy=\"-8\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><path d=\"M12 -8 L20 -5 L12 -3 Z\" fill=\"#FF9A2E\"/></g></svg>"
+    },
+    {
+      id: 'puzzle', save: 'puzzle', name: 'Cat Puzzles', blurb: 'Put the picture back together',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
+      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"30\" y=\"16\" width=\"118\" height=\"118\" rx=\"10\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 89, y: 66, size: 60 }) + "<path d=\"M50 86 H128 Q124 124 89 124 Q54 124 50 86 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M89 16 V60 Q76 66 89 74 V134\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"7 6\"/><g transform=\"translate(178 82) rotate(12)\"><path d=\"M-30 -46 H22 V-6 Q34 0 22 8 V46 H-30 Z\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M-30 10 H22 V46 H-30 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-4\" cy=\"-14\" r=\"16\" fill=\"#FFA94D\" stroke=\"#2A2340\" stroke-width=\"3\"/></g></svg>"
     }
   ];
 
