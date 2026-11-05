@@ -17,101 +17,322 @@
   function cat(o) { return window.GGCat ? window.GGCat.g(o) : ''; }
   function level(p) { return p && p.level > 1 ? 'Level ' + p.level : ''; }
 
+  /* ---------- the tile pictures, in the house style ----------
+     One ink colour in three weights (4 main shapes, 3 parts, 2.5 small details). Outline last: a shape is filled,
+     its details and a soft darker crescent along the lower right are drawn clipped inside it, then the outline goes
+     on top, so nothing pokes past a line. Joins start inside the thing they join and are drawn first.
+     Shapes are functions of a nudge (dx, dy) written with relative steps, so the crescent's moved copy is free. */
+  var INK = '#2A2340', uid = 0;
+  function f(v) { return Math.round(v * 10) / 10; }
+  function R(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    var a = 'a' + r + ' ' + r + ' 0 0 1 ';
+    return function (dx, dy) { return 'M' + f(x + r + dx) + ' ' + f(y + dy) + 'h' + f(w - 2 * r) + a + r + ' ' + r + 'v' + f(h - 2 * r) + a + -r + ' ' + r + 'h' + f(2 * r - w) + a + -r + ' ' + -r + 'v' + f(2 * r - h) + a + r + ' ' + -r + 'z'; };
+  }
+  function E(cx, cy, rx, ry) {
+    var a = 'a' + rx + ' ' + ry + ' 0 1 0 ';
+    return function (dx, dy) { return 'M' + f(cx - rx + dx) + ' ' + f(cy + dy) + a + 2 * rx + ' 0' + a + -2 * rx + ' 0z'; };
+  }
+  function P(x, y, rel) { return function (dx, dy) { return 'M' + f(x + dx) + ' ' + f(y + dy) + rel; }; }
+  function U() { var l = [].slice.call(arguments); return function (dx, dy) { return l.map(function (s) { return s(dx, dy); }).join(''); }; }
+  function star(cx, cy, r) {
+    return function (dx, dy) {
+      for (var i = 0, d = ''; i < 10; i++) { var a = Math.PI * (i / 5 - 0.5), q = i % 2 ? r * 0.5 : r; d += (i ? 'L' : 'M') + f(cx + dx + Math.cos(a) * q) + ' ' + f(cy + dy + Math.sin(a) * q); }
+      return d + 'z';
+    };
+  }
+  function stroke(lw) { return ' stroke="' + INK + '" stroke-width="' + lw + '" stroke-linecap="round" stroke-linejoin="round"'; }
+  /* a filled shape: o.lw outline (0 = none), o.k crescent depth (0 = none), o.in svg drawn clipped inside,
+     o.union strokes first at double weight so overlapping parts (petals, foam) read as one outline, o.t a transform */
+  function sh(s, fill, o) {
+    o = o || {};
+    var d = s(0, 0), lw = o.lw === undefined ? 4 : o.lw, k = o.k === undefined ? 4 : o.k, out = '';
+    if (o.union) out += '<path d="' + d + '" fill="none"' + stroke(lw * 2) + '/>';
+    out += '<path d="' + d + '" fill="' + fill + '"/>';
+    if (k || o.in) {
+      var id = 'gt' + (++uid);
+      out += '<clipPath id="' + id + '"><path d="' + d + '"/></clipPath><g clip-path="url(#' + id + ')">' + (o.in || '') +
+        (k ? '<path d="M-300 -300h840v750h-840z' + s(-k * 0.7, -k) + '" fill="rgba(42,35,64,.13)" fill-rule="evenodd"/>' : '') + '</g>';
+    }
+    if (lw && !o.union) out += '<path d="' + d + '" fill="none"' + stroke(lw) + '/>';
+    return o.t ? '<g transform="' + o.t + '">' + out + '</g>' : out;
+  }
+  function el(cx, cy, rx, ry, fill, op) { return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="' + fill + '"' + (op ? ' opacity="' + op + '"' : '') + '/>'; }
+  function ln(d, lw, col, extra) { return '<path d="' + d + '" fill="none"' + (col ? stroke(lw).replace(INK, col) : stroke(lw)) + (extra || '') + '/>'; }
+  function tube(d, col, w) { return ln(d, w + 5) + ln(d, w, col); }                   // a stem or handle with an ink edge
+  function shadow(cx, cy, rx, ry) { return el(cx, cy, rx, ry, 'rgba(42,35,64,.16)'); }
+  function shine(cx, cy, rx, ry) { return el(cx, cy, rx, ry, '#fff', 0.45); }
+  function svg(body, vb) { return '<svg viewBox="' + (vb || '0 0 240 150') + '">' + body + '</svg>'; }
+  /* a ball of wool: stripes and shading inside, outline on top */
+  function wool(x, y, r, col, dark) { return sh(E(x, y, r, r), col, { lw: 3, k: 3, in: ln('M' + (x - r) + ' ' + (y - 5) + 'q' + r + ' -8 ' + 2 * r + ' 0m-' + 2 * r + ' 7q' + r + ' -8 ' + 2 * r + ' 0m-' + 2 * r + ' 7q' + r + ' -8 ' + 2 * r + ' 0', 2.4, dark) }); }
+  /* a cardboard box with its lid shut, x..x+w wide, bottom at y */
+  function shutBox(x, y, w, h, col) {
+    return shadow(x + w / 2, y, w / 2 + 6, 4) + sh(R(x, y - h, w, h, 4), col, { in: '<rect x="' + (x + w / 2 - 4) + '" y="' + (y - h) + '" width="8" height="22" fill="#F3D3A6"/>' }) +
+      sh(P(x, y - h, 'l10 -12h' + (w - 20) + 'l10 12z'), '#D9A066', { lw: 3, k: 0, in: '<rect x="' + (x + w / 2 - 4) + '" y="' + (y - h - 14) + '" width="8" height="14" fill="#F3D3A6"/>' });
+  }
+  function bowl(cx, col) {
+    return shadow(cx, 130, 30, 4) + sh(P(cx - 28, 112, 'q2 18 18 18h20q16 0 18 -18z'), col, { k: 3 }) +
+      sh(E(cx, 112, 28, 7), col, { lw: 3, k: 0, in: el(cx, 112, 28, 7, 'rgba(42,35,64,.18)') + el(cx, 115, 20, 6, '#B5713A') + el(cx - 5, 112, 3, 2, '#D08A4E') + el(cx + 6, 113, 3, 2, '#D08A4E') });
+  }
+
+  var ART = {
+    cooking: svg(
+      shadow(120, 134, 96, 9) +
+      sh(E(120, 118, 100, 22), '#fff', { k: 5, in: el(120, 115, 74, 12, '#FFE3EC') }) +
+      shadow(114, 116, 58, 5) +
+      sh(P(170, 64, 'h-104a14 26 0 0 0 0 52h104z'), '#2E4A3A', { k: 6, in: '<rect x="62" y="71" width="100" height="7" rx="3.5" fill="#3D6450"/>' }) +
+      sh(E(170, 90, 16, 26), '#2E4A3A', { k: 0, in: sh(E(170, 90, 12, 21.5), '#fff', { lw: 0, k: 3, in:
+        sh(R(162, 76, 11, 9, 2), '#FF8A5B', { lw: 2.5, k: 0 }) + sh(R(170, 88, 7, 8, 1.5), '#4FAE5E', { lw: 2.5, k: 0 }) + sh(E(165, 100, 5, 4), '#C8E26F', { lw: 2.5, k: 0 }) }) }) +
+      shadow(198, 129, 18, 4) +
+      sh(E(198, 124, 17, 6.5), '#fff', { lw: 3, k: 2, in: el(198, 124, 11, 3.5, '#5A2A12') })),
+
+    kittypop: svg(
+      sh(R(10, 34, 220, 100, 24), '#FFF8EC', { k: 5 }) +
+      [50, 120, 190].map(function (x, i) {
+        return sh(R(x - 32, 44, 64, 80, 16), i === 1 ? '#FFE3EC' : '#FFEFD9', { lw: 3, k: 3 }) + cat({ preset: 'ginger', face: 'happy', x: x, y: 83, size: 52 });
+      }).join('') +
+      sh(star(64, 18, 11), '#FFC93C', { lw: 2.5, k: 2 }) + sh(star(178, 16, 8), '#FFC93C', { lw: 2.5, k: 0 })),
+
+    cubbies: svg(
+      [[14, '#FFA94D', 'ginger'], [88, '#B48CFF', 'purple'], [162, '#7CC4FF']].map(function (b) {
+        var cx = b[0] + 32;
+        return sh(R(b[0], 8, 64, 58, 10), '#E6B98A', { k: 4 }) + sh(R(b[0] + 6, 16, 52, 42, 7), '#FFF3E4', { lw: 3, k: 0, in:
+          '<rect x="' + b[0] + '" y="16" width="64" height="9" fill="rgba(42,35,64,.1)"/>' +
+          sh(E(cx, 52, 22, 6), b[1], { lw: 2.5, k: 0 }) + (b[2] ? cat({ preset: b[2], face: 'blink', x: cx, y: 43, size: 38 }) : '') +
+          sh(P(cx - 22, 52, 'c0 9 44 9 44 0c-8 4 -36 4 -44 0z'), b[1], { lw: 2.5, k: 0 }) });
+      }).join('') +
+      sh(R(6, 118, 228, 20, 10), '#6E6487', { k: 3, in: [30, 90, 150, 210].map(function (x) { return sh(E(x, 128, 4, 4), '#B9AED0', { lw: 2.5, k: 0 }); }).join('') }) +
+      sh(E(136, 108, 28, 9), '#F2DCC3', { lw: 3, k: 0 }) + cat({ preset: 'blue', face: 'blink', x: 136, y: 91, size: 40 }) +
+      sh(P(108, 108, 'c0 13 56 13 56 0c-12 6 -44 6 -56 0z'), '#F7E6D2', { lw: 3, k: 2 }) +
+      ln('M176 104Q196 98 194 78', 3, 0, ' stroke-dasharray="5 6"') + ln('M188 80L194 72L200 80', 3)),
+
+    yarn: svg(
+      [[43, ['#FF5A5F', '#4D8BFF', '#5CCB75']], [91, ['#4D8BFF', '#FFD93F', '#FF5A5F', '#4D8BFF']], [139, ['#5CCB75', '#5CCB75', '#5CCB75', '#5CCB75']], [187, ['#FFD93F', '#FF5A5F']]].map(function (t) {
+        var x = t[0], dark = { '#FF5A5F': '#C7343A', '#4D8BFF': '#2459C2', '#5CCB75': '#2E9447', '#FFD93F': '#C9A20C' };
+        return sh(R(x - 17, 22, 34, 112, 17), 'rgba(255,255,255,.6)', { k: 0, in: t[1].map(function (c, i) { return wool(x, 119 - i * 26, 13, c, dark[c]); }).join('') + '<rect x="' + (x - 12) + '" y="32" width="5" height="88" rx="2.5" fill="#fff" opacity=".5"/>' }) +
+          sh(R(x - 21, 16, 42, 12, 6), '#E6B98A', { lw: 3, k: 2 });
+      }).join('') + cat({ preset: 'ginger', pose: 'peek', face: 'blink', x: 139, y: 8, size: 38 }), '0 -14 240 164'),
+
+    home: svg(
+      sh(R(14, 10, 212, 132, 18), '#D7F2DF', { k: 0, in: '<rect x="0" y="108" width="240" height="40" fill="#C98B5B"/>' + ln('M0 108H240', 3) }) +
+      sh(R(92, 24, 56, 48, 6), '#9EDCFF', { lw: 3, k: 0, in: shine(104, 34, 8, 5) + ln('M120 24V72M92 48H148', 4, '#fff') }) +
+      sh(R(30, 62, 50, 8, 3), '#E6B98A', { lw: 3, k: 2 }) +
+      ln('M52 54V32', 3) + sh(P(52, 40, 'q-10 -2 -8 -10q9 2 8 10z'), '#7BD389', { lw: 2.5, k: 0 }) + sh(P(52, 36, 'q10 -2 9 -10q-9 2 -9 10z'), '#7BD389', { lw: 2.5, k: 0 }) +
+      sh(P(44, 62, 'l-3 -16h22l-3 16z'), '#FF9EC4', { lw: 3, k: 2 }) +
+      sh(R(156, 24, 32, 38, 5), '#E6B98A', { lw: 3, k: 2 }) + sh(R(161, 29, 22, 28, 3), '#FFE7C2', { lw: 2.5, k: 0, in: '<path d="M158 58L168 42L174 50L178 45L186 58Z" fill="#7BD389"/>' }) +
+      sh(E(122, 122, 62, 11), '#FF9EC4', { lw: 3, k: 3, in: el(122, 122, 40, 6, '#FFD3E4') }) + shadow(122, 125, 24, 4) +
+      cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 122, y: 84, size: 40 }) +
+      shadow(210, 108, 12, 3) + tube('M210 106V64', '#FFE7C2', 3) + sh(P(200, 54, 'h20l6 16h-32z'), '#FFD23F', { lw: 3, k: 2 })),
+
+    colour: svg(
+      [['#FF5A5F', 'translate(26 80) rotate(-28)'], ['#A77BFF', 'translate(214 80) rotate(28)']].map(function (p) {
+        return '<g transform="' + p[1] + '">' + sh(P(-8, 34, 'l8 22 8 -22z'), '#FFE3C2', { lw: 3, k: 0, in: '<path d="M-5 47L0 56L5 47Z" fill="' + p[0] + '"/>' }) +
+          sh(R(-8, -36, 16, 72, 4), p[0], { lw: 3.5, k: 3 }) + '</g>';
+      }).join('') +
+      sh(R(58, 14, 124, 124, 10), '#FFD23F', { k: 5 }) +
+      sh(R(70, 26, 100, 100, 6), '#9EDCFF', { lw: 3, k: 0, in: sh(E(150, 46, 11, 11), '#FFE14D', { lw: 3, k: 2 }) +
+        '<path d="M60 100Q120 82 180 100V140H60Z" fill="#7BD389"/>' + ln('M60 100Q120 82 180 100', 3) + cat({ preset: 'pink', face: 'happy', x: 112, y: 82, size: 46 }) })),
+
+    grow: svg(
+      sh(R(8, 124, 224, 14, 5), '#E6B98A', { k: 3 }) +
+      shadow(50, 124, 22, 3) + sh(P(30, 124, 'l4 -40q16 -8 32 0l4 40z'), '#C48A55', { k: 4 }) + sh(E(50, 84, 16, 5), '#7A4E2D', { lw: 3, k: 0 }) +
+      sh(P(120, 86, 'q-24 0 -28 -18q22 -2 28 18z'), '#7BD389', { lw: 3, k: 2 }) + sh(P(120, 76, 'q24 0 28 -18q-22 -2 -28 18z'), '#7BD389', { lw: 3, k: 2 }) +
+      tube('M120 104V46', '#4FB868', 4) +
+      sh(U(E(120, 27, 10, 10), E(132, 36, 10, 10), E(128, 50, 10, 10), E(112, 50, 10, 10), E(108, 36, 10, 10)), '#FF5A7A', { union: true, lw: 3, k: 3 }) + sh(E(120, 40, 8, 8), '#FFD23F', { lw: 3, k: 2 }) +
+      shadow(120, 124, 30, 3) + sh(P(94, 100, 'h52l-6 24h-40z'), '#E8875A', { k: 3 }) + sh(R(88, 92, 64, 12, 4), '#F2A07A', { k: 2 }) +
+      shadow(186, 124, 24, 3) + ln('M176 98Q186 72 198 98', 4) + tube('M174 106L150 88', '#7CC4FF', 5) + sh(E(148, 86, 4, 6), '#7CC4FF', { lw: 2.5, k: 0, t: 'rotate(-37 148 86)' }) +
+      sh(R(166, 94, 40, 30, 9), '#7CC4FF', { k: 4 }) +
+      cat({ preset: 'sun', face: 'happy', x: 200, y: 34, size: 40 })),
+
+    cafe: svg(
+      [16, 34, 52, 70, 88, 106, 124].map(function (x, i) { return sh(P(x, 9, 'h12l-6 14z'), i % 2 ? '#FFD23F' : '#FF8FAB', { lw: 2.5, k: 0 }); }).join('') + ln('M8 9H144', 2.5) +
+      sh(R(12, 116, 216, 28, 10), '#C98B5B', { k: 4 }) + sh(R(6, 110, 228, 14, 6), '#E6B98A', { k: 3 }) +
+      cat({ preset: 'chef', pose: 'peek', face: 'happy', x: 66, y: 74, size: 60 }) + cat({ preset: 'ginger', pose: 'peek', face: 'open', x: 180, y: 80, size: 56 }) +
+      shadow(122, 111, 26, 3) + sh(E(122, 106, 26, 6), '#fff', { lw: 3, k: 2 }) +
+      sh(R(106, 96, 32, 8, 4), '#F2B25C', { lw: 2.5, k: 0 }) + sh(R(104, 89, 36, 8, 4), '#8A5034', { lw: 2.5, k: 0 }) +
+      sh(P(105, 90, 'q0 -18 17 -18q17 0 17 18z'), '#F2B25C', { lw: 3, k: 3, in: el(115, 81, 1.6, 1.1, '#fff') + el(122, 77, 1.6, 1.1, '#fff') + el(129, 81, 1.6, 1.1, '#fff') }) +
+      sh(P(172, 40, 'l8 12l6 -12z'), '#fff', { lw: 3, k: 0 }) + sh(R(144, 4, 68, 40, 14), '#fff', { lw: 3, k: 3 }) +
+      sh(E(178, 29, 20, 5.5), '#fff', { lw: 2.5, k: 0 }) + sh(E(178, 25, 16, 5.5), '#E8A85C', { lw: 2.5, k: 0, in: el(178, 25, 12, 3.5, '#FFE07A') + el(173, 25, 2, 1.4, '#D83A3A') + el(183, 26, 2, 1.4, '#D83A3A') })),
+
+    feed: svg(
+      sh(R(4, 96, 232, 48, 14), '#E6B98A', { k: 3 }) +
+      cat({ color: '#FF4D4D', pose: 'peek', face: 'open', x: 46, y: 66, size: 60 }) + cat({ color: '#3D8BFF', pose: 'peek', face: 'happy', x: 120, y: 66, size: 60 }) + cat({ color: '#FFD23F', pose: 'peek', face: 'open', x: 194, y: 66, size: 60 }) +
+      bowl(46, '#FF4D4D') + bowl(120, '#3D8BFF') + bowl(194, '#FFD23F')),
+
+    yarndash: svg(
+      sh(R(10, 10, 220, 130, 16), '#E8C9A0', { k: 0 }) + sh(E(120, 78, 74, 44), '#C7EBD2', { lw: 3, k: 4 }) +
+      sh(R(-24, -9, 48, 18, 9), '#4FAE5E', { lw: 3, k: 3, t: 'translate(196 44) rotate(-30)', in: ln('M-14 -3H14', 3, '#7BD389') }) +
+      wool(48, 44, 14, '#FF8FAB', '#E2607F') +
+      shadow(104, 108, 42, 4) + cat({ preset: 'ginger', pose: 'lie', face: 'happy', x: 116, y: 76, size: 62 }) +
+      wool(190, 112, 14, '#FFD23F', '#C98A00') + sh(star(216, 96, 9), '#FFE14D', { lw: 2.5, k: 0 })),
+
+    seek: svg(sh(R(6, 6, 228, 138, 16), '#BFE6FF', { k: 0, in:
+      '<rect x="0" y="72" width="240" height="80" fill="#9BDC8C"/>' + ln('M0 72H240', 3) +
+      sh(E(200, 30, 14, 14), '#FFE14D', { lw: 3, k: 2 }) +
+      sh(E(64, 72, 18, 18), '#FF5A7A', { lw: 3, k: 3, in: ln('M46 68q18 12 36 0m-34 10q16 12 32 0', 2.4, '#D63D5E') }) +
+      shadow(66, 128, 48, 4) + sh(P(20, 128, 'q-4 -32 20 -42q16 -20 38 -6q22 -10 32 16q8 16 2 32z'), '#5CCB75', { k: 5 }) +
+      cat({ color: '#FFA94D', face: 'happy', x: 168, y: 88, size: 46 }) +
+      shadow(169, 132, 44, 4) + sh(P(128, 132, 'q-4 -28 18 -34q22 -12 44 0q24 6 20 34z'), '#C9C2D6', { k: 5 }) })),
+
+    mousepop: svg(
+      sh(E(120, 78, 104, 60), '#FFE7F0', { k: 5 }) +
+      [['#7CC4FF', 'translate(70 92) rotate(-20)'], ['#FFD23F', 'translate(174 66) rotate(200)']].map(function (m) {
+        return '<g transform="' + m[1] + '">' + tube('M-24 0Q-44 -6 -56 4', '#FF8FAB', 3) +
+          sh(E(8, -16, 8, 8), m[0], { lw: 3, k: 0, in: el(9, -18, 4, 4, '#FFB3C7') }) + sh(E(8, 16, 8, 8), m[0], { lw: 3, k: 0, in: el(9, 18, 4, 4, '#FFB3C7') }) +
+          sh(P(-28, 0, 'q2 -18 28 -17q24 3 30 17q-6 14 -30 17q-26 1 -28 -17z'), m[0], { lw: 3, k: 3 }) +
+          sh(E(30, 0, 4, 4), '#FF7FA6', { lw: 2.5, k: 0 }) + el(19, -6, 2.6, 2.6, INK) + el(19, 6, 2.6, 2.6, INK) + '</g>';
+      }).join('') +
+      tube('M146 112a16 16 0 1 0 -32 0a16 16 0 1 0 32 0', '#FF8FAB', 4) +
+      sh(E(104, 106, 7, 7), '#FF8FAB', { lw: 2.5, k: 0 }) + sh(E(154, 100, 6, 6), '#fff', { lw: 2.5, k: 0 }) + sh(E(136, 84, 7, 7), '#FF8FAB', { lw: 2.5, k: 0 }) + sh(E(158, 124, 5, 5), '#FF8FAB', { lw: 2.5, k: 0 })),
+
+    bath: svg(
+      cat({ preset: 'ginger', face: 'happy', x: 120, y: 64, size: 70 }) + el(106, 55, 6, 5, '#8A5A34') + el(113, 47, 4, 3.5, '#8A5A34') +
+      shadow(120, 136, 82, 5) + sh(P(40, 92, 'h160q0 44 -30 44h-100q-30 0 -30 -44z'), '#fff', { k: 6 }) + sh(R(34, 88, 172, 8, 4), '#fff', { lw: 3.5, k: 0 }) +
+      sh(U(E(58, 86, 10, 10), E(78, 84, 12, 12), E(96, 88, 8, 8)), '#fff', { union: true, lw: 2.5, k: 2 }) + sh(U(E(146, 87, 10, 10), E(162, 88, 8, 8)), '#fff', { union: true, lw: 2.5, k: 2 }) +
+      sh(E(170, 42, 7, 7), '#fff', { lw: 2.5, k: 0, in: shine(167, 39, 2.5, 2) }) + sh(E(184, 28, 5, 5), '#fff', { lw: 2.5, k: 0 }) +
+      '<g transform="translate(188 76)">' + sh(P(-16, 0, 'q0 12 16 12q14 0 16 -10q-8 2 -12 -3z'), '#FFD23F', { lw: 2.5, k: 2 }) +
+      sh(P(10, -12, 'l10 3l-10 3z'), '#FF9A2E', { lw: 2.5, k: 0 }) + sh(E(5, -8, 8, 8), '#FFD23F', { lw: 2.5, k: 2 }) + el(7, -10, 1.7, 1.7, INK) + '</g>'),
+
+    puzzle: (function () {
+      var left = P(22, 22, 'h58v74a9 9 0 1 1 0 16v18h-58z'), right = P(80, 22, 'h54v108h-54v-18a9 9 0 1 0 0 -16z');
+      var pic = function () { return cat({ preset: 'ginger', face: 'happy', x: 78, y: 64, size: 58 }) + sh(P(48, 88, 'h60q-4 36 -30 36q-26 0 -30 -36z'), '#7CC4FF', { lw: 3, k: 3 }); };
+      return svg(
+        sh(R(14, 14, 128, 124, 12), '#FFF3E4', { k: 4 }) + sh(right, '#F1D9C0', { lw: 0, k: 0 }) + ln(right(0, 0), 2.5, 0, ' stroke-dasharray="6 6"') +
+        sh(left, '#FFE0EC', { lw: 3, k: 3, in: pic() }) +
+        shadow(194, 142, 34, 4) + sh(right, '#FFE0EC', { lw: 3, k: 3, in: pic(), t: 'translate(85 2) rotate(12 107 76)' }));
+    })(),
+
+    stack: svg(
+      shadow(120, 142, 54, 4) + sh(R(70, 128, 100, 14, 7), '#FF8FAB', { lw: 3, k: 3 }) +
+      [['purple', '#B48CFF', 'happy', 122], ['ginger', '#FFA94D', 'sleep', 116], [0, '#A7E3B8', 'happy', 126], ['pink', '#FF9EC4', 'surprised', 112]].map(function (c, i) {
+        // each cat stands on the one below on four little legs (as in the game), drawn first so the body covers the join
+        var y = 102.6 - i * 28.2, legs = [-52, -32, -2, 16].map(function (lx) { return sh(R(lx - 8, 26, 16, 32, 8), c[1], { lw: 4, k: 3 }); }).join('');
+        return '<g transform="translate(' + c[3] + ' ' + y + ') scale(.4545)">' + legs + '</g>' + cat({ preset: c[0] || undefined, color: c[0] ? undefined : c[1], pose: 'lie', face: c[2], x: c[3], y: y, size: 40 });
+      }).join('')),
+
+    peekaboo: svg(
+      shadow(70, 136, 48, 4) +
+      sh(P(38, 68, 'l6 -16h52l6 16z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(28, 78, 'l10 -10h64l10 10z'), '#9C6A3A', { lw: 3, k: 0 }) +
+      sh(P(28, 78, 'l10 -10l-20 -12l-12 10z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(112, 78, 'l-10 -10l20 -12l12 10z'), '#D9A066', { lw: 3, k: 0 }) +
+      cat({ preset: 'pink', pose: 'peek', face: 'happy', x: 70, y: 54, size: 54 }) +
+      sh(R(28, 78, 84, 58, 4), '#E8B577', { k: 4 }) +
+      shutBox(140, 136, 78, 62, '#E2A866') + '<text x="179" y="126" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="30" fill="#B9814A">?</text>'),
+
+    kittenbox: svg(
+      shutBox(16, 134, 62, 54, '#E8B577') + shutBox(162, 134, 62, 54, '#E8B577') +
+      shadow(120, 134, 37, 4) + sh(P(89, 80, 'l8 -8h46l8 8z'), '#9C6A3A', { lw: 3, k: 0 }) +
+      sh(P(89, 80, 'l8 -8l-11 -10l-6 8z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(151, 80, 'l-8 -8l11 -10l6 8z'), '#D9A066', { lw: 3, k: 0 }) +
+      cat({ preset: 'blue', pose: 'peek', face: 'happy', x: 120, y: 58, size: 50 }) +
+      sh(R(89, 80, 62, 54, 4), '#E2A866', { k: 4 }) +
+      ln('M60 28Q120 2 180 28', 3, 0, ' stroke-dasharray="6 6"') + ln('M172 20L182 29L170 34', 3)),
+
+    crossing: svg(sh(R(6, 8, 228, 136, 16), '#A9DC8F', { k: 0, in:
+      '<rect x="0" y="52" width="240" height="60" fill="#5E5675"/>' + ln('M0 52H240M0 112H240', 3) +
+      [58, 72, 86, 100].map(function (y) { return '<rect x="96" y="' + y + '" width="48" height="8" rx="2" fill="#fff"/>'; }).join('') +
+      '<rect x="160" y="80" width="22" height="4" rx="2" fill="#fff" opacity=".6"/><rect x="200" y="80" width="22" height="4" rx="2" fill="#fff" opacity=".6"/>' +
+      shadow(44, 108, 32, 3) +
+      sh(P(14, 104, 'v-12l10 -2l8 -12h22l8 12l10 2v12z'), '#FF5A5F', { lw: 3, k: 3, in: sh(P(35, 81, 'h8v8h-13z'), '#CDE8FF', { lw: 2.5, k: 0 }) + sh(P(46, 81, 'h6l5 8h-11z'), '#CDE8FF', { lw: 2.5, k: 0 }) }) +
+      sh(E(28, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) + sh(E(58, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) +
+      cat({ preset: 'white', face: 'happy', x: 106, y: 68, size: 32 }) + cat({ preset: 'pink', face: 'happy', x: 138, y: 94, size: 32 }) +
+      shadow(200, 134, 12, 3) + tube('M200 134V60', '#B9AED0', 4) +
+      sh(E(200, 44, 20, 20), '#FF5A5F', { k: 3, in: '<circle cx="200" cy="44" r="13" fill="none" stroke="#fff" stroke-width="3"/>' }) }))
+  };
+
   var GAMES = [
     {
       id: 'cooking', save: 'cooking', name: 'Cosy Kitchen', blurb: 'Chop, mix and cook yummy dishes',
       ages: ['5-10'], toddler: false, free: ['handroll'], status: 'live', season: null, colour: '#FFB4A2',
       badge: function (p) { var n = (p && p.made) || 0; return n ? n + (n === 1 ? ' dish made' : ' dishes made') : ''; },
-      art: "<svg viewBox=\"0 0 240 150\"><ellipse cx=\"120\" cy=\"122\" rx=\"100\" ry=\"22\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"4\"/><ellipse cx=\"120\" cy=\"119\" rx=\"74\" ry=\"12\" fill=\"#FFE3EC\"/><g transform=\"rotate(-14 120 90)\"><path d=\"M168 62 H70 A17 28 0 0 0 70 118 H168 Z\" fill=\"#2E4A3A\" stroke=\"#2A2340\" stroke-width=\"4\" stroke-linejoin=\"round\"/><rect x=\"62\" y=\"69\" width=\"100\" height=\"8\" rx=\"4\" fill=\"#3D6450\"/><ellipse cx=\"168\" cy=\"90\" rx=\"17.5\" ry=\"28\" fill=\"#2E4A3A\" stroke=\"#2A2340\" stroke-width=\"4\"/><ellipse cx=\"168\" cy=\"90\" rx=\"14.5\" ry=\"23.5\" fill=\"#fff\"/><rect x=\"160\" y=\"77\" width=\"11\" height=\"9\" rx=\"2\" fill=\"#FF8A5B\" stroke=\"#2A2340\" stroke-width=\"2\"/><rect x=\"168\" y=\"88\" width=\"7\" height=\"8\" rx=\"1.5\" fill=\"#4FAE5E\" stroke=\"#2A2340\" stroke-width=\"2\"/><ellipse cx=\"164\" cy=\"98\" rx=\"6\" ry=\"4\" fill=\"#C8E26F\" stroke=\"#2A2340\" stroke-width=\"2\"/></g><ellipse cx=\"178\" cy=\"125\" rx=\"18\" ry=\"7\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"178\" cy=\"124.5\" rx=\"11.5\" ry=\"4\" fill=\"#5A2A12\"/></svg>"
+      art: ART.cooking
     },
     {
       id: 'kitty-pop', save: 'kittypop', name: 'Kitty Match', blurb: 'Line up three cats in a row',
       ages: ['5-10'], toddler: false, free: 3, status: 'live', season: null, colour: '#FFC2DA',
-      badge: level, art: "<svg viewBox=\"0 0 240 150\"><rect x=\"14\" y=\"36\" width=\"212\" height=\"92\" rx=\"26\" fill=\"#FFF8EC\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 52, y: 78, size: 66 }) + "" + cat({ preset: 'ginger', face: 'happy', x: 120, y: 78, size: 66 }) + "" + cat({ preset: 'ginger', face: 'happy', x: 188, y: 78, size: 66 }) + "<g fill=\"#FFC93C\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"><path d=\"M86 20 L89 29 L98 30 L91 35 L93 44 L86 39 L79 44 L81 35 L74 30 L83 29 Z\"/><path d=\"M156 12 L158 18 L164 19 L159 22 L161 28 L156 25 L151 28 L153 22 L148 19 L154 18 Z\"/></g><g fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"><circle cx=\"30\" cy=\"132\" r=\"9\"/></g><g fill=\"#B48CFF\" stroke=\"#2A2340\" stroke-width=\"3\"><circle cx=\"212\" cy=\"132\" r=\"9\"/></g></svg>"
+      badge: level, art: ART.kittypop
     },
     {
       id: 'cubbies', save: 'cubbies', name: 'Cosy Cubbies', blurb: 'Tuck sleepy cats into their beds',
       ages: ['5-10'], toddler: false, free: 0, status: 'live', season: null, colour: '#BFE0FF',
-      badge: level, art: "<svg viewBox=\"0 0 240 150\"><rect x=\"14\" y=\"14\" width=\"64\" height=\"62\" rx=\"10\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"20\" y=\"24\" width=\"52\" height=\"44\" rx=\"7\" fill=\"#FFF3E4\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"46\" cy=\"62\" rx=\"22\" ry=\"6\" fill=\"#FFA94D\" stroke=\"#2A2340\" stroke-width=\"3\"/>" + cat({ preset: 'ginger', face: 'blink', x: 46, y: 52, size: 41 }) + "<rect x=\"88\" y=\"14\" width=\"64\" height=\"62\" rx=\"10\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"94\" y=\"24\" width=\"52\" height=\"44\" rx=\"7\" fill=\"#FFF3E4\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"120\" cy=\"62\" rx=\"22\" ry=\"6\" fill=\"#B48CFF\" stroke=\"#2A2340\" stroke-width=\"3\"/>" + cat({ preset: 'purple', face: 'blink', x: 120, y: 52, size: 41 }) + "<rect x=\"162\" y=\"14\" width=\"64\" height=\"62\" rx=\"10\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"168\" y=\"24\" width=\"52\" height=\"44\" rx=\"7\" fill=\"#FFF3E4\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"194\" cy=\"62\" rx=\"22\" ry=\"6\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"4\" y=\"112\" width=\"232\" height=\"22\" rx=\"11\" fill=\"#6E6487\" stroke=\"#2A2340\" stroke-width=\"4\"/><g fill=\"#B9AED0\" stroke=\"#2A2340\" stroke-width=\"2.5\"><circle cx=\"30\" cy=\"126\" r=\"4\"/><circle cx=\"90\" cy=\"126\" r=\"4\"/><circle cx=\"150\" cy=\"126\" r=\"4\"/><circle cx=\"210\" cy=\"126\" r=\"4\"/></g><ellipse cx=\"170\" cy=\"106\" rx=\"26\" ry=\"10\" fill=\"#F2DCC3\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'blue', face: 'blink', x: 168, y: 96, size: 41 }) + "<path d=\"M146 106 Q170 118 194 106 Q170 112 146 106 Z\" fill=\"#F7E6D2\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M170 84 Q176 70 174 56\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"5 5\" stroke-linecap=\"round\"/><path d=\"M168 60 L174 52 L180 60\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"
+      badge: level, art: ART.cubbies
     },
     {
       id: 'yarn', save: 'yarn', name: 'Yarn Sort', blurb: 'Sort the wool into tubes',
       ages: ['5-10'], toddler: false, free: 0, status: 'live', season: null, colour: '#DCC8FF',
-      badge: level, art: "<svg viewBox=\"0 -14 240 164\"><rect x=\"26\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"#fff\" fill-opacity=\".6\"/><g transform=\"translate(43 118)\"><circle r=\"13\" fill=\"#FF5A5F\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#C7343A\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(43 91)\"><circle r=\"13\" fill=\"#4D8BFF\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2459C2\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(43 65)\"><circle r=\"13\" fill=\"#5CCB75\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2E9447\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><rect x=\"26\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"22\" y=\"16\" width=\"42\" height=\"12\" rx=\"6\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"76\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"#fff\" fill-opacity=\".6\"/><g transform=\"translate(93 118)\"><circle r=\"13\" fill=\"#4D8BFF\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2459C2\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(93 91)\"><circle r=\"13\" fill=\"#FFD93F\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#C9A20C\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(93 65)\"><circle r=\"13\" fill=\"#FF5A5F\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#C7343A\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(93 39)\"><circle r=\"13\" fill=\"#4D8BFF\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2459C2\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><rect x=\"76\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"72\" y=\"16\" width=\"42\" height=\"12\" rx=\"6\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"121\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"#fff\" fill-opacity=\".6\"/><g transform=\"translate(138 118)\"><circle r=\"13\" fill=\"#5CCB75\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2E9447\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(138 91)\"><circle r=\"13\" fill=\"#5CCB75\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2E9447\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(138 65)\"><circle r=\"13\" fill=\"#5CCB75\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2E9447\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(138 39)\"><circle r=\"13\" fill=\"#5CCB75\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#2E9447\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><rect x=\"121\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"117\" y=\"16\" width=\"42\" height=\"12\" rx=\"6\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"170\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"#fff\" fill-opacity=\".6\"/><g transform=\"translate(187 118)\"><circle r=\"13\" fill=\"#FFD93F\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#C9A20C\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><g transform=\"translate(187 91)\"><circle r=\"13\" fill=\"#FF5A5F\"/><path d=\"M-11 -5 Q0 -12 11 -5 M-13 1 Q0 -6 13 1 M-11 7 Q0 0 11 7\" fill=\"none\" stroke=\"#C7343A\" stroke-width=\"2.4\" stroke-linecap=\"round\"/><circle r=\"13\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><rect x=\"170\" y=\"22\" width=\"34\" height=\"112\" rx=\"17\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"166\" y=\"16\" width=\"42\" height=\"12\" rx=\"6\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'ginger', pose: 'peek', face: 'blink', x: 138, y: 8, size: 38 }) + "</svg>"
+      badge: level, art: ART.yarn
     },
     {
       id: 'home', save: 'home', name: 'Cosy Home', blurb: 'Decorate your cosy house',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C7EBD2', tile: false,
       badge: function (p) { var n = p && Array.isArray(p.placed) ? p.placed.length : 0; return n ? n + (n === 1 ? ' thing in your room' : ' things in your room') : ''; },
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"14\" y=\"10\" width=\"212\" height=\"132\" rx=\"18\" fill=\"#D7F2DF\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"16\" y=\"108\" width=\"208\" height=\"32\" rx=\"4\" fill=\"#C98B5B\"/><path d=\"M14 108 H226\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"92\" y=\"24\" width=\"56\" height=\"48\" rx=\"6\" fill=\"#9EDCFF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M120 24 V72 M92 48 H148\" stroke=\"#fff\" stroke-width=\"4\"/><rect x=\"30\" y=\"62\" width=\"50\" height=\"8\" rx=\"3\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M44 62 L41 46 H63 L60 62 Z\" fill=\"#FF9EC4\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M52 46 V30 M52 38 Q42 36 44 28 Q53 30 52 38 M52 34 Q62 32 61 24 Q52 26 52 34\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><rect x=\"168\" y=\"26\" width=\"40\" height=\"44\" rx=\"5\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"174\" y=\"32\" width=\"28\" height=\"32\" rx=\"3\" fill=\"#FFE7C2\" stroke=\"#2A2340\" stroke-width=\"2\"/><path d=\"M178 60 L186 44 L192 54 L196 48 L200 60 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"2\" stroke-linejoin=\"round\"/><ellipse cx=\"122\" cy=\"122\" rx=\"62\" ry=\"11\" fill=\"#FF9EC4\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><ellipse cx=\"122\" cy=\"122\" rx=\"40\" ry=\"6\" fill=\"#FFD3E4\"/>" + cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 122, y: 84, size: 40 }) + "<path d=\"M198 108 V72 M198 72 L186 58 H210 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/></svg>"
+      art: ART.home
     },
     {
       id: 'colour', save: 'colour', name: 'Colour Me', blurb: 'Colour pictures to hang at home',
       ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#FFE7A8',
       badge: function (p) { var n = p && Array.isArray(p.pics) ? p.pics.filter(function (x) { return x && x.done; }).length : 0; return n ? n + (n === 1 ? ' picture' : ' pictures') : ''; },
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"58\" y=\"14\" width=\"124\" height=\"124\" rx=\"10\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"70\" y=\"26\" width=\"100\" height=\"100\" rx=\"6\" fill=\"#9EDCFF\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M70 100 Q120 82 170 100 V126 H70 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"150\" cy=\"46\" r=\"11\" fill=\"#FFE14D\" stroke=\"#2A2340\" stroke-width=\"3\"/>" + cat({ preset: 'pink', face: 'happy', x: 112, y: 82, size: 46 }) + "<g transform=\"rotate(32 206 96)\"><rect x=\"198\" y=\"40\" width=\"16\" height=\"80\" rx=\"4\" fill=\"#A77BFF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M198 120 L206 140 L214 120 Z\" fill=\"#FFE3C2\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M203 132 L206 140 L209 132 Z\" fill=\"#A77BFF\"/></g><g transform=\"rotate(-28 34 96)\"><rect x=\"26\" y=\"44\" width=\"16\" height=\"76\" rx=\"4\" fill=\"#FF5A5F\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M26 120 L34 140 L42 120 Z\" fill=\"#FFE3C2\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M31 132 L34 140 L37 132 Z\" fill=\"#FF5A5F\"/></g></svg>"
+      art: ART.colour
     },
     {
       id: 'grow', save: 'grow', name: 'Grow', blurb: 'Grow plants for your home',
       ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#D4F0C4',
       badge: function (p) { var n = p && typeof p.grown === 'number' ? p.grown : 0; return n ? n + (n === 1 ? ' plant grown' : ' plants grown') : ''; },
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"10\" y=\"112\" width=\"220\" height=\"16\" rx=\"5\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M120 98 V48\" stroke=\"#2A2340\" stroke-width=\"8\" stroke-linecap=\"round\"/><path d=\"M120 98 V48\" stroke=\"#4FB868\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M120 80 Q96 80 92 62 Q114 60 120 80 Z M120 70 Q144 70 148 52 Q126 50 120 70 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><g transform=\"translate(120 40)\"><circle cx=\"0\" cy=\"-13\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"12\" cy=\"-4\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"10\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-8\" cy=\"10\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-12\" cy=\"-4\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><path d=\"M92 96 H148 L142 124 H98 Z\" fill=\"#E8875A\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><rect x=\"88\" y=\"90\" width=\"64\" height=\"12\" rx=\"4\" fill=\"#F2A07A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M30 112 L34 72 Q50 64 66 72 L70 112 Z\" fill=\"#C48A55\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><ellipse cx=\"50\" cy=\"72\" rx=\"16\" ry=\"5\" fill=\"#7A4E2D\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><g transform=\"translate(196 92) rotate(-14)\"><rect x=\"-18\" y=\"-16\" width=\"36\" height=\"32\" rx=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M-16 -6 L-40 -24\" stroke=\"#2A2340\" stroke-width=\"8\" stroke-linecap=\"round\"/><path d=\"M-16 -6 L-40 -24\" stroke=\"#7CC4FF\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M-8 -16 Q4 -34 16 -16\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/></g>" + cat({ preset: 'sun', face: 'happy', x: 196, y: 34, size: 40 }) + "</svg>"
+      art: ART.grow
     },
     {
       id: 'cafe', save: 'cafe', name: 'Cat Caf\u00e9', blurb: 'Serve hungry cat customers',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFD9C2',
       badge: function (p) { var n = p && typeof p.served === 'number' ? p.served : 0; return n ? n + (n === 1 ? ' cat served' : ' cats served') : ''; },
-      art: "<svg viewBox=\"0 0 240 150\"><path d=\"M24 26 H216\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><path d=\"M30 26 L42 26 L36 44 Z M66 26 L78 26 L72 44 Z M102 26 L114 26 L108 44 Z M138 26 L150 26 L144 44 Z M174 26 L186 26 L180 44 Z\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M48 26 L60 26 L54 44 Z M84 26 L96 26 L90 44 Z M120 26 L132 26 L126 44 Z M156 26 L168 26 L162 44 Z M192 26 L204 26 L198 44 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><rect x=\"6\" y=\"112\" width=\"228\" height=\"14\" rx=\"6\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"12\" y=\"126\" width=\"216\" height=\"24\" fill=\"#C98B5B\"/>" + cat({ preset: 'chef', pose: 'peek', face: 'happy', x: 66, y: 74, size: 64 }) + cat({ preset: 'ginger', pose: 'peek', face: 'open', x: 178, y: 80, size: 58 }) + "<g transform=\"translate(122 104)\"><ellipse cx=\"0\" cy=\"6\" rx=\"26\" ry=\"8\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"-16\" y=\"-2\" width=\"32\" height=\"8\" rx=\"4\" fill=\"#F2B25C\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><rect x=\"-18\" y=\"-9\" width=\"36\" height=\"8\" rx=\"4\" fill=\"#8A5034\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><path d=\"M-17 -10 Q-17 -28 0 -28 Q17 -28 17 -10 Z\" fill=\"#F2B25C\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/></g><g transform=\"translate(178 22)\"><rect x=\"-34\" y=\"-6\" width=\"68\" height=\"44\" rx=\"14\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"3\" transform=\"translate(0 0)\"/></g><g transform=\"translate(178 41)\"><ellipse cx=\"0\" cy=\"6\" rx=\"20\" ry=\"6\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><ellipse cx=\"0\" cy=\"2\" rx=\"16\" ry=\"6\" fill=\"#E8A85C\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><ellipse cx=\"0\" cy=\"1\" rx=\"12\" ry=\"4\" fill=\"#FFE07A\"/><circle cx=\"-5\" cy=\"1\" r=\"2\" fill=\"#D83A3A\"/><circle cx=\"5\" cy=\"2\" r=\"2\" fill=\"#D83A3A\"/></g></svg>"
+      art: ART.cafe
     },
     {
       id: 'feed', save: 'feed', name: 'Feed the Cat', blurb: 'Give each cat its bowl',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE0B8',
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"0\" y=\"96\" width=\"240\" height=\"54\" fill=\"#E6B98A\"/><path d=\"M0 96 H240\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ color: '#FF4D4D', pose: 'peek', face: 'open', x: 46, y: 66, size: 60 }) + cat({ color: '#3D8BFF', pose: 'peek', face: 'happy', x: 120, y: 66, size: 60 }) + cat({ color: '#FFD23F', pose: 'peek', face: 'open', x: 194, y: 66, size: 60 }) + "<ellipse cx=\"46\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#FF4D4D\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"194\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/><ellipse cx=\"120\" cy=\"112\" rx=\"32\" ry=\"9\" fill=\"#3D8BFF\" stroke=\"#2A2340\" stroke-width=\"3\"/><g transform=\"translate(120 114)\"><path d=\"M-14 -16 Q-2 -26 10 -16 L18 -22 L17 -12 L18 -2 L10 -8 Q-2 2 -14 -8 Z\" fill=\"#FFB26B\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M-24 -12 Q-23 0 -14 0 H14 Q23 0 24 -12 Z\" fill=\"#3D8BFF\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"-26\" y=\"-15\" width=\"52\" height=\"6\" rx=\"3\" fill=\"#2E74DB\" stroke=\"#2A2340\" stroke-width=\"2.5\"/></g></svg>"
+      art: ART.feed
     },
     {
       id: 'yarn-dash', save: 'yarndash', name: 'Yarn Dash', blurb: 'Run and catch the yarn',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F2DDC0',
-      badge: level, art: "<svg viewBox=\"0 0 240 150\"><rect x=\"10\" y=\"10\" width=\"220\" height=\"130\" rx=\"16\" fill=\"#E8C9A0\" stroke=\"#2A2340\" stroke-width=\"4\"/><ellipse cx=\"120\" cy=\"78\" rx=\"74\" ry=\"44\" fill=\"#C7EBD2\" stroke=\"#2A2340\" stroke-width=\"3\"/><g transform=\"translate(196 46) rotate(-30)\"><rect x=\"-24\" y=\"-9\" width=\"48\" height=\"18\" rx=\"9\" fill=\"#4FAE5E\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M-16 -2 H16\" stroke=\"#7BD389\" stroke-width=\"3\"/></g><circle cx=\"48\" cy=\"44\" r=\"14\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M36 40 Q48 52 60 40 M36 48 Q48 58 60 48\" fill=\"none\" stroke=\"#2A2340\" stroke-opacity=\".35\" stroke-width=\"2\"/><circle cx=\"190\" cy=\"112\" r=\"14\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M178 108 Q190 120 202 108\" fill=\"none\" stroke=\"#C98A00\" stroke-width=\"2\"/><path d=\"M206 92 L209 99 L216 100 L210 104 L212 111 L206 107 L200 111 L202 104 L196 100 L203 99 Z\" fill=\"#FFE14D\" stroke=\"#2A2340\" stroke-width=\"1.5\"/><path d=\"M70 98 Q46 92 50 70\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"11\" stroke-linecap=\"round\"/><path d=\"M70 98 Q46 92 50 70\" fill=\"none\" stroke=\"#FFA94D\" stroke-width=\"5\" stroke-linecap=\"round\"/><ellipse cx=\"100\" cy=\"98\" rx=\"32\" ry=\"18\" fill=\"#FFA94D\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'ginger', face: 'happy', x: 128, y: 80, size: 50 }) + "</svg>"
+      badge: level, art: ART.yarndash
     },
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#CFEFC4',
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"0\" y=\"0\" width=\"240\" height=\"70\" fill=\"#BFE6FF\"/><rect x=\"0\" y=\"70\" width=\"240\" height=\"80\" fill=\"#9BDC8C\"/><path d=\"M0 70 H240\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"206\" cy=\"26\" r=\"14\" fill=\"#FFE14D\" stroke=\"#2A2340\" stroke-width=\"3\"/><g transform=\"translate(64 70)\"><circle r=\"18\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M-16 -4 Q0 8 16 -4 M-14 6 Q0 16 14 6\" fill=\"none\" stroke=\"#2A2340\" stroke-opacity=\".35\" stroke-width=\"2\"/></g><path d=\"M20 128 Q16 96 40 86 Q56 66 78 80 Q100 70 110 96 Q118 112 112 128 Z\" fill=\"#5CCB75\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/>" + cat({ color: '#FFA94D', face: 'happy', x: 168, y: 86, size: 46 }) + "<path d=\"M128 132 Q124 104 146 98 Q168 86 190 98 Q214 104 210 132 Z\" fill=\"#C9C2D6\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/></svg>"
+      art: ART.seek
     },
     {
       id: 'mouse-pop', save: 'mousepop', name: 'Mouse Pop', blurb: 'Tap the mice to pop them',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE0EC',
-      art: "<svg viewBox=\"0 0 240 150\"><ellipse cx=\"120\" cy=\"80\" rx=\"104\" ry=\"60\" fill=\"#FFE7F0\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><g transform=\"translate(70 92) rotate(-20)\"><path d=\"M-26 0 Q-44 -6 -56 4\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"4\"/><path d=\"M-28 0 Q-26 -18 0 -17 Q24 -14 30 0 Q24 14 0 17 Q-26 18 -28 0 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"-16\" r=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"8\" cy=\"16\" r=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"30\" cy=\"0\" r=\"4\" fill=\"#FF7FA6\"/><circle cx=\"20\" cy=\"-6\" r=\"2.8\" fill=\"#2A2340\"/><circle cx=\"20\" cy=\"6\" r=\"2.8\" fill=\"#2A2340\"/></g><g transform=\"translate(176 70) rotate(200)\"><path d=\"M-26 0 Q-44 -6 -56 4\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"4\"/><path d=\"M-28 0 Q-26 -18 0 -17 Q24 -14 30 0 Q24 14 0 17 Q-26 18 -28 0 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"-16\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"8\" cy=\"16\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.6\"/><circle cx=\"30\" cy=\"0\" r=\"4\" fill=\"#FF7FA6\"/><circle cx=\"20\" cy=\"-6\" r=\"2.8\" fill=\"#2A2340\"/><circle cx=\"20\" cy=\"6\" r=\"2.8\" fill=\"#2A2340\"/></g><g transform=\"translate(130 112)\"><circle r=\"16\" fill=\"none\" stroke=\"#FF8FAB\" stroke-width=\"5\"/><circle cx=\"-26\" cy=\"-6\" r=\"7\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"24\" cy=\"-12\" r=\"6\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"6\" cy=\"-28\" r=\"8\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/><circle cx=\"28\" cy=\"12\" r=\"5\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"2\"/></g></svg>"
+      art: ART.mousepop
     },
     {
       id: 'bath', save: 'bath', name: 'Bath Time', blurb: 'Wash a muddy kitten',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#D4EEFB',
-      art: "<svg viewBox=\"0 0 240 150\"><path d=\"M40 92 H200 Q200 136 170 136 H70 Q40 136 40 92 Z\" fill=\"#fff\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 120, y: 64, size: 70 }) + "<circle cx=\"98\" cy=\"48\" r=\"8\" fill=\"#8A5A34\"/><circle cx=\"104\" cy=\"42\" r=\"5\" fill=\"#8A5A34\"/><path d=\"M36 92 H204\" stroke=\"#2A2340\" stroke-width=\"4\" stroke-linecap=\"round\"/><g fill=\"#fff\" stroke=\"#2A2340\" stroke-opacity=\".35\" stroke-width=\"2\"><circle cx=\"58\" cy=\"90\" r=\"10\"/><circle cx=\"78\" cy=\"88\" r=\"12\"/><circle cx=\"160\" cy=\"88\" r=\"12\"/><circle cx=\"182\" cy=\"90\" r=\"10\"/><circle cx=\"140\" cy=\"40\" r=\"7\"/><circle cx=\"152\" cy=\"30\" r=\"5\"/></g><g transform=\"translate(186 76)\"><path d=\"M-16 0 Q-16 12 0 12 Q14 12 16 2 Q8 4 4 -1 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><circle cx=\"5\" cy=\"-8\" r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><path d=\"M12 -8 L20 -5 L12 -3 Z\" fill=\"#FF9A2E\"/></g></svg>"
+      art: ART.bath
     },
     {
       id: 'puzzle', save: 'puzzle', name: 'Cat Puzzles', blurb: 'Put the picture back together',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"30\" y=\"16\" width=\"118\" height=\"118\" rx=\"10\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 89, y: 66, size: 60 }) + "<path d=\"M50 86 H128 Q124 124 89 124 Q54 124 50 86 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M89 16 V60 Q76 66 89 74 V134\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"7 6\"/><g transform=\"translate(178 82) rotate(12)\"><path d=\"M-30 -46 H22 V-6 Q34 0 22 8 V46 H-30 Z\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M-30 10 H22 V46 H-30 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-4\" cy=\"-14\" r=\"16\" fill=\"#FFA94D\" stroke=\"#2A2340\" stroke-width=\"3\"/></g></svg>"
+      art: ART.puzzle
     },
     {
       id: 'stack', save: 'stack', name: 'Stack the Cats', blurb: 'Build a wobbly cat tower',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#E2D9FF',
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"70\" y=\"128\" width=\"100\" height=\"14\" rx=\"7\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'purple', pose: 'lie', face: 'happy', x: 122, y: 108, size: 44 }) + cat({ preset: 'ginger', pose: 'lie', face: 'sleep', x: 116, y: 80, size: 44 }) + cat({ color: '#A7E3B8', pose: 'lie', face: 'happy', x: 126, y: 52, size: 44 }) + cat({ preset: 'pink', pose: 'lie', face: 'surprised', x: 112, y: 20, size: 44 }) + "</svg>"
+      art: ART.stack
     },
     {
       id: 'peekaboo', save: 'peekaboo', name: 'Peekaboo Boxes', blurb: 'What\u2019s in the box?',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
-      art: "<svg viewBox=\"0 0 240 150\"><path d=\"M30 80 L10 64 L44 62 Z M110 80 L130 64 L96 62 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/>" + cat({ preset: 'pink', pose: 'peek', face: 'happy', x: 70, y: 52, size: 54 }) + "<rect x=\"28\" y=\"78\" width=\"84\" height=\"58\" rx=\"4\" fill=\"#E8B577\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"138\" y=\"72\" width=\"80\" height=\"62\" rx=\"4\" fill=\"#E2A866\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M138 72 L150 58 H206 L218 72 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><text x=\"178\" y=\"118\" text-anchor=\"middle\" font-family=\"Baloo 2, sans-serif\" font-weight=\"800\" font-size=\"34\" fill=\"#C98B5B\">?</text></svg>"
+      art: ART.peekaboo
     },
     {
       id: 'kitten-box', save: 'kittenbox', name: 'Kitten in a Box', blurb: 'Which box is the kitten in?',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFEBD1',
-      art: "<svg viewBox=\"0 0 240 150\"><g fill=\"#E8B577\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"><rect x=\"16\" y=\"78\" width=\"62\" height=\"54\" rx=\"4\"/><path d=\"M16 78 L26 66 H68 L78 78 Z\"/><rect x=\"162\" y=\"78\" width=\"62\" height=\"54\" rx=\"4\"/><path d=\"M162 78 L172 66 H214 L224 78 Z\"/></g><path d=\"M92 82 L76 68 L104 68 Z M148 82 L164 68 L136 68 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/>" + cat({ preset: 'blue', pose: 'peek', face: 'happy', x: 120, y: 58, size: 50 }) + "<rect x=\"89\" y=\"80\" width=\"62\" height=\"54\" rx=\"4\" fill=\"#E2A866\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M60 30 Q120 2 180 30\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"6 6\"/><path d=\"M172 22 L182 31 L170 36\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"
+      art: ART.kittenbox
     },
     {
       id: 'crossing', save: 'crossing', name: 'Kitten Crossing', blurb: 'Stop the cars so kittens can cross',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#CDEBC2',
-      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"0\" y=\"52\" width=\"240\" height=\"60\" fill=\"#5E5675\"/><path d=\"M0 52 H240 M0 112 H240\" stroke=\"#2A2340\" stroke-width=\"3\"/><g fill=\"#fff\"><rect x=\"96\" y=\"58\" width=\"48\" height=\"8\" rx=\"2\"/><rect x=\"96\" y=\"72\" width=\"48\" height=\"8\" rx=\"2\"/><rect x=\"96\" y=\"86\" width=\"48\" height=\"8\" rx=\"2\"/><rect x=\"96\" y=\"100\" width=\"48\" height=\"8\" rx=\"2\"/></g><g transform=\"translate(44 90)\"><path d=\"M-30 10 V0 L-20 -2 L-12 -14 H10 L18 -2 L28 0 V10 Z\" fill=\"#FF5A5F\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"-16\" cy=\"12\" r=\"6\" fill=\"#3D3650\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><circle cx=\"16\" cy=\"12\" r=\"6\" fill=\"#3D3650\" stroke=\"#2A2340\" stroke-width=\"2.5\"/></g>" + cat({ preset: 'white', face: 'happy', x: 112, y: 80, size: 34 }) + cat({ preset: 'pink', face: 'happy', x: 132, y: 96, size: 34 }) + "<path d=\"M196 130 L196 60\" stroke=\"#2A2340\" stroke-width=\"5\"/><circle cx=\"196\" cy=\"46\" r=\"20\" fill=\"#FF5A5F\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><circle cx=\"196\" cy=\"46\" r=\"14\" fill=\"none\" stroke=\"#fff\" stroke-width=\"3\"/></svg>"
+      art: ART.crossing
     }
   ];
 
