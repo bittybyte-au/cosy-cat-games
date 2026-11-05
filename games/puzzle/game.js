@@ -122,10 +122,12 @@
     for (var r3 = 0; r3 < rows; r3++) for (var c3 = 0; c3 < cols; c3++) {
       var x0 = c3 * cwid, x1 = x0 + cwid, y0 = r3 * chei, y1 = y0 + chei;
       var pts = []
-        .concat(edge(x0, y0, x1, y0, r3 > 0 ? -hb[r3][c3] : 0))
+        // a shared edge is walked one way by one piece and the other way by its neighbour (which flips which side the
+        // bump goes), so top and left edges take the opposite sign: both pieces then follow exactly the same line
+        .concat(edge(x0, y0, x1, y0, r3 > 0 ? hb[r3][c3] : 0))
         .concat(edge(x1, y0, x1, y1, c3 < cols - 1 ? -vb[c3 + 1][r3] : 0))
         .concat(edge(x1, y1, x0, y1, r3 < rows - 1 ? -hb[r3 + 1][c3] : 0))
-        .concat(edge(x0, y1, x0, y0, c3 > 0 ? -vb[c3][r3] : 0));
+        .concat(edge(x0, y1, x0, y0, c3 > 0 ? vb[c3][r3] : 0));
       var path = new Path2D(); pts.forEach(function (p, i) { if (i) path.lineTo(p[0], p[1]); else path.moveTo(p[0], p[1]); }); path.closePath();
       pieces.push({ path: path, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w: cwid, h: chei });
     }
@@ -289,7 +291,20 @@
       c.setLineDash([10, 8]); c.lineWidth = 3 / s; c.strokeStyle = 'rgba(42,35,64,.45)'; c.stroke(p.path);
       c.restore();
     });
-    pieces.forEach(function (p) { if (p.placed) drawPiece(c, p, false); });
+    // placed pieces are drawn as one shape, so there's no hairline gap where two pieces meet
+    var placed = pieces.filter(function (p) { return p.placed; });
+    if (placed.length) {
+      var u = new Path2D(); placed.forEach(function (p) { u.addPath(p.path); });
+      c.save(); c.translate(BOARD.x, BOARD.y); c.scale(s, s);
+      // any piece still sliding home is drawn on its own until it lands
+      var settled = placed.filter(function (p) { return p.t >= 0.25; }), su = new Path2D(); settled.forEach(function (p) { su.addPath(p.path); });
+      c.save(); c.clip(su); c.drawImage(pictureCanvas(pic), 0, 0, 400, 400); c.restore();
+      if (!done) { c.lineWidth = 4 / s; c.strokeStyle = INK; c.lineJoin = 'round'; settled.forEach(function (p) { c.stroke(p.path); }); }
+      c.restore();
+      placed.forEach(function (p) { if (p.t < 0.25) drawPiece(c, p, false); });
+    }
+    // once it's finished, the whole picture is shown in one go
+    if (done) c.drawImage(pictureCanvas(pic), BOARD.x, BOARD.y, B, B);
     if (done) { rr(c, BOARD.x, BOARD.y, B, B, 10); ink(c, 5); }
     c.restore();
     pieces.forEach(function (p) { if (!p.placed) drawPiece(c, p, drag && drag.p === p); });
