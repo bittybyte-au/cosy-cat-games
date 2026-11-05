@@ -15,7 +15,8 @@ const FILES = [
   './games/grow/', './games/grow/index.html', './games/grow/game.js', './games/grow/plants.js',
   './games/cafe/', './games/cafe/index.html', './games/cafe/game.js',
   './games/feed/', './games/feed/index.html', './games/feed/game.js',
-  './games/yarn-dash/', './games/yarn-dash/index.html', './games/yarn-dash/game.js'
+  './games/yarn-dash/', './games/yarn-dash/index.html', './games/yarn-dash/game.js',
+  './games/seek/', './games/seek/index.html', './games/seek/game.js'
 ];
 
 self.addEventListener('install', (e) => {
