@@ -74,8 +74,9 @@ h2 { margin: 0 0 8px; font: 800 clamp(2rem, 4.6vw, 2.9rem)/1.05 var(--display); 
 .nope li:nth-child(3n) { transform: rotate(2.5deg); background: var(--pale-sun); }
 .nope li:nth-child(4n) { background: #FFE0EA; }
 .nope svg { position: absolute; left: -3%; top: 50%; width: 106%; height: 30px; margin-top: -15px; overflow: visible; pointer-events: none; }
-.nope path { fill: none; stroke: var(--tomato); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 260; stroke-dashoffset: 0; }
-.js .nope path { stroke-dashoffset: 260; }
+/* a thin crayon line that keeps the word readable (same thickness whatever the sticker's width) */
+.nope path { fill: none; stroke: var(--tomato); stroke-width: 3; vector-effect: non-scaling-stroke; opacity: .9; stroke-linecap: round; stroke-dasharray: 1200; stroke-dashoffset: 0; }
+.js .nope path { stroke-dashoffset: 1200; }
 .js .nope.go path { animation: strike .35s ease-out forwards; }
 @keyframes strike { to { stroke-dashoffset: 0; } }
 .after { margin-top: 34px; font: 800 1.35rem/1.3 var(--display); }
@@ -222,7 +223,7 @@ blockquote { margin: 0; font: 800 clamp(1.4rem, 3.2vw, 2rem)/1.3 var(--display);
   var nope = document.getElementById('nope');
   nope.querySelectorAll('li').forEach(function (li, i) {
     var wob = [0, 3, -3, 2, -2, 4][i % 6];
-    li.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path pathLength="260" d="M2 ' + (17 + wob) + ' Q30 ' + (9 - wob) + ' 52 15 T98 ' + (11 + wob) + '" style="animation-delay:' + (0.15 + i * 0.16) + 's"/></svg>');
+    li.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><path d="M2 ' + (17 + wob) + ' Q30 ' + (9 - wob) + ' 52 15 T98 ' + (11 + wob) + '" style="animation-delay:' + (0.15 + i * 0.16) + 's"/></svg>');
   });
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { nope.classList.add('go'); io.disconnect(); } }); }, { threshold: 0.4 });
