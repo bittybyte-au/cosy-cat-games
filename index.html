@@ -14,13 +14,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cosy Cat Games">
 <script>
-/* Families who already play (and the installed app) go straight to the games. ?welcome shows this page anyway. */
+/* The installed app (opened from the home screen) goes straight to the games; in a browser everyone sees this page. */
 (function () {
-  if (/[?&]welcome\b/.test(location.search)) return;
   try {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-    var d = JSON.parse(localStorage.getItem('cosyCatGames.v1') || 'null');
-    if (standalone || (d && d.players && d.players.length)) location.replace('play/index.html');
+    if (standalone) location.replace('play/index.html');
   } catch (e) {}
 })();
 </script>
@@ -169,7 +167,7 @@ footer { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; pad
 <body>
 <script>document.body.classList.add('js');</script>
 <div class="wrap top">
-  <a class="brand" href="./?welcome"><img src="icons/icon.svg" alt="" width="44" height="44">Cosy Cat Games</a>
+  <a class="brand" href="./"><img src="icons/icon.svg" alt="" width="44" height="44">Cosy Cat Games</a>
   <nav><a class="pill" href="about/index.html">Our story</a><a class="pill" href="faq/index.html">Questions</a></nav>
 </div>
 

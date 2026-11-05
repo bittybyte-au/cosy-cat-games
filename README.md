@@ -2,7 +2,7 @@
 
 Calm little browser games for kids. No ads, no tracking, nothing loaded from other companies.
 
-- `index.html` – landing page with "Try the games" (families who already play, and the installed app, go straight to `/play/`; `/?welcome` always shows it)
+- `index.html` – landing page with "Try the games" (the installed app goes straight to `/play/`)
 - `play/` – the games home: one tile per game, built from `shared/games.js`
 - `shared/store.js` – the device's one player and their progress, saved in the browser only (nothing is sent anywhere)
 - `shared/games.js` – the game list: ages, toddler flag, status (`live`, `soon` = Coming soon tile, `dev` = hidden on the live site)
