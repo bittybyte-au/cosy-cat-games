@@ -2024,6 +2024,9 @@
     var prog = GG.getProgress('cooking');
     prog.made = (prog.made || 0) + 1;
     prog.book = Array.isArray(prog.book) ? prog.book : [];
+    // dishes cooked per recipe (avatar items unlock from these); older saves start from the cookbook
+    if (!prog.byDish) { prog.byDish = {}; prog.book.forEach(function (b) { prog.byDish[b.dish] = (prog.byDish[b.dish] || 0) + 1; }); }
+    prog.byDish[recipe.id] = (prog.byDish[recipe.id] || 0) + 1;
     prog.book.unshift({ dish: recipe.id, at: Date.now(), img: img });
     prog.book = prog.book.slice(0, 12);
     var saved = GG.setProgress('cooking', prog);

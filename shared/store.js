@@ -82,6 +82,12 @@
       save();
       return p;
     },
+    /* extra details kept with the player, e.g. which earned avatar items they've seen */
+    setPlayerInfo: function (info) {
+      var p = data.players[0]; if (!p) return;
+      for (var k in info) if (k !== 'id') p[k] = info[k];
+      save();
+    },
     updatePlayer: function (name, avatar, color) {
       var p = data.players[0];
       if (!p) return null;
