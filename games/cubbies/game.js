@@ -1,5 +1,5 @@
 /* Cosy Cubbies – sleepy cats in beds ride along a conveyor belt; drag each one into the cubby of its colour.
-   Three cats fill a cubby, which then slides away and a new one arrives.
+   Three cats fill a cubby, which then slides away and a new one arrives. Fill enough cubbies to finish the level.
    Cats that reach the end of the belt wait on a mat (5 spots). If a cat arrives when the mat is full, the level starts again.
    Each level the belt runs a little faster and the cats come a little closer together.
    Everything is drawn in code on one canvas; sounds are made with Web Audio (no files). */
@@ -192,7 +192,7 @@
       n: n,
       colours: shuffle([0, 1, 2, 3, 4, 5], rnd).slice(0, colours),
       cubbies: cubbies,
-      goal: Math.min(48, 12 + (n - 1) * 3),
+      goal: Math.min(16, 4 + (n - 1)),          // cubbies to fill (3 cats each)
       speed: Math.min(2.0, 0.8 * Math.pow(1.08, n - 1)),
       gap: Math.max(1.05, 1.7 - (n - 1) * 0.07),
       // how often a new cat matches a cubby that's on the shelf right now
@@ -264,7 +264,8 @@
   var cubbies = [];       // { kind, cats: [], x, y, state: in|leaving|entering, t, shake }
   var mat = [];           // MAT_SPOTS entries, cat or null
   var held = null;        // { cat, x, y, from }
-  var tucked = 0;
+  var tucked = 0;          // cats in cubbies (for pacing the belt)
+  var filled = 0;          // cubbies filled this level: the goal
   var mode = 'play';      // play | won | full | ready
   var spawnDist = 0, nextGap = 0;
   var idle = 0, time = 0, readyT = 0;
@@ -360,10 +361,10 @@
 
   /* ---------- tally ---------- */
   function renderTally(bump) {
-    $('tallyNum').textContent = Math.min(tucked, level.goal);
+    $('tallyNum').textContent = Math.min(filled, level.goal);
     $('tallyGoal').textContent = level.goal;
-    $('tallyBar').style.width = (100 * Math.min(1, tucked / level.goal)) + '%';
-    $('tally').setAttribute('aria-label', tucked + ' of ' + level.goal + ' cats tucked in');
+    $('tallyBar').style.width = (100 * Math.min(1, filled / level.goal)) + '%';
+    $('tally').setAttribute('aria-label', filled + ' of ' + level.goal + ' cubbies filled');
     if (bump && !reduceMotion) { var t = $('tally'); t.classList.remove('bump'); void t.offsetWidth; t.classList.add('bump'); }
   }
 
@@ -374,7 +375,7 @@
     level = levelDef(n);
     cats = []; mat = []; held = null; parts = [];
     for (var i = 0; i < MAT_SPOTS; i++) mat.push(null);
-    tucked = 0; spawnDist = 0; nextGap = 0; idle = 0; recentKinds = [];
+    tucked = 0; filled = 0; spawnDist = 0; nextGap = 0; idle = 0; recentKinds = [];
     $('levelLabel').textContent = 'Level ' + n;
     $('cardWrap').hidden = true;
     layout();
@@ -398,7 +399,7 @@
     cubbies.forEach(function (cb, i) { cb.glow = 1; sparkle(cb.x, cb.y, CATS[cb.kind].fill, 12); });
     cats.forEach(function (c) { c.face = 'happy'; });
     setTimeout(function () {
-      showCard('Hooray!', 'Level ' + level.n + ': all ' + level.goal + ' cats tucked in', 'Next level', false, 'happy');
+      showCard('Hooray!', 'Level ' + level.n + ': all ' + level.goal + ' cubbies filled', 'Next level', false, 'happy');
     }, 1100);
   }
 
@@ -438,19 +439,20 @@
     fly(cat, p.x, p.y, 0.22, L.catS * 0.3, function () {
       cat.where = 'cubby'; cat.face = 'blink';
       tucked++;
-      renderTally(true);
       Sound.plop(slot);
       sparkle(p.x, p.y, CATS[cat.kind].fill, 6);
       if (cb.cats.length >= 3) finishCubby(cb);
-      if (tucked >= level.goal && mode === 'play') celebrate();
     });
   }
 
   function finishCubby(cb) {
     cb.glow = 1;
+    filled++;
+    renderTally(true);
+    cb.cats.forEach(function (c) { c.face = 'happy'; });
+    if (filled >= level.goal && mode === 'play') { celebrate(); return; }
     Sound.purr(0.1);
     setTimeout(function () { if (mode === 'play' || mode === 'won') Sound.ding(); }, 250);
-    cb.cats.forEach(function (c) { c.face = 'happy'; });
     setTimeout(function () {
       if (mode !== 'play') return;
       cb.state = 'leaving'; cb.t = 0;
@@ -492,7 +494,6 @@
     var out = cb.cats.slice();
     cb.cats = [];
     tucked = Math.max(0, tucked - out.length);
-    renderTally(true);
     out.forEach(function (c, i) {
       c.cubby = null; c.face = 'surprised'; c.wake = 1.2;
       c.bx = freeBeltX(cb.x + (i - 1) * L.catS);
@@ -631,7 +632,7 @@
     beltOffset = (beltOffset + v * dt) % (L.catS * 0.5);
     if (!held && playing) idle += dt;
 
-    if (playing && tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal + 4) {
+    if (playing && tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal * 3 + 4) {
       spawnDist += v * dt;
       // wait for a clear space at the start of the belt (cats sent back from cubbies can be sitting there)
       var startClear = !cats.some(function (c) { return (c.where === 'belt' || (c.where === 'flying' && c.returning)) && c.bx < L.beltX0 + L.catS * 0.85 && c.bx > L.beltX0 - L.catS * 2; });
@@ -905,12 +906,12 @@
   /* test hook for automated checks */
   window.__cubbies = {
     state: function () {
-      return { mode: mode, tucked: tucked, goal: level.goal, n: level.n, mat: mat.map(function (c) { return c ? c.kind : -1; }),
+      return { mode: mode, tucked: tucked, filled: filled, goal: level.goal, n: level.n, mat: mat.map(function (c) { return c ? c.kind : -1; }),
         cubbies: cubbies.map(function (cb) { return { kind: cb.kind, n: cb.cats.length, state: cb.state, x: cb.x, y: cb.y }; }),
         belt: cats.filter(function (c) { return c.where === 'belt'; }).map(function (c) { return { kind: c.kind, x: c.x, y: c.y }; }) };
     },
     start: function (n) { startLevel(n); },
     fill: function (k) { for (var i = 0; i < MAT_SPOTS; i++) if (!mat[i]) { var c = newCat(k); c.where = 'mat'; c.spot = i; c.x = L.matX[i]; c.y = L.matY; mat[i] = c; cats.push(c); } },
-    tuckAlmost: function () { tucked = level.goal - 1; renderTally(false); }
+    tuckAlmost: function () { filled = level.goal - 1; renderTally(false); }
   };
 })();
