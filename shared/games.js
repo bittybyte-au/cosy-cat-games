@@ -96,6 +96,16 @@
       id: 'stack', save: 'stack', name: 'Stack the Cats', blurb: 'Build a wobbly cat tower',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#E2D9FF',
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"70\" y=\"128\" width=\"100\" height=\"14\" rx=\"7\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'purple', pose: 'lie', face: 'happy', x: 122, y: 108, size: 44 }) + cat({ preset: 'ginger', pose: 'lie', face: 'sleep', x: 116, y: 80, size: 44 }) + cat({ color: '#A7E3B8', pose: 'lie', face: 'happy', x: 126, y: 52, size: 44 }) + cat({ preset: 'pink', pose: 'lie', face: 'surprised', x: 112, y: 20, size: 44 }) + "</svg>"
+    },
+    {
+      id: 'peekaboo', save: 'peekaboo', name: 'Peekaboo Boxes', blurb: 'What\u2019s in the box?',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
+      art: "<svg viewBox=\"0 0 240 150\"><path d=\"M30 80 L10 64 L44 62 Z M110 80 L130 64 L96 62 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/>" + cat({ preset: 'pink', pose: 'peek', face: 'happy', x: 70, y: 52, size: 54 }) + "<rect x=\"28\" y=\"78\" width=\"84\" height=\"58\" rx=\"4\" fill=\"#E8B577\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><rect x=\"138\" y=\"72\" width=\"80\" height=\"62\" rx=\"4\" fill=\"#E2A866\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M138 72 L150 58 H206 L218 72 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><text x=\"178\" y=\"118\" text-anchor=\"middle\" font-family=\"Baloo 2, sans-serif\" font-weight=\"800\" font-size=\"34\" fill=\"#C98B5B\">?</text></svg>"
+    },
+    {
+      id: 'kitten-box', save: 'kittenbox', name: 'Kitten in a Box', blurb: 'Which box is the kitten in?',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFEBD1',
+      art: "<svg viewBox=\"0 0 240 150\"><g fill=\"#E8B577\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"><rect x=\"16\" y=\"78\" width=\"62\" height=\"54\" rx=\"4\"/><path d=\"M16 78 L26 66 H68 L78 78 Z\"/><rect x=\"162\" y=\"78\" width=\"62\" height=\"54\" rx=\"4\"/><path d=\"M162 78 L172 66 H214 L224 78 Z\"/></g><path d=\"M92 82 L76 68 L104 68 Z M148 82 L164 68 L136 68 Z\" fill=\"#D9A066\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/>" + cat({ preset: 'blue', pose: 'peek', face: 'happy', x: 120, y: 58, size: 50 }) + "<rect x=\"89\" y=\"80\" width=\"62\" height=\"54\" rx=\"4\" fill=\"#E2A866\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M60 30 Q120 2 180 30\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"6 6\"/><path d=\"M172 22 L182 31 L170 36\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"
     }
   ];
 
