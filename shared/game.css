@@ -1,0 +1,68 @@
+/* Cosy Cat Games: the shared frame for every game page, on top of shared/site.css.
+   Each game sets its own --wall/--wall2 colours and background pattern, and styles only what is special to it. */
+
+html:has(body.game), body.game { height: 100%; }
+body.game {
+  margin: 0; overflow: hidden; overscroll-behavior: none; background-color: var(--wall, var(--cream));
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
+.game button { font-family: var(--body); color: var(--ink); }
+
+/* top bar: Home on the left, sound on the right, the game's own bits in the middle */
+.topbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 7;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px));
+  display: flex; align-items: center; gap: 10px;
+}
+.round {
+  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink); padding: 0;
+  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center;
+  text-decoration: none; color: var(--ink);
+}
+.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.round svg { width: 30px; height: 30px; }
+.round.wide { width: auto; padding: 0 16px; border-radius: 999px; font: 800 1rem var(--body); gap: 6px; display: flex; align-items: center; }
+.level { font: 800 1.05rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 12px 4px; white-space: nowrap; }
+
+/* the speech bubble for short instructions ("Tuck them in!") */
+.say {
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 clamp(1.1rem, 4.4vw, 1.45rem)/1.15 var(--body); text-align: center; max-width: calc(100% - 32px);
+}
+
+/* the "level done" card */
+.win, .card-wrap {
+  position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(42, 35, 64, .35);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.win .card, .card-wrap .card {
+  width: min(420px, 100%); border-radius: 30px; padding: 22px 18px; align-items: center; gap: 14px; text-align: center;
+  animation: present .55s cubic-bezier(.3, 1.6, .5, 1);
+}
+.card h2 { margin: 0; font: 800 clamp(1.8rem, 7vw, 2.4rem)/1 var(--display); text-wrap: balance; }
+.card p { margin: 0; font: 800 1.15rem var(--body); color: var(--muted); text-wrap: balance; }
+.card .faces { display: flex; gap: 4px; justify-content: center; }
+.card .faces img { width: 54px; height: 54px; animation: hop .6s ease-in-out infinite alternate; }
+.card .faces img:nth-child(2) { animation-delay: .1s; }
+.card .faces img:nth-child(3) { animation-delay: .2s; }
+.card .faces img:nth-child(4) { animation-delay: .3s; }
+.card .faces img:nth-child(5) { animation-delay: .4s; }
+.card .faces img:nth-child(6) { animation-delay: .5s; }
+.big {
+  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink);
+  font: 800 1.45rem var(--display); cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.big.again { background: var(--sun); }
+.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.big svg { width: 26px; height: 26px; }
+@keyframes present { from { transform: scale(.5) rotate(-8deg); opacity: 0; } }
+@keyframes hop { to { transform: translateY(-8px); } }
+@keyframes bump { 50% { transform: scale(1.12); } }
+
+@media (max-width: 400px) {
+  .round { width: 48px; height: 48px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .card .faces img { animation: none; }
+}

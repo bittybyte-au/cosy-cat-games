@@ -11,53 +11,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
 <style>
 /* Layout: a calm blue bedroom wall; slim top bar with the level and how many cats are tucked in;
    the canvas holds the cubbies, the waiting mat and the conveyor belt. Single bright look by design. */
-:root {
-  --wall: #E4F1FF;
-  --wall2: #D3E7FC;
-  --ink: #2A2340;
-  --cream: #FFF8EC;
-  --sun: #FFC93C;
-  --grass: #7BD389;
-  --sea: #3FA7F5;
-  --tomato: #FF6B57;
-  --muted: #6E6080;
-  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { height: 100%; margin: 0; }
-body {
-  color: var(--ink); font-family: var(--body); font-size: 17px; overflow: hidden; overscroll-behavior: none;
-  background: var(--wall) linear-gradient(90deg, transparent 0 46px, var(--wall2) 46px 56px) 0 0 / 56px 100%;
-  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
-}
-canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
-button { font-family: var(--body); color: var(--ink); -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-offset: 3px; }
-
-.topbar {
-  position: fixed; left: 0; right: 0; top: 0; z-index: 7;
-  padding-top: max(10px, env(safe-area-inset-top, 0px));
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
-  padding-bottom: 6px;
-  display: flex; align-items: center; gap: 10px;
-}
-.round {
-  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink);
-  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
-  text-decoration: none; color: var(--ink);
-}
-.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.round svg { width: 30px; height: 30px; }
-
+:root { --wall: #E4F1FF; --wall2: #D3E7FC; }
+body { background: var(--wall) linear-gradient(90deg, transparent 0 46px, var(--wall2) 46px 56px) 0 0 / 56px 100%; }
 .middle { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
-.level { font: 800 1.05rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 12px 4px; white-space: nowrap; }
 .tally {
   display: flex; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--ink); border-radius: 999px;
   padding: 3px 14px 3px 4px; box-shadow: 0 3px 0 var(--ink); min-width: 0;
@@ -70,54 +31,20 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .tally .bar { height: 9px; border-radius: 99px; border: 2px solid var(--ink); background: #EEE6F6; overflow: hidden; }
 .tally .bar i { display: block; height: 100%; width: 0; background: var(--sun); transition: width .25s ease; }
 .tally.bump { animation: bump .25s ease; }
-@keyframes bump { 50% { transform: scale(1.1); } }
-
-.say {
-  position: fixed; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%);
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink);
-  font: 800 clamp(1.1rem, 4.4vw, 1.45rem)/1.15 var(--body); text-align: center; pointer-events: none; max-width: calc(100% - 32px);
-  transition: opacity .3s ease, transform .3s ease;
-}
+.say { position: fixed; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%); pointer-events: none; transition: opacity .3s ease, transform .3s ease; }
 .say.hide { opacity: 0; transform: translate(-50%, -50%) scale(.9); }
-
-.card-wrap {
-  position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(42, 35, 64, .35);
-  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-}
-.card {
-  width: min(420px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink);
-  padding: 22px 18px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
-  animation: present .55s cubic-bezier(.3, 1.6, .5, 1);
-}
-.card h2 { margin: 0; font: 800 clamp(1.8rem, 7vw, 2.4rem)/1 var(--display); text-wrap: balance; }
-.card p { margin: 0; font: 800 1.15rem var(--body); color: var(--muted); text-wrap: balance; }
-.card .faces { display: flex; gap: 4px; justify-content: center; }
-.card .faces img { width: 56px; height: 56px; animation: hop .6s ease-in-out infinite alternate; }
-.card .faces img:nth-child(2) { animation-delay: .12s; } .card .faces img:nth-child(3) { animation-delay: .24s; }
-.card .faces img:nth-child(4) { animation-delay: .36s; } .card .faces img:nth-child(5) { animation-delay: .48s; }
-.big {
-  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink);
-  font: 800 1.45rem var(--display); cursor: pointer; display: flex; align-items: center; gap: 8px;
-}
-.big.again { background: var(--sun); }
-.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
-.big svg { width: 26px; height: 26px; }
-@keyframes present { from { transform: scale(.5) rotate(-8deg); opacity: 0; } }
-@keyframes hop { to { transform: translateY(-8px); } }
-
 @media (max-width: 400px) {
-  .round { width: 48px; height: 48px; }
   .middle { gap: 6px; }
   .level { font-size: .9rem; padding: 5px 9px 3px; }
   .tally .info { min-width: 76px; }
   .tally img { width: 34px; height: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .card, .card .faces img, .tally.bump { animation: none; }
+  .tally.bump { animation: none; }
 }
 </style>
 </head>
-<body>
+<body class="game">
 <canvas id="stage" aria-label="Cats in beds ride along a belt. Drag each cat into the cubby with its colour."></canvas>
 
 <div class="topbar" id="topbar">
@@ -150,6 +77,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/cat.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

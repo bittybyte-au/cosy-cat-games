@@ -1,0 +1,185 @@
+/* Cosy Cat Games: the shared look for every page.
+   Colours, type, buttons, links, cards, panels, forms, game tiles and cats live here, once.
+   Each page keeps only its own layout. Game pages add shared/game.css on top.
+   Single bright look by design (no dark mode): it is a sunny garden. */
+
+:root {
+  --sky: #9EDCFF;
+  --sky-deep: #6CC4F7;
+  --grass: #7BD389;
+  --grass-deep: #4FB868;
+  --ink: #2A2340;
+  --cream: #FFF8EC;
+  --sun: #FFC93C;
+  --tomato: #FF6B57;
+  --berry: #FF7EB6;
+  --muted: #5E5675;
+  --pale-sun: #FFF1B8;
+  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--sky); color: var(--ink);
+  font: 700 17px/1.55 var(--body);
+  -webkit-tap-highlight-color: transparent; overflow-x: hidden;
+}
+a { color: inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 4px solid var(--sun); outline-offset: 3px;
+}
+p { margin: 0; }
+.wrap { width: 100%; max-width: var(--wrap, 980px); margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+
+/* big cream lettering with a dark outline and drop, used for page titles */
+.sticker-title {
+  margin: 0; font-family: var(--display); font-weight: 800; line-height: 1; color: var(--cream);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); text-wrap: balance;
+}
+.lead { font-size: 1.1rem; font-weight: 800; }
+.note { margin: 0; text-align: center; font-weight: 700; color: var(--muted); font-size: .95rem; }
+.field-label { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom: 8px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+/* ---------- buttons and links that look like buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 58px; padding: 0 24px; border-radius: 999px; border: 3px solid var(--ink);
+  font: 800 1.15rem var(--body); color: var(--ink); background: var(--sun); cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink); }
+.btn.go { background: var(--grass); }
+.btn.plain { background: #fff; }
+.btn.warn { background: var(--tomato); color: #fff; }
+/* the big "Try the games" button */
+.btn.big {
+  min-height: 68px; padding: 0 32px; border-width: 4px; font: 800 1.45rem/1 var(--display); box-shadow: 0 7px 0 var(--ink);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn.big:hover { transform: translateY(-2px); box-shadow: 0 9px 0 var(--ink); }
+.btn.big:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
+.btn.big svg { width: 30px; height: 30px; }
+
+/* small rounded links: footers, top menus, Back */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 18px;
+  border: 3px solid var(--ink); border-radius: 999px; background: var(--cream); color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink); font: 800 .95rem var(--body); text-decoration: none;
+}
+.pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.back { align-self: flex-start; min-height: 52px; font-size: 1rem; }
+
+/* a cream rounded chip (the player and toddler switches) */
+.chip {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 1rem var(--body); color: var(--ink); cursor: pointer;
+}
+.chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+
+/* a tilted yellow label ("Free for a limited time") */
+.sticker {
+  display: inline-block; padding: 8px 18px; transform: rotate(-3deg);
+  background: var(--sun); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  font: 800 1.2rem/1.1 var(--display);
+}
+
+/* ---------- cards, panels and overlays ---------- */
+.card {
+  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
+  padding: 22px clamp(18px, 4vw, 30px); display: flex; flex-direction: column; gap: 22px;
+}
+.overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(42, 35, 64, .55);
+  display: grid; place-items: center; overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) var(--gutter-r) max(16px, env(safe-area-inset-bottom, 0px)) var(--gutter-l);
+}
+.panel {
+  width: min(560px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px;
+  box-shadow: 0 8px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 18px;
+}
+.panel h2 { margin: 0; font: 800 2rem/1.05 var(--display); text-align: center; text-wrap: balance; }
+
+/* ---------- forms ---------- */
+.field {
+  width: 100%; min-height: 56px; border: 3px solid var(--ink); border-radius: 16px; padding: 10px 14px;
+  background: #fff; color: var(--ink); font: 700 1.05rem/1.4 var(--body);
+}
+.field.big { min-height: 60px; font: 800 1.4rem var(--body); }
+textarea.field { min-height: 150px; resize: vertical; }
+
+/* ---------- game tiles (games home and landing page) ---------- */
+.tile {
+  --tile: #FFB4A2; position: relative; display: flex; flex-direction: column; gap: 8px;
+  background: var(--tile); color: var(--ink); text-decoration: none;
+  border: 4px solid var(--ink); border-radius: 30px; padding: 16px 18px 20px; box-shadow: 0 8px 0 var(--ink);
+}
+a.tile { transition: transform .15s ease, box-shadow .15s ease; }
+a.tile:hover { transform: translateY(-3px) rotate(-.6deg); box-shadow: 0 11px 0 var(--ink); }
+a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
+.tile .art { flex: 1; display: grid; place-items: center; }
+.tile .art svg { display: block; width: 100%; max-width: 230px; height: auto; }
+.tile h2, .tile h3 { margin: 0; font: 800 1.9rem/1 var(--display); }
+.tile p { margin: 0; font-weight: 800; font-size: 1rem; }
+/* the ears on top of every tile come from the shared cat (GGCat.earSVG); their base sits on the tile border */
+.tile .ear { position: absolute; top: -43px; width: 64px; height: 50px; overflow: visible; pointer-events: none; }
+.tile .ear.l { left: 18px; }
+.tile .ear.r { right: 18px; }
+.tile .badge {
+  position: absolute; top: -14px; right: 16px; z-index: 1;
+  background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px; font: 800 .95rem var(--body);
+}
+.tile.coming { filter: saturate(.35); opacity: .8; box-shadow: 0 8px 0 rgba(42, 35, 64, .5); }
+.tile.coming .badge { background: #fff; }
+.tile.more {
+  background: rgba(255, 248, 236, .55); border-style: dashed; box-shadow: none; color: var(--muted);
+  justify-content: center; align-items: center; text-align: center;
+}
+.tile.more h2, .tile.more h3 { font-size: 1.5rem; }
+.tile.more [data-cat] { width: 100%; max-width: 190px; }
+
+/* ---------- cats (drawn by shared/cat.js into [data-cat] boxes) ---------- */
+[data-cat] { display: block; }
+[data-cat] svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cat-wave { animation: cat-wave 1.1s ease-in-out infinite alternate; }
+@keyframes cat-wave { from { transform: rotate(10deg); } to { transform: rotate(-14deg); } }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+
+/* ---------- "make it an app" helper (shared/install.js) ---------- */
+.gg-install {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 4px 0 var(--ink);
+  padding: 10px 12px 10px 14px; font: 800 1rem var(--body);
+}
+.gg-install .gi-text { flex: 1 1 180px; min-width: 0; }
+.gg-install .btn { min-height: 48px; padding: 0 20px; font-size: 1rem; box-shadow: 0 3px 0 var(--ink); }
+.gi-x { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 3px solid var(--ink); background: #fff; font: 800 1.1rem/1 var(--body); color: var(--ink); cursor: pointer; }
+.gi-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; counter-reset: s; font-size: 1.05rem; line-height: 1.4; }
+.gi-steps li { display: flex; align-items: center; gap: 12px; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 10px 12px; counter-increment: s; }
+.gi-steps li::before { content: counter(s); flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--sun); border: 3px solid var(--ink); display: grid; place-items: center; font: 800 1.1rem/1 var(--body); }
+.gi-steps svg { flex: none; width: 40px; height: 40px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-wave, .btn.big, a.tile { animation: none; transition: none; }
+}
+
+/* ---------- information pages (About, Questions, Feedback) ---------- */
+body.info-page { background: linear-gradient(var(--sky) 0 60%, #BFE8FF) fixed; }
+.info-page .wrap { --wrap: 720px; padding-block: 18px 48px; display: flex; flex-direction: column; gap: 18px; }
+.info-page .hero { display: flex; align-items: center; gap: 12px; }
+.info-page .hero-cat { width: 96px; flex: none; }
+.info-page h1 { font-size: clamp(2rem, 7vw, 3rem); line-height: 1.05; text-shadow: 0 4px 0 var(--ink); }
+.info-page section { display: flex; flex-direction: column; gap: 6px; }
+.info-page h2 { margin: 0; font: 800 1.5rem/1.15 var(--display); }
+.info-page p { max-width: 62ch; }
+.info-page ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }

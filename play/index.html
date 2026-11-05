@@ -14,41 +14,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cosy Cat Games">
 <link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../shared/site.css">
 <style>
-/* Layout: a sunny garden sky; big sticker-style game tiles sit on a grassy hill. Single bright look by design. */
-:root {
-  --sky: #9EDCFF;
-  --sky-deep: #6CC4F7;
-  --grass: #7BD389;
-  --grass-deep: #4FB868;
-  --ink: #2A2340;
-  --cream: #FFF8EC;
-  --tomato: #FF6B57;
-  --sun: #FFC93C;
-  --berry: #FF7EB6;
-  --muted: #5E5675;
-  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { min-height: 100%; }
-body {
-  margin: 0;
-  background: var(--sky);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 17px;
-  -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
-}
-.sky {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(var(--sky) 0 55%, var(--sky-deep));
-}
-.sky svg { position: absolute; }
-.sun { bottom: calc(38vh - 58px); right: 7%; width: 120px; height: 120px; }
+/* Games home layout. Shared look: shared/site.css. A sunny garden sky; game tiles sit on a grassy hill. */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(var(--sky) 0 55%, var(--sky-deep)); }
+.sky > * { position: absolute; }
+.sun { bottom: calc(38vh - 58px); right: 7%; width: 120px; }
 .cloud1 { top: 44vh; left: -30px; width: 190px; animation: drift 60s linear infinite; }
 .cloud2 { top: 30vh; right: -40px; width: 150px; animation: drift 80s linear infinite reverse; }
 .hill { left: 0; right: 0; bottom: 0; width: 100%; height: 38vh; }
@@ -57,43 +28,48 @@ body {
 
 .wrap {
   position: relative; z-index: 1;
-  max-width: 980px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 18px max(18px, env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: column; gap: 22px;
-  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; gap: 22px; min-height: 100vh; min-height: 100svh;
 }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-h1 {
-  margin: 0; font-family: var(--display); font-weight: 800;
-  font-size: clamp(2.2rem, 7vw, 3.6rem); line-height: 1;
-  color: var(--cream);
-  -webkit-text-stroke: 2px var(--ink);
-  paint-order: stroke fill;
-  text-shadow: 0 5px 0 var(--ink);
-  letter-spacing: .5px;
-}
-.toddler-chip {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 14px 0 8px;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
-  font: 800 1rem var(--body); color: var(--ink); cursor: pointer;
-}
+h1 { font-size: clamp(2.2rem, 7vw, 3.6rem); letter-spacing: .5px; }
+h1 a { color: inherit; text-decoration: none; }
+.head-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* the player chip and the toddler switch */
+.player-chip { position: relative; padding: 6px 16px 6px 6px; min-height: 60px; font-size: 1.1rem; }
+.player-chip svg { width: 46px; height: 46px; flex: none; }
+.plus { width: 46px; height: 46px; border-radius: 50%; background: var(--grass); border: 3px solid var(--ink); display: grid; place-items: center; font: 800 1.8rem/1 var(--display); }
+.new-dot { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); }
+.toddler-chip { gap: 8px; padding: 0 14px 0 8px; }
 .toddler-chip .knob { position: relative; width: 44px; height: 26px; border-radius: 999px; background: #D8D2E4; border: 3px solid var(--ink); flex: none; }
 .toddler-chip .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); transition: left .2s ease; }
 .toddler-chip[aria-pressed="true"] { background: var(--sun); }
 .toddler-chip[aria-pressed="true"] .knob { background: var(--grass); }
 .toddler-chip[aria-pressed="true"] .knob::after { left: 20px; }
-.toddler-chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.toddler-chip:focus-visible { outline: 4px solid var(--sun); outline-offset: 4px; }
-.sum-q { margin: 0; text-align: center; font: 800 1.4rem var(--body); }
-#sumIn { width: 100%; min-height: 60px; border: 3px solid var(--ink); border-radius: 18px; padding: 0 16px; font: 800 1.4rem var(--body); color: var(--ink); background: #fff; text-align: center; }
+.sum-q { text-align: center; font: 800 1.4rem var(--body); }
+#sumIn { text-align: center; }
+.confirm-text { text-align: center; font: 800 1.3rem var(--body); }
+
+/* the chef cat says hello */
+.hello { display: flex; align-items: center; gap: 4px; margin-block: -6px -4px; }
+.mascot { width: 96px; flex: none; animation: bob 2.6s ease-in-out infinite; }
+.greeting {
+  position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 22px; padding: 10px 18px;
+  font: 800 1.3rem/1.2 var(--body); box-shadow: 0 4px 0 var(--ink); min-width: 0;
+}
+.greeting::before { content: ""; position: absolute; left: -15px; top: 50%; margin-top: -9px; border: 9px solid transparent; border-right: 14px solid var(--ink); border-left: 0; }
+.greeting::after { content: ""; position: absolute; left: -9px; top: 50%; margin-top: -6px; border: 6px solid transparent; border-right: 10px solid #fff; border-left: 0; }
+
+/* game tiles */
+.tiles { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 22px; }
+.tiles .tile { min-height: 250px; }
+.tiles .art { min-height: 140px; }
 body.toddler .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 body.toddler .tile h2 { font-size: 2.2rem; }
-h1 .home-link { color: inherit; text-decoration: none; }
-.player-chip { position: relative; }
-.new-dot { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); }
-.av-prev { display: grid; place-items: center; margin-top: -6px; }
+
+/* avatar builder */
+.av-prev { width: 120px; margin: -6px auto 0; }
 .av-prev svg { width: 120px; height: 120px; }
 .av-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .av-tabs button { min-height: 48px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font: 800 .95rem var(--body); color: var(--ink); cursor: pointer; padding: 0 4px; }
@@ -102,7 +78,7 @@ h1 .home-link { color: inherit; text-decoration: none; }
 .av-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .av-opt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 3px solid transparent; border-radius: 18px; background: #fff; cursor: pointer; font: 800 .85rem/1.15 var(--body); color: var(--ink); }
 .av-opt svg { width: 64px; height: 64px; }
-.av-opt[aria-pressed="true"] { border-color: var(--ink); background: #FFF1B8; }
+.av-opt[aria-pressed="true"] { border-color: var(--ink); background: var(--pale-sun); }
 .av-opt.locked svg { filter: grayscale(1); opacity: .45; }
 .av-opt.locked .av-name { color: var(--muted); }
 .av-hint { display: flex; gap: 3px; align-items: flex-start; font: 700 .75rem/1.2 var(--body); color: var(--muted); text-align: left; }
@@ -115,167 +91,48 @@ h1 .home-link { color: inherit; text-decoration: none; }
 .av-sw > button[aria-pressed="true"] { outline: 4px solid var(--ink); outline-offset: 2px; }
 .av-custom { position: relative; display: grid; place-items: center; background: conic-gradient(#FF6B57, #FFC93C, #7BD389, #3FA7F5, #9B7BFF, #FF7EB6, #FF6B57); font: 800 1.4rem/1 var(--body); color: #fff; text-shadow: 0 1px 2px var(--ink); }
 .av-custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-@media (prefers-reduced-motion: reduce) { .av-opt.shake { animation: none; } }
-.head-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.player-chip {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px;
-  padding: 6px 16px 6px 6px; min-height: 60px;
-  font: 800 1.1rem var(--body); color: var(--ink);
-  box-shadow: 0 4px 0 var(--ink); cursor: pointer;
-}
-.player-chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.player-chip svg { width: 46px; height: 46px; flex: none; }
 
-.hello { display: flex; align-items: center; gap: 4px; margin-block: -6px -4px; }
-.mascot { width: 104px; height: auto; flex: none; animation: bob 2.6s ease-in-out infinite; }
-.mascot .wave { transform-origin: 136px 146px; animation: wave 1.1s ease-in-out infinite alternate; }
-@keyframes wave { from { transform: rotate(10deg); } to { transform: rotate(-14deg); } }
-@keyframes bob { 50% { transform: translateY(-4px); } }
-.greeting {
-  position: relative; margin: 0; background: #fff; border: 3px solid var(--ink); border-radius: 22px; padding: 10px 18px;
-  font: 800 1.3rem/1.2 var(--body); color: var(--ink); box-shadow: 0 4px 0 var(--ink); min-width: 0;
-}
-.greeting::before {
-  content: ""; position: absolute; left: -15px; top: 50%; margin-top: -9px;
-  border: 9px solid transparent; border-right: 14px solid var(--ink); border-left: 0;
-}
-.greeting::after {
-  content: ""; position: absolute; left: -9px; top: 50%; margin-top: -6px;
-  border: 6px solid transparent; border-right: 10px solid #fff; border-left: 0;
-}
-.ear { position: absolute; top: -38px; width: 60px; height: 44px; overflow: visible; pointer-events: none; }
-.ear.l { left: 26px; transform: rotate(-8deg); }
-.ear.r { right: 26px; transform: rotate(8deg); }
-.paw { width: 18px; height: 18px; fill: currentColor; vertical-align: -3px; }
-.sleepy { width: 100%; max-width: 190px; height: auto; }
-.panel.whos { position: relative; margin-top: 64px; }
-.peek { position: absolute; left: 50%; top: -80px; width: 132px; transform: translateX(-50%); pointer-events: none; }
-
-.tiles { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 22px; }
-.tile {
-  position: relative; display: flex; flex-direction: column; gap: 8px; --tile: #FFB4A2;
-  border: 4px solid var(--ink); border-radius: 30px; padding: 16px 18px 20px;
-  color: var(--ink); text-decoration: none; min-height: 250px;
-  box-shadow: 0 8px 0 var(--ink);
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-a.tile:hover { transform: translateY(-3px) rotate(-.6deg); box-shadow: 0 11px 0 var(--ink); }
-a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
-a.tile:focus-visible, .player-chip:focus-visible, button:focus-visible { outline: 4px solid var(--sun); outline-offset: 4px; }
-.tile .art { flex: 1; display: grid; place-items: center; min-height: 140px; }
-.tile .art svg { width: 100%; max-width: 230px; height: auto; }
-.tile h2 { margin: 0; font: 800 1.9rem/1 var(--display); }
-.tile p { margin: 0; font-weight: 800; font-size: 1rem; }
-.tile .badge {
-  position: absolute; top: -14px; right: 16px;
-  background: var(--sun); border: 3px solid var(--ink); border-radius: 999px;
-  padding: 4px 12px; font: 800 .95rem var(--body);
-}
-.tile[data-game] { background: var(--tile); }
-.tile.coming { filter: saturate(.35); opacity: .8; box-shadow: 0 8px 0 rgba(42,35,64,.5); }
-.tile.coming .badge { background: #fff; }
-.tile.soon {
-  background: rgba(255, 248, 236, .55); border-style: dashed; box-shadow: none; color: var(--muted);
-  justify-content: center; align-items: center; text-align: center;
-}
-.tile.soon h2 { font-size: 1.5rem; }
-
-.foot { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 18px; text-align: center; font-weight: 800; color: var(--ink); font-size: .95rem; margin: 8px 0 0; }
+/* footer */
+.foot { display: flex; justify-content: center; text-align: center; font-size: .95rem; margin: 8px 0 0; }
 .foot-note { display: inline-flex; align-items: center; gap: 8px; opacity: .75; }
-.site-foot { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding-top: 24px; }
-.foot-link { color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: .95rem; text-decoration: none; padding: 10px 18px; }
-.foot-link:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
-.foot-link:focus-visible { outline: 4px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
-
-/* Who's playing overlay */
-.overlay {
-  position: fixed; inset: 0; z-index: 20;
-  background: rgba(42, 35, 64, .55);
-  display: grid; place-items: center;
-  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-  overflow-y: auto;
-}
-.panel {
-  width: min(560px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px;
-  box-shadow: 0 8px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 18px;
-}
-.panel h2 { margin: 0; font: 800 2rem/1 var(--display); text-align: center; }
-.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px; }
-.person {
-  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  background: #fff; border: 3px solid var(--ink); border-radius: 22px; padding: 12px 8px;
-  font: 800 1.1rem var(--body); color: var(--ink); cursor: pointer; min-height: 130px; justify-content: center;
-  word-break: break-word;
-}
-.person.selected { background: #FFF1B8; }
-.person svg { width: 72px; height: 72px; }
-.person.add { border-style: dashed; background: transparent; }
-.plus { width: 64px; height: 64px; border-radius: 50%; background: var(--grass); border: 3px solid var(--ink); display: grid; place-items: center; font: 800 2.4rem/1 var(--display); color: var(--ink); }
-.del {
-  position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; border-radius: 50%;
-  border: 3px solid var(--ink); background: var(--tomato); color: #fff; font: 800 1.2rem/1 var(--body); cursor: pointer;
-}
-.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.btn {
-  min-height: 58px; padding: 0 24px; border-radius: 999px; border: 3px solid var(--ink);
-  font: 800 1.15rem var(--body); color: var(--ink); background: var(--sun); cursor: pointer;
-  box-shadow: 0 4px 0 var(--ink);
-}
-.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.btn.plain { background: #fff; }
-.btn.go { background: var(--grass); }
-.btn.warn { background: var(--tomato); color: #fff; }
-.btn:disabled { opacity: .45; cursor: default; }
-label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom: 8px; }
-#nameInput {
-  width: 100%; min-height: 60px; border: 3px solid var(--ink); border-radius: 18px; padding: 0 16px;
-  font: 800 1.4rem var(--body); color: var(--ink); background: #fff;
-}
-.pick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-.pick button { aspect-ratio: 1; border: 3px solid transparent; border-radius: 50%; background: none; padding: 2px; cursor: pointer; min-width: 44px; }
-.pick button svg { width: 100%; height: 100%; }
-.pick button[aria-pressed="true"] { border-color: var(--ink); background: var(--sun); }
-.swatches button { border-radius: 50%; aspect-ratio: 1; border: 3px solid var(--ink); cursor: pointer; min-width: 44px; }
-.swatches button[aria-pressed="true"] { outline: 4px solid var(--ink); outline-offset: 3px; }
-.note { margin: 0; text-align: center; font-weight: 700; color: var(--muted); font-size: .95rem; }
-.confirm-text { margin: 0; text-align: center; font: 800 1.3rem var(--body); }
+.paw { width: 18px; height: 18px; fill: currentColor; vertical-align: -3px; }
+.site-foot { margin-top: auto; padding-top: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud1, .cloud2, .mascot, .mascot .wave { animation: none; }
-  .tile, .btn, .player-chip { transition: none; }
+  .cloud1, .cloud2, .mascot, .av-opt.shake { animation: none; }
+  .toddler-chip .knob::after { transition: none; }
 }
 </style>
 </head>
 <body>
 <div class="sky" aria-hidden="true">
-  <svg class="sun" viewBox="0 0 120 120"><g stroke="#2A2340" stroke-width="4" stroke-linecap="round"><line x1="60" y1="102" x2="60" y2="116"/><line x1="4" y1="64" x2="18" y2="64"/><line x1="102" y1="64" x2="116" y2="64"/><line x1="90" y1="94" x2="100" y2="104"/><line x1="20" y1="104" x2="30" y2="94"/></g><path d="M34 46 L36 16 L58 32 Z M86 46 L84 16 L62 32 Z" fill="#FFC93C" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M39 38 L40 24 L51 32 Z M81 38 L80 24 L69 32 Z" fill="#FF8FAB"/><circle cx="60" cy="64" r="32" fill="#FFC93C" stroke="#2A2340" stroke-width="4"/><path d="M45 61 Q50 55 55 61 M65 61 Q70 55 75 61" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="42" cy="72" rx="5" ry="3" fill="#FF8FAB"/><ellipse cx="78" cy="72" rx="5" ry="3" fill="#FF8FAB"/><path d="M53 72 Q56.5 77 60 72 Q63.5 77 67 72" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.2" stroke-linecap="round"><line x1="20" y1="68" x2="34" y2="70"/><line x1="22" y1="78" x2="35" y2="76"/><line x1="100" y1="68" x2="86" y2="70"/><line x1="98" y1="78" x2="85" y2="76"/></g></svg>
-  <svg class="cloud1" viewBox="0 -6 200 86"><path d="M66 24 L72 -2 L90 14 Z M108 16 L124 -4 L132 18 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M75 6 L78 12 L84 13 Z M116 8 L122 5 L124 13 Z" fill="#FFB3C7"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
-  <svg class="cloud2" viewBox="0 -6 200 86"><path d="M66 24 L72 -2 L90 14 Z M108 16 L124 -4 L132 18 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M75 6 L78 12 L84 13 Z M116 8 L122 5 L124 13 Z" fill="#FFB3C7"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
+  <span class="sun" data-cat='{"preset":"sun","rays":true}'></span>
+  <svg class="cloud1" viewBox="0 -6 200 86"><g data-cat-ears='{"x":98,"y":30,"k":0.62}'></g><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
+  <svg class="cloud2" viewBox="0 -6 200 86"><g data-cat-ears='{"x":98,"y":30,"k":0.62}'></g><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
   <svg class="hill" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="M0 120 Q250 20 520 110 Q760 190 1000 80 L1000 300 L0 300 Z" fill="#4FB868"/><path d="M0 190 Q300 90 600 170 Q820 230 1000 160 L1000 300 L0 300 Z" fill="#7BD389"/></svg>
   <svg class="paws" aria-hidden="true"><defs><pattern id="pawTrail" width="180" height="130" patternUnits="userSpaceOnUse"><g fill="#3E9E57"><g transform="translate(40 88) rotate(80) scale(1.35)"><ellipse cx="0" cy="8" rx="10" ry="8.5"/><circle cx="-11" cy="-3" r="4.6"/><circle cx="-4" cy="-10" r="4.6"/><circle cx="4" cy="-10" r="4.6"/><circle cx="11" cy="-3" r="4.6"/></g><g transform="translate(130 46) rotate(95) scale(1.35)"><ellipse cx="0" cy="8" rx="10" ry="8.5"/><circle cx="-11" cy="-3" r="4.6"/><circle cx="-4" cy="-10" r="4.6"/><circle cx="4" cy="-10" r="4.6"/><circle cx="11" cy="-3" r="4.6"/></g></g></pattern></defs><rect width="100%" height="100%" fill="url(#pawTrail)" opacity=".5"/></svg>
 </div>
 
 <div class="wrap">
   <header>
-    <h1><a href="../index.html" class="home-link">Cosy Cat Games</a></h1>
+    <h1 class="sticker-title"><a href="../index.html">Cosy Cat Games</a></h1>
     <div class="head-btns">
-      <button class="toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
-      <button class="player-chip" id="playerChip" type="button" aria-label="Change your name or animal"></button>
+      <button class="chip toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
+      <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your name or animal"></button>
     </div>
   </header>
-  <div class="hello"><svg class="mascot" viewBox="0 -8 170 188" aria-hidden="true"><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#2A2340" stroke-width="14" stroke-linecap="round"/><path d="M30 150 Q0 140 10 110 Q16 96 28 104" fill="none" stroke="#FFB26B" stroke-width="7" stroke-linecap="round"/><ellipse cx="80" cy="148" rx="50" ry="32" fill="#fff" stroke="#2A2340" stroke-width="5"/><ellipse cx="62" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="98" cy="168" rx="14" ry="9" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="96" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 94 Q76 100 80 94 Q84 100 88 94" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="88" x2="38" y2="91"/><line x1="24" y1="99" x2="38" y2="98"/><line x1="138" y1="88" x2="122" y2="91"/><line x1="136" y1="99" x2="122" y2="98"/></g><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g><g class="wave"><path d="M118 150 Q140 140 142 116" fill="none" stroke="#2A2340" stroke-width="20" stroke-linecap="round"/><path d="M118 150 Q140 140 142 116" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round"/><ellipse cx="144" cy="106" rx="16" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><g fill="#FFB3C7"><circle cx="144" cy="110" r="5"/><circle cx="136" cy="100" r="2.6"/><circle cx="144" cy="97" r="2.6"/><circle cx="152" cy="100" r="2.6"/></g></g></svg><p class="greeting" id="greeting"></p></div>
+  <div class="hello"><span class="mascot" data-cat='{"preset":"chef","pose":"wave"}'></span><p class="greeting" id="greeting"></p></div>
 
   <div id="installBanner" hidden></div>
   <main class="tiles" id="tiles">
-    <div class="tile soon" aria-label="More games coming soon">
-      <svg class="sleepy" viewBox="0 0 190 120" aria-hidden="true"><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#2A2340" stroke-width="13" stroke-linecap="round"/><path d="M40 96 Q8 98 18 76 Q24 64 40 70" fill="none" stroke="#FFB26B" stroke-width="6" stroke-linecap="round"/><ellipse cx="88" cy="86" rx="58" ry="28" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M110 58 L114 34 L128 48 Z M146 50 L156 30 L160 54 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M146 50 L156 30 L160 54 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><ellipse cx="136" cy="78" rx="32" ry="26" fill="#fff" stroke="#2A2340" stroke-width="4.5"/><path d="M120 78 Q125 82 130 78 M142 78 Q147 82 152 78" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><ellipse cx="118" cy="88" rx="5" ry="3" fill="#FF8FAB"/><ellipse cx="156" cy="88" rx="5" ry="3" fill="#FF8FAB"/><path d="M132 88 Q136 91 140 88" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linecap="round"/><text x="160" y="34" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="172" y="18" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="24" fill="#5E5675">Z</text></svg>
+    <div class="tile more" aria-label="More games coming soon">
+      <span class="sleepy" data-cat='{"preset":"chef","hat":"none","pose":"lie","face":"sleep","zzz":true}'></span>
       <h2>More games</h2>
       <p>coming soon</p>
     </div>
   </main>
   <p class="foot"><span class="foot-note"><svg class="paw" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="10" ry="8.5"/><circle cx="9" cy="16" r="4.6"/><circle cx="16" cy="9" r="4.6"/><circle cx="24" cy="9" r="4.6"/><circle cx="31" cy="16" r="4.6"/></svg>Progress is saved on this device only.</span></p>
-  <footer class="site-foot"><a class="foot-link" href="../about/index.html">About Cosy Cat Games</a><a class="foot-link" href="../faq/index.html">Questions (FAQ)</a><a class="foot-link" href="../feedback/index.html">Send feedback</a></footer>
+  <footer class="site-foot pills"><a class="pill" href="../about/index.html">About Cosy Cat Games</a><a class="pill" href="../faq/index.html">Questions (FAQ)</a><a class="pill" href="../feedback/index.html">Send feedback</a></footer>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -283,6 +140,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
 </div>
 
 <script src="../shared/store.js"></script>
+<script src="../shared/cat.js"></script>
 <script src="../shared/games.js"></script>
 <script src="../shared/avatar.js"></script>
 <script src="../shared/install.js"></script>
@@ -304,7 +162,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
         ? 'You earned ' + (fresh.length > 1 ? fresh.length + ' new things' : article(GGAvatar.item(fresh[0]).name + (GGAvatar.TYPES.some(function (t) { return t.id === fresh[0]; }) ? ' cat' : ''))) + '! Tap your picture to try ' + (fresh.length > 1 ? 'them' : 'it') + ' on.'
         : 'Hi ' + p.name + '! Pick a game.';
     } else {
-      chip.innerHTML = '<span class="plus" style="width:46px;height:46px;font-size:1.8rem">+</span><span>Add your name</span>';
+      chip.innerHTML = '<span class="plus">+</span><span>Add your name</span>';
       greet.textContent = 'Pick a game.';
     }
     GGGames.all.forEach(function (g) {
@@ -330,10 +188,9 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
     var got = GGAvatar.unlocked(GG);
     var fresh = p ? newItems(p) : [];
     tab = tab || (fresh.length ? (GGAvatar.TYPES.some(function (t) { return t.id === fresh[0]; }) ? 'type' : GGAvatar.FACES.some(function (t) { return t.id === fresh[0]; }) ? 'face' : 'head') : 'type');
-    panel.classList.remove('whos');
     panel.innerHTML = '<div class="av-prev" id="avPrev"></div>' +
       '<h2 id="panelTitle">' + (p ? 'Your cat' : 'Hello! Make your cat') + '</h2>' +
-      '<div><label class="lab" for="nameInput">Your name</label><input id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false"></div>' +
+      '<div><label class="field-label" for="nameInput">Your name</label><input class="field big" id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false"></div>' +
       '<div class="av-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div class="av-pane" id="avPane" role="tabpanel"></div>' +
       '<div class="row">' + (p ? '<button class="btn plain" type="button" id="backBtn">Cancel</button>' : '') +
@@ -354,7 +211,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       }).join('') + '</div>';
     }
     function swatches(list, key, label) {
-      return '<div><span class="lab">' + label + '</span><div class="av-sw">' + list.map(function (c) {
+      return '<div><span class="field-label">' + label + '</span><div class="av-sw">' + list.map(function (c) {
         return '<button type="button" data-key="' + key + '" data-col="' + c + '" aria-label="' + label + ' ' + c + '" aria-pressed="' + (av[key].toLowerCase() === c.toLowerCase()) + '" style="background:' + c + '"></button>';
       }).join('') + '<label class="av-custom" title="Pick any colour"><input type="color" data-key="' + key + '" value="' + av[key] + '" aria-label="Pick any ' + label.toLowerCase() + '"><span aria-hidden="true">+</span></label></div></div>';
     }
@@ -391,13 +248,13 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   var LOCK = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="3" fill="#5E5675"/><path d="M8 10 V7 a4 4 0 0 1 8 0 V10" fill="none" stroke="#5E5675" stroke-width="2.6"/></svg>';
 
   chip.addEventListener('click', function () { showSetup(); });
-  var EAR = '<svg class="ear l" viewBox="0 0 60 44" aria-hidden="true"><path d="M2 48 L20 6 Q25 0 31 6 L58 48 Z" fill="var(--tile)"/><path d="M2 46 L20 6 Q25 0 31 6 L58 46" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M16 40 L25 16 L42 40 Z" fill="#FF8FAB" opacity=".75"/></svg>';
+  var EAR_L = GGCat.earSVG(-1, 'ear l'), EAR_R = GGCat.earSVG(1, 'ear r');
   /* Toddler mode shows only toddler games. The switch stays hidden until there are 3 toddler games to play. */
   function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
   function toddlerReady() { return toddlerGames().length >= 3; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
   function renderTiles() {
-    var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.soon');
+    var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.more');
     box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });
     var tod = toddlerOn();
     document.body.classList.toggle('toddler', tod);
@@ -414,7 +271,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       t.style.setProperty('--tile', g.colour);
       if (ok) t.href = '../games/' + g.id + '/index.html';
       else t.setAttribute('aria-label', g.name + ', coming soon');
-      t.innerHTML = EAR + EAR.replace('ear l', 'ear r') +
+      t.innerHTML = EAR_L + EAR_R +
         '<span class="badge"' + (ok ? ' hidden' : '') + '>' + (ok ? '' : 'Coming soon') + '</span>' +
         '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2><p>' + esc(g.blurb) + '</p>';
       if (ok) t.addEventListener('click', function (e) {
@@ -426,7 +283,6 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
   renderTiles();
 
   document.getElementById('toddlerBtn').addEventListener('click', function () {
-    panel.classList.remove('whos');
     if (!toddlerOn()) {
       panel.innerHTML = '<h2 id="panelTitle">Turn on toddler mode?</h2>' +
         '<p class="confirm-text">Only the simplest games will show, made for little ones under 5.</p>' +
@@ -441,7 +297,7 @@ label.lab { font-weight: 800; font-size: 1.05rem; display: block; margin-bottom:
       var x = 4 + Math.floor(Math.random() * 6), y = 3 + Math.floor(Math.random() * 7);
       panel.innerHTML = '<h2 id="panelTitle">Turn off toddler mode?</h2>' +
         '<p class="sum-q">Grown-ups: what is ' + x + ' + ' + y + '?</p>' +
-        '<input id="sumIn" inputmode="numeric" autocomplete="off" aria-label="Answer">' +
+        '<input class="field big" id="sumIn" inputmode="numeric" autocomplete="off" aria-label="Answer">' +
         '<p class="note" id="sumMsg"></p>' +
         '<div class="row"><button class="btn plain" type="button" id="sumNo">Keep it on</button><button class="btn go" type="button" id="sumYes">Turn off</button></div>';
       open();

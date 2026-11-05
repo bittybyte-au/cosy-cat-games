@@ -11,51 +11,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
 <style>
 /* Layout: a soft pink room; top bar, then a goal panel that stays on screen (beside the board on wide screens); the board (canvas) fills the rest. Single bright look by design. */
-:root {
-  --wall: #FFE6F0;
-  --wall2: #FFD6E6;
-  --ink: #2A2340;
-  --cream: #FFF8EC;
-  --sun: #FFC93C;
-  --grass: #7BD389;
-  --sea: #3FA7F5;
-  --muted: #6E6080;
-  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { height: 100%; margin: 0; }
-body {
-  color: var(--ink); font-family: var(--body); font-size: 17px; overflow: hidden; overscroll-behavior: none;
-  background: var(--wall) radial-gradient(circle at 20px 20px, var(--wall2) 6px, transparent 7px) 0 0 / 56px 56px;
-  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
-}
-canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
-button { font-family: var(--body); color: var(--ink); -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-offset: 3px; }
-
-.topbar {
-  position: fixed; left: 0; right: 0; top: 0; z-index: 7; flex-wrap: wrap;
-  padding-top: max(10px, env(safe-area-inset-top, 0px));
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
-  padding-bottom: 6px;
-  display: flex; align-items: center; gap: 10px;
-}
-.round {
-  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink);
-  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
-  text-decoration: none; color: var(--ink);
-}
-.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.round svg { width: 30px; height: 30px; }
-
+:root { --wall: #FFE6F0; --wall2: #FFD6E6; }
+.topbar { flex-wrap: wrap; }
+body { background: var(--wall) radial-gradient(circle at 20px 20px, var(--wall2) 6px, transparent 7px) 0 0 / 56px 56px; }
 .middle { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.level { font: 800 1rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px 2px; }
+.level { font-size: 1rem; padding: 4px 12px 2px; }
 .goalpanel {
   flex-basis: 100%; min-width: 0; margin: 6px 0 0; background: var(--cream); border: 3px solid var(--ink); border-radius: 22px;
   box-shadow: 0 4px 0 var(--ink); padding: 6px 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -77,42 +41,12 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 .goal.done .bar i { background: #fff; }
 .goal .tick { display: none; position: absolute; left: -6px; top: -8px; width: 26px; height: 26px; padding: 3px; background: #fff; border: 2.5px solid var(--ink); border-radius: 50%; }
 .goal.done .tick { display: block; }
-@keyframes bump { 50% { transform: scale(1.18); } }
-
 .say {
   position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); z-index: 6; transform: translateX(-50%);
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink);
-  font: 800 clamp(1.1rem, 4.4vw, 1.4rem)/1.15 var(--body); text-align: center; white-space: nowrap; pointer-events: none;
-  transition: opacity .3s ease, transform .3s ease;
+  max-width: none; white-space: nowrap; pointer-events: none; transition: opacity .3s ease, transform .3s ease;
 }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(16px); }
-
-.win {
-  position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(42, 35, 64, .35);
-  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-}
-.card {
-  width: min(420px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink);
-  padding: 22px 18px 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
-  animation: present .55s cubic-bezier(.3, 1.6, .5, 1);
-}
-.card h2 { margin: 0; font: 800 clamp(1.8rem, 7vw, 2.4rem)/1 var(--display); }
-.card p { margin: 0; font: 800 1.15rem var(--body); color: var(--muted); }
-.card .faces { display: flex; gap: 4px; justify-content: center; }
-.card .faces img { width: 52px; height: 52px; animation: hop .6s ease-in-out infinite alternate; }
-.card .faces img:nth-child(2) { animation-delay: .1s; } .card .faces img:nth-child(3) { animation-delay: .2s; }
-.card .faces img:nth-child(4) { animation-delay: .3s; } .card .faces img:nth-child(5) { animation-delay: .4s; } .card .faces img:nth-child(6) { animation-delay: .5s; }
-.big {
-  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink);
-  font: 800 1.45rem var(--display); cursor: pointer; display: flex; align-items: center; gap: 8px;
-}
-.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
-.big svg { width: 26px; height: 26px; }
-@keyframes present { from { transform: scale(.5) rotate(-8deg); opacity: 0; } }
-@keyframes hop { to { transform: translateY(-8px); } }
-
 @media (max-width: 380px) {
-  .round { width: 48px; height: 48px; }
   .goal img { width: 32px; height: 32px; }
   .goal { gap: 3px; padding-right: 6px; }
   .goal .count { font-size: 1.1rem; }
@@ -139,11 +73,11 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
   .goal .bar { height: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .card, .card .faces img, .goal.bump { animation: none; }
+  .goal.bump { animation: none; }
 }
 </style>
 </head>
-<body>
+<body class="game">
 <canvas id="stage" aria-label="Board of cat faces. Swap two neighbouring cats to line up three the same."></canvas>
 
 <div class="topbar" id="topbar">
@@ -173,6 +107,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--sea); outline-o
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/cat.js"></script>
 <!-- Special cats (zoomy, big yawn, rainbow) live in their own add-on file.
      To switch them off, set ENABLED = false at the top of specials.js, or delete the line below.
      The game plays fine without it. -->

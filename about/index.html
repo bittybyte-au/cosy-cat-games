@@ -11,82 +11,35 @@
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../shared/site.css">
 <style>
-/* Layout: same sunny sky as the home page; one readable cream card with short sections. Single bright look by design. */
-:root {
-  --sky: #9EDCFF;
-  --grass: #7BD389;
-  --ink: #2A2340;
-  --cream: #FFF8EC;
-  --sun: #FFC93C;
-  --muted: #5E5675;
-  --display: "Baloo 2", ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
-  --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-body {
-  margin: 0; background: linear-gradient(var(--sky) 0 60%, #BFE8FF) fixed; color: var(--ink);
-  font-family: var(--body); font-size: 17px; line-height: 1.55;
-}
-.wrap {
-  max-width: 720px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 18px 48px;
-  display: flex; flex-direction: column; gap: 18px;
-}
-.back {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 52px; padding: 0 18px;
-  border: 3px solid var(--ink); border-radius: 999px; background: var(--cream); color: var(--ink);
-  font: 800 1rem var(--body); text-decoration: none; box-shadow: 0 4px 0 var(--ink);
-}
-.back:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.back:focus-visible, a:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
-.hero { display: flex; align-items: center; gap: 12px; }
-.hero svg { width: 96px; height: auto; flex: none; }
-h1 {
-  margin: 0; font: 800 clamp(2rem, 7vw, 3rem)/1.05 var(--display); color: var(--cream);
-  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); text-wrap: balance;
-}
-.card {
-  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
-  padding: 22px clamp(18px, 4vw, 30px); display: flex; flex-direction: column; gap: 22px;
-}
-section { display: flex; flex-direction: column; gap: 6px; }
-h2 { margin: 0; font: 800 1.5rem/1.15 var(--display); }
-p { margin: 0; max-width: 62ch; }
-ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
-.promise { list-style: none; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; }
-.promise li {
-  background: #fff; border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; font-weight: 800;
-}
-.lead { font-size: 1.1rem; font-weight: 800; }
+/* About: the promise badges and the small print */
+.info-page .promise { list-style: none; padding: 0; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+.promise li { background: #fff; border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; font-weight: 800; }
 .small { color: var(--muted); font-size: .95rem; }
 .qa { font-weight: 800; color: var(--muted); }
-.foot-links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-.foot-links a { color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; text-decoration: none; padding: 10px 18px; }
+.free-note { padding: 12px 16px; background: var(--pale-sun); border: 3px solid var(--ink); border-radius: 18px; }
 </style>
 </head>
-<body>
+<body class="info-page">
 <div class="wrap">
-  <a class="back" href="../play/index.html">
+  <a class="pill back" href="../play/index.html">
     <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     Back to games
   </a>
 
   <div class="hero">
-    <svg viewBox="0 -8 170 144" aria-hidden="true"><path d="M30 60 L26 18 L62 38 Z" fill="#fff" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M130 60 L134 18 L98 38 Z" fill="#FFB26B" stroke="#2A2340" stroke-width="5" stroke-linejoin="round"/><path d="M34 48 L32 28 L50 39 Z" fill="#FFB3C7"/><path d="M126 48 L128 28 L110 39 Z" fill="#FFB3C7"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="#fff"/><path d="M104 38 Q132 40 139 70 Q122 64 108 60 Q100 50 104 38 Z" fill="#FFB26B"/><ellipse cx="80" cy="80" rx="60" ry="48" fill="none" stroke="#2A2340" stroke-width="5"/><path d="M52 82 Q60 71 68 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><path d="M92 82 Q100 71 108 82" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round"/><ellipse cx="46" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><ellipse cx="114" cy="94" rx="9" ry="5.5" fill="#FF8FAB"/><path d="M72 92 Q76 98 80 92 Q84 98 88 92" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/><g stroke="#2A2340" stroke-width="4"><circle cx="66" cy="20" r="12" fill="#fff"/><circle cx="94" cy="20" r="12" fill="#fff"/><circle cx="80" cy="13" r="14" fill="#fff"/><rect x="60" y="24" width="40" height="13" rx="4" fill="#fff"/></g></svg>
-    <h1>About Cosy Cat Games</h1>
+    <span class="hero-cat" data-cat='{"preset":"chef"}'></span>
+    <h1 class="sticker-title">About Cosy Cat Games</h1>
   </div>
 
   <main class="card">
     <section>
       <p class="lead">Constantly being pestered to install new apps? Worried about tracking, identifiers and inappropriate ads? Me too.</p>
-      <p>With the help of AI, I created a collection of simple games for my cat-obsessed kids. They’re designed to satisfy the urge to play, while staying free of the now seemingly mandatory dark patterns that have crept into nearly every kids’ gaming app: design tricks built to keep children on screens longer, keep them coming back and keep them buying.</p>
-      <p>Free gifts every time you log in. Paying to upgrade to the latest tools or accessories. Ads that promote yet more games. You won’t find any of that here.</p>
-      <p>I still remember playing simple games like Tetris, Minesweeper and jacks on the computer as a kid. They were just fun, and nothing was trying to sell me anything. I wanted my kids to have that too.</p>
+      <p>With the help of AI, I created a collection of simple games for my cat-obsessed kids. They’re designed to satisfy the urge to play, while staying free of the now seemingly mandatory dark patterns that have crept into nearly every kids’ gaming app: retention design tricks built to keep children on screens longer, keep them coming back and keep them buying.</p>
+      <p>Free gifts every time you log in. Paying to upgrade to the latest tools or accessories. Ads that promote yet more games. Streaks and countdowns that make a day off feel like losing something.</p>
+      <p class="lead">Worry-free games for parents and kids.</p>
+      <p class="free-note">Every game is free while we’re still building and testing. If something breaks or you have an idea, <a href="../feedback/index.html">tell us</a>: your feedback shapes what comes next.</p>
       <p class="qa">QA testing provided by my three kids.</p>
     </section>
 
@@ -126,8 +79,9 @@ ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap:
       </ul>
     </section>
   </main>
-  <nav class="foot-links"><a href="../faq/index.html">Questions (FAQ)</a><a href="../feedback/index.html">Send feedback</a></nav>
+  <nav class="pills"><a class="pill" href="../faq/index.html">Questions (FAQ)</a><a class="pill" href="../feedback/index.html">Send feedback</a></nav>
 </div>
 <script src="../shared/store.js"></script>
+<script src="../shared/cat.js"></script>
 </body>
 </html>
