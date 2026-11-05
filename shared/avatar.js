@@ -154,6 +154,7 @@
   /* the whole avatar as an SVG string: the shared cat (GGCat) on a coloured circle, with hats, hair and face extras.
      The cat sits with its head centred at (60, 71) in a 120 box, 68 wide (the extras below are drawn in that space). */
   var CAT_X = 60, CAT_Y = 66.36, CAT_SIZE = 68, K = CAT_SIZE / 88;
+  var uid = 0;
   // turns the box's coordinates into the cat's own 100-unit space, for extras that sit between the head and the eyes
   var TO_CAT = '<g transform="matrix(' + (1 / K).toFixed(4) + ' 0 0 ' + (1 / K).toFixed(4) + ' ' + (-CAT_X / K).toFixed(3) + ' ' + (-CAT_Y / K).toFixed(3) + ')">';
   function svg(av, size) {
@@ -177,12 +178,14 @@
       eyeColor: av.face === 'mask' ? '#FFF8EC' : undefined,
       svgOverHead: av.face === 'mask' ? TO_CAT + '<path d="M30 63 Q34 55 46 58 Q60 62 74 58 Q86 55 90 63 Q88 75 76 75 Q66 75 60 69 Q54 75 44 75 Q32 75 30 63 Z" fill="#E8413B" stroke="' + INK + '" stroke-width="2.5" stroke-linejoin="round"/></g>' : ''
     });
-    var o = '<svg viewBox="0 0 120 120" width="' + size + '" height="' + size + '" aria-hidden="true" style="overflow:visible">';
-    o += '<circle cx="60" cy="60" r="57" fill="' + av.bg + '" stroke="' + INK + '" stroke-width="3"/>';
-    o += drawBack(av.head, hair);
-    o += cat;
-    o += drawFaceAcc(av.face);
-    if (av.head !== 'chef') o += drawFront(av.head, hair, g);
+    // everything sits inside the circle (a little smaller, so tall hats fit), and the circle's outline goes on last
+    var id = 'gga' + (++uid);
+    var o = '<svg viewBox="0 0 120 120" width="' + size + '" height="' + size + '" aria-hidden="true">';
+    o += '<defs><clipPath id="' + id + '"><circle cx="60" cy="60" r="57"/></clipPath></defs>';
+    o += '<circle cx="60" cy="60" r="57" fill="' + av.bg + '"/>';
+    o += '<g clip-path="url(#' + id + ')"><path d="M3 60a57 57 0 1 0 114 0a57 57 0 1 0-114 0ZM-1 54a57 57 0 1 0 114 0a57 57 0 1 0-114 0Z" fill="rgba(42,35,64,.07)" fill-rule="evenodd"/>';
+    o += '<g transform="translate(60 64) scale(.9) translate(-60 -64)">' + drawBack(av.head, hair) + cat + drawFaceAcc(av.face) + (av.head !== 'chef' ? drawFront(av.head, hair, g) : '') + '</g></g>';
+    o += '<circle cx="60" cy="60" r="57" fill="none" stroke="' + INK + '" stroke-width="3"/>';
     return o + '</svg>';
   }
 
