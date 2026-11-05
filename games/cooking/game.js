@@ -1,4 +1,4 @@
-/* Cosy Kitchen – sushi handroll.
+/* Cosy Kitchen: sushi hand roll, pancakes, burger and pizza.
    Everything is drawn in code on one canvas. Sounds are made with Web Audio (no files).
    The play area is a 640 x 640 square (logical units) scaled to fit between the top bar and tool tray. */
 (function () {
@@ -39,6 +39,7 @@
   var drawLeaf = DISH.drawLeaf, drawGinger = DISH.drawGinger, drawWasabi = DISH.drawWasabi, cakeInfo = DISH.cakeInfo, drawStackCake = DISH.drawStackCake;
   var stackOf = DISH.stackOf, drawButter = DISH.drawButter, drawTopping = DISH.drawTopping, drawStackScene = DISH.drawStackScene;
   var drawBunBottom = DISH.drawBunBottom, drawBunTop = DISH.drawBunTop, drawLayer = DISH.drawLayer, drawBurgerScene = DISH.drawBurgerScene;
+  var ZX = DISH.ZX, ZY = DISH.ZY, ZRX = DISH.ZRX, ZRY = DISH.ZRY, ZSQ = ZRY / ZRX, PIZZA_TOPS = DISH.PIZZA_TOPS, drawPizzaTopping = DISH.drawPizzaTopping, drawPizzaScene = DISH.drawPizzaScene;
   function stackTop(d) { return DISH.stackTop(d || dish); }
 
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
@@ -273,7 +274,11 @@
     c.beginPath(); c.ellipse(0, 0, r, r * 0.3, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4.5);
     if (amount > 0) {
       var rnd = seeded(i * 31 + 5), n = Math.round(6 * amount);
-      for (var k = 0; k < n; k++) drawMini(c, kind, (rnd() - 0.5) * 70, -2 + (rnd() - 0.5) * 12 - k * 1.2, rnd() * TAU);
+      for (var k = 0; k < n; k++) {
+        var mx = (rnd() - 0.5) * 70, my = -2 + (rnd() - 0.5) * 12 - k * 1.2, mr = rnd() * TAU;
+        if (PIZZA_TOPS.indexOf(kind) >= 0) { c.save(); c.translate(mx, my); c.scale(0.5, 0.5); drawPizzaTopping(c, { k: kind, r: Math.round(mr * 57) }); c.restore(); }
+        else drawMini(c, kind, mx, my, mr);
+      }
     }
     c.restore();
   }
@@ -310,7 +315,12 @@
 
   /* ---------- the dish being made ---------- */
   var dish = null;
-  function newDish() { return { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false }; }
+  function newDish() {
+    var d = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false };
+    // a recipe can start from its own blank dish (pizza starts as plain dough)
+    var f = recipe && recipe.fresh; if (f) for (var k in f) d[k] = JSON.parse(JSON.stringify(f[k]));
+    return d;
+  }
 
   /* =============== STEP 1: RICE =============== */
   function RiceScene() {
@@ -460,7 +470,10 @@
     tomato: { len: 230, h: 200, cuts: 4, body: '#FF4D3D', face: '#FF8A70', face2: '#FFC9B0', ring: '#E8322B', round: 100, label: 'tomato' },
     onion: { len: 230, h: 200, cuts: 4, body: '#F4E9D8', face: '#FBF6EA', ring: '#E2CFAF', round: 100, label: 'onion', rings: true },
     banana: { len: 440, h: 84, cuts: 6, body: '#FFF0A8', face: '#FFF7D6', face2: '#F3E2A0', ring: '#E9D27A', round: 42, label: 'banana' },
-    strawberry: { len: 280, h: 170, cuts: 3, body: '#FF4D5E', face: '#FF8F9C', face2: '#FFE0E4', ring: '#E83A4E', round: 60, label: 'strawberry', shape: 'pear', ratio: 0.2 }
+    strawberry: { len: 280, h: 170, cuts: 3, body: '#FF4D5E', face: '#FF8F9C', face2: '#FFE0E4', ring: '#E83A4E', round: 60, label: 'strawberry', shape: 'pear', ratio: 0.2 },
+    mushroom: { len: 250, h: 190, cuts: 3, body: '#F3E3CF', face: '#FBF3E6', ring: '#C9A882', round: 95, label: 'mushroom' },
+    capsicum: { len: 300, h: 180, cuts: 4, body: '#3FB950', face: '#BFF0B0', face2: '#F2FFE6', ring: '#2E9A40', round: 80, label: 'capsicum' },
+    pineapple: { len: 400, h: 150, cuts: 5, body: '#F2B43C', face: '#FFE680', face2: '#FFF6C0', ring: '#D99A1E', round: 56, label: 'pineapple' }
   };
 
   function ChopScene(list, onDone) {
@@ -539,6 +552,19 @@
         c.fillStyle = '#FFF2A8';
         var sr = seeded(8); for (var si = 0; si < 34; si++) { var sx = (sr() - 0.5) * d.len, sy = (sr() - 0.5) * d.h; c.beginPath(); c.ellipse(sx, sy, 2.2, 3.2, 0.4, 0, TAU); c.fill(); }
         c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(10, -d.h * 0.22, d.len * 0.22, 9, -0.1, 0, TAU); c.fill();
+      } else if (k === 'mushroom') {
+        // brown cap on top, pale stalk underneath
+        c.fillStyle = '#C98B5B'; c.beginPath(); c.ellipse(0, -d.h * 0.12, d.len * 0.56, d.h * 0.42, 0, Math.PI, TAU); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-30, -d.h * 0.34, 40, 12, -0.2, 0, TAU); c.fill();
+        c.strokeStyle = '#C9A882'; c.lineWidth = 4; c.beginPath(); c.moveTo(-d.len / 2, -d.h * 0.12); c.quadraticCurveTo(0, -d.h * 0.02, d.len / 2, -d.h * 0.12); c.stroke();
+      } else if (k === 'capsicum') {
+        c.strokeStyle = '#2E9A40'; c.lineWidth = 5;
+        [-0.18, 0.18].forEach(function (f) { c.beginPath(); c.moveTo(-d.len / 2, d.h * f); c.quadraticCurveTo(0, d.h * f * 1.6, d.len / 2, d.h * f); c.stroke(); });
+        c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(-40, -d.h * 0.28, 60, 10, -0.1, 0, TAU); c.fill();
+      } else if (k === 'pineapple') {
+        c.strokeStyle = '#C98420'; c.lineWidth = 3.5;
+        for (var px = -d.len / 2 - 80; px < d.len / 2 + 80; px += 34) { c.beginPath(); c.moveTo(px, -d.h / 2); c.lineTo(px + 70, d.h / 2); c.moveTo(px + 70, -d.h / 2); c.lineTo(px, d.h / 2); c.stroke(); }
+        c.fillStyle = '#8A5A2B'; for (var py = -d.len / 2 + 17; py < d.len / 2; py += 34) { c.beginPath(); c.arc(py + 18, 0, 3, 0, TAU); c.arc(py, -d.h / 4, 3, 0, TAU); c.arc(py, d.h / 4, 3, 0, TAU); c.fill(); }
       } else {
         c.strokeStyle = '#FFD3BD'; c.lineWidth = 7;
         for (var x = -d.len / 2 - 60; x < d.len / 2 + 60; x += 34) { c.beginPath(); c.moveTo(x, -d.h / 2); c.quadraticCurveTo(x + 30, 0, x + 10, d.h / 2); c.stroke(); }
@@ -551,6 +577,12 @@
         c.beginPath(); c.arc(0, 0, 5, 0, TAU); c.fillStyle = '#3E9B54'; c.fill(); ink(c, 2.5); c.restore();
       }
       if (k === 'onion') { c.save(); c.translate(0, -d.h / 2); c.beginPath(); c.moveTo(-8, 4); c.quadraticCurveTo(0, -22, 8, 4); c.closePath(); c.fillStyle = '#C9A26E'; c.fill(); ink(c, 2.5); c.restore(); }
+      if (k === 'capsicum') { c.save(); c.translate(d.len / 2 - 4, 0); rr(c, -2, -9, 26, 18, 7); c.fillStyle = '#2E7D3A'; c.fill(); ink(c, 3); c.restore(); }
+      if (k === 'pineapple') {
+        c.save(); c.translate(d.len / 2 - 2, 0);
+        for (var pl = 0; pl < 5; pl++) { c.save(); c.rotate(-0.9 + pl * 0.45); c.beginPath(); c.moveTo(0, -6); c.quadraticCurveTo(30, -10, 52, 0); c.quadraticCurveTo(30, 10, 0, 6); c.closePath(); c.fillStyle = '#5CC46B'; c.fill(); ink(c, 3); c.restore(); }
+        c.restore();
+      }
       if (k === 'banana') { c.fillStyle = '#8A5A2B'; c.beginPath(); c.ellipse(-d.len / 2 + 6, 0, 7, 10, 0, 0, TAU); c.ellipse(d.len / 2 - 6, 0, 7, 10, 0, 0, TAU); c.fill(); }
       if (k === 'strawberry') {
         // leafy green top on the wide end
@@ -1731,6 +1763,249 @@
     };
   }
 
+  /* =============== PIZZA =============== */
+  /* the pizza on its own (no plate), at (x, y) and scale s: the shared drawing clipped to the pizza */
+  function drawPizzaOnly(c, d, x, y, s) {
+    c.save(); c.translate(x, y); c.scale(s, s); c.translate(-ZX, -ZY);
+    c.beginPath(); c.ellipse(ZX, ZY + 6, ZRX + 4, ZRY + 13, 0, 0, TAU); c.clip();
+    drawPizzaScene(c, d);
+    c.restore();
+  }
+  /* the floury wooden board the pizza is made on */
+  function drawBoard(c) {
+    c.beginPath(); c.ellipse(ZX, ZY + 34, 290, 80, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
+    rr(c, ZX + 270, ZY - 4, 70, 30, 14); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
+    c.beginPath(); c.ellipse(ZX, ZY + 20, 290, 80, 0, 0, TAU); c.fillStyle = '#E3AE6E'; c.fill(); ink(c, 5);
+    c.beginPath(); c.ellipse(ZX, ZY + 14, 280, 74, 0, 0, TAU); c.fillStyle = '#F0C489'; c.fill();
+    c.fillStyle = 'rgba(255,255,255,.55)'; var r = seeded(41);
+    for (var i = 0; i < 40; i++) { var a = r() * TAU, k = Math.sqrt(r()); c.beginPath(); c.arc(ZX + Math.cos(a) * 270 * k, ZY + 14 + Math.sin(a) * 70 * k, 1.5 + r() * 2.5, 0, TAU); c.fill(); }
+  }
+  /* screen point -> flat pizza coordinates (-200..200 from the middle) */
+  function toPizza(p) { return { x: p.x - ZX, y: (p.y - ZY) / ZSQ }; }
+  function onPizza(p, pad) { var q = toPizza(p); return Math.hypot(q.x, q.y) < ZRX - (pad || 0); }
+
+  /* ---- Step 1: roll the dough flat ---- */
+  function DoughScene() {
+    var k = 0, NEED = 2200, down = false, last = null, pin = null, done = false, rubLoop = Sound.loop('rub'), speed = 0;
+    function size() { return 0.34 + 0.66 * easeOut(k); }
+    return {
+      enter: function () { say('Roll the dough flat!'); },
+      leave: function () { rubLoop.stop(); },
+      hint: function (t) { if (done) return null; var q = (t % 1.6) / 1.6; return { x: ZX - 140 + q * 280, y: ZY + Math.sin(q * TAU * 2) * 20, press: true }; },
+      down: function (p) { down = true; last = p; pin = p; },
+      move: function (p) {
+        if (!down || done) return;
+        pin = p;
+        var s = size(), nx = (p.x - ZX) / (ZRX * s + 60), ny = (p.y - ZY) / (ZRY * s + 60);
+        if (last && nx * nx + ny * ny < 1.4) {
+          var dd = dist(p, last); k = Math.min(1, k + dd / NEED); speed = Math.min(1, speed + dd / 50);
+          if (Math.random() < dd / 60) burst(p.x + (Math.random() - 0.5) * 120, p.y, 1, { colors: ['#FFFFFF'], shape: 'dot', size: 6, speed: 50, life: 0.5 });
+        }
+        last = p;
+        if (k >= 1 && !done) {
+          done = true; pin = null; rubLoop.set(0); Sound.chime(); buzz(20);
+          burst(ZX, ZY, 24, { colors: ['#FFC93C', '#FFFFFF', '#FF7EB6'], speed: 260, life: 0.9 });
+          Cat.show('Nice and flat!'); say('Perfect pizza base!');
+          showNext('Next', nextStep);
+        }
+      },
+      up: function () { down = false; last = null; pin = null; },
+      update: function (dt) { speed *= Math.pow(0.05, dt); rubLoop.set(speed); },
+      draw: function (c) {
+        drawBoard(c);
+        var s = size(), lift = (1 - easeOut(k)) * 46;
+        // a thick ball of dough that spreads out and gets thinner as it's rolled
+        c.save(); c.translate(ZX, ZY);
+        c.beginPath(); c.ellipse(0, 12, ZRX * s, ZRY * s + lift * 0.3, 0, 0, TAU); c.fillStyle = '#E2C08A'; c.fill(); ink(c, 5);
+        c.beginPath(); c.ellipse(0, 12 - lift, ZRX * s, ZRY * s + lift * 0.3, 0, Math.PI, TAU); c.lineTo(ZRX * s, 12); c.ellipse(0, 12, ZRX * s, ZRY * s + lift * 0.3, 0, 0, Math.PI); c.closePath(); c.fillStyle = '#EED3A2'; c.fill();
+        c.beginPath(); c.ellipse(0, -lift, ZRX * s, ZRY * s + lift * 0.3, 0, 0, TAU); c.fillStyle = '#F3DDB0'; c.fill(); ink(c, 5);
+        c.beginPath(); c.ellipse(-ZRX * s * 0.3, -lift - ZRY * s * 0.35, ZRX * s * 0.25, 8, -0.1, 0, TAU); c.fillStyle = 'rgba(255,255,255,.5)'; c.fill();
+        c.restore();
+        // the rolling pin follows the finger
+        if (pin && !done) {
+          c.save(); c.translate(clamp(pin.x, 150, 490), pin.y - 20);
+          rr(c, -170, -10, 50, 20, 10); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
+          rr(c, 120, -10, 50, 20, 10); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
+          rr(c, -124, -24, 248, 48, 22); c.fillStyle = '#F1C88E'; c.fill(); ink(c, 5);
+          c.beginPath(); c.moveTo(-100, -12); c.lineTo(100, -12); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 5; c.lineCap = 'round'; c.stroke();
+          c.restore();
+        }
+        // progress ring
+        if (!done) {
+          c.beginPath(); c.arc(ZX, 160, 34, -Math.PI / 2, -Math.PI / 2 + TAU * k); c.strokeStyle = '#7BD389'; c.lineWidth = 12; c.lineCap = 'round'; c.stroke();
+          c.beginPath(); c.arc(ZX, 160, 34, 0, TAU); c.strokeStyle = 'rgba(42,35,64,.15)'; c.lineWidth = 12; c.stroke();
+        }
+      }
+    };
+  }
+
+  /* ---- Step 2: spread the tomato sauce ---- */
+  function SauceScene() {
+    var cells = [], STEP = 34, R = ZRX - 30;
+    for (var x = -R; x <= R; x += STEP) for (var y = -R; y <= R; y += STEP) if (Math.hypot(x, y) < R - 8) cells.push({ x: x, y: y, on: false, t: 0 });
+    var down = false, ladle = null, done = false, rubLoop = Sound.loop('rub'), speed = 0, last = null;
+    function coverage() { return cells.filter(function (q) { return q.on; }).length / cells.length; }
+    return {
+      enter: function () { say('Swirl the sauce around!'); },
+      leave: function () { rubLoop.stop(); },
+      hint: function (t) { if (done) return null; var a = t * 2.4; return { x: ZX + Math.cos(a) * 140, y: ZY + Math.sin(a) * 50, press: true }; },
+      down: function (p) { down = true; ladle = p; last = p; this.move(p); },
+      move: function (p) {
+        if (!down || done) return;
+        ladle = p;
+        var q = toPizza(p);
+        cells.forEach(function (cell) { if (!cell.on && Math.hypot(cell.x - q.x, cell.y - q.y) < 56) { cell.on = true; if (Math.random() < 0.3) Sound.squish(); } });
+        if (last) speed = Math.min(1, speed + dist(p, last) / 60);
+        last = p;
+        if (coverage() >= 0.85) {
+          done = true; dish.sauce = 1; ladle = null; rubLoop.set(0); Sound.chime(); buzz(20);
+          burst(ZX, ZY, 22, { colors: ['#FF6B57', '#FFC93C', '#FFFFFF'], speed: 240, life: 0.9 });
+          Cat.show('Saucy!'); say('Yummy tomato sauce!');
+          showNext('Next', nextStep);
+        }
+      },
+      up: function () { down = false; ladle = null; last = null; },
+      update: function (dt) {
+        cells.forEach(function (cell) { if (cell.on && cell.t < 1) cell.t = Math.min(1, cell.t + dt * 5); });
+        speed *= Math.pow(0.05, dt); rubLoop.set(speed * 0.7);
+      },
+      draw: function (c) {
+        drawBoard(c);
+        drawPizzaOnly(c, dish, ZX, ZY, 1);
+        if (!dish.sauce) {
+          c.save(); c.translate(ZX, ZY);
+          c.beginPath(); c.ellipse(0, -2, ZRX - 30, ZRY - 14, 0, 0, TAU); c.clip();
+          c.fillStyle = '#E8362B';
+          cells.forEach(function (cell) { if (!cell.on) return; var r = 40 * easeBack(cell.t); c.beginPath(); c.ellipse(cell.x, cell.y * ZSQ - 2, r, r * ZSQ * 1.3, 0, 0, TAU); c.fill(); });
+          c.restore();
+        }
+        if (ladle && !done) {
+          c.save(); c.translate(ladle.x, ladle.y - 10); c.rotate(-0.5);
+          rr(c, -7, -170, 14, 150, 7); c.fillStyle = '#9AA6B2'; c.fill(); ink(c, 4);
+          c.beginPath(); c.ellipse(0, -8, 40, 22, 0, 0, TAU); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 5);
+          c.beginPath(); c.ellipse(0, -12, 30, 13, 0, 0, TAU); c.fillStyle = '#E8362B'; c.fill();
+          c.restore();
+        }
+      }
+    };
+  }
+
+  /* ---- Step 4: toppings, anywhere on the pizza ---- */
+  var PIZZA_TOOLS = ['cheese', 'pepperoni', 'mushroom', 'capsicum', 'pineapple', 'ham', 'olive', 'basil'];
+  var PIZZA_LABEL = { cheese: 'Cheese', pepperoni: 'Salami', mushroom: 'Mushroom', capsicum: 'Capsicum', pineapple: 'Pineapple', ham: 'Ham', olive: 'Olive', basil: 'Basil' };
+  var PIZZA_ICON_CHEESE = '<svg viewBox="0 0 40 40"><path d="M5 30 L20 8 L35 30 Z" fill="#FFD86A" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><circle cx="18" cy="23" r="3" fill="#F2B400"/><circle cx="25" cy="27" r="2" fill="#F2B400"/></svg>';
+  /* tool icons are the same toppings that go on the pizza, drawn small */
+  function pizzaIcon(k) {
+    if (k === 'cheese') return PIZZA_ICON_CHEESE;
+    var cv = document.createElement('canvas'); cv.width = cv.height = 80;
+    var c = cv.getContext('2d'); c.translate(40, 40); c.scale(1.05, 1.6); drawPizzaTopping(c, { k: k, x: 0, y: 0, r: 0 });
+    return '<img alt="" src="' + cv.toDataURL() + '" width="40" height="40">';
+  }
+  function ToppingScene() {
+    var tool = 'cheese', hist = History(['pz', 'cheese']), praised = false;
+    function setTool(t) {
+      tool = t;
+      toolsEl.querySelectorAll('.tool').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.tool === t)); });
+      say(t === 'cheese' ? 'Tap the pizza for cheese' : 'Tap to add ' + PIZZA_LABEL[t].toLowerCase());
+    }
+    return {
+      enter: function () {
+        toolsEl.innerHTML = PIZZA_TOOLS.map(function (t) { return '<button class="tool" type="button" data-tool="' + t + '" aria-pressed="false">' + pizzaIcon(t) + '<span>' + PIZZA_LABEL[t] + '</span></button>'; }).join('');
+        toolsEl.querySelectorAll('.tool').forEach(function (b) { b.addEventListener('click', function () { Sound.init(); Sound.pop(); setTool(b.dataset.tool); }); });
+        setTool('cheese');
+        showNext('Bake it', nextStep);
+        setUndo({ canUndo: hist.canUndo, undo: function () { if (hist.undo()) say('Undone'); } });
+      },
+      leave: function () { toolsEl.innerHTML = ''; },
+      hint: function (t) { if (dish.cheese || dish.pz.length) return null; return { x: ZX + 60, y: ZY - 10, press: (t % 1.2) < 0.6 }; },
+      down: function (p) {
+        if (!onPizza(p, 30)) return;
+        if (tool === 'cheese') {
+          if (dish.cheese) { say('Plenty of cheese!'); return; }
+          hist.now(); dish.cheese = 1; Sound.sprinkle(); Sound.pop(); say('Cheesy!');
+          burst(p.x, p.y, 16, { colors: ['#FFF3C4', '#FFD86A'], shape: 'dot', size: 8, speed: 200, life: 0.6 });
+          return;
+        }
+        var q = toPizza(p);
+        hist.now();
+        if (dish.pz.length >= 40) dish.pz.shift();
+        dish.pz.push({ k: tool, x: Math.round(q.x), y: Math.round(q.y), r: Math.round((Math.random() - 0.5) * 120) });
+        Sound.pop(); buzz(8);
+        if (!praised && dish.pz.length >= 6) { praised = true; Cat.show(pick(['Looks yummy!', 'Pizza time!'])); }
+      },
+      draw: function (c) { drawBoard(c); drawPizzaOnly(c, dish, ZX, ZY, 1); }
+    };
+  }
+
+  /* ---- Step 5: bake it in the oven ---- */
+  function OvenScene() {
+    var OX2 = 320, OY2 = 230, phase = 'wait', t = 0, slide = 0, BAKE = 5, sizzle = Sound.loop('sizzle');
+    var MOUTH = { x: OX2, y: OY2 + 60 };
+    function drawOven(c, glow) {
+      // a round brick pizza oven with a fire inside
+      c.beginPath(); c.moveTo(OX2 - 230, OY2 + 120); c.bezierCurveTo(OX2 - 240, OY2 - 160, OX2 + 240, OY2 - 160, OX2 + 230, OY2 + 120); c.closePath();
+      c.fillStyle = '#D9774F'; c.fill(); ink(c, 5);
+      c.save(); c.clip(); c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = 3;
+      for (var y = OY2 - 120; y < OY2 + 120; y += 30) { c.beginPath(); c.moveTo(OX2 - 240, y); c.lineTo(OX2 + 240, y); c.stroke(); for (var x = OX2 - 240 + ((y / 30) % 2) * 30; x < OX2 + 240; x += 60) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 30); c.stroke(); } }
+      c.restore();
+      rr(c, OX2 - 260, OY2 + 110, 520, 30, 10); c.fillStyle = '#B8B2C4'; c.fill(); ink(c, 4);
+      // the opening
+      c.beginPath(); c.moveTo(OX2 - 150, OY2 + 110); c.lineTo(OX2 - 150, OY2 + 20); c.bezierCurveTo(OX2 - 150, OY2 - 80, OX2 + 150, OY2 - 80, OX2 + 150, OY2 + 20); c.lineTo(OX2 + 150, OY2 + 110); c.closePath();
+      var g = c.createRadialGradient(OX2, OY2 + 80, 10, OX2, OY2 + 40, 170);
+      g.addColorStop(0, glow ? '#FFD34D' : '#7A3B2A'); g.addColorStop(0.5, glow ? '#FF8A3D' : '#4A2620'); g.addColorStop(1, '#2A1A1E');
+      c.fillStyle = g; c.fill(); ink(c, 5);
+      // flames at the back
+      var fl = performance.now() / 120;
+      [[-90, 1], [-50, 1.3], [-10, 0.9], [60, 1.2], [100, 0.8]].forEach(function (f, i) {
+        var h = (34 + Math.sin(fl + i * 1.7) * 10) * f[1];
+        c.beginPath(); c.moveTo(OX2 + f[0] - 16, OY2 + 60); c.quadraticCurveTo(OX2 + f[0] - 14, OY2 + 60 - h * 0.7, OX2 + f[0], OY2 + 60 - h); c.quadraticCurveTo(OX2 + f[0] + 14, OY2 + 60 - h * 0.7, OX2 + f[0] + 16, OY2 + 60); c.closePath();
+        c.fillStyle = i % 2 ? '#FFC93C' : '#FF6B57'; c.fill();
+      });
+      // chimney
+      rr(c, OX2 + 70, OY2 - 160, 50, 60, 6); c.fillStyle = '#B8B2C4'; c.fill(); ink(c, 4);
+    }
+    return {
+      enter: function () { say('Tap the pizza to bake it!'); },
+      leave: function () { sizzle.stop(); },
+      hint: function (k) { if (phase === 'wait') return { x: ZX, y: ZY + 40, press: (k % 1.2) < 0.6 }; if (phase === 'ready') return { x: MOUTH.x, y: MOUTH.y + 20, press: (k % 1.2) < 0.6 }; return null; },
+      down: function (p) {
+        if (phase === 'wait' && onPizza({ x: p.x, y: p.y - 20 }, -40)) { phase = 'in'; slide = 0; Sound.whoosh(); }
+        else if (phase === 'ready' && Math.abs(p.x - MOUTH.x) < 180 && Math.abs(p.y - MOUTH.y) < 120) { phase = 'out'; slide = 0; Sound.whoosh(); }
+      },
+      update: function (dt) {
+        sizzle.set(phase === 'bake' || phase === 'ready' ? 0.9 : 0);
+        if (phase === 'in') { slide = Math.min(1, slide + dt * 1.8); if (slide >= 1) { phase = 'bake'; t = 0; say('Baking...'); Sound.plop(); } }
+        if (phase === 'bake') {
+          t += dt; dish.bake = Math.round(Math.min(1, t / BAKE) * 100) / 100;
+          if (Math.random() < dt * 4) burst(MOUTH.x + (Math.random() - 0.5) * 120, MOUTH.y - 30, 1, { colors: ['rgba(255,201,60,.8)'], shape: 'dot', size: 8, speed: 30, gravity: -120, life: 0.8 });
+          if (t >= BAKE) { phase = 'ready'; dish.bake = 1; Sound.chime(); Cat.show('Smells yummy!'); say('Golden! Tap to take it out'); }
+        }
+        if (phase === 'out') {
+          slide = Math.min(1, slide + dt * 1.8);
+          if (slide >= 1) {
+            phase = 'done'; Sound.plop(); buzz(20);
+            burst(ZX, ZY, 30, { colors: ['#FFC93C', '#FF7EB6', '#7BD389', '#FFFFFF'], speed: 300, life: 1 });
+            say('Hot pizza!'); showNext('Done', finishDish);
+          }
+        }
+      },
+      draw: function (c) {
+        var inside = phase === 'bake' || phase === 'ready';
+        drawOven(c, inside || phase === 'in' || phase === 'out');
+        // the pizza travels between the plate and the oven, getting smaller as it goes in
+        if (phase === 'wait' || phase === 'done') drawPizzaScene(c, dish);
+        else {
+          var k = phase === 'in' ? easeOut(slide) : phase === 'out' ? 1 - easeOut(slide) : 1;
+          drawPizzaOnly(c, dish, lerp(ZX, MOUTH.x, k), lerp(ZY, MOUTH.y + 30, k) - Math.sin(k * Math.PI) * 60, lerp(1, 0.5, k));
+        }
+        if (phase === 'bake') {
+          c.beginPath(); c.arc(OX2 - 190, OY2 - 120, 30, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(t / BAKE, 0, 1)); c.strokeStyle = '#FFC93C'; c.lineWidth = 12; c.lineCap = 'round'; c.stroke();
+          c.beginPath(); c.arc(OX2 - 190, OY2 - 120, 30, 0, TAU); c.strokeStyle = 'rgba(42,35,64,.15)'; c.lineWidth = 12; c.stroke();
+        }
+      }
+    };
+  }
+
   /* ---------- finishing ---------- */
   function snapshot() {
     var out = document.createElement('canvas'); out.width = 360; out.height = 360;
@@ -1809,6 +2084,22 @@
     ],
     draw: function (c, d) { drawBurgerScene(c, d); }, frame: { x: 320, y: 410, span: 540 }
   };
+  ICONS.dough = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="9" ry="4" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><rect x="3" y="6" width="18" height="5" rx="2.5" fill="#F1C88E" stroke="#2A2340" stroke-width="1.6"/></svg>';
+  ICONS.sauce = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="10" ry="6" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="12" cy="13.5" rx="7" ry="3.8" fill="#E8362B"/></svg>';
+  ICONS.toppings = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="10" ry="6" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="12" cy="13.5" rx="7" ry="3.8" fill="#FFD86A"/><circle cx="9" cy="13" r="1.8" fill="#D83A3A"/><circle cx="14" cy="12" r="1.8" fill="#D83A3A"/><circle cx="13" cy="15.5" r="1.4" fill="#4FB868"/></svg>';
+  ICONS.oven = '<svg viewBox="0 0 24 24"><path d="M2 20 Q2 3 12 3 Q22 3 22 20 Z" fill="#D9774F" stroke="#2A2340" stroke-width="1.8"/><path d="M7 20 V14 Q12 7 17 14 V20 Z" fill="#FF8A3D" stroke="#2A2340" stroke-width="1.6"/></svg>';
+  RECIPE_DEFS.pizza = {
+    id: 'pizza', name: 'Pizza', title: 'Pizza!',
+    fresh: { plate: 0, sauce: 0, cheese: 0, bake: 0, pz: [] },
+    steps: [
+      { name: 'Dough', icon: ICONS.dough, make: function () { return DoughScene(); } },
+      { name: 'Sauce', icon: ICONS.sauce, make: function () { return SauceScene(); } },
+      { name: 'Chop', icon: ICONS.chop, make: function () { return ChopScene(['mushroom', 'capsicum', 'pineapple'], nextStep); } },
+      { name: 'Toppings', icon: ICONS.toppings, make: function () { return ToppingScene(); } },
+      { name: 'Bake', icon: ICONS.oven, make: function () { return OvenScene(); } }
+    ],
+    draw: function (c, d) { drawPizzaScene(c, d); }, frame: { x: 320, y: 440, span: 560 }
+  };
   var recipe = RECIPE_DEFS.handroll;
   var scene = null, stepIdx = -1, hintT = 0, idle = 0, pointerId = null;
 
@@ -1852,13 +2143,15 @@
   var RECIPES = [
     { id: 'handroll', name: 'Sushi Handroll', ready: true },
     { id: 'pancakes', name: 'Pancakes', ready: true },
-    { id: 'burger', name: 'Burger', ready: true }
+    { id: 'burger', name: 'Burger', ready: true },
+    { id: 'pizza', name: 'Pizza', ready: true }
   ];
   var RECIPE_ART = {
     handroll: '<svg viewBox="10 8 220 147"><ellipse cx="120" cy="122" rx="100" ry="22" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="120" cy="119" rx="74" ry="12" fill="#FFE3EC"/><g transform="rotate(-14 120 90)"><path d="M168 62 H70 A17 28 0 0 0 70 118 H168 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="62" y="69" width="100" height="8" rx="4" fill="#3D6450"/><ellipse cx="168" cy="90" rx="17.5" ry="28" fill="#2E4A3A" stroke="#2A2340" stroke-width="4"/><ellipse cx="168" cy="90" rx="14.5" ry="23.5" fill="#fff"/><rect x="160" y="77" width="11" height="9" rx="2" fill="#FF8A5B" stroke="#2A2340" stroke-width="2"/><rect x="168" y="88" width="7" height="8" rx="1.5" fill="#4FAE5E" stroke="#2A2340" stroke-width="2"/><ellipse cx="164" cy="98" rx="6" ry="4" fill="#C8E26F" stroke="#2A2340" stroke-width="2"/></g><ellipse cx="178" cy="125" rx="18" ry="7" fill="#fff" stroke="#2A2340" stroke-width="3"/><ellipse cx="178" cy="124.5" rx="11.5" ry="4" fill="#5A2A12"/></svg>',
     pancakes: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="102" rx="78" ry="15" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="3.5"><path d="M36 86 V94 A54 13 0 0 0 144 94 V86 Z" fill="#D38A3E"/><ellipse cx="90" cy="86" rx="54" ry="13" fill="#DE9A48"/><path d="M34 72 V80 A54 13 0 0 0 142 80 V72 Z" fill="#D38A3E"/><ellipse cx="88" cy="72" rx="54" ry="13" fill="#E3A552"/><path d="M38 58 V66 A54 13 0 0 0 146 66 V58 Z" fill="#D38A3E"/><ellipse cx="92" cy="58" rx="54" ry="13" fill="#F2C06C"/></g><path d="M62 56 Q76 64 92 56 Q108 50 120 60" fill="none" stroke="#A85814" stroke-width="6" stroke-linecap="round"/><path d="M130 62 V74" stroke="#A85814" stroke-width="5" stroke-linecap="round"/><path d="M80 52 L80 47 L94 43 L104 47 L104 52 L94 56 Z" fill="#FFF3A6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M66 60 Q58 54 62 50 Q66 48 70 50 Q74 54 66 60 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="2"/><path d="M114 58 Q106 52 110 48 Q114 46 118 48 Q122 52 114 58 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="2"/></svg>',
     omurice: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 90 Q30 36 90 34 Q150 36 150 90 Z" fill="#FFD84D" stroke="#2A2340" stroke-width="4"/><path d="M60 60 Q75 50 90 62 Q105 50 120 60" fill="none" stroke="#FF4D3D" stroke-width="6" stroke-linecap="round"/></svg>',
     burger: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="104" rx="80" ry="13" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M40 86 H140 Q144 98 128 100 H52 Q36 98 40 86 Z" fill="#E3A057" stroke="#2A2340" stroke-width="3.5"/><path d="M38 80 L142 80 Q150 90 138 88 L42 88 Q30 90 38 80 Z" fill="#6A3A1E" stroke="#2A2340" stroke-width="3.5"/><path d="M36 76 H144 V80 H136 L132 90 L128 80 H52 L47 92 L42 80 H36 Z" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><rect x="44" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><rect x="102" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><path d="M34 66 Q40 60 46 66 Q52 60 58 66 Q64 60 70 66 Q76 60 82 66 Q88 60 94 66 Q100 60 106 66 Q112 60 118 66 Q124 60 130 66 Q136 60 146 66 L146 70 L34 70 Z" fill="#7BD389" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M36 62 Q34 22 90 20 Q146 22 144 62 Z" fill="#EBA65A" stroke="#2A2340" stroke-width="4"/><g fill="#FFF4D6"><ellipse cx="70" cy="36" rx="3" ry="2"/><ellipse cx="92" cy="30" rx="3" ry="2"/><ellipse cx="112" cy="38" rx="3" ry="2"/><ellipse cx="80" cy="48" rx="3" ry="2"/><ellipse cx="104" cy="50" rx="3" ry="2"/></g></svg>',
+    pizza: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="80" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="80" rx="72" ry="28" fill="#C98A3E" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="74" rx="72" ry="28" fill="#E3A050" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="73" rx="60" ry="21" fill="#E8362B"/><path d="M36 72 Q42 56 62 56 Q80 50 98 55 Q122 52 138 62 Q148 74 136 84 Q112 94 88 92 Q58 94 42 84 Z" fill="#FFD86A"/><g stroke="#2A2340" stroke-width="2.5"><ellipse cx="66" cy="68" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="106" cy="64" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="92" cy="82" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="124" cy="76" rx="9" ry="5" fill="#4FB868"/><ellipse cx="56" cy="80" rx="9" ry="5" fill="#4FB868"/></g></svg>',
     brigadeiros: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="100" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="4"><circle cx="60" cy="74" r="22" fill="#6B3A22"/><circle cx="120" cy="74" r="22" fill="#6B3A22"/><circle cx="90" cy="56" r="22" fill="#7A4428"/></g></svg>'
   };
 
@@ -2037,5 +2330,5 @@
   requestAnimationFrame(frame);
 
   /* test hook for automated checks */
-  window.__kitchen = { goStep: function (i, id) { if (id) recipe = RECIPE_DEFS[id]; if (!dish) dish = newDish(); showScreen('play'); goStep(i); }, finish: function () { finishDish(); } };
+  window.__kitchen = { goStep: function (i, id) { if (id) recipe = RECIPE_DEFS[id]; if (!dish || id) dish = newDish(); showScreen('play'); goStep(i); }, finish: function () { finishDish(); } };
 })();
