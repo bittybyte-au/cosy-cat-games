@@ -19,7 +19,7 @@ canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
 
 /* the speech bubble for short instructions ("Tuck them in!") */
 .say {
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink);
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 10px 22px; box-shadow: 0 4px 0 var(--ink), var(--soft);
   font: 800 clamp(1.1rem, 4.4vw, 1.45rem)/1.15 var(--body); text-align: center; max-width: calc(100% - 32px);
 }
 
@@ -42,11 +42,11 @@ canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
 .card .faces img:nth-child(5) { animation-delay: .4s; }
 .card .faces img:nth-child(6) { animation-delay: .5s; }
 .big {
-  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink);
+  min-height: 64px; padding: 0 30px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass); box-shadow: 0 5px 0 var(--ink), var(--soft);
   font: 800 1.45rem var(--display); cursor: pointer; display: flex; align-items: center; gap: 8px;
 }
 .big.again { background: var(--sun); }
-.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.big:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .big svg { width: 26px; height: 26px; }
 @keyframes present { from { transform: scale(.5) rotate(-8deg); opacity: 0; } }
 @keyframes hop { to { transform: translateY(-8px); } }

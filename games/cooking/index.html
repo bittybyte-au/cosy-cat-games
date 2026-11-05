@@ -50,13 +50,13 @@ body { background: var(--wall); }
 .say { max-width: 100%; font-size: clamp(1.15rem, 4.6vw, 1.5rem); }
 .say:empty { display: none; }
 .undo { flex: none; }
-.undo:disabled { opacity: .35; cursor: default; box-shadow: 0 2px 0 var(--ink); }
+.undo:disabled { opacity: .35; cursor: default; box-shadow: 0 2px 0 var(--ink), var(--soft); }
 .next {
   min-height: 64px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--ink); background: var(--grass);
-  font: 800 1.4rem var(--display); box-shadow: 0 5px 0 var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; flex: none;
+  font: 800 1.4rem var(--display); box-shadow: 0 5px 0 var(--ink), var(--soft); cursor: pointer; display: flex; align-items: center; gap: 8px; flex: none;
   animation: next-bob 1.2s ease-in-out infinite;
 }
-.next:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); animation: none; }
+.next:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); animation: none; }
 .next svg { width: 26px; height: 26px; }
 @keyframes next-bob { 50% { transform: translateY(-4px) scale(1.04); } }
 .tools {
@@ -65,12 +65,12 @@ body { background: var(--wall); }
 .tools::-webkit-scrollbar { display: none; }
 .tool {
   flex: none; width: 70px; height: 76px; border-radius: 20px; border: 3px solid var(--ink); background: var(--cream);
-  box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  box-shadow: 0 4px 0 var(--ink), var(--soft); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font: 800 .78rem var(--body); padding: 4px 2px;
 }
 .tool svg { width: 40px; height: 40px; }
-.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 8px 0 var(--ink); }
-.tool:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 8px 0 var(--ink), var(--soft); }
+.tool:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 /* Kawaii chef cat */
 .cat {
   position: fixed; z-index: 8; right: max(10px, env(safe-area-inset-right, 0px)); bottom: calc(var(--tray-h) - 30px + env(safe-area-inset-bottom, 0px));
@@ -81,7 +81,7 @@ body { background: var(--wall); }
 .cat svg { width: 150px; height: auto; display: block; }
 .cat .bubble {
   position: absolute; right: 118px; top: -6px; background: #fff; border: 3px solid var(--ink); border-radius: 22px;
-  padding: 8px 14px; font: 800 1.25rem/1.1 var(--display); white-space: nowrap; box-shadow: 0 4px 0 var(--ink);
+  padding: 8px 14px; font: 800 1.25rem/1.1 var(--display); white-space: nowrap; box-shadow: 0 4px 0 var(--ink), var(--soft);
 }
 .cat .bubble::after {
   content: ""; position: absolute; right: -14px; top: 22px; border: 8px solid transparent; border-left: 12px solid var(--ink);
@@ -100,16 +100,16 @@ body { background: var(--wall); }
 .recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 24px 16px; padding-top: 8px; }
 .recipe {
   position: relative; border: 4px solid var(--ink); border-radius: 26px; background: #fff; padding: 12px 12px 16px; text-align: center;
-  box-shadow: 0 6px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  box-shadow: 0 6px 0 var(--ink), var(--soft); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
   font: 800 1.25rem var(--display); color: var(--ink);
 }
-.recipe:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.recipe:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink), var(--soft); }
 .recipe svg { width: 100%; max-width: 180px; height: auto; }
 .recipe.hero { background: #CFF0FF; }
 .recipe small { font: 800 .95rem var(--body); color: var(--muted); }
 .recipe .count {
   position: absolute; top: -14px; left: 12px; transform: rotate(-4deg); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px;
-  padding: 2px 12px; font: 800 .95rem var(--body); box-shadow: 0 3px 0 var(--ink);
+  padding: 2px 12px; font: 800 .95rem var(--body); box-shadow: 0 3px 0 var(--ink), var(--soft);
 }
 .recipe .step-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
 .recipe .step-icons i { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--cream); display: grid; place-items: center; }
@@ -129,7 +129,7 @@ body { background: var(--wall); }
 .book .entry { width: 100%; }
 .book .del {
   position: absolute; top: -10px; right: -10px; z-index: 1; height: 34px; min-width: 34px; padding: 0 7px; border-radius: 999px;
-  border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink); cursor: pointer;
+  border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink), var(--soft); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 4px; font: 800 .85rem var(--body);
   opacity: 0; transform: scale(.7); transition: opacity .15s ease, transform .15s ease, background .15s ease;
 }
@@ -142,9 +142,9 @@ body { background: var(--wall); }
 @media (hover: none) {
   .book .del { opacity: .9; transform: scale(.85); }
 }
-.book figure { margin: 0; background: #fff; border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 4px 0 var(--ink); transition: transform .12s ease; }
+.book figure { margin: 0; background: #fff; border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; box-shadow: 0 4px 0 var(--ink), var(--soft); transition: transform .12s ease; }
 .book .entry:hover figure { transform: translateY(-2px) rotate(-1deg); }
-.book .entry:active figure { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.book .entry:active figure { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 /* Cookbook viewer */
 .viewer {
   position: fixed; inset: 0; z-index: 9; background: rgba(42, 35, 64, .6); display: grid; place-items: center;
@@ -152,7 +152,7 @@ body { background: var(--wall); }
   overflow-y: auto;
 }
 .viewcard {
-  position: relative; width: min(520px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink);
+  position: relative; width: min(520px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px; box-shadow: 0 8px 0 var(--ink), var(--soft);
   padding: 22px 18px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
 }
 .viewcard h2 { margin: 0; font: 800 clamp(1.6rem, 6vw, 2.1rem)/1 var(--display); }
@@ -168,7 +168,7 @@ body { background: var(--wall); }
 .finish .inner { align-items: center; text-align: center; }
 .finish .dish {
   width: min(78vw, 46vh, 420px); aspect-ratio: 1; border-radius: 50%; border: 5px solid var(--ink); overflow: hidden; background: #fff;
-  box-shadow: 0 8px 0 var(--ink); animation: present .7s cubic-bezier(.3, 1.6, .5, 1);
+  box-shadow: 0 8px 0 var(--ink), var(--soft); animation: present .7s cubic-bezier(.3, 1.6, .5, 1);
 }
 .finish .dish img { width: 100%; height: 100%; display: block; }
 .finish p { margin: 0; font: 800 1.2rem var(--body); }

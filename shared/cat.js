@@ -41,8 +41,9 @@
     if (build === 'fluffy') return { cx: 0, cy: 6, rx: 42, ry: 35 };
     return { cx: 0, cy: 6, rx: 44, ry: 37 };
   }
-  function headPath(build) {
+  function headPath(build, dx, dy) {
     var g = headGeom(build);
+    if (dx || dy) g = { cx: g.cx + (dx || 0), cy: g.cy + (dy || 0), rx: g.rx, ry: g.ry };
     if (build !== 'fluffy') return ell(g.cx, g.cy, g.rx, g.ry);
     var d = '', k = 16;
     for (var i = 0; i <= k; i++) {
@@ -55,7 +56,10 @@
   }
   /* the one ear shape: soft and rounded at the tip. side -1 left, 1 right; w stretches it for wider heads */
   function earPath(side, w) { var s = side * (w || 1); return 'M' + n(s * 40) + ' -2Q' + n(s * 44) + ' -36 ' + n(s * 36) + ' -44Q' + n(s * 24) + ' -38 ' + n(s * 8) + ' -30Z'; }
-  function earInner(side, w) { var s = side * (w || 1); return 'M' + n(s * 33) + ' -12L' + n(s * 34) + ' -34L' + n(s * 18) + ' -27Z'; }
+  function earInner(side, w) { var s = side * (w || 1); return 'M' + n(s * 32) + ' -13Q' + n(s * 33) + ' -28 ' + n(s * 32) + ' -32Q' + n(s * 25) + ' -30 ' + n(s * 19) + ' -26Z'; }
+  /* soft shading, the same on every cat: a darker crescent along the lower right edge, drawn inside the outline.
+     A shape with an offset copy of itself (even-odd) leaves just the crescent; clipped to the shape it can't spill */
+  function shadeFor(fill) { return isDark(fill) ? 'rgba(0,0,0,.22)' : 'rgba(42,35,64,.11)'; }
 
   /* ---------- build the list of shapes ----------
      each shape: { d, fill, stroke, lw, alpha, tf: [x, y, deg, scale], clip: true (clipped to the head) } */
@@ -98,6 +102,7 @@
     // tuxedo: a white blaze down the face, a white muzzle and chin
     if (markings === 'tuxedo') S.push({ d: 'M0 -26Q-5 -10 -9 2Q-24 6 -24 20Q-20 40 0 44Q20 40 24 20Q24 6 9 2Q5 -10 0 -26Z', fill: '#FFFFFF', clip: true });
     if (markings === 'patch') S.push({ d: 'M14 -32Q40 -30 46 0Q30 -6 20 -10Q12 -20 14 -32Z', fill: patch, clip: true });
+    if (!plain) S.push({ d: head + headPath(build, -5, -7), fill: shadeFor(fill), rule: 'evenodd', clip: true });
     S.push({ d: head, stroke: INK, lw: 5 });
     // a tuxedo cat's eyes and whiskers sit on dark fur; its nose and mouth on the white muzzle
     var whisker = line;
@@ -131,8 +136,9 @@
     if (hat === 'chef') {
       var t = g.cy - g.ry; // top of the head
       // outline everything first, then fill, so the puffs read as one soft shape
-      var hatD = 'M-18 ' + (t + 6) + 'L18 ' + (t + 6) + 'L18 ' + (t - 8) + 'L-18 ' + (t - 8) + 'Z' + circ(-14, t - 14, 12) + circ(14, t - 14, 12) + circ(0, t - 22, 14);
-      S.push({ d: hatD, stroke: INK, lw: 9 }, { d: hatD, fill: '#FFFFFF' }, { d: 'M-18 ' + (t - 4) + 'L18 ' + (t - 4), stroke: '#E9E3F2', lw: 2 });
+      var band = 'M-23 ' + (t + 8) + 'L23 ' + (t + 8) + 'L23 ' + (t - 8) + 'L-23 ' + (t - 8) + 'Z';
+      var hatD = band + circ(-16, t - 14, 13) + circ(16, t - 14, 13) + circ(0, t - 22, 14);
+      S.push({ d: hatD, stroke: INK, lw: 9 }, { d: hatD, fill: '#FFFFFF' }, { d: band, fill: '#F1ECF7' }, { d: band, stroke: INK, lw: 4.5 });
     }
     return { shapes: S, head: head, fill: fill, inner: inner, line: line };
   }
@@ -143,7 +149,7 @@
     var paw = function (x, y) { return [{ d: ell(x, y, 14, 15), fill: fill, stroke: INK, lw: 4 }, { d: circ(x, y + 3, 4) + circ(x - 6, y - 4, 2.2) + circ(x, y - 7, 2.2) + circ(x + 6, y - 4, 2.2), fill: '#FFB3C7' }]; };
     if (pose === 'sit' || pose === 'wave') {
       back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: '#FFB26B', lw: 6 });
-      back.push({ d: ell(0, 64, 38, 26), fill: fill, stroke: INK, lw: 5 });
+      back.push({ d: ell(0, 64, 38, 26), fill: fill }, { d: ell(0, 64, 38, 26) + ell(-5, 57, 38, 26), fill: shadeFor(fill), rule: 'evenodd', clipTo: ell(0, 64, 38, 26) }, { d: ell(0, 64, 38, 26), stroke: INK, lw: 5 });
       back.push({ d: ell(-14, 88, 11, 7) + ell(14, 88, 11, 7), fill: fill, stroke: INK, lw: 4 });
       if (pose === 'wave') front.push({ d: 'M28 70Q44 62 46 44', stroke: INK, lw: 16, wave: true }, { d: 'M28 70Q44 62 46 44', stroke: fill, lw: 8, wave: true }, { d: ell(47, 36, 12, 13), fill: fill, stroke: INK, lw: 4, wave: true }, { d: circ(47, 39, 3.6) + circ(41, 31, 2) + circ(47, 28, 2) + circ(53, 31, 2), fill: '#FFB3C7', wave: true });
     }
@@ -152,7 +158,7 @@
   }
 
   /* the picture's bounds in the 100-unit space, per pose */
-  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 128, 172], wave: [-66, -72, 128, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 176, 100] };
+  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 134, 172], wave: [-66, -72, 134, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 176, 100] };
 
   function allShapes(o) {
     var pose = o.pose || 'head';
@@ -160,14 +166,14 @@
     if (pose === 'lie') {
       // asleep: body and curled tail on the left, head resting on the right
       var f = c.fill;
-      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: '#FFB26B', lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f, stroke: INK, lw: 5 }];
+      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: '#FFB26B', lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f }, { d: ell(-20, 22, 46, 22) + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: ell(-20, 22, 46, 22) }, { d: ell(-20, 22, 46, 22), stroke: INK, lw: 5 }];
       var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [30, 2, 0, 0.78]; if (s.tf) t.tf2 = s.tf; return t; });
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
     var p = poseShapes(pose, c.fill);
     if (o.rays) {
-      var r = '';
-      for (var i = 0; i < 12; i++) { var a = (i / 12) * Math.PI * 2 + 0.26; if (Math.sin(a) < -0.55) continue; r += 'M' + n(Math.cos(a) * 54) + ' ' + n(6 + Math.sin(a) * 46) + 'L' + n(Math.cos(a) * 66) + ' ' + n(6 + Math.sin(a) * 58); }
+      var r = '', minSin = o.rays === 'down' ? 0.2 : -0.55;
+      for (var i = 0; i < 12; i++) { var a = (i / 12) * Math.PI * 2 + 0.26; if (Math.sin(a) < minSin) continue; r += 'M' + n(Math.cos(a) * 54) + ' ' + n(6 + Math.sin(a) * 46) + 'L' + n(Math.cos(a) * 66) + ' ' + n(6 + Math.sin(a) * 58); }
       p.back.unshift({ d: r, stroke: INK, lw: 5 });
     }
     return { list: p.back.concat(c.shapes, p.front), head: c.head };
@@ -178,12 +184,13 @@
   function tfAttr(tf) { if (!tf) return ''; return ' transform="translate(' + tf[0] + ' ' + tf[1] + ')' + (tf[2] ? ' rotate(' + tf[2] + ')' : '') + (tf[3] && tf[3] !== 1 ? ' scale(' + tf[3] + ')' : '') + '"'; }
   function shapeSVG(s, clipId) {
     var a = '<path d="' + s.d + '"';
-    a += ' fill="' + (s.fill || 'none') + '"';
+    a += ' fill="' + (s.fill || 'none') + '"' + (s.rule ? ' fill-rule="' + s.rule + '"' : '');
     if (s.stroke) a += ' stroke="' + s.stroke + '" stroke-width="' + s.lw + '" stroke-linecap="round" stroke-linejoin="round"';
     if (s.alpha) a += ' opacity="' + s.alpha + '"';
     a += '/>';
     if (s.tf2) a = '<g' + tfAttr(s.tf2) + '>' + a + '</g>';
     if (s.clip) a = '<g clip-path="url(#' + clipId + ')">' + a + '</g>';
+    if (s.clipTo) { var cid = clipId + 'b' + (++uid); a = '<clipPath id="' + cid + '"><path d="' + s.clipTo + '"/></clipPath><g clip-path="url(#' + cid + ')">' + a + '</g>'; }
     if (s.tf) a = '<g' + tfAttr(s.tf) + '>' + a + '</g>';
     return a;
   }
@@ -234,10 +241,11 @@
       c.save();
       applyTf(s.tf);
       if (s.clip) c.clip(path2d(r.head));
+      if (s.clipTo) c.clip(path2d(s.clipTo));
       applyTf(s.tf2);
       if (s.alpha) c.globalAlpha = s.alpha;
       var p = path2d(s.d);
-      if (s.fill) { c.fillStyle = s.fill === 'none' ? 'transparent' : s.fill; c.fill(p); }
+      if (s.fill) { c.fillStyle = s.fill === 'none' ? 'transparent' : s.fill; c.fill(p, s.rule || 'nonzero'); }
       if (s.stroke) { c.strokeStyle = s.stroke; c.lineWidth = Math.max(s.lw, s.lw > 2.5 ? minLw : minLw * 0.6); c.stroke(p); }
       c.restore();
     });
@@ -280,6 +288,6 @@
     INK: INK, PRESETS: PRESETS, GAME_ORDER: GAME_ORDER,
     svg: svg, g: g, draw: draw,
     earPath: earPath, earInner: earInner, shapes: function (o) { return allShapes(o || {}).list; },
-    isDark: isDark, shade: shade
+    isDark: isDark, shade: shade, shadeFor: shadeFor
   };
 })();

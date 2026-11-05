@@ -51,7 +51,7 @@ html { scroll-behavior: smooth; }
   border: 6px solid var(--ink); border-radius: 40px; padding: 26px 22px 30px; box-shadow: 0 12px 0 var(--ink), inset 0 0 0 8px #fff;
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
 }
-.mini { --tile: #FFB4A2; background: var(--tile); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 4px 0 var(--ink); padding: 8px 8px 10px; text-align: center; }
+.mini { --tile: #FFB4A2; background: var(--tile); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 4px 0 var(--ink), var(--soft); padding: 8px 8px 10px; text-align: center; }
 .mini svg { display: block; width: 100%; height: auto; }
 .mini b { display: block; font: 800 1.05rem/1.1 var(--display); margin-top: 2px; }
 .chef { position: absolute; width: 124px; left: -34px; top: -112px; transform: rotate(-7deg); z-index: 2; }
@@ -67,7 +67,7 @@ h2 { margin: 0 0 8px; font: 800 clamp(2rem, 4.6vw, 2.9rem)/1.05 var(--display); 
 /* the not-in-here stickers */
 .nope { list-style: none; margin: 34px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 18px 16px; }
 .nope li {
-  position: relative; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; box-shadow: 0 4px 0 var(--ink);
+  position: relative; padding: 10px 22px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; box-shadow: 0 4px 0 var(--ink), var(--soft);
   font: 800 clamp(1.15rem, 2.6vw, 1.5rem)/1.2 var(--display); color: var(--muted);
 }
 .nope li:nth-child(odd) { transform: rotate(-2deg); }
@@ -82,10 +82,12 @@ h2 { margin: 0 0 8px; font: 800 clamp(2rem, 4.6vw, 2.9rem)/1.05 var(--display); 
 .after { margin-top: 34px; font: 800 1.35rem/1.3 var(--display); }
 
 /* the games, as smaller tiles */
-.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 34px 16px; margin-top: 52px; }
-.games .tile { gap: 6px; border-radius: 28px; padding: 14px 16px 18px; box-shadow: 0 7px 0 var(--ink); }
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 54px 18px; margin-top: 52px; }
+.games .tile { gap: 6px; border-radius: 28px; padding: 14px 16px 18px; }
 .games .tile h3 { font-size: 1.45rem; }
 .games .tile p { font-weight: 700; }
+.games .tile .art { flex: none; height: 120px; }
+.games .tile .art svg { max-height: 100%; }
 .games .tile .ear { width: 50px; height: 37px; top: -36px; }
 
 /* grown-ups */
@@ -146,7 +148,7 @@ blockquote { margin: 0; font: 800 clamp(1.4rem, 3.2vw, 2rem)/1.3 var(--display);
     <div class="device" aria-hidden="true">
       <span class="chef" data-cat='{"preset":"chef","pose":"wave"}'></span>
       <div class="screen" id="screen"></div>
-      <span class="sun" data-cat='{"preset":"sun","rays":true}'></span>
+      <span class="sun" data-cat='{"preset":"sun","rays":"down"}'></span>
     </div>
   </div>
 

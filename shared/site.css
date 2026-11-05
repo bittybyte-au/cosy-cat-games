@@ -19,6 +19,8 @@
   --body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
   --gutter-l: max(16px, env(safe-area-inset-left, 0px));
   --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  /* the soft light every raised thing gets: a little shine along the top, a little shade along the bottom (shared/draw.js does the same in games) */
+  --soft: inset 0 3px 0 rgba(255, 255, 255, .45), inset 0 -5px 0 rgba(42, 35, 64, .08);
   color-scheme: light;
 }
 
@@ -53,60 +55,60 @@ p { margin: 0; }
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: 58px; padding: 0 24px; border-radius: 999px; border: 3px solid var(--ink);
   font: 800 1.15rem var(--body); color: var(--ink); background: var(--sun); cursor: pointer; text-decoration: none;
-  box-shadow: 0 4px 0 var(--ink);
+  box-shadow: 0 4px 0 var(--ink), var(--soft);
 }
-.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.btn:disabled { opacity: .45; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.btn:disabled { opacity: .45; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink), var(--soft); }
 .btn.go { background: var(--grass); }
 .btn.plain { background: #fff; }
 .btn.warn { background: var(--tomato); color: #fff; }
 /* the big "Try the games" button */
 .btn.big {
-  min-height: 68px; padding: 0 32px; border-width: 4px; font: 800 1.45rem/1 var(--display); box-shadow: 0 7px 0 var(--ink);
+  min-height: 68px; padding: 0 32px; border-width: 4px; font: 800 1.45rem/1 var(--display); box-shadow: 0 7px 0 var(--ink), var(--soft);
   transition: transform .12s ease, box-shadow .12s ease;
 }
-.btn.big:hover { transform: translateY(-2px); box-shadow: 0 9px 0 var(--ink); }
-.btn.big:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
+.btn.big:hover { transform: translateY(-2px); box-shadow: 0 9px 0 var(--ink), var(--soft); }
+.btn.big:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink), var(--soft); }
 .btn.big svg { width: 30px; height: 30px; }
 
 /* small rounded links: footers, top menus, Back */
 .pill {
   display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 18px;
   border: 3px solid var(--ink); border-radius: 999px; background: var(--cream); color: var(--ink);
-  box-shadow: 0 3px 0 var(--ink); font: 800 .95rem var(--body); text-decoration: none;
+  box-shadow: 0 3px 0 var(--ink), var(--soft); font: 800 .95rem var(--body); text-decoration: none;
 }
-.pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.pill:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .back { align-self: flex-start; min-height: 52px; font-size: 1rem; }
 
 /* round icon buttons (Home and sound in games, the house and close buttons on the games home) */
 .round {
   width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink); padding: 0;
-  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center;
+  background: var(--cream); box-shadow: 0 4px 0 var(--ink), var(--soft); cursor: pointer; display: grid; place-items: center;
   text-decoration: none; color: var(--ink);
 }
-.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .round svg { width: 30px; height: 30px; }
 .round.wide { width: auto; padding: 0 16px; border-radius: 999px; font: 800 1rem var(--body); gap: 6px; display: flex; align-items: center; }
 
 /* a cream rounded chip (the player and toddler switches) */
 .chip {
   display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink);
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink), var(--soft);
   font: 800 1rem var(--body); color: var(--ink); cursor: pointer;
 }
-.chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.chip:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 
 /* a tilted yellow label ("Free for a limited time") */
 .sticker {
   display: inline-block; padding: 8px 18px; transform: rotate(-3deg);
-  background: var(--sun); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  background: var(--sun); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink), var(--soft);
   font: 800 1.2rem/1.1 var(--display);
 }
 
 /* ---------- cards, panels and overlays ---------- */
 .card {
-  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink);
+  background: var(--cream); border: 4px solid var(--ink); border-radius: 28px; box-shadow: 0 8px 0 var(--ink), var(--soft);
   padding: 22px clamp(18px, 4vw, 30px); display: flex; flex-direction: column; gap: 22px;
 }
 .overlay {
@@ -116,7 +118,7 @@ p { margin: 0; }
 }
 .panel {
   width: min(560px, 100%); background: var(--cream); border: 4px solid var(--ink); border-radius: 30px;
-  box-shadow: 0 8px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 18px;
+  box-shadow: 0 8px 0 var(--ink), var(--soft); padding: 22px; display: flex; flex-direction: column; gap: 18px;
 }
 .panel h2 { margin: 0; font: 800 2rem/1.05 var(--display); text-align: center; text-wrap: balance; }
 
@@ -132,11 +134,11 @@ textarea.field { min-height: 150px; resize: vertical; }
 .tile {
   --tile: #FFB4A2; position: relative; display: flex; flex-direction: column; gap: 8px;
   background: var(--tile); color: var(--ink); text-decoration: none;
-  border: 4px solid var(--ink); border-radius: 30px; padding: 16px 18px 20px; box-shadow: 0 8px 0 var(--ink);
+  border: 4px solid var(--ink); border-radius: 30px; padding: 16px 18px 20px; box-shadow: 0 8px 0 var(--ink), inset 0 4px 0 rgba(255, 255, 255, .4), inset 0 -8px 0 rgba(42, 35, 64, .07);
 }
 a.tile { transition: transform .15s ease, box-shadow .15s ease; }
-a.tile:hover { transform: translateY(-3px) rotate(-.6deg); box-shadow: 0 11px 0 var(--ink); }
-a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
+a.tile:hover { transform: translateY(-3px) rotate(-.6deg); box-shadow: 0 11px 0 var(--ink), inset 0 4px 0 rgba(255, 255, 255, .4), inset 0 -8px 0 rgba(42, 35, 64, .07); }
+a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink), inset 0 4px 0 rgba(255, 255, 255, .4), inset 0 -8px 0 rgba(42, 35, 64, .07); }
 .tile .art { flex: 1; display: grid; place-items: center; }
 .tile .art svg { display: block; width: 100%; max-width: 230px; height: auto; }
 .tile h2, .tile h3 { margin: 0; font: 800 1.9rem/1 var(--display); }
@@ -168,11 +170,11 @@ a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
 /* ---------- "make it an app" helper (shared/install.js) ---------- */
 .gg-install {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  background: var(--cream); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 4px 0 var(--ink);
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 4px 0 var(--ink), var(--soft);
   padding: 10px 12px 10px 14px; font: 800 1rem var(--body);
 }
 .gg-install .gi-text { flex: 1 1 180px; min-width: 0; }
-.gg-install .btn { min-height: 48px; padding: 0 20px; font-size: 1rem; box-shadow: 0 3px 0 var(--ink); }
+.gg-install .btn { min-height: 48px; padding: 0 20px; font-size: 1rem; box-shadow: 0 3px 0 var(--ink), var(--soft); }
 .gi-x { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 3px solid var(--ink); background: #fff; font: 800 1.1rem/1 var(--body); color: var(--ink); cursor: pointer; }
 .gi-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; counter-reset: s; font-size: 1.05rem; line-height: 1.4; }
 .gi-steps li { display: flex; align-items: center; gap: 12px; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 10px 12px; counter-increment: s; }
