@@ -24,16 +24,16 @@ body { background: #CDEBC2; }
   display: flex; gap: 28px; justify-content: center;
 }
 .light {
-  width: 96px; height: 96px; border-radius: 50%; border: 5px solid var(--ink); box-shadow: 0 6px 0 var(--ink); cursor: pointer; padding: 0;
+  width: 96px; height: 96px; border-radius: 50%; border: 5px solid var(--ink); box-shadow: 0 6px 0 var(--ink), var(--soft); cursor: pointer; padding: 0;
   display: grid; place-items: center; opacity: .55;
 }
 .light svg { width: 60px; height: 60px; }
 .light.stop { background: #FF5A5F; }
 .light.go { background: #3FC46A; }
-.light[aria-pressed="true"] { opacity: 1; transform: translateY(-3px); box-shadow: 0 9px 0 var(--ink), 0 0 0 7px rgba(255,255,255,.8); }
+.light[aria-pressed="true"] { opacity: 1; transform: translateY(-3px); box-shadow: 0 9px 0 var(--ink), 0 0 0 7px rgba(255,255,255,.8), var(--soft); }
 .light.nudge:not([aria-pressed="true"]) { animation: nudge 1.1s ease-in-out infinite; opacity: .9; }
 @keyframes nudge { 0%, 100% { transform: none; } 50% { transform: translateY(-7px) scale(1.06); } }
-.light:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.light:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink), var(--soft); }
 @media (max-width: 420px) { .light { width: 84px; height: 84px; } .light svg { width: 52px; height: 52px; } }
 @media (prefers-reduced-motion: reduce) { .light.nudge:not([aria-pressed="true"]) { animation: none; outline: 5px dashed var(--sun); outline-offset: 4px; } }
 </style>
@@ -51,7 +51,6 @@ body { background: #CDEBC2; }
 
 <div class="controls" id="controls">
   <button class="light stop" id="stopBtn" type="button" aria-label="Stop the cars: kittens cross" aria-pressed="false">
-    <svg viewBox="0 0 60 60"><path d="M22 46 V22 Q22 18 25.5 18 Q29 18 29 22 V16 Q29 12 32.5 12 Q36 12 36 16 V20 Q36 16 39.5 16 Q43 16 43 20 V36 Q43 50 31 50 Q24 50 20 44 L12 34 Q10 30 13.5 28.5 Q16.5 27.5 18.5 30 Z" fill="#fff" stroke="#2A2340" stroke-width="3.2" stroke-linejoin="round"/></svg>
   </button>
   <button class="light go" id="goBtn" type="button" aria-label="Let the cars go" aria-pressed="true">
     <svg viewBox="0 0 60 60"><path d="M8 38 V30 L16 28 L22 18 H38 L46 28 L52 30 V38 Z" fill="#fff" stroke="#2A2340" stroke-width="3.2" stroke-linejoin="round"/><path d="M24 21 H36 L41 28 H20 Z" fill="#BFE6FF" stroke="#2A2340" stroke-width="2.4" stroke-linejoin="round"/><circle cx="19" cy="39" r="6" fill="#3D3650" stroke="#2A2340" stroke-width="2.6"/><circle cx="41" cy="39" r="6" fill="#3D3650" stroke="#2A2340" stroke-width="2.6"/></svg>
@@ -60,6 +59,7 @@ body { background: #CDEBC2; }
 
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

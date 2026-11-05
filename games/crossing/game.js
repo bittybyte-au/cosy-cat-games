@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -16,14 +16,19 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  var rr = D.rr, ink = D.ink;
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
   function fillInk(c, col, w) { c.fillStyle = col; c.fill(); ink(c, w || 4); }
+
+  /* the STOP picture: a cat's paw (four toe beans and a round pad), in a 60-unit box. One drawing for the
+     button and the lollipop sign. */
+  var PAW = ['M30 30C39 30 46 38 45 45C44 51 37 51 30 49C23 51 16 51 15 45C14 38 21 30 30 30Z',
+    'M10.5 27a5.5 6.5 0 1 0 11 0a5.5 6.5 0 1 0 -11 0Z', 'M19 17a6 7 0 1 0 12 0a6 7 0 1 0 -12 0Z',
+    'M29 17a6 7 0 1 0 12 0a6 7 0 1 0 -12 0Z', 'M38.5 27a5.5 6.5 0 1 0 11 0a5.5 6.5 0 1 0 -11 0Z'];
+  var PAW2D = PAW.map(function (d) { return new Path2D(d); });
+  $('stopBtn').innerHTML = '<svg viewBox="0 0 60 60">' + PAW.map(function (d, i) {
+    return '<path d="' + d + '" fill="#fff" stroke="' + INK + '" stroke-width="3.2" stroke-linejoin="round"/>' + (i ? '' : '<path d="M30 36C36 36 40 41 39.5 44.5C39 47 35 47 30 46C25 47 21 47 20.5 44.5C20 41 24 36 30 36Z" fill="#FFB3C7"/>');
+  }).join('') + '</svg>';
 
   var P = (function () { var p = {}; try { p = GG.getProgress('crossing') || {}; } catch (e) {} if (typeof p.crossed !== 'number') p.crossed = 0; return p; })();
   var saveT = 0;
@@ -160,8 +165,9 @@
     c.fillStyle = '#9BD486'; c.fillRect(0, R.bot + 30, W, H - R.bot - 30);
     [[0.12, 0.12], [0.85, 0.08], [0.3, 0.2], [0.72, 0.22]].forEach(function (q) {
       var x = W * q[0], y = (R.top - 30) * (0.3 + q[1]);
-      c.beginPath(); c.moveTo(x - 6, y + 40); c.lineTo(x + 6, y + 40); c.lineTo(x + 5, y); c.lineTo(x - 5, y); c.closePath(); fillInk(c, '#A86B3C', 3);
-      circle(c, x, y - 10, 34); fillInk(c, '#5CCB75', 4);
+      D.shadow(c, x, y + 40, 22, 6);
+      c.beginPath(); c.moveTo(x - 6, y + 40); c.lineTo(x + 6, y + 40); c.lineTo(x + 5, y); c.lineTo(x - 5, y); c.closePath(); fillInk(c, '#A86B3C', D.LW.fine);
+      D.shape(c, D.ellPath(x, y - 10, 34, 34), '#5CCB75', { lw: D.LW.mid, depth: 8, shine: [x - 12, y - 26, 10, 6, -0.5, 0.35] });
     });
     // pavements
     c.fillStyle = '#E3DDEB'; c.fillRect(0, R.top - 30, W, 30); c.fillRect(0, R.bot, W, 30);
@@ -178,33 +184,46 @@
   function drawCar(c, car) {
     c.save(); c.translate(car.x, car.y); c.scale(car.dir, 1);
     var L = car.len, h = 54;
-    c.beginPath(); c.ellipse(0, h * 0.42, L * 0.5, 9, 0, 0, TAU); c.fillStyle = 'rgba(0,0,0,.25)'; c.fill();
-    // body
-    c.beginPath(); c.moveTo(-L / 2, h * 0.3); c.lineTo(-L / 2, -h * 0.05); c.quadraticCurveTo(-L / 2, -h * 0.2, -L * 0.36, -h * 0.22); c.lineTo(-L * 0.2, -h * 0.62); c.lineTo(L * 0.18, -h * 0.62); c.lineTo(L * 0.34, -h * 0.22); c.lineTo(L * 0.46, -h * 0.18); c.quadraticCurveTo(L / 2, -h * 0.1, L / 2, h * 0.05); c.lineTo(L / 2, h * 0.3); c.closePath();
-    fillInk(c, car.col, 4);
-    // window and the driver
-    c.beginPath(); c.moveTo(-L * 0.16, -h * 0.55); c.lineTo(L * 0.14, -h * 0.55); c.lineTo(L * 0.26, -h * 0.24); c.lineTo(-L * 0.28, -h * 0.24); c.closePath(); c.fillStyle = '#BFE6FF'; c.fill(); ink(c, 3);
-    c.save(); c.clip(); c.translate(L * 0.02, -h * 0.28); c.scale(car.dir, 1); try { var o = {}; for (var k2 in car.driver) o[k2] = car.driver[k2]; o.size = 40; o.face = car.v < 5 ? 'open' : 'happy'; GGCat.draw(c, o); } catch (e) {} c.restore();
+    D.shadow(c, 0, h * 0.42, L * 0.5, 9);
+    // body (shaded inside, outline last)
+    if (!car.body) {
+      car.body = new Path2D(); var b = car.body;
+      b.moveTo(-L / 2, h * 0.3); b.lineTo(-L / 2, -h * 0.05); b.quadraticCurveTo(-L / 2, -h * 0.2, -L * 0.36, -h * 0.22); b.lineTo(-L * 0.2, -h * 0.62); b.lineTo(L * 0.18, -h * 0.62); b.lineTo(L * 0.34, -h * 0.22); b.lineTo(L * 0.46, -h * 0.18); b.quadraticCurveTo(L / 2, -h * 0.1, L / 2, h * 0.05); b.lineTo(L / 2, h * 0.3); b.closePath();
+      car.win = new Path2D(); var w = car.win;
+      w.moveTo(-L * 0.16, -h * 0.55); w.lineTo(L * 0.14, -h * 0.55); w.lineTo(L * 0.26, -h * 0.24); w.lineTo(-L * 0.28, -h * 0.24); w.closePath();
+    }
+    D.shape(c, car.body, car.col, { lw: D.LW.mid, depth: 7 });
+    // window: glass, the driver clipped inside it, then the window's outline on top
+    c.fillStyle = '#BFE6FF'; c.fill(car.win);
+    c.save(); c.clip(car.win); D.shine(c, -L * 0.1, -h * 0.48, 10, 4, 0, 0.6); c.translate(L * 0.02, -h * 0.28); c.scale(car.dir, 1); try { var o = {}; for (var k2 in car.driver) o[k2] = car.driver[k2]; o.size = 40; o.face = car.v < 5 ? 'open' : 'happy'; GGCat.draw(c, o); } catch (e) {} c.restore();
+    c.lineWidth = D.LW.fine; c.strokeStyle = INK; c.stroke(car.win);
     // lights
-    circle(c, L / 2 - 8, -h * 0.02, 6); c.fillStyle = '#FFF3B0'; c.fill(); ink(c, 2.5);
+    circle(c, L / 2 - 9, -h * 0.02, 6); c.fillStyle = '#FFF3B0'; c.fill(); ink(c, 2.5);
     // wheels
-    [-L * 0.3, L * 0.3].forEach(function (x) { circle(c, x, h * 0.3, 15); fillInk(c, '#3D3650', 3.5); circle(c, x, h * 0.3, 5); c.fillStyle = '#C9C2D6'; c.fill(); });
+    [-L * 0.3, L * 0.3].forEach(function (x) { circle(c, x, h * 0.3, 15); fillInk(c, '#3D3650', D.LW.mid); circle(c, x, h * 0.3, 5); c.fillStyle = '#C9C2D6'; c.fill(); });
     c.restore();
   }
   function guardPos() { return { x: R.zx - R.zw / 2 - 70, y: R.bot + 70, sx: R.zx - R.zw / 2 - 30, sy: R.bot - 10 }; }
   function drawGuard(c) {
     var g = guardPos();
-    // the crossing-guard cat in a high-vis vest, holding the lollipop sign
-    c.save(); c.translate(g.x, g.y);
-    try { GGCat.draw(c, { preset: 'ginger', pose: 'sit', size: 80, face: stopped ? 'open' : 'happy' }); } catch (e) {}
-    c.restore();
+    // the crossing-guard cat holding the lollipop sign up in its raised paw (the shared cat's 'wave' pose)
+    var gk = 80 / 88, px = g.x + 47 * gk, py = g.y + 38 * gk;
     var flip = signFlip > 0 ? Math.cos(signFlip / 0.35 * Math.PI) : 1;
-    c.beginPath(); c.moveTo(g.x + 30, g.y + 30); c.lineTo(g.sx, g.sy); ink(c, 7); c.strokeStyle = '#C9C2D6'; c.lineWidth = 3; c.stroke();
+    D.shadow(c, g.x, g.y + 88 * gk, 40, 8);
+    c.beginPath(); c.moveTo(px, py + 6); c.lineTo(g.sx, g.sy); ink(c, 9); c.strokeStyle = '#C9C2D6'; c.lineWidth = 4; c.stroke();
+    c.save(); c.translate(g.x, g.y);
+    try { GGCat.draw(c, { preset: 'ginger', pose: 'wave', size: 80, face: stopped ? 'open' : 'happy' }); } catch (e) {}
+    c.restore();
     c.save(); c.translate(g.sx, g.sy - 34); c.scale(Math.abs(flip) * 0.9 + 0.1, 1);
-    circle(c, 0, 0, 34); fillInk(c, stopped ? '#FF5A5F' : '#3FC46A', 4.5);
-    circle(c, 0, 0, 26); c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
-    if (stopped) { c.save(); c.scale(0.55, 0.55); c.translate(-32, -32); c.beginPath(); c.moveTo(22, 46); c.lineTo(22, 22); c.quadraticCurveTo(22, 18, 25.5, 18); c.quadraticCurveTo(29, 18, 29, 22); c.lineTo(29, 16); c.quadraticCurveTo(29, 12, 32.5, 12); c.quadraticCurveTo(36, 12, 36, 16); c.lineTo(36, 20); c.quadraticCurveTo(36, 16, 39.5, 16); c.quadraticCurveTo(43, 16, 43, 20); c.lineTo(43, 36); c.quadraticCurveTo(43, 50, 31, 50); c.quadraticCurveTo(24, 50, 20, 44); c.lineTo(12, 34); c.quadraticCurveTo(10, 30, 13.5, 28.5); c.quadraticCurveTo(16.5, 27.5, 18.5, 30); c.closePath(); c.fillStyle = '#fff'; c.fill(); c.restore(); }
-    else { c.beginPath(); c.moveTo(-10, -14); c.lineTo(14, 0); c.lineTo(-10, 14); c.closePath(); c.fillStyle = '#fff'; c.fill(); }
+    D.shape(c, D.ellPath(0, 0, 34, 34), stopped ? '#FF5A5F' : '#3FC46A', { lw: D.LW.big, depth: 6, inside: function (c) {
+      circle(c, 0, 0, 26); c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
+      if (stopped) {
+        // the paw: white beans and pad with a fine ink edge, so it reads at phone size
+        c.save(); c.scale(0.8, 0.8); c.translate(-30, -31);
+        PAW2D.forEach(function (p) { c.fillStyle = '#fff'; c.fill(p); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke(p); });
+        c.restore();
+      } else { c.beginPath(); c.moveTo(-10, -14); c.lineTo(14, 0); c.lineTo(-10, 14); c.closePath(); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(); }
+    } });
     c.restore();
   }
   function drawKitten(c, k) {
@@ -212,7 +231,7 @@
     var o = {}; for (var key in k.look) o[key] = k.look[key];
     o.pose = k.state === 'park' && k.t < 1.5 ? 'wave' : 'sit'; o.size = 62; o.face = k.state === 'cross' || k.state === 'park' ? 'happy' : (k.bounce > 0 ? 'happy' : 'open');
     c.save(); c.translate(k.x, k.y - 40 - hop);
-    c.beginPath(); c.ellipse(0, 40 + hop, 22, 6, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
+    D.shadow(c, 0, 40 + hop, 22, 6);
     try { GGCat.draw(c, o); } catch (e) {}
     c.restore();
   }
