@@ -208,12 +208,19 @@
   var canvas = $('stage'), ctx = canvas.getContext('2d');
   var topbar = $('topbar'), shelf = $('shelf');
   var cw = 0, ch = 0, dpr = 1, K = 1, OX = 0, OY = 0, L = null;
-  function makeLayout(tall, n) {
-    var l = tall ? {
-      W: 600, H: 900, tall: true, CY: 770, size: 128,
-      hatch: { x: 140, y: 34, w: 320, h: 214 }, ledgeY: 262, pass: [{ x: 228, y: 262 }, { x: 372, y: 262 }],
-      queue: { x: 300, y: 372 }, bin: { x: 300, y: 850 }, bubbleW: 156, bubbleH: 128
+  function makeLayout(tall, n, aspect) {
+    // tall screens: the scene is 600 wide and as tall as the space allows (750..900), so it fills a phone's width;
+    // shorter scenes use a slightly smaller hatch, customers and bubbles to make the room
+    var tH = tall ? clamp(Math.round(600 / (aspect || 0.667)), 750, 900) : 900, cmp = tH < 860;
+    var l = tall ? (cmp ? {
+      W: 600, H: tH, tall: true, CY: tH - 130, size: 114,
+      hatch: { x: 150, y: 28, w: 300, h: 180 }, ledgeY: 214, pass: [{ x: 228, y: 214 }, { x: 372, y: 214 }],
+      queue: { x: 300, y: 276 }, bin: { x: 300, y: tH - 50 }, bubbleW: 150, bubbleH: 116
     } : {
+      W: 600, H: tH, tall: true, CY: tH - 130, size: 128,
+      hatch: { x: 140, y: 34, w: 320, h: 214 }, ledgeY: 262, pass: [{ x: 228, y: 262 }, { x: 372, y: 262 }],
+      queue: { x: 300, y: 372 }, bin: { x: 300, y: tH - 50 }, bubbleW: 156, bubbleH: 128
+    }) : {
       W: 1000, H: 600, tall: false, CY: 450, size: 142,
       hatch: { x: 40, y: 40, w: 320, h: 222 }, ledgeY: 276, pass: [{ x: 128, y: 276 }, { x: 272, y: 276 }],
       queue: { x: 700, y: 48 }, bin: { x: 300, y: 530 }, bubbleW: 160, bubbleH: 128
@@ -232,7 +239,7 @@
     var bottom = shelf.getBoundingClientRect().top - 8;
     document.documentElement.style.setProperty('--bar-h', Math.round(ch - shelf.getBoundingClientRect().top) + 'px');
     var availW = cw - 16, availH = Math.max(120, bottom - top);
-    L = makeLayout(availW / availH < 1.15, G ? G.nSlots : 3);
+    L = makeLayout(availW / availH < 1.15, G ? G.nSlots : 3, availW / availH);
     K = Math.min(availW / L.W, availH / L.H);
     OX = (cw - L.W * K) / 2; OY = top + (availH - L.H * K) / 2;
   }
@@ -555,14 +562,18 @@
     c.fillStyle = '#FFE4C4'; for (var x = 20; x < W; x += 64) c.fillRect(x, 0, 30, L.CY);
     // bunting
     c.save();
-    var y0 = L.tall ? 300 : 24, xs = L.tall ? 20 : 380, xe = W - 20;
-    c.beginPath(); c.moveTo(xs, y0); c.quadraticCurveTo((xs + xe) / 2, y0 + 30, xe, y0); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+    // tall screens: two short strings either side of the hatch (clear of the queue and the order bubbles)
+    var runs = L.tall ? [[8, L.hatch.x - 34, L.hatch.y + 30], [L.hatch.x + L.hatch.w + 34, W - 8, L.hatch.y + 30]] : [[380, W - 20, 24]];
     var cols = ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'];
-    var n = Math.floor((xe - xs) / 46);
-    for (var i = 0; i <= n; i++) {
-      var t = i / n, bx = lerp(xs, xe, t), by = y0 + 30 * 2 * t * (1 - t) * 1;
-      c.beginPath(); c.moveTo(bx - 13, by); c.lineTo(bx + 13, by); c.lineTo(bx, by + 24); c.closePath(); c.fillStyle = cols[i % cols.length]; c.fill(); ink(c, 2.5);
-    }
+    runs.forEach(function (r, ri) {
+      var xs = r[0], xe = r[1], y0 = r[2], sag = L.tall ? 18 : 30;
+      c.beginPath(); c.moveTo(xs, y0); c.quadraticCurveTo((xs + xe) / 2, y0 + sag, xe, y0); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+      var n = Math.max(2, Math.floor((xe - xs) / 46));
+      for (var i = 0; i <= n; i++) {
+        var t = (i + 0.5) / (n + 1), bx = lerp(xs, xe, t), by = y0 + sag * 2 * t * (1 - t);
+        c.beginPath(); c.moveTo(bx - 13, by); c.lineTo(bx + 13, by); c.lineTo(bx, by + 24); c.closePath(); c.fillStyle = cols[(i + ri * 2) % cols.length]; c.fill(); ink(c, 2.5);
+      }
+    });
     c.restore();
   }
   function drawHatch(c) {
