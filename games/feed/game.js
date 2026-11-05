@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -17,19 +17,9 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  var rr = D.rr, ink = D.ink;
   function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
-  function shade(hex, k) {
-    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-    r = Math.round(r * (1 - k)); g = Math.round(g * (1 - k)); b = Math.round(b * (1 - k));
-    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  }
 
   /* very different colours; red never with orange, blue never with purple */
   var COLOURS = [
@@ -192,28 +182,29 @@
   }
   function drawCurtains(c, x, y, w, h, st) {
     var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
-    var fill = c.createPattern(curtainTile(st), 'repeat');
+    var tile = curtainTile(st), fill = tile.pat || (tile.pat = c.createPattern(tile, 'repeat'));
     [-1, 1].forEach(function (side) {
       var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
       var xi = xo - side * cwid;                           // the inner edge at the top
       var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
-      c.beginPath();
-      c.moveTo(xo, top); c.lineTo(xi, top);
-      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
-      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
-      c.lineTo(xo, bot); c.closePath();
-      c.fillStyle = fill; c.fill(); ink(c, 3.5);
-      // a couple of soft folds
-      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
-      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
+      // the curtain, with a couple of soft folds inside it, outline last
+      D.shape(c, function (p) {
+        p.moveTo(xo, top); p.lineTo(xi, top);
+        p.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
+        p.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
+        p.lineTo(xo, bot); p.closePath();
+      }, fill, { lw: LW.mid, depth: 6, dx: side * 4, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
+        [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
+      } });
       // the tie
       c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
-      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
+      D.shape(c, D.rrPath(-cwid * 0.3, -6, cwid * 0.6, 12, 6), st.tie, { lw: LW.fine, depth: 3 });
       c.restore();
     });
     // the rod with round ends
-    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
-    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
+    D.shape(c, D.rrPath(x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5), st.rod, { lw: LW.fine, depth: 0 });
+    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { D.shape(c, D.ellPath(rx, top - 4, 8, 8), st.rod, { lw: LW.fine, depth: 3 }); });
   }
 
   /* ================= drawing ================= */
@@ -223,41 +214,48 @@
     c.fillStyle = '#FFE4C4'; for (var x = 30; x < W; x += 70) for (var y = 30; y < T; y += 70) { circle(c, x + ((y / 70) % 2 ? 35 : 0), y, 7); c.fill(); }
     // a window with a sunny sky
     var wx = W / 2 - 110, wy = L.W < 700 ? Math.max(40, T - 480) : 26, ww = 220, wh = L.W < 700 ? 220 : 120;
-    if (L.W < 700) { rr(c, wx, wy, ww, wh, 16); c.fillStyle = '#9EDCFF'; c.fill(); circle(c, wx + 170, wy + 50, 24); c.fillStyle = '#FFE14D'; c.fill(); rr(c, wx, wy, ww, wh, 16); ink(c, 5); c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(wx + ww / 2, wy + 4); c.lineTo(wx + ww / 2, wy + wh - 4); c.stroke();
+    if (L.W < 700) {
+      // sky, sun and the glazing bar all inside the frame, outline last
+      D.shape(c, D.rrPath(wx, wy, ww, wh, 16), D.tone(c, '#9EDCFF', wy, wy + wh), { lw: LW.big, depth: 0, inside: function (c) {
+        circle(c, wx + 170, wy + 50, 24); c.fillStyle = '#FFE14D'; c.fill();
+        c.fillStyle = '#FFFFFF'; c.fillRect(wx + ww / 2 - 3.5, wy - 5, 7, wh + 10);
+      } });
       drawCurtains(c, wx, wy, ww, wh, { pat: 'gingham', col: '#FFD23F', col2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }); }
     // the table
-    c.fillStyle = '#E6B98A'; c.fillRect(0, T, W, H - T);
+    c.fillStyle = D.tone(c, '#E6B98A', T, H); c.fillRect(0, T, W, H - T);
     c.fillStyle = '#DDAE7C'; for (var yy = T + 50; yy < H; yy += 70) c.fillRect(0, yy, W, 4);
-    c.beginPath(); c.moveTo(0, T); c.lineTo(W, T); ink(c, 5);
+    c.beginPath(); c.moveTo(-5, T); c.lineTo(W + 5, T); ink(c, LW.big);
   }
   function drawMat(c, i) {
     var m = matXY(i), col = cats[i].col;
     var glow = bowl && bowl.state === 'drag' && hitCat(bowl.x, bowl.y) === i;
-    ell(c, m.x, m.y + 8, L.matRX, L.matRX * 0.3); c.fillStyle = col; c.fill(); ink(c, glow ? 8 : 4);
-    ell(c, m.x, m.y + 8, L.matRX * 0.78, L.matRX * 0.22); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 4; c.setLineDash([10, 9]); c.stroke(); c.setLineDash([]);
+    D.shape(c, D.ellPath(m.x, m.y + 8, L.matRX, L.matRX * 0.3), D.tone(c, col, m.y + 8 - L.matRX * 0.3, m.y + 8 + L.matRX * 0.3), { lw: glow ? 8 : LW.mid, depth: L.matRX * 0.06, inside: function (c) {
+      ell(c, m.x, m.y + 8, L.matRX * 0.78, L.matRX * 0.22); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 4; c.setLineDash([10, 9]); c.stroke(); c.setLineDash([]);
+    } });
   }
   /* a bowl, centred on its bottom middle, `w` wide; `food` 0..1 */
   function drawBowl(c, x, y, w, col, food, rot) {
     var k = w / 160;
     c.save(); c.translate(x, y); c.rotate(rot || 0); c.scale(k, k);
-    ell(c, 0, 4, 76, 14); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill();
+    D.shadow(c, 0, 4, 76, 14);
     // food first (it pokes out of the top)
     if (food > 0) {
       c.save(); c.translate(0, -56 + (1 - food) * 26);
       // a fish
-      c.beginPath(); c.moveTo(-40, 0); c.quadraticCurveTo(-10, -30, 26, -6); c.lineTo(46, -22); c.lineTo(42, 4); c.lineTo(48, 24); c.lineTo(26, 6); c.quadraticCurveTo(-10, 26, -40, 0); c.closePath();
-      c.fillStyle = '#FFB26B'; c.fill(); ink(c, 4);
-      circle(c, -24, -4, 4); c.fillStyle = INK; c.fill();
-      c.beginPath(); c.moveTo(-6, -12); c.quadraticCurveTo(0, 0, -6, 12); c.strokeStyle = '#E07B1F'; c.lineWidth = 3; c.stroke();
+      D.shape(c, function (p) { p.moveTo(-40, 0); p.quadraticCurveTo(-10, -30, 26, -6); p.lineTo(46, -22); p.lineTo(42, 4); p.lineTo(48, 24); p.lineTo(26, 6); p.quadraticCurveTo(-10, 26, -40, 0); p.closePath(); },
+        '#FFB26B', { lw: LW.mid, depth: 5, inside: function (c) {
+          circle(c, -24, -4, 4); c.fillStyle = INK; c.fill();
+          c.beginPath(); c.moveTo(-6, -14); c.quadraticCurveTo(0, 0, -6, 14); c.strokeStyle = '#E07B1F'; c.lineWidth = 3; c.stroke();
+        } });
       c.restore();
-      c.fillStyle = '#B5793F'; [[-46, -42], [-30, -46], [34, -44], [50, -40], [-14, -40], [14, -42]].forEach(function (q) { circle(c, q[0], q[1] + (1 - food) * 20, 7); c.fill(); });
+      [[-46, -42], [-30, -46], [34, -44], [50, -40], [-14, -40], [14, -42]].forEach(function (q) { D.shape(c, D.ellPath(q[0], q[1] + (1 - food) * 20, 7, 7), '#B5793F', { lw: 0, depth: 2.5 }); });
     }
-    c.beginPath(); c.moveTo(-72, -44); c.quadraticCurveTo(-70, 0, -40, 0); c.lineTo(40, 0); c.quadraticCurveTo(70, 0, 72, -44); c.closePath();
-    c.fillStyle = col; c.fill(); ink(c, 5);
-    rr(c, -78, -52, 156, 16, 8); c.fillStyle = shade(col, 0.15); c.fill(); ink(c, 4.5);
-    c.beginPath(); c.moveTo(-50, -26); c.quadraticCurveTo(-46, -10, -30, -8); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 6; c.stroke();
-    // a paw print on the front
-    c.fillStyle = 'rgba(255,255,255,.75)'; circle(c, 18, -20, 7); c.fill(); circle(c, 8, -30, 3.2); c.fill(); circle(c, 18, -33, 3.2); c.fill(); circle(c, 28, -30, 3.2); c.fill();
+    // the bowl, then its rim along the top; the highlight and the paw print are inside it
+    D.shape(c, function (p) { p.moveTo(-72, -44); p.quadraticCurveTo(-70, 0, -40, 0); p.lineTo(40, 0); p.quadraticCurveTo(70, 0, 72, -44); p.closePath(); }, D.tone(c, col, -44, 0), { lw: LW.big, depth: 9, inside: function (c) {
+      c.beginPath(); c.moveTo(-50, -26); c.quadraticCurveTo(-46, -10, -30, -8); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 6; c.lineCap = 'round'; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.75)'; circle(c, 18, -20, 7); c.fill(); circle(c, 8, -30, 3.2); c.fill(); circle(c, 18, -33, 3.2); c.fill(); circle(c, 28, -30, 3.2); c.fill();
+    } });
+    D.shape(c, D.rrPath(-78, -52, 156, 16, 8), D.darker(col, 0.15), { lw: LW.mid, depth: 0, shine: [-40, -47, 24, 2.5, 0, 0.35] });
     c.restore();
   }
   function drawCat(c, i) {
@@ -276,18 +274,28 @@
     else if (Math.sin(time * 0.9 + i * 2.1) > 0.985) face = 'blink';
     c.save(); c.translate(x + dx, y + dy);
     if (cat.shake > 0) c.rotate(Math.sin(cat.shake * 28) * 0.06);
-    try { var o = { color: cat.col, pose: 'peek', size: L.size, face: face }; if (cat.meowT > 0 && face === 'open') o.mouth = 'o'; GGCat.draw(c, o); } catch (e) { circle(c, 0, 0, L.size / 2); c.fillStyle = cat.col; c.fill(); ink(c, 5); }
+    var nap = cat.state === 'full' && phase === 'play', kl = 0;
+    if (nap) {
+      // fed and asleep: the shared lying cat, curled up with its paws on the table's edge where the peeking paws were
+      // (it's about 150 units long, so it's sized to fit its own place at the table)
+      kl = Math.min(k * 0.85, (L.cats[1] - L.cats[0]) * 0.9 / 150);
+      c.translate(11 * kl, -4 * k + 50 * k - 43 * kl);
+      GGCat.draw(c, { color: cat.col, pose: 'lie', size: 88 * kl, face: face });
+    } else {
+      var o = { color: cat.col, pose: 'peek', size: L.size, face: face }; if (cat.meowT > 0 && face === 'open') o.mouth = 'o';
+      GGCat.draw(c, o);
+    }
     c.restore();
-    if (cat.state === 'full' && phase === 'play') {
+    if (nap) {
       c.font = '800 ' + Math.round(L.size * 0.24) + 'px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#7A6F8E'; c.textAlign = 'left';
       var zt = (time * 0.6 + i * 0.3) % 1; c.globalAlpha = 1 - zt;
-      c.fillText('z', x + 40 * k, y - 50 * k - zt * 30); c.globalAlpha = 1;
+      c.fillText('z', x + 70 * kl, y + 46 * k - 60 * kl - zt * 30); c.globalAlpha = 1;
     }
   }
   function frameScene(c) {
     drawRoom(c);
     // cats peek over the table: clip so they rise from behind it
-    c.save(); c.beginPath(); c.rect(0, 0, L.W, L.tableY + 16); c.clip();
+    c.save(); c.beginPath(); c.rect(0, 0, L.W, L.tableY + 14 * L.size / 88); c.clip();
     for (var i = 0; i < cats.length; i++) drawCat(c, i);
     c.restore();
     for (var j = 0; j < cats.length; j++) {
@@ -329,7 +337,7 @@
       else if (p.kind === 'heart') { c.beginPath(); c.moveTo(0, p.r * 0.4); c.bezierCurveTo(-p.r * 1.2, -p.r * 0.4, -p.r * 0.5, -p.r * 1.2, 0, -p.r * 0.5); c.bezierCurveTo(p.r * 0.5, -p.r * 1.2, p.r * 1.2, -p.r * 0.4, 0, p.r * 0.4); }
       else { c.beginPath(); c.arc(0, 0, p.r * 0.6, 0, TAU); }
       c.fillStyle = p.color; c.fill();
-      if (p.kind !== 'dot') ink(c, 2);
+      if (p.kind !== 'dot') ink(c, LW.fine);
       c.restore();
     });
   }
@@ -450,7 +458,7 @@
     frameScene(ctx);
     ctx.restore();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rr(ctx, OX, OY, L.W * K, L.H * K, 26); ink(ctx, 5);
+    rr(ctx, OX, OY, L.W * K, L.H * K, 26); ink(ctx, LW.big);
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', layout);
