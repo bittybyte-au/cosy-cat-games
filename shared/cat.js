@@ -189,10 +189,13 @@
 
   /* the walk: Yarn Dash's cat, side-on. A soft body behind the head, four little round paws that step in turn,
      a tail that sways, and the head bobbing at the front. Steps are rounded to 16 positions so the paths stay cached. */
+  /* where a walking cat is in its stride (-1..1), and how far its head bobs up (in the 100-unit space).
+     Shared so anything drawn over the head (Cosy Home's avatar head) bobs with it. */
+  function walkRun(o) { var ph = Math.round(((o.step || 0) % (Math.PI * 2)) / (Math.PI / 8)) * (Math.PI / 8); return o.moving ? Math.sin(ph) : 0; }
+  function walkBob(o) { var run = walkRun(o); return run ? -Math.abs(run) * 4 : 0; }
   function walkShapes(o, c) {
     var f = c.fill, d = o.dir < 0 ? -1 : 1;
-    var ph = Math.round(((o.step || 0) % (Math.PI * 2)) / (Math.PI / 8)) * (Math.PI / 8);
-    var run = o.moving ? Math.sin(ph) : 0, wag = Math.round(Math.sin(o.wag || 0) * 4) * 1.5;
+    var run = walkRun(o), wag = Math.round(Math.sin(o.wag || 0) * 4) * 1.5;
     var X = function (x) { return n(x * d); };
     var tail = 'M' + X(-62) + ' 24Q' + X(-112) + ' ' + n(10 + run * 10) + ' ' + X(-104) + ' ' + n(-30 + wag);
     var list = [{ d: tail, stroke: INK, lw: 13 }, { d: tail, stroke: f, lw: 6 }];
@@ -202,7 +205,7 @@
     });
     var body = ell(X(-31), 31, 49, 29);
     list.push({ d: body, fill: f }, { d: body + ell(X(-31) - 5 * d, 24, 49, 29), fill: shadeFor(f), rule: 'evenodd', clipTo: body }, { d: body, stroke: INK, lw: 5 });
-    var bob = run ? -Math.abs(run) * 4 : 0;
+    var bob = walkBob(o);
     var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [0, n(bob), 0, 1]; if (s.tf) t.tf2 = s.tf; return t; });
     return { list: list.concat(head), head: c.head };
   }
@@ -316,6 +319,6 @@
     INK: INK, PRESETS: PRESETS, GAME_ORDER: GAME_ORDER,
     svg: svg, g: g, draw: draw,
     earPath: earPath, earInner: earInner, shapes: function (o) { return allShapes(o || {}).list; },
-    isDark: isDark, shade: shade, shadeFor: shadeFor
+    isDark: isDark, shade: shade, shadeFor: shadeFor, walkBob: walkBob
   };
 })();

@@ -207,9 +207,8 @@
     if (pose === 'sit') drawAvatarHead(c, 0, 0, size);
     else if (pose === 'lie') drawAvatarHead(c, 30 * size / 88, 2 * size / 88, size * 0.78);
     else if (pose === 'walk') {
-      // the shared walk bobs the head a little with each step (shared/cat.js walkShapes); the avatar head follows it
-      var ph = Math.round(((walk.step || 0) % TAU) / (Math.PI / 8)) * (Math.PI / 8);
-      drawAvatarHead(c, 0, (walk.moving ? -Math.abs(Math.sin(ph)) * 4 : 0) * size / 88, size);
+      // the shared walk bobs the head a little with each step; the avatar head follows it
+      drawAvatarHead(c, 0, GGCat.walkBob(walk) * size / 88, size);
     }
   }
 
