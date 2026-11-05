@@ -5,22 +5,15 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var INK = GGDraw.INK;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-  function lerp(a, b, t) { return a + (b - a) * t; }
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function angDiff(a, b) { var d = b - a; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
-  function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
+  var D = GGDraw, rr = D.rr, ink = D.ink;
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
 
   /* ================= a little buzz ================= */
@@ -144,51 +137,79 @@
   }
 
   /* ================= drawing ================= */
+  /* the floor and rug never change, so they're drawn once into a picture (redrawn when the screen changes) */
+  var floorCv = null, floorKey = '';
   function drawFloor(c) {
-    c.fillStyle = '#F2DDC0'; c.fillRect(0, 0, W, H);
-    c.strokeStyle = '#E6CBA6'; c.lineWidth = 4;
-    for (var y = 0; y < H; y += 70) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); var off = ((y / 70) % 2) * 150; for (var x = off; x < W; x += 300) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 70); c.stroke(); } }
-    // a soft round rug
-    ell(c, W / 2, H / 2, Math.min(W * 0.36, 420), Math.min(H * 0.32, 260)); c.fillStyle = '#FFE7F0'; c.fill(); ink(c, 4);
-    ell(c, W / 2, H / 2, Math.min(W * 0.3, 350), Math.min(H * 0.26, 210)); c.setLineDash([16, 12]); c.strokeStyle = '#FFC2DA'; c.lineWidth = 6; c.stroke(); c.setLineDash([]);
+    var key = [W, H, K, dpr].join(',');
+    if (key !== floorKey) {
+      floorKey = key;
+      floorCv = floorCv || document.createElement('canvas');
+      floorCv.width = Math.ceil(W * K * dpr); floorCv.height = Math.ceil(H * K * dpr);
+      var f = floorCv.getContext('2d');
+      f.setTransform(K * dpr, 0, 0, K * dpr, 0, 0);
+      paintFloor(f);
+    }
+    c.drawImage(floorCv, 0, 0, W, H);
   }
+  function paintFloor(c) {
+    c.fillStyle = D.tone(c, '#F2DDC0', 0, H); c.fillRect(0, 0, W, H);
+    c.strokeStyle = '#E6CBA6'; c.lineWidth = 4; c.lineCap = 'butt';
+    for (var y = 0; y < H; y += 70) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); var off = ((y / 70) % 2) * 150; for (var x = off; x < W; x += 300) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 70); c.stroke(); } }
+    // a soft round rug, its dashed stitching inside the edge
+    var rx = Math.min(W * 0.36, 420), ry = Math.min(H * 0.32, 260);
+    D.shadow(c, W / 2 + 4, H / 2 + 8, rx, ry);
+    D.shape(c, D.ellPath(W / 2, H / 2, rx, ry), D.tone(c, '#FFE7F0', H / 2 - ry, H / 2 + ry), { lw: D.LW.mid, depth: 12, inside: function (c) {
+      c.beginPath(); c.ellipse(W / 2, H / 2, rx * 0.83, ry * 0.81, 0, 0, TAU); c.setLineDash([16, 12]); c.strokeStyle = '#FFC2DA'; c.lineWidth = 6; c.lineCap = 'round'; c.stroke(); c.setLineDash([]);
+    } });
+  }
+  var MOUSE_BODY = new Path2D('M-32 0Q-30 -22 0 -21Q30 -18 38 0Q30 18 0 21Q-30 22 -32 0Z');
   function drawMouse(c, m, spin) {
     var run = m.pause > 0 ? 0 : Math.sin(time * 26 + m.x * 0.05);
-    c.save(); c.translate(m.x, m.y); c.rotate(m.a + (spin || 0)); c.scale(m.size, m.size);
-    ell(c, 0, 8, 34, 16); c.fillStyle = 'rgba(42,35,64,.14)'; c.fill();
-    // tail
-    c.beginPath(); c.moveTo(-30, 0); c.quadraticCurveTo(-54, -8 + Math.sin(time * 9 + m.y) * 10, -70, 4); c.strokeStyle = '#FF8FAB'; c.lineWidth = 5; c.stroke();
-    // little feet
-    c.fillStyle = '#FFB3C7'; [[-14, -18, 1], [14, -18, -1], [-14, 18, -1], [14, 18, 1]].forEach(function (f) { ell(c, f[0] + run * 4 * f[2], f[1], 6, 4); c.fill(); });
+    var a = m.a + (spin || 0), s = m.size;
+    // the shadow stays under the mouse whichever way it's facing
+    if (!spin) { c.save(); c.translate(m.x + 3, m.y + 6); c.rotate(a); c.scale(s, s); c.fillStyle = 'rgba(42,35,64,.16)'; c.beginPath(); c.ellipse(2, 0, 38, 24, 0, 0, TAU); c.fill(); c.restore(); }
+    c.save(); c.translate(m.x, m.y); c.rotate(a); c.scale(s, s);
+    // outlines are given in screen units, so they stay even however big the mouse is
+    var lw = D.LW.mid / s, lf = D.LW.fine / s;
+    // the crescent of shade sits to the lower right on screen, whichever way the mouse faces
+    var cs = Math.cos(-a), sn = Math.sin(-a), ox = -5 / s, oy = -7 / s;
+    // tail (starts under the body), outlined like the cat's
+    c.beginPath(); c.moveTo(-26, 0); c.quadraticCurveTo(-54, -8 + Math.sin(time * 9 + m.y) * 10, -70, 4);
+    c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 5 + lf * 2; c.stroke(); c.strokeStyle = '#FF8FAB'; c.lineWidth = 5; c.stroke();
+    // little paws peeking out from under the body
+    [[-14, -20, 1], [14, -19, -1], [-14, 20, -1], [14, 19, 1]].forEach(function (f) { c.beginPath(); c.ellipse(f[0] + run * 4 * f[2], f[1], 7, 5, 0, 0, TAU); c.fillStyle = '#FFB3C7'; c.fill(); D.ink(c, lf); });
     // body
-    c.beginPath(); c.moveTo(-32, 0); c.quadraticCurveTo(-30, -22, 0, -21); c.quadraticCurveTo(30, -18, 38, 0); c.quadraticCurveTo(30, 18, 0, 21); c.quadraticCurveTo(-30, 22, -32, 0); c.closePath();
-    c.fillStyle = m.col; c.fill(); ink(c, 4);
+    D.shape(c, MOUSE_BODY, m.col, { lw: lw, depth: 1, dx: ox * cs - oy * sn, dy: ox * sn + oy * cs, shade: 'rgba(42,35,64,.14)' });
     // ears
-    circle(c, 10, -20, 11); c.fillStyle = m.col; c.fill(); ink(c, 3.5); circle(c, 10, -20, 6); c.fillStyle = '#FFB3C7'; c.fill();
-    circle(c, 10, 20, 11); c.fillStyle = m.col; c.fill(); ink(c, 3.5); circle(c, 10, 20, 6); c.fillStyle = '#FFB3C7'; c.fill();
-    // face
-    circle(c, 38, 0, 5); c.fillStyle = '#FF7FA6'; c.fill();
-    circle(c, 26, -7, 3.6); c.fillStyle = INK; c.fill(); circle(c, 26, 7, 3.6); c.fill();
-    c.strokeStyle = 'rgba(42,35,64,.5)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(34, -3); c.lineTo(46, -10); c.moveTo(34, 3); c.lineTo(46, 10); c.stroke();
+    [-20, 20].forEach(function (y) {
+      D.shape(c, D.ellPath(10, y, 11, 11), m.col, { lw: lf, depth: 0, inside: function (c) { c.beginPath(); c.arc(10, y, 6, 0, TAU); c.fillStyle = '#FFB3C7'; c.fill(); } });
+    });
+    // face: eyes inside; whiskers and nose out at the tip, so nothing crosses the outline
+    c.fillStyle = INK; c.beginPath(); c.arc(26, -7, 3.6, 0, TAU); c.fill(); c.beginPath(); c.arc(26, 7, 3.6, 0, TAU); c.fill();
+    c.beginPath(); c.moveTo(42, -4); c.lineTo(52, -11); c.moveTo(42, 4); c.lineTo(52, 11); c.strokeStyle = 'rgba(42,35,64,.5)'; c.lineWidth = 2 / s; c.stroke();
+    c.beginPath(); c.arc(39, 0, 5, 0, TAU); c.fillStyle = '#FF7FA6'; c.fill(); D.ink(c, lf);
     c.restore();
   }
-  /* a cat strolling across, seen from the side */
+  /* a cat strolling across, seen from the side: the shared cat's head on a body shaded the same way */
+  var CAT_BODY = D.ellPath(0, 0, 72, 36);
   function drawCat(c, k) {
     var step = Math.sin(k.t * 7);
     var o = {}; for (var key in k.look) o[key] = k.look[key];
     var col = o.color || (GGCat.PRESETS && GGCat.PRESETS[o.preset] && GGCat.PRESETS[o.preset].color) || '#FFA94D';
+    D.shadow(c, k.x, k.y + 52, 80, 14);
     c.save(); c.translate(k.x, k.y); c.scale(k.dir, 1);
-    ell(c, 0, 52, 80, 14); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill();
-    c.beginPath(); c.moveTo(-60, -10); c.quadraticCurveTo(-110, -20, -100, -80 + Math.sin(time * 3) * 6); c.strokeStyle = INK; c.lineWidth = 18; c.lineCap = 'round'; c.stroke(); c.strokeStyle = col; c.lineWidth = 10; c.stroke();
-    [[-44, 1], [-22, -1], [24, 1], [46, -1]].forEach(function (l) { rr(c, l[0] - 8 + step * 8 * l[1], 0, 18, 52, 9); c.fillStyle = col; c.fill(); ink(c, 4); });
-    ell(c, 0, 0, 72, 36); c.fillStyle = col; c.fill(); ink(c, 5);
+    // tail starts inside the body, so the body covers the join
+    c.beginPath(); c.moveTo(-56, -8); c.quadraticCurveTo(-110, -20, -100, -80 + Math.sin(time * 3) * 6); c.strokeStyle = INK; c.lineWidth = 18; c.lineCap = 'round'; c.stroke(); c.strokeStyle = col; c.lineWidth = 10; c.stroke();
+    // legs go up under the body
+    [[-44, 1], [-22, -1], [24, 1], [46, -1]].forEach(function (l) { D.shape(c, D.rrPath(l[0] - 8 + step * 8 * l[1], 0, 18, 52, 9), col, { lw: D.LW.mid, depth: 4, dx: -3 * k.dir, dy: -4 }); });
+    // the shade falls to the lower right on screen, so it flips with the cat
+    D.shape(c, CAT_BODY, D.tone(c, col, -36, 36), { lw: D.LW.big, depth: 9, dx: -6 * k.dir, dy: -9 });
     c.restore();
     c.save(); c.translate(k.x + k.dir * 66, k.y - 46 + Math.abs(step) * -3);
     o.size = 104; o.face = k.happy > 0 ? 'happy' : 'open';
     try { GGCat.draw(c, o); } catch (e) {}
     c.restore();
   }
-  function star(c, r) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, q = i % 2 ? r * 0.45 : r; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); }
   function heart(x, y) { parts.push({ x: x, y: y, vx: rand(-20, 20), vy: -80, life: 0, max: 1.2, r: 18, color: '#FF7EB6', kind: 'heart', g: -10 }); }
   function drawParts(c) {
     parts.forEach(function (p) {
@@ -198,8 +219,8 @@
       c.translate(p.x, p.y);
       if (p.kind === 'ring') { circle(c, 0, 0, 10 + (1 - k) * 34); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 5; c.stroke(); }
       else if (p.kind === 'burst') { circle(c, 0, 0, 30 + (1 - k) * 60); c.strokeStyle = p.color; c.lineWidth = 10 * k; c.stroke(); }
-      else if (p.kind === 'bubble') { circle(c, 0, 0, p.r); c.fillStyle = p.color; c.globalAlpha *= 0.85; c.fill(); c.globalAlpha = Math.min(1, k * 1.8); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke(); circle(c, -p.r * 0.35, -p.r * 0.35, p.r * 0.28); c.fillStyle = '#fff'; c.fill(); }
-      else if (p.kind === 'heart') { var r = p.r; c.beginPath(); c.moveTo(0, r * 0.4); c.bezierCurveTo(-r * 1.2, -r * 0.4, -r * 0.5, -r * 1.2, 0, -r * 0.5); c.bezierCurveTo(r * 0.5, -r * 1.2, r * 1.2, -r * 0.4, 0, r * 0.4); c.fillStyle = p.color; c.fill(); ink(c, 2); }
+      else if (p.kind === 'bubble') { circle(c, 0, 0, p.r); c.fillStyle = p.color; c.globalAlpha *= 0.85; c.fill(); c.globalAlpha = Math.min(1, k * 1.8); circle(c, -p.r * 0.35, -p.r * 0.35, p.r * 0.28); c.fillStyle = '#fff'; c.fill(); circle(c, 0, 0, p.r); ink(c, D.LW.fine); }
+      else if (p.kind === 'heart') { var r = p.r; c.beginPath(); c.moveTo(0, r * 0.4); c.bezierCurveTo(-r * 1.2, -r * 0.4, -r * 0.5, -r * 1.2, 0, -r * 0.5); c.bezierCurveTo(r * 0.5, -r * 1.2, r * 1.2, -r * 0.4, 0, r * 0.4); c.fillStyle = p.color; c.fill(); ink(c, D.LW.fine); }
       c.restore();
     });
   }
@@ -283,7 +304,7 @@
     drawParts(ctx);
     ctx.restore();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rr(ctx, OX, OY, W * K, H * K, 24); ink(ctx, 5);
+    rr(ctx, OX, OY, W * K, H * K, 24); ink(ctx, D.LW.big);
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', layout);
