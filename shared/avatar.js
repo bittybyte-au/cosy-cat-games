@@ -45,16 +45,16 @@
   var HEADS = [
     { id: 'none', name: 'Nothing' },
     { id: 'party', name: 'Party hat' },
-    { id: 'bow', name: 'Headband with bow' },
+    { id: 'bow', name: 'Bow' },
     { id: 'ponytail', name: 'Ponytail' },
     { id: 'pigtails', name: 'Pigtails' },
     { id: 'spiky', name: 'Spiky hair' },
     { id: 'chef', name: 'Chef’s hat', earn: { hint: 'Cook 5 dishes in Cosy Kitchen', test: function (s) { return s.dishes >= 5; } } },
-    { id: 'tophat', name: 'Top hat', earn: { hint: 'Cook every Cosy Kitchen recipe', test: function (s) { return s.handroll && s.pancakes && s.burger; } } },
-    { id: 'fireman', name: 'Firefighter’s helmet', earn: { hint: 'Finish 10 Kitty Pop levels', test: function (s) { return s.kittypop >= 10; } } },
+    { id: 'tophat', name: 'Top hat' },
+    { id: 'fireman', name: 'Firefighter’s helmet' },
     { id: 'witch', name: 'Witch’s hat', earn: { hint: 'Finish 10 Yarn Sort levels', test: function (s) { return s.yarn >= 10; } } },
     { id: 'tiara', name: 'Tiara', earn: { hint: 'Finish 10 Cosy Cubbies levels', test: function (s) { return s.cubbies >= 10; } } },
-    { id: 'unicorn', name: 'Unicorn horn', earn: { hint: 'Finish 15 levels in any games', test: function (s) { return s.levels >= 15; } } },
+    { id: 'unicorn', name: 'Unicorn horn' },
     { id: 'mohawk', name: 'Mohawk', earn: { hint: 'Finish 25 levels in any games', test: function (s) { return s.levels >= 25; } } },
     { id: 'braid', name: 'Rapunzel braid', earn: { hint: 'Finish 50 levels in any games', test: function (s) { return s.levels >= 50; } } }
   ];
@@ -93,7 +93,11 @@
     var top = g.cy - g.ry;
     switch (head) {
       case 'party': return '<path d="M46 ' + (top + 6) + ' L60 ' + (top - 30) + ' L74 ' + (top + 6) + ' Z" fill="#9B7BFF" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><path d="M51 ' + (top - 6) + ' L69 ' + (top - 6) + ' M55 ' + (top - 17) + ' L65 ' + (top - 17) + '" stroke="#FFC93C" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="' + (top - 31) + '" r="6" fill="#FF7EB6" stroke="' + INK + '" stroke-width="2.5"/>';
-      case 'bow': return '<path d="M30 ' + (top + 14) + ' Q60 ' + (top - 6) + ' 90 ' + (top + 14) + '" fill="none" stroke="#FF7EB6" stroke-width="7" stroke-linecap="round"/><path d="M30 ' + (top + 14) + ' Q60 ' + (top - 6) + ' 90 ' + (top + 14) + '" fill="none" stroke="' + INK + '" stroke-width="1.5" stroke-linecap="round" opacity=".35"/><g transform="translate(78 ' + (top + 2) + ')"><path d="M0 0 L-14 -10 L-14 10 Z M0 0 L14 -10 L14 10 Z" fill="#FF7EB6" stroke="' + INK + '" stroke-width="2.5" stroke-linejoin="round"/><circle r="4.5" fill="#FFC93C" stroke="' + INK + '" stroke-width="2.5"/></g>';
+      case 'bow': return '<g transform="translate(76 ' + (top + 3) + ') rotate(18)" stroke="' + INK + '" stroke-width="2.5" stroke-linejoin="round">' +
+        '<path d="M-3 4 L-9 16 L-3 14 L0 18 L1 6 M3 4 L9 16 L3 14 L0 18" fill="#FF4F86"/>' +
+        '<path d="M0 0 C-5 -12 -22 -13 -20 0 C-22 13 -5 12 0 0 Z M0 0 C5 -12 22 -13 20 0 C22 13 5 12 0 0 Z" fill="#FF7EB6"/>' +
+        '<path d="M-6 -4 Q-12 -6 -15 -2 M6 -4 Q12 -6 15 -2" fill="none" stroke="#FFC4DA" stroke-width="2" stroke-linecap="round"/>' +
+        '<ellipse cx="0" cy="0" rx="5" ry="6" fill="#FF4F86"/></g>';
       case 'ponytail': case 'pigtails': case 'braid':
         return '<path d="M38 ' + (top + 14) + ' Q42 ' + (top - 4) + ' 60 ' + (top - 3) + ' Q78 ' + (top - 4) + ' 82 ' + (top + 14) + ' Q74 ' + (top + 6) + ' 66 ' + (top + 12) + ' Q60 ' + (top + 4) + ' 54 ' + (top + 12) + ' Q46 ' + (top + 6) + ' 38 ' + (top + 14) + ' Z" fill="' + hair + '" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/>';
       case 'spiky': return '<path d="M40 ' + (top + 10) + ' L42 ' + (top - 10) + ' L50 ' + (top + 2) + ' L56 ' + (top - 16) + ' L62 ' + (top + 1) + ' L70 ' + (top - 14) + ' L72 ' + (top + 3) + ' L82 ' + (top - 6) + ' L80 ' + (top + 12) + ' Q60 ' + (top + 2) + ' 40 ' + (top + 10) + ' Z" fill="' + hair + '" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/>';
@@ -101,7 +105,13 @@
       case 'tophat': return '<g stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"><ellipse cx="60" cy="' + (top + 4) + '" rx="26" ry="6" fill="#3A3350"/><rect x="45" y="' + (top - 26) + '" width="30" height="30" rx="3" fill="#3A3350"/></g><rect x="46.5" y="' + (top - 6) + '" width="27" height="6" fill="#FF6B57"/>';
       case 'fireman': return '<g stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"><path d="M28 ' + (top + 12) + ' Q30 ' + (top + 2) + ' 40 ' + (top + 6) + ' Q42 ' + (top - 20) + ' 60 ' + (top - 20) + ' Q78 ' + (top - 20) + ' 80 ' + (top + 6) + ' Q90 ' + (top + 2) + ' 92 ' + (top + 12) + ' Z" fill="#E8413B"/><path d="M60 ' + (top - 20) + ' L60 ' + (top + 6) + '" fill="none"/></g><path d="M52 ' + (top - 8) + ' L60 ' + (top - 14) + ' L68 ' + (top - 8) + ' L66 ' + (top) + ' L54 ' + (top) + ' Z" fill="#FFC93C" stroke="' + INK + '" stroke-width="2"/>';
       case 'witch': return '<g stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"><ellipse cx="58" cy="' + (top + 6) + '" rx="34" ry="7" fill="#6B4FC7"/><path d="M42 ' + (top + 4) + ' Q50 ' + (top - 18) + ' 54 ' + (top - 26) + ' Q60 ' + (top - 38) + ' 80 ' + (top - 34) + ' Q66 ' + (top - 26) + ' 74 ' + (top + 4) + ' Z" fill="#6B4FC7"/></g><path d="M44 ' + (top - 2) + ' Q58 ' + (top + 2) + ' 73 ' + (top - 2) + '" fill="none" stroke="#FFC93C" stroke-width="5"/><circle cx="76" cy="' + (top - 33) + '" r="3.5" fill="#FFC93C" stroke="' + INK + '" stroke-width="2"/>';
-      case 'tiara': return '<path d="M42 ' + (top + 8) + ' L44 ' + (top - 6) + ' L52 ' + (top + 1) + ' L60 ' + (top - 12) + ' L68 ' + (top + 1) + ' L76 ' + (top - 6) + ' L78 ' + (top + 8) + ' Z" fill="#FFC93C" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="' + (top + 1) + '" r="3.5" fill="#FF7EB6" stroke="' + INK + '" stroke-width="1.5"/><circle cx="48" cy="' + (top + 4) + '" r="2.5" fill="#3FA7F5"/><circle cx="72" cy="' + (top + 4) + '" r="2.5" fill="#3FA7F5"/>';
+      case 'tiara': return '<g stroke="' + INK + '" stroke-linejoin="round">' +
+        '<path d="M38 ' + (top + 10) + ' Q41 ' + (top - 1) + ' 48 ' + (top + 2) + ' Q53 ' + (top - 13) + ' 60 ' + (top - 17) + ' Q67 ' + (top - 13) + ' 72 ' + (top + 2) + ' Q79 ' + (top - 1) + ' 82 ' + (top + 10) + ' Q60 ' + (top + 3) + ' 38 ' + (top + 10) + ' Z" fill="#FFD34D" stroke-width="2.5"/>' +
+        '<path d="M42 ' + (top + 7) + ' Q60 ' + (top + 1) + ' 78 ' + (top + 7) + '" fill="none" stroke="#E0A800" stroke-width="2"/>' +
+        '<path d="M60 ' + (top - 10) + ' Q65 ' + (top - 4) + ' 60 ' + (top + 1) + ' Q55 ' + (top - 4) + ' 60 ' + (top - 10) + ' Z" fill="#FF4F86" stroke-width="1.6"/>' +
+        '<circle cx="49" cy="' + (top + 4) + '" r="2.8" fill="#3FA7F5" stroke-width="1.4"/><circle cx="71" cy="' + (top + 4) + '" r="2.8" fill="#3FA7F5" stroke-width="1.4"/>' +
+        '<circle cx="60" cy="' + (top - 18) + '" r="2.6" fill="#fff" stroke-width="1.4"/><circle cx="40" cy="' + (top + 2) + '" r="2" fill="#fff" stroke-width="1.2"/><circle cx="80" cy="' + (top + 2) + '" r="2" fill="#fff" stroke-width="1.2"/>' +
+        '</g>';
       case 'unicorn': return '<path d="M53 ' + (top + 8) + ' L60 ' + (top - 26) + ' L67 ' + (top + 8) + ' Z" fill="#FFE27A" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><path d="M55 ' + (top) + ' L65 ' + (top - 4) + ' M56 ' + (top - 8) + ' L64 ' + (top - 12) + ' M58 ' + (top - 16) + ' L62 ' + (top - 18) + '" stroke="#FF7EB6" stroke-width="2.5" stroke-linecap="round"/>';
       default: return '';
     }
