@@ -150,6 +150,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     <div class="head-btns">
       <button class="chip toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
       <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your nickname or cat"></button>
+      <a class="round" id="homeBtn" href="../games/home/index.html" aria-label="My cosy home" hidden><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 5l11 10" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13v13h16V13" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M13.5 26v-6.5h5V26" fill="#FF6B57" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg></a>
     </div>
   </header>
   <div class="hello"><span class="mascot" data-cat='{"preset":"chef","pose":"wave"}'></span><p class="greeting" id="greeting"></p></div>
@@ -298,6 +299,10 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   chip.addEventListener('click', function () { showSetup(); });
   var EAR_L = GGCat.earSVG(-1, 'ear l'), EAR_R = GGCat.earSVG(1, 'ear r');
   /* Toddler mode shows only toddler games. The switch stays hidden until there are 3 toddler games to play. */
+  // Cosy Home has no tile; it is the house button instead, shown once the game can be played
+  var homeGame = GGGames.get('home');
+  document.getElementById('homeBtn').hidden = !(homeGame && GGGames.playable(homeGame));
+
   function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
   function toddlerReady() { return toddlerGames().length >= 3; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }

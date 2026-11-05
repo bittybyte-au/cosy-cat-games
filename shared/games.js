@@ -9,6 +9,7 @@
    free      what guests and expired passes can play: 'all', a list of parts, or a number of levels
    status    'live' playable, 'soon' greyed "Coming soon" tile while testing, 'dev' hidden on the live site
    season    null, or a season id (e.g. 'christmas') for games that only appear in that season
+   tile      false = no tile on the games home or landing page (Cosy Home has its own house button)
    badge     optional: progress -> short text for the tile badge, or '' for none */
 (function () {
   /* cat heads in the tile pictures are drawn by the shared cat (shared/cat.js, loaded first) */
@@ -39,7 +40,7 @@
     },
     {
       id: 'home', save: 'home', name: 'Cosy Home', blurb: 'Decorate your cosy house',
-      ages: ['5-10'], toddler: false, free: 'all', status: 'dev', season: null, colour: '#C7EBD2',
+      ages: ['5-10'], toddler: false, free: 'all', status: 'dev', season: null, colour: '#C7EBD2', tile: false,
       badge: function (p) { var n = p && Array.isArray(p.plants) ? p.plants.length : 0; return n ? n + (n === 1 ? ' plant grown' : ' plants grown') : ''; },
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"14\" y=\"10\" width=\"212\" height=\"132\" rx=\"18\" fill=\"#D7F2DF\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"16\" y=\"108\" width=\"208\" height=\"32\" rx=\"4\" fill=\"#C98B5B\"/><path d=\"M14 108 H226\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"92\" y=\"24\" width=\"56\" height=\"48\" rx=\"6\" fill=\"#9EDCFF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M120 24 V72 M92 48 H148\" stroke=\"#fff\" stroke-width=\"4\"/><rect x=\"30\" y=\"62\" width=\"50\" height=\"8\" rx=\"3\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M44 62 L41 46 H63 L60 62 Z\" fill=\"#FF9EC4\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M52 46 V30 M52 38 Q42 36 44 28 Q53 30 52 38 M52 34 Q62 32 61 24 Q52 26 52 34\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><rect x=\"168\" y=\"26\" width=\"40\" height=\"44\" rx=\"5\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3\"/><rect x=\"174\" y=\"32\" width=\"28\" height=\"32\" rx=\"3\" fill=\"#FFE7C2\" stroke=\"#2A2340\" stroke-width=\"2\"/><path d=\"M178 60 L186 44 L192 54 L196 48 L200 60 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"2\" stroke-linejoin=\"round\"/><ellipse cx=\"122\" cy=\"122\" rx=\"62\" ry=\"11\" fill=\"#FF9EC4\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><ellipse cx=\"122\" cy=\"122\" rx=\"40\" ry=\"6\" fill=\"#FFD3E4\"/>" + cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 122, y: 84, size: 40 }) + "<path d=\"M198 108 V72 M198 72 L186 58 H210 Z\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/></svg>"
     },
@@ -69,6 +70,7 @@
       var dev = devVisible(), season = opts.season || null;
       return GAMES.filter(function (g) {
         if (g.status === 'dev' && !dev) return false;
+        if (g.tile === false && !opts.all) return false;
         if (g.season && g.season !== season) return false;
         if (opts.toddler !== undefined && !!g.toddler !== !!opts.toddler) return false;
         if (opts.age && g.ages.indexOf(opts.age) < 0) return false;

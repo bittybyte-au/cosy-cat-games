@@ -9,20 +9,12 @@ body.game {
 canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
 .game button { font-family: var(--body); color: var(--ink); }
 
-/* top bar: Home on the left, sound on the right, the game's own bits in the middle */
+/* top bar: Home on the left, sound on the right, the game's own bits in the middle (round buttons: site.css) */
 .topbar {
   position: fixed; left: 0; right: 0; top: 0; z-index: 7;
   padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px));
   display: flex; align-items: center; gap: 10px;
 }
-.round {
-  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink); padding: 0;
-  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center;
-  text-decoration: none; color: var(--ink);
-}
-.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.round svg { width: 30px; height: 30px; }
-.round.wide { width: auto; padding: 0 16px; border-radius: 999px; font: 800 1rem var(--body); gap: 6px; display: flex; align-items: center; }
 .level { font: 800 1.05rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 12px 4px; white-space: nowrap; }
 
 /* the speech bubble for short instructions ("Tuck them in!") */

@@ -79,6 +79,16 @@ p { margin: 0; }
 .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .back { align-self: flex-start; min-height: 52px; font-size: 1rem; }
 
+/* round icon buttons (Home and sound in games, the house and close buttons on the games home) */
+.round {
+  width: 56px; height: 56px; flex: none; border-radius: 50%; border: 3px solid var(--ink); padding: 0;
+  background: var(--cream); box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: grid; place-items: center;
+  text-decoration: none; color: var(--ink);
+}
+.round:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.round svg { width: 30px; height: 30px; }
+.round.wide { width: auto; padding: 0 16px; border-radius: 999px; font: 800 1rem var(--body); gap: 6px; display: flex; align-items: center; }
+
 /* a cream rounded chip (the player and toddler switches) */
 .chip {
   display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
