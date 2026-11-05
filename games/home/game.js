@@ -97,6 +97,7 @@
   function save() { try { GG.setProgress('home', S); } catch (e) {} }
 
   /* ---------- dishes (only once the shared collection and dish drawing exist) ---------- */
+  var DISH_NAMES = { handroll: 'Hand roll', pancakes: 'Pancakes', burger: 'Burger' };
   function dishesReady() { return !!(window.GG && typeof GG.collection === 'function' && window.GGDish && typeof GGDish.draw === 'function'); }
   function dishList() { if (!dishesReady()) return []; try { return GG.collection({ type: 'dish' }) || []; } catch (e) { return []; } }
 
@@ -113,7 +114,7 @@
     if (u.indexOf('t-') === 0) { var t = findDef(THINGS, u.slice(2)); return t && thingUnlocked(t) ? { u: u, kind: 'thing', def: t, w: t.w, h: t.h } : null; }
     if (u.indexOf('d-') === 0) {
       var list = dishList();
-      for (var j = 0; j < list.length; j++) if ('d-' + list[j].uid === u) return { u: u, kind: 'dish', def: { name: list[j].id }, data: list[j], w: 110, h: 90 };
+      for (var j = 0; j < list.length; j++) if ('d-' + list[j].uid === u) return { u: u, kind: 'dish', def: { name: DISH_NAMES[list[j].id] || 'Dish' }, data: list[j], w: 110, h: 60 };
       return null;
     }
     return null;
@@ -430,7 +431,8 @@
   }
 
   function drawDish(c, data, size) {
-    try { c.save(); c.translate(0, -size / 2); GGDish.draw(c, data, size); c.restore(); } catch (e) { c.restore(); }
+    // the shared dish drawing is centred on its plate, which is fairly flat: lift it so the plate sits on the surface
+    try { c.save(); c.translate(0, -size * 0.2); GGDish.draw(c, data, size); c.restore(); } catch (e) { c.restore(); }
   }
 
   /* An item in the room, bottom centre at (0,0). */
@@ -670,7 +672,7 @@
   function tileHTML(u, it, extra) {
     var key = u + ':' + (it.kind === 'plant' ? it.data.pot + '-' + it.data.col : '');
     if (!thumbCache[key]) thumbCache[key] = itemThumb(it);
-    var name = it.kind === 'dish' ? 'Dish' : it.def.name;
+    var name = it.def.name;
     return '<div class="item' + (extra || '') + '" data-u="' + u + '" role="button" tabindex="0" aria-label="' + name + '"><img alt="" src="' + thumbCache[key] + '"><span>' + name + '</span></div>';
   }
   function renderDrawer() {
