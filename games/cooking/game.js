@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var INK = GGDraw.INK;
   var TAU = Math.PI * 2;
   var SIZE = 640;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17,28 +17,18 @@
   function easeOut(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
   function easeBack(t) { t = clamp(t, 0, 1); var c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-  function seeded(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function wrapAngle(a) { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 5; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
-  function mixHex(a, b, t) {
-    var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
-    var r = Math.round(lerp(pa >> 16, pb >> 16, t)), g = Math.round(lerp(pa >> 8 & 255, pb >> 8 & 255, t)), bl = Math.round(lerp(pa & 255, pb & 255, t));
-    return 'rgb(' + r + ',' + g + ',' + bl + ')';
-  }
+  /* drawing: the shared kit (shared/draw.js) keeps every game in one style */
+  var D = GGDraw, rr = D.rr, ink = D.ink, seeded = D.seeded, shape = D.shape;
   /* Finished dishes and the food on them are drawn by shared/dishes.js (Cosy Home draws them too). */
   var DISH = GGDish.parts;
-  var NORI = DISH.NORI, NORI_LIGHT = DISH.NORI_LIGHT, ROLL_R = DISH.ROLL_R, PLATES = DISH.PLATES, TONES = DISH.TONES, PATTY_TONES = DISH.PATTY_TONES, LAYER_H = DISH.LAYER_H;
+  var NORI = DISH.NORI, ROLL_R = DISH.ROLL_R, PLATES = DISH.PLATES, TONES = DISH.TONES, PATTY_TONES = DISH.PATTY_TONES, LAYER_H = DISH.LAYER_H;
   var PCX = DISH.PCX, PCY = DISH.PCY, PR = DISH.PR, SOY = DISH.SOY;
-  var SX = DISH.SX, SY0 = DISH.SY0, SRX = DISH.SRX, SRY = DISH.SRY, STH = DISH.STH, PLATE2 = DISH.PLATE2, BX = DISH.BX, BY = DISH.BY;
+  var SX = DISH.SX, SY0 = DISH.SY0, SRY = DISH.SRY, STH = DISH.STH, PLATE2 = DISH.PLATE2, BX = DISH.BX, BY = DISH.BY;
   var drawMini = DISH.drawMini, grainBatch = DISH.grainBatch, drawHandroll = DISH.drawHandroll, drawSeed = DISH.drawSeed, drawPlateScene = DISH.drawPlateScene;
-  var drawLeaf = DISH.drawLeaf, drawGinger = DISH.drawGinger, drawWasabi = DISH.drawWasabi, cakeInfo = DISH.cakeInfo, drawStackCake = DISH.drawStackCake;
-  var stackOf = DISH.stackOf, drawButter = DISH.drawButter, drawTopping = DISH.drawTopping, drawStackScene = DISH.drawStackScene;
-  var drawBunBottom = DISH.drawBunBottom, drawBunTop = DISH.drawBunTop, drawLayer = DISH.drawLayer, drawBurgerScene = DISH.drawBurgerScene;
+  var cakeInfo = DISH.cakeInfo, drawStackCake = DISH.drawStackCake;
+  var stackOf = DISH.stackOf, drawStackScene = DISH.drawStackScene;
+  var drawBunBottom = DISH.drawBunBottom, drawLayer = DISH.drawLayer, drawBurgerScene = DISH.drawBurgerScene;
   var ZX = DISH.ZX, ZY = DISH.ZY, ZRX = DISH.ZRX, ZRY = DISH.ZRY, ZSQ = ZRY / ZRX, PIZZA_TOPS = DISH.PIZZA_TOPS, drawPizzaTopping = DISH.drawPizzaTopping, drawPizzaScene = DISH.drawPizzaScene;
   function stackTop(d) { return DISH.stackTop(d || dish); }
 
@@ -234,22 +224,29 @@
   }
   /* a frying pan seen from above; grill = ridges for the burger pan; butter = a buttery shine */
   function drawPan(c, x, y, r, handle, grill, butter) {
-    c.beginPath(); c.ellipse(x + 6, y + 16, r + 8, r * 0.98, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
+    D.shadow(c, x + 6, y + 16, r + 8, r * 0.98);
     c.save(); c.translate(x, y); c.rotate(2.39);
-    rr(c, r - 20, -16, 190, 32, 16); c.fillStyle = '#2A2340'; c.fill();
-    rr(c, r + 60, -11, 100, 22, 11); c.fillStyle = handle; c.fill(); ink(c, 3.5);
+    rr(c, r - 20, -16, 190, 32, 16); c.fillStyle = INK; c.fill();
+    shape(c, D.rrPath(r + 60, -11, 100, 22, 11), handle, { lw: 4, depth: 4, dx: 0 });
     c.restore();
-    c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = '#3B3F4A'; c.fill(); ink(c, 5);
-    c.beginPath(); c.arc(x, y, r - 18, 0, TAU); c.fillStyle = '#4C5260'; c.fill();
-    if (grill) {
-      c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 6;
-      for (var g = -3; g <= 3; g++) { var gx = x + g * 40, hh = Math.sqrt(Math.max(0, (r - 24) * (r - 24) - (g * 40) * (g * 40))); c.beginPath(); c.moveTo(gx, y - hh); c.lineTo(gx, y + hh); c.stroke(); }
-    }
-    if (butter) {
-      c.beginPath(); c.arc(x, y, (r - 26) * butter, 0, TAU); c.fillStyle = 'rgba(255,236,170,.12)'; c.fill();
-      c.fillStyle = 'rgba(255,240,190,.4)'; [[-50, 30, 26], [40, -40, 18], [60, 50, 12]].forEach(function (q) { c.beginPath(); c.ellipse(x + q[0] * butter, y + q[1] * butter, q[2] * butter, q[2] * 0.5 * butter, -0.5, 0, TAU); c.fill(); });
-    }
-    c.beginPath(); c.arc(x, y, r - 30, -2.6, -1.6); c.strokeStyle = 'rgba(255,255,255,.14)'; c.lineWidth = 10; c.lineCap = 'round'; c.stroke();
+    shape(c, D.ellPath(x, y, r, r), D.tone(c, '#3B3F4A', y - r, y + r), {
+      lw: 5, depth: 0, inside: function (c) {
+        // the floor of the pan: in the shade of its wall at the top left, as a hollow is
+        c.beginPath(); c.arc(x, y, r - 18, 0, TAU); c.fillStyle = '#4C5260'; c.fill();
+        D.crescent(c, D.ellPath(x, y, r - 18, r - 18), 10, 'rgba(20,18,30,.22)', 7, 10);
+        c.save(); c.beginPath(); c.arc(x, y, r - 18, 0, TAU); c.clip();
+        if (grill) {
+          c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 6; c.lineCap = 'round';
+          for (var g = -3; g <= 3; g++) { var gx = x + g * 40, hh = Math.sqrt(Math.max(0, (r - 24) * (r - 24) - (g * 40) * (g * 40))); c.beginPath(); c.moveTo(gx, y - hh); c.lineTo(gx, y + hh); c.stroke(); }
+        }
+        if (butter) {
+          c.beginPath(); c.arc(x, y, (r - 26) * butter, 0, TAU); c.fillStyle = 'rgba(255,236,170,.12)'; c.fill();
+          c.fillStyle = 'rgba(255,240,190,.4)'; [[-50, 30, 26], [40, -40, 18], [60, 50, 12]].forEach(function (q) { c.beginPath(); c.ellipse(x + q[0] * butter, y + q[1] * butter, q[2] * butter, q[2] * 0.5 * butter, -0.5, 0, TAU); c.fill(); });
+        }
+        c.restore();
+        c.beginPath(); c.arc(x, y, r - 9, -2.6, -1.6); c.strokeStyle = 'rgba(255,255,255,.16)'; c.lineWidth = 8; c.lineCap = 'round'; c.stroke();
+      }
+    });
   }
   /* the big mixing bowl (rice, batter, washing, rising dough). Returns nothing; the inside is an ellipse at (cx, cy) RX x RY */
   var BOWLS = {
@@ -259,15 +256,41 @@
   };
   function drawBigBowl(c, cx, cy, kind) {
     var b = BOWLS[kind], RX = 214;
-    c.beginPath(); c.ellipse(cx, cy + 230, 150, 22, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
-    c.beginPath(); c.ellipse(cx, cy + 214, 96, 20, 0, 0, TAU); c.fillStyle = b.base; c.fill(); ink(c, 5);
-    c.beginPath(); c.moveTo(cx - RX, cy); c.bezierCurveTo(cx - RX, cy + 180, cx - 110, cy + 216, cx, cy + 216);
-    c.bezierCurveTo(cx + 110, cy + 216, cx + RX, cy + 180, cx + RX, cy); c.closePath(); c.fillStyle = b.body; c.fill(); ink(c, 5);
-    c.save(); c.clip(); c.fillStyle = '#FFFFFF'; c.strokeStyle = '#FFFFFF'; c.lineWidth = 8;
-    if (b.dots) for (var k = 0; k < 9; k++) { c.beginPath(); c.arc(cx - 170 + k * 42, cy + 96 + Math.sin(k) * 8, 9, 0, TAU); c.fill(); }
-    else for (var j = 0; j < 3; j++) { c.beginPath(); c.ellipse(cx, cy + 34 + j * 38, RX + 4, 52 - j * 6, 0, 0.08, Math.PI - 0.08); c.stroke(); }
-    c.restore();
-    c.beginPath(); c.ellipse(cx, cy, RX, 64, 0, 0, TAU); c.fillStyle = b.inside; c.fill(); ink(c, 5);
+    D.shadow(c, cx, cy + 230, 150, 22);
+    shape(c, D.ellPath(cx, cy + 214, 96, 20), D.darker(b.base, 0.05), { lw: 5, depth: 0 });
+    shape(c, function (p) {
+      p.moveTo(cx - RX, cy); p.bezierCurveTo(cx - RX, cy + 180, cx - 110, cy + 216, cx, cy + 216);
+      p.bezierCurveTo(cx + 110, cy + 216, cx + RX, cy + 180, cx + RX, cy); p.closePath();
+    }, D.tone(c, b.body, cy, cy + 216), {
+      lw: 5, depth: 16, inside: function (c) {
+        c.fillStyle = '#FFFFFF'; c.strokeStyle = '#FFFFFF'; c.lineWidth = 8;
+        if (b.dots) for (var k = 0; k < 9; k++) { c.beginPath(); c.arc(cx - 170 + k * 42, cy + 96 + Math.sin(k) * 8, 9, 0, TAU); c.fill(); }
+        else for (var j = 0; j < 3; j++) { c.beginPath(); c.ellipse(cx, cy + 34 + j * 38, RX + 4, 52 - j * 6, 0, 0.08, Math.PI - 0.08); c.stroke(); }
+      }, shine: [cx - 160, cy + 60, 12, 40, 0.4, 0.2]
+    });
+    // the inside of the bowl: a hollow, so its shade is at the top left
+    shape(c, D.ellPath(cx, cy, RX, 64), b.inside, { lw: 5, depth: 12, dx: 8, dy: 12, shade: 'rgba(42,35,64,.08)' });
+  }
+  /* the front of a little bowl, drawn over what's in it (x, y: the middle of its rim, r: half its width) */
+  function drawBowlFront(c, x, y, r, col) {
+    var k = r / 64;
+    shape(c, function (p) { p.moveTo(x - r, y); p.bezierCurveTo(x - r, y + 46 * k, x + r, y + 46 * k, x + r, y); p.bezierCurveTo(x + 40 * k, y + 14 * k, x - 40 * k, y + 14 * k, x - r, y); p.closePath(); }, D.tone(c, col, y, y + 36 * k), { lw: 4, depth: 6 });
+  }
+  /* the little white plate at the side of the pan */
+  function drawSidePlate(c, x, y, rx) {
+    D.shadow(c, x, y + 8, rx, 24);
+    shape(c, D.ellPath(x, y, rx, 26), '#FFFFFF', { lw: 4, depth: 5, dx: 0 });
+  }
+  /* the wooden chopping board (chopping, shaping the patty); hole: the hanging hole in its corner */
+  function drawCuttingBoard(c, x, y, w, h, hole) {
+    rr(c, x, y + 10, w, h, 34); c.fillStyle = 'rgba(42,35,64,.16)'; c.fill();
+    shape(c, D.rrPath(x, y, w, h, 34), '#F2C48D', {
+      lw: 5, depth: 10, inside: function (c) {
+        c.strokeStyle = '#E0AD72'; c.lineWidth = 4; c.lineCap = 'round';
+        for (var gy = y + 40; gy < y + h - 20; gy += 46) { c.beginPath(); c.moveTo(x + 40, gy); c.quadraticCurveTo(x + w / 2, gy + 12, x + w - 40, gy); c.stroke(); }
+        if (hole) { c.beginPath(); c.arc(x + w - 42, y + 40, 14, 0, TAU); c.fillStyle = '#FFE3CC'; c.fill(); ink(c, 4); }
+      }
+    });
   }
   /* something held to pour (a jug, the flour bag): it tips over while held. spout: where the pour comes out, in its own space */
   function Pourer(o) {
@@ -289,15 +312,24 @@
       }
     };
   }
+  var FLOUR_BAG = new Path2D();
+  FLOUR_BAG.moveTo(-42, -50); FLOUR_BAG.lineTo(-30, -70); FLOUR_BAG.lineTo(30, -70); FLOUR_BAG.lineTo(42, -50); FLOUR_BAG.lineTo(42, 62); FLOUR_BAG.quadraticCurveTo(42, 70, 34, 70); FLOUR_BAG.lineTo(-34, 70); FLOUR_BAG.quadraticCurveTo(-42, 70, -42, 62); FLOUR_BAG.closePath();
+  var FLOUR_LABEL = D.rrPath(-30, -16, 60, 54, 10);
   function drawFlourBag(c, x, y, a) {
     c.save(); c.translate(x, y); c.rotate(a);
-    c.beginPath(); c.moveTo(-42, -50); c.lineTo(-30, -70); c.lineTo(30, -70); c.lineTo(42, -50); c.lineTo(42, 62); c.quadraticCurveTo(42, 70, 34, 70); c.lineTo(-34, 70); c.quadraticCurveTo(-42, 70, -42, 62); c.closePath();
-    c.fillStyle = '#F6EBD6'; c.fill(); ink(c, 5);
-    c.beginPath(); c.ellipse(0, -66, 30, 7, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 3);
-    rr(c, -30, -16, 60, 54, 10); c.fillStyle = '#3FA7F5'; c.fill(); ink(c, 3.5);
-    c.strokeStyle = '#FFE29A'; c.lineWidth = 4; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(0, 30); c.lineTo(0, -6); c.stroke();
-    [-2, 6, 14].forEach(function (yy) { c.beginPath(); c.moveTo(0, yy); c.lineTo(-9, yy - 8); c.moveTo(0, yy); c.lineTo(9, yy - 8); c.stroke(); });
+    shape(c, FLOUR_BAG, '#F6EBD6', {
+      lw: 5, depth: 8, inside: function (c) {
+        // the open top, full of flour
+        c.beginPath(); c.ellipse(0, -66, 30, 7, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 3);
+      }
+    });
+    shape(c, FLOUR_LABEL, '#3FA7F5', {
+      lw: 3, depth: 0, inside: function (c) {
+        c.strokeStyle = '#FFE29A'; c.lineWidth = 4; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(0, 30); c.lineTo(0, -6); c.stroke();
+        [-2, 6, 14].forEach(function (yy) { c.beginPath(); c.moveTo(0, yy); c.lineTo(-9, yy - 8); c.moveTo(0, yy); c.lineTo(9, yy - 8); c.stroke(); });
+      }
+    });
     c.restore();
   }
   function flourPourer(rest, pour) { return Pourer({ rest: rest, pour: pour, tilt: -2.0, spout: { x: 0, y: -70 }, stream: 'rgba(255,255,255,.95)', width: 14, draw: drawFlourBag }); }
@@ -344,18 +376,17 @@
     scale = scale || 1;
     c.save(); c.scale(scale, scale);
     if (kind === 'cucumber') {
-      rr(c, -len / 2, -8, len, 16, 7); c.fillStyle = '#4FAE5E'; c.fill(); ink(c, 3.5);
-      rr(c, -len / 2 + 6, -3, len - 12, 6, 3); c.fillStyle = '#C9EDB4'; c.fill();
+      shape(c, D.rrPath(-len / 2, -8, len, 16, 7), '#4FAE5E', { lw: 4, depth: 3, dx: 0, inside: function (c) { rr(c, -len / 2 + 6, -3, len - 12, 6, 3); c.fillStyle = '#C9EDB4'; c.fill(); } });
     } else if (kind === 'avocado') {
-      var ag = c.createLinearGradient(0, -11, 0, 11); ag.addColorStop(0, '#F4F2A8'); ag.addColorStop(0.6, '#DCEA86'); ag.addColorStop(1, '#A6D05A');
-      rr(c, -len / 2, -11, len, 22, 11); c.fillStyle = ag; c.fill();
-      c.beginPath(); c.moveTo(-len / 2 + 10, 8); c.lineTo(len / 2 - 10, 8); c.strokeStyle = '#5E8F33'; c.lineWidth = 3; c.stroke();
-      rr(c, -len / 2, -11, len, 22, 11); ink(c, 3.5);
+      // pale flesh shading to green at the skin, which runs along the bottom inside the outline
+      shape(c, D.rrPath(-len / 2, -11, len, 22, 11), D.tone(c, '#DCEA86', -11, 11), { lw: 4, depth: 0, inside: function (c) { c.beginPath(); c.moveTo(-len / 2, 9); c.lineTo(len / 2, 9); c.strokeStyle = '#5E8F33'; c.lineWidth = 5; c.stroke(); } });
     } else {
-      rr(c, -len / 2, -11, len, 22, 6); c.fillStyle = '#FF8A5B'; c.fill();
-      c.save(); c.clip(); c.strokeStyle = '#FFD3BD'; c.lineWidth = 4;
-      for (var x = -len / 2 - 20; x < len / 2 + 20; x += 22) { c.beginPath(); c.moveTo(x, -12); c.lineTo(x + 14, 12); c.stroke(); }
-      c.restore(); rr(c, -len / 2, -11, len, 22, 6); ink(c, 3.5);
+      shape(c, D.rrPath(-len / 2, -11, len, 22, 6), '#FF8A5B', {
+        lw: 4, depth: 3, dx: 0, inside: function (c) {
+          c.strokeStyle = '#FFD3BD'; c.lineWidth = 4;
+          for (var x = -len / 2 - 20; x < len / 2 + 20; x += 22) { c.beginPath(); c.moveTo(x, -12); c.lineTo(x + 14, 12); c.stroke(); }
+        }
+      });
     }
     c.restore();
   }
@@ -366,12 +397,14 @@
   var BOWL_COLORS = ['#3FA7F5', '#FF7EB6', '#FFC93C'];
   var FILLINGS = ['cucumber', 'avocado', 'salmon'];
 
+  var SMALL_BOWL = new Path2D(); SMALL_BOWL.moveTo(-58, 0); SMALL_BOWL.bezierCurveTo(-58, 46, 58, 46, 58, 0); SMALL_BOWL.closePath();
   function drawBowl(c, i, kind, amount, highlight, pos) {
     var b = pos || BOWL_POS[i], r = 58;
     c.save(); c.translate(b.x, b.y);
     if (highlight) { c.beginPath(); c.ellipse(0, 10, r + 16, r * 0.62 + 16, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.65)'; c.fill(); }
-    c.beginPath(); c.moveTo(-r, 0); c.bezierCurveTo(-r, 46, r, 46, r, 0); c.closePath(); c.fillStyle = BOWL_COLORS[i]; c.fill(); ink(c, 4.5);
-    c.beginPath(); c.ellipse(0, 0, r, r * 0.3, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4.5);
+    D.shadow(c, 0, 36, r * 0.8, 8);
+    shape(c, SMALL_BOWL, D.tone(c, BOWL_COLORS[i], 0, 36), { lw: 4, depth: 6 });
+    shape(c, D.ellPath(0, 0, r, r * 0.3), '#FFFFFF', { lw: 4, depth: 5, dx: 4, dy: 5, shade: 'rgba(42,35,64,.1)' });
     if (amount > 0) {
       var rnd = seeded(i * 31 + 5), n = Math.round(6 * amount);
       for (var k = 0; k < n; k++) {
@@ -383,12 +416,6 @@
     c.restore();
   }
 
-  /* Rice grains, drawn as tiny white ovals */
-  function grain(c, x, y, a, l) {
-    c.save(); c.translate(x, y); c.rotate(a);
-    c.beginPath(); c.ellipse(0, 0, l / 2, l / 4.2, 0, 0, TAU); c.fill(); c.stroke();
-    c.restore();
-  }
 
 
 
@@ -535,25 +562,29 @@
         if (phase === 'load' || phase === 'fly') {
           c.beginPath(); c.ellipse(BOWL.x, BOWL.y, 64, 18, 0, 0, TAU); c.fillStyle = '#E6F7E3'; c.fill(); ink(c, 4);
           if (phase === 'load') drawRice(c, BOWL.x, BOWL.y - 2, 0.5, false);
-          c.beginPath(); c.moveTo(BOWL.x - 64, BOWL.y); c.bezierCurveTo(BOWL.x - 64, BOWL.y + 46, BOWL.x + 64, BOWL.y + 46, BOWL.x + 64, BOWL.y); c.bezierCurveTo(BOWL.x + 40, BOWL.y + 14, BOWL.x - 40, BOWL.y + 14, BOWL.x - 64, BOWL.y); c.closePath(); c.fillStyle = '#7BD389'; c.fill(); ink(c, 4);
+          drawBowlFront(c, BOWL.x, BOWL.y, 64, '#7BD389');
         }
         // the cooker
-        c.beginPath(); c.ellipse(X, Y + 150, 190, 26, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
-        rr(c, X - 180, Y - 60, 360, 210, 70); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 5);
-        rr(c, X - 180, Y + 40, 360, 26, 6); c.fillStyle = '#FF9EC4'; c.fill(); ink(c, 3.5);
-        rr(c, X - 60, Y + 76, 120, 46, 18); c.fillStyle = '#EDE8F5'; c.fill(); ink(c, 3.5);
+        D.shadow(c, X, Y + 150, 190, 26);
+        // the pink band runs right round the pot, so it's drawn inside the body and meets its outline exactly
+        shape(c, D.rrPath(X - 180, Y - 60, 360, 210, 70), D.tone(c, '#FFFFFF', Y - 60, Y + 150), {
+          lw: 5, depth: 14, inside: function (c) {
+            c.fillStyle = '#FF9EC4'; c.fillRect(X - 190, Y + 40, 380, 26);
+            c.beginPath(); c.moveTo(X - 190, Y + 40); c.lineTo(X + 190, Y + 40); c.moveTo(X - 190, Y + 66); c.lineTo(X + 190, Y + 66); ink(c, 3);
+          }
+        });
+        shape(c, D.rrPath(X - 60, Y + 76, 120, 46, 18), '#EDE8F5', { lw: 4, depth: 5, dx: 4, dy: 5 });
         var lit = phase === 'cook' ? (Math.sin(performance.now() / 200) > 0 ? '#FF6B57' : '#FFB3A8') : phase === 'ready' || phase === 'open' || phase === 'done' ? '#7BD389' : '#FFC93C';
-        c.beginPath(); c.arc(BTN.x, BTN.y, 16, 0, TAU); c.fillStyle = lit; c.fill(); ink(c, 3.5);
+        shape(c, D.ellPath(BTN.x, BTN.y, 16, 16), lit, { lw: 3, depth: 4, shine: [BTN.x - 5, BTN.y - 5, 4, 3, -0.5] });
         // the lid is hinged at the back: open, it stands up behind the pot; closed, it's a dome over it
         var open = easeOut(lid);
         function drawLid(k) {
           c.save(); c.translate(X, lerp(Y - 58, Y - 150, k)); c.scale(1, lerp(1, 0.9, k));
-          if (k > 0.5) { c.beginPath(); c.ellipse(0, 0, 166, 70, 0, 0, TAU); c.fillStyle = '#E4E0EC'; c.fill(); ink(c, 5); c.beginPath(); c.ellipse(0, 0, 130, 48, 0, 0, TAU); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 3); }
+          if (k > 0.5) { shape(c, D.ellPath(0, 0, 166, 70), '#E4E0EC', { lw: 5, depth: 8, inside: function (c) { c.beginPath(); c.ellipse(0, 0, 130, 48, 0, 0, TAU); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 3); } }); }
           else {
             var h = lerp(70, 10, k * 2);
-            c.beginPath(); c.moveTo(-170, 0); c.bezierCurveTo(-170, -h * 1.4, 170, -h * 1.4, 170, 0); c.ellipse(0, 0, 170, 36, 0, 0, Math.PI); c.closePath();
-            c.fillStyle = '#F4F2F8'; c.fill(); ink(c, 5);
-            rr(c, -22, -h * 1.05 - 10, 44, 20, 8); c.fillStyle = '#FF9EC4'; c.fill(); ink(c, 3.5);
+            shape(c, function (p) { p.moveTo(-170, 0); p.bezierCurveTo(-170, -h * 1.4, 170, -h * 1.4, 170, 0); p.ellipse(0, 0, 170, 36, 0, 0, Math.PI); p.closePath(); }, '#F4F2F8', { lw: 5, depth: 10 });
+            shape(c, D.rrPath(-22, -h * 1.05 - 10, 44, 20, 8), '#FF9EC4', { lw: 4, depth: 4 });
           }
           c.restore();
         }
@@ -795,6 +826,10 @@
         c.strokeStyle = '#FFD3BD'; c.lineWidth = 7;
         for (var x = -d.len / 2 - 60; x < d.len / 2 + 60; x += 34) { c.beginPath(); c.moveTo(x, -d.h / 2); c.quadraticCurveTo(x + 30, 0, x + 10, d.h / 2); c.stroke(); }
       }
+      // the banana's brown tips sit inside its outline
+      if (k === 'banana') { c.fillStyle = '#8A5A2B'; c.beginPath(); c.ellipse(-d.len / 2 + 4, 0, 9, 12, 0, 0, TAU); c.ellipse(d.len / 2 - 4, 0, 9, 12, 0, 0, TAU); c.fill(); }
+      // soft shade along the lower edge
+      c.save(); c.translate(0, -12); bodyPath(c, d); c.restore(); c.rect(-d.len, -d.h, d.len * 2, d.h * 2); c.fillStyle = 'rgba(42,35,64,.1)'; c.fill('evenodd');
       c.restore();
       bodyPath(c, d); ink(c, 5);
       if (k === 'tomato') {
@@ -809,7 +844,6 @@
         for (var pl = 0; pl < 5; pl++) { c.save(); c.rotate(-0.9 + pl * 0.45); c.beginPath(); c.moveTo(0, -6); c.quadraticCurveTo(30, -10, 52, 0); c.quadraticCurveTo(30, 10, 0, 6); c.closePath(); c.fillStyle = '#5CC46B'; c.fill(); ink(c, 3); c.restore(); }
         c.restore();
       }
-      if (k === 'banana') { c.fillStyle = '#8A5A2B'; c.beginPath(); c.ellipse(-d.len / 2 + 6, 0, 7, 10, 0, 0, TAU); c.ellipse(d.len / 2 - 6, 0, 7, 10, 0, 0, TAU); c.fill(); }
       if (k === 'strawberry') {
         // leafy green top on the wide end
         c.save(); c.translate(d.len / 2 - 4, 0);
@@ -844,7 +878,7 @@
       c.scale(1 - 0.8 * lt, 1 - 0.8 * lt);
       c.globalAlpha = 1 - lt * 0.6;
       // shadow
-      c.beginPath(); c.ellipse(0, d.h / 2 + 8, d.len / 2, 12, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill();
+      D.shadow(c, 0, d.h / 2 + 8, d.len / 2, 12);
       var cutXs = cur.guides.filter(function (g) { return g.cut; }).sort(function (a, b) { return a.x - b.x; });
       var bounds = [-d.len / 2 - 70].concat(cutXs.map(function (g) { return g.x; }), [d.len / 2 + 70]);
       for (var s = 0; s < bounds.length - 1; s++) {
@@ -873,9 +907,9 @@
     function drawKnife(c, p) {
       c.save(); c.translate(p.x, p.y); c.rotate(-0.12);
       c.beginPath(); c.moveTo(-6, 0); c.lineTo(-6, -150); c.lineTo(30, -150); c.quadraticCurveTo(32, -40, -6, 0); c.closePath();
-      c.fillStyle = '#E3E9F0'; c.fill(); ink(c, 4.5);
-      c.beginPath(); c.moveTo(2, -136); c.lineTo(2, -40); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 4; c.stroke();
-      rr(c, -8, -238, 34, 92, 12); c.fillStyle = '#FF6B57'; c.fill(); ink(c, 4.5);
+      c.fillStyle = '#E3E9F0'; c.fill(); ink(c, 4);
+      c.beginPath(); c.moveTo(2, -136); c.lineTo(2, -40); c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 4; c.lineCap = 'round'; c.stroke();
+      shape(c, D.rrPath(-8, -238, 34, 92, 12), D.tone(c, '#FF6B57', -238, -146), { lw: 4, depth: 5 });
       c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(9, -210, 4, 0, TAU); c.arc(9, -176, 4, 0, TAU); c.fill();
       c.restore();
     }
@@ -952,11 +986,7 @@
       },
       draw: function (c) {
         // cutting board
-        c.beginPath(); rr(c, 50, 120, 540, 360, 34); c.fillStyle = 'rgba(42,35,64,.15)'; c.save(); c.translate(0, 10); c.fill(); c.restore();
-        rr(c, 50, 120, 540, 360, 34); c.fillStyle = '#F2C48D'; c.fill(); ink(c, 5);
-        c.strokeStyle = '#E0AD72'; c.lineWidth = 4;
-        for (var y = 160; y < 460; y += 46) { c.beginPath(); c.moveTo(90, y); c.quadraticCurveTo(320, y + 12, 550, y); c.stroke(); }
-        c.beginPath(); c.arc(548, 160, 14, 0, TAU); c.fillStyle = '#FFE3CC'; c.fill(); ink(c, 4);
+        drawCuttingBoard(c, 50, 120, 540, 360, true);
         for (var b = 0; b < list.length; b++) drawBowl(c, b, list[b], filled[b], false, POS[b]);
         drawIngredient(c);
         if (trail.length > 1) {
@@ -1005,10 +1035,12 @@
     }
 
     function drawFlat(c) {
-      rr(c, NX, NY, NW, NH, 8); c.fillStyle = NORI; c.fill(); ink(c, 5);
-      c.save(); rr(c, NX, NY, NW, NH, 8); c.clip(); c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 3;
-      var r2 = seeded(4); for (var i = 0; i < 26; i++) { var x = NX + r2() * NW, y = NY + r2() * NH; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 30, y + 6); c.stroke(); }
-      c.restore();
+      shape(c, D.rrPath(NX, NY, NW, NH, 8), NORI, {
+        lw: 5, depth: 8, shade: 'rgba(16,26,22,.3)', inside: function (c) {
+          c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = 3;
+          var r2 = seeded(4); for (var i = 0; i < 26; i++) { var x = NX + r2() * NW, y = NY + r2() * NH; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 30, y + 6); c.stroke(); }
+        }
+      });
       if (phase === 'rice') {
         c.setLineDash([12, 10]); rr(c, ZX - 4, ZY - 4, ZW + 8, ZH + 8, 18); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 4; c.stroke(); c.setLineDash([]);
       }
@@ -1087,11 +1119,14 @@
       },
       draw: function (c) {
         // bamboo mat
-        rr(c, 60, 120, 520, 356, 14); c.fillStyle = '#EED9A4'; c.fill(); ink(c, 5);
-        c.save(); rr(c, 60, 120, 520, 356, 14); c.clip(); c.strokeStyle = '#D6B877'; c.lineWidth = 3;
-        for (var y = 136; y < 476; y += 20) { c.beginPath(); c.moveTo(60, y); c.lineTo(580, y); c.stroke(); }
-        c.strokeStyle = '#B9935A'; c.lineWidth = 4; c.beginPath(); c.moveTo(140, 120); c.lineTo(140, 476); c.moveTo(500, 120); c.lineTo(500, 476); c.stroke();
-        c.restore();
+        rr(c, 60, 130, 520, 356, 14); c.fillStyle = 'rgba(42,35,64,.16)'; c.fill();
+        shape(c, D.rrPath(60, 120, 520, 356, 14), '#EED9A4', {
+          lw: 5, depth: 8, inside: function (c) {
+            c.strokeStyle = '#D6B877'; c.lineWidth = 3;
+            for (var y = 136; y < 476; y += 20) { c.beginPath(); c.moveTo(60, y); c.lineTo(580, y); c.stroke(); }
+            c.strokeStyle = '#B9935A'; c.lineWidth = 4; c.beginPath(); c.moveTo(140, 120); c.lineTo(140, 476); c.moveTo(500, 120); c.lineTo(500, 476); c.stroke();
+          }
+        });
         for (var b = 0; b < 3; b++) drawBowl(c, b, FILLINGS[b], bowls[b], phase === 'fill' && bowls[b]);
         if (roll <= 0) { drawFlat(c); }
         else {
@@ -1265,16 +1300,17 @@
   var BATTER = '#F7DFA0';
 
   /* A milk or batter jug. (x, y) is the jug's middle, a is the tilt. */
+  var JUG = new Path2D(); JUG.moveTo(-40, -52); JUG.lineTo(-52, -66); JUG.lineTo(-28, -60); JUG.lineTo(38, -60); JUG.lineTo(34, 50); JUG.quadraticCurveTo(0, 62, -34, 50); JUG.closePath();
   function drawJug(c, x, y, a, liquid, level) {
     c.save(); c.translate(x, y); c.rotate(a);
     c.beginPath(); c.moveTo(36, -30); c.quadraticCurveTo(70, -26, 66, 4); c.quadraticCurveTo(62, 30, 34, 28);
     c.strokeStyle = INK; c.lineWidth = 16; c.lineCap = 'round'; c.stroke(); c.strokeStyle = '#FFFFFF'; c.lineWidth = 8; c.stroke();
-    c.beginPath(); c.moveTo(-40, -52); c.lineTo(-52, -66); c.lineTo(-28, -60); c.lineTo(38, -60); c.lineTo(34, 50); c.quadraticCurveTo(0, 62, -34, 50); c.closePath();
-    c.fillStyle = '#FFFFFF'; c.fill();
-    c.save(); c.clip(); c.fillStyle = liquid; c.fillRect(-60, lerp(-46, 52, 1 - level), 120, 140); c.restore();
-    c.beginPath(); c.moveTo(-40, -52); c.lineTo(-52, -66); c.lineTo(-28, -60); c.lineTo(38, -60); c.lineTo(34, 50); c.quadraticCurveTo(0, 62, -34, 50); c.closePath();
-    ink(c, 5);
-    c.fillStyle = '#3FA7F5'; c.beginPath(); c.arc(-4, 6, 9, 0, TAU); c.arc(16, -10, 6, 0, TAU); c.fill();
+    shape(c, JUG, '#FFFFFF', {
+      lw: 5, depth: 8, inside: function (c) {
+        c.fillStyle = liquid; c.fillRect(-60, lerp(-46, 52, 1 - level), 120, 140);
+        c.fillStyle = '#3FA7F5'; c.beginPath(); c.arc(-4, 6, 9, 0, TAU); c.arc(16, -10, 6, 0, TAU); c.fill();
+      }
+    });
     c.restore();
   }
   function jugMouth(x, y, a) { return { x: x + Math.cos(a) * -52 - Math.sin(a) * -66, y: y + Math.sin(a) * -52 + Math.cos(a) * -66 }; }
@@ -1389,17 +1425,15 @@
       },
       draw: function (c) {
         // little bowl holding the eggs until it's their turn
-        c.beginPath(); c.ellipse(EB.x, EB.y + 34, 62, 12, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill();
+        D.shadow(c, EB.x, EB.y + 34, 62, 12);
         c.beginPath(); c.ellipse(EB.x, EB.y, 64, 18, 0, 0, TAU); c.fillStyle = '#FFE7C2'; c.fill(); ink(c, 4.5);
         eggs.forEach(function (e) { if (e.state === 'wait') drawEgg(c, e.x, e.y, e.rot, 0); });
-        c.beginPath(); c.moveTo(EB.x - 64, EB.y); c.bezierCurveTo(EB.x - 64, EB.y + 46, EB.x + 64, EB.y + 46, EB.x + 64, EB.y);
-        c.bezierCurveTo(EB.x + 40, EB.y + 14, EB.x - 40, EB.y + 14, EB.x - 64, EB.y); c.closePath();
-        c.fillStyle = '#FF9F6B'; c.fill(); ink(c, 4.5);
+        drawBowlFront(c, EB.x, EB.y, 64, '#FF9F6B');
         drawBigBowl(c, cx, cy, 'blue');
         // milk / batter
         if (milk > 0) {
           c.beginPath(); c.ellipse(cx, cy + 8, rx * (0.4 + 0.6 * Math.sqrt(milk)), ry * (0.4 + 0.6 * Math.sqrt(milk)), 0, 0, TAU);
-          c.fillStyle = mixHex('#FBF8F1', BATTER, easeOut(whisk)); c.fill();
+          c.fillStyle = D.mix('#FBF8F1', BATTER, easeOut(whisk)); c.fill();
         }
         // flour mound (with its sugar) grows as it's poured and melts away as you whisk
         if (whisk < 1 && flourAmt > 0) {
@@ -1454,8 +1488,7 @@
         if (phase === 'milk' || jug.shown()) jug.draw(c, holding && phase === 'milk', cy + 10, 1 - milk * 0.8);
         if (phase === 'flour' || phase === 'sugar') {
           c.beginPath(); c.ellipse(SB.x, SB.y, 58, 16, 0, 0, TAU); c.fillStyle = '#FFFDF5'; c.fill(); ink(c, 4);
-          c.beginPath(); c.moveTo(SB.x - 58, SB.y); c.bezierCurveTo(SB.x - 58, SB.y + 44, SB.x + 58, SB.y + 44, SB.x + 58, SB.y); c.bezierCurveTo(SB.x + 36, SB.y + 12, SB.x - 36, SB.y + 12, SB.x - 58, SB.y); c.closePath();
-          c.fillStyle = '#FF7EB6'; c.fill(); ink(c, 4);
+          drawBowlFront(c, SB.x, SB.y, 58, '#FF7EB6');
           if (!spoon && phase === 'sugar') { c.save(); c.translate(SB.x + 20, SB.y - 30); c.rotate(-0.6); rr(c, -5, -70, 10, 60, 5); c.fillStyle = '#9AA6B2'; c.fill(); ink(c, 3); c.beginPath(); c.ellipse(0, -2, 16, 11, 0, 0, TAU); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 3.5); c.restore(); }
         }
         if (spoon) {
@@ -1490,15 +1523,22 @@
       var T = TONES[tone || 'perfect'];
       var g = c.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r);
       g.addColorStop(0, T.c1); g.addColorStop(0.75, T.c2); g.addColorStop(1, T.edge);
-      c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = g; c.fill(); ink(c, 4);
-      c.fillStyle = T.spots; var sr = seeded(31);
-      for (var i = 0; i < 9; i++) { c.beginPath(); c.arc((sr() - 0.5) * r * 1.2, (sr() - 0.5) * r * 1.2, 3 + sr() * 5, 0, TAU); c.fill(); }
+      shape(c, D.ellPath(0, 0, r, r), g, {
+        lw: 4, depth: 6, inside: function (c) {
+          c.fillStyle = T.spots; var sr = seeded(31);
+          for (var i = 0; i < 9; i++) { c.beginPath(); c.arc((sr() - 0.5) * r * 1.2, (sr() - 0.5) * r * 1.2, 3 + sr() * 5, 0, TAU); c.fill(); }
+        }
+      });
     } else {
-      c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = mixHex('#F8E6B0', '#F0D08A', cook); c.fill();
-      var edge = burn > 0 ? mixHex('#D99A48', '#4E2A13', burn) : mixHex('#F3D995', '#D99A48', cook);
-      c.lineWidth = 6 + cook * 4 + burn * 8; c.strokeStyle = edge; c.stroke(); ink(c, 3.5);
-      c.fillStyle = 'rgba(200,140,60,.6)';
-      (holes || []).forEach(function (h) { c.beginPath(); c.arc(h.x * r, h.y * r, h.r, 0, TAU); c.fill(); });
+      // the browning edge creeps in from the outline, inside it
+      var edge = burn > 0 ? D.mix('#D99A48', '#4E2A13', burn) : D.mix('#F3D995', '#D99A48', cook);
+      shape(c, D.ellPath(0, 0, r, r), D.mix('#F8E6B0', '#F0D08A', cook), {
+        lw: 4, depth: 0, inside: function (c) {
+          c.beginPath(); c.arc(0, 0, r, 0, TAU); c.lineWidth = (6 + cook * 4 + burn * 8) * 2; c.strokeStyle = edge; c.stroke();
+          c.fillStyle = 'rgba(200,140,60,.6)';
+          (holes || []).forEach(function (h) { c.beginPath(); c.arc(h.x * r, h.y * r, h.r, 0, TAU); c.fill(); });
+        }
+      });
     }
     c.restore();
   }
@@ -1542,7 +1582,7 @@
       },
       draw: function (c) {
         drawPan(c, PX, PY, PR2, '#FF6B57', false, phase === 'done' ? 1 : melt);
-        c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 76, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+        drawSidePlate(c, SIDE.x, SIDE.y + 10, 76);
         if (phase === 'wait') drawKnob(c, SIDE.x, SIDE.y - 4, 1.4);
         else if (phase === 'fly') { var k = easeOut(fly); drawKnob(c, lerp(SIDE.x, PX, k), lerp(SIDE.y - 4, PY, k) - Math.sin(k * Math.PI) * 90, 1.4); }
         else if (phase === 'melt') {
@@ -1638,7 +1678,7 @@
       draw: function (c) {
         drawPan(c, PX, PY, PR2, '#FF6B57', false, 1);
         // side plate with the finished stack
-        c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 76, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+        drawSidePlate(c, SIDE.x, SIDE.y + 10, 76);
         for (var i = 0; i < made; i++) { var ci = cakeInfo(dish.cakes[i]), sc = ci.r / 145; drawStackCake(c, SIDE.x, SIDE.y - i * 13, 58 * sc, 17 * sc, 12, ci.tone); }
         if (cake) {
           var cookAmt = cake.phase === 'pour' ? 0 : cake.phase === 'cook1' ? Math.min(1, cake.t / T_OK) : 1;
@@ -1816,23 +1856,28 @@
   /* top-down patty in the pan. cooked: tone of the side facing up, or null if raw. edge: 0..1 browning, burn: 0..1 */
   function drawPattyTop(c, x, y, r, cooked, edge, burn) {
     c.save(); c.translate(x, y);
-    c.beginPath();
-    for (var i = 0; i <= 28; i++) { var a = i / 28 * TAU, w = 1 + 0.035 * Math.sin(a * 7) + 0.02 * Math.sin(a * 11); c.lineTo(Math.cos(a) * r * w, Math.sin(a) * r * w); }
-    c.closePath();
+    var p = new Path2D();
+    for (var i = 0; i <= 28; i++) { var a = i / 28 * TAU, w = 1 + 0.035 * Math.sin(a * 7) + 0.02 * Math.sin(a * 11); p.lineTo(Math.cos(a) * r * w, Math.sin(a) * r * w); }
+    p.closePath();
     if (cooked) {
       var T = PATTY_TONES[cooked];
-      c.fillStyle = T.top; c.fill(); ink(c, 4);
-      c.save(); c.clip(); c.strokeStyle = 'rgba(30,15,8,.55)'; c.lineWidth = 9;
-      for (var k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(-r, k * 30 - 20); c.lineTo(r, k * 30 + 20); c.stroke(); }
-      c.restore();
-      c.fillStyle = T.spots; var sr = seeded(17);
-      for (var s = 0; s < 14; s++) { c.beginPath(); c.arc((sr() - 0.5) * r * 1.3, (sr() - 0.5) * r * 1.3, 2 + sr() * 3, 0, TAU); c.fill(); }
+      shape(c, p, T.top, {
+        lw: 4, depth: 6, inside: function (c) {
+          c.strokeStyle = 'rgba(30,15,8,.55)'; c.lineWidth = 9;
+          for (var k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(-r, k * 30 - 20); c.lineTo(r, k * 30 + 20); c.stroke(); }
+          c.fillStyle = T.spots; var sr = seeded(17);
+          for (var s = 0; s < 14; s++) { c.beginPath(); c.arc((sr() - 0.5) * r * 1.3, (sr() - 0.5) * r * 1.3, 2 + sr() * 3, 0, TAU); c.fill(); }
+        }
+      });
     } else {
-      c.fillStyle = '#E37C86'; c.fill();
-      c.lineWidth = 6 + edge * 10 + burn * 6; c.strokeStyle = burn > 0 ? mixHex('#8A5030', '#2E190F', burn) : mixHex('#E37C86', '#8A5030', edge); c.stroke();
-      ink(c, 3.5);
-      c.fillStyle = 'rgba(255,220,225,.7)'; var mr = seeded(23);
-      for (var m = 0; m < 22; m++) { c.beginPath(); c.arc((mr() - 0.5) * r * 1.4, (mr() - 0.5) * r * 1.4, 2 + mr() * 2.5, 0, TAU); c.fill(); }
+      // raw mince, browning in from the edge (inside the outline)
+      shape(c, p, '#E37C86', {
+        lw: 4, depth: 0, inside: function (c) {
+          c.lineWidth = (6 + edge * 10 + burn * 6) * 2; c.strokeStyle = burn > 0 ? D.mix('#8A5030', '#2E190F', burn) : D.mix('#E37C86', '#8A5030', edge); c.stroke(p);
+          c.fillStyle = 'rgba(255,220,225,.7)'; var mr = seeded(23);
+          for (var m = 0; m < 22; m++) { c.beginPath(); c.arc((mr() - 0.5) * r * 1.4, (mr() - 0.5) * r * 1.4, 2 + mr() * 2.5, 0, TAU); c.fill(); }
+        }
+      });
     }
     c.restore();
   }
@@ -1897,7 +1942,7 @@
       },
       draw: function (c) {
         drawPan(c, PX, PY, PR2, '#3FA7F5', true);
-        c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 80, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+        drawSidePlate(c, SIDE.x, SIDE.y + 10, 80);
         if (phase === 'cook') drawGauge(c, PX, t, T_OK, T_BURN, T_MAX, ['#F2A3AB', '#3A2015']);
         var burn = phase === 'cook' ? clamp((t - T_BURN) / 2, 0, 1) : 0;
         var edge = phase === 'cook' ? clamp(t / T_OK, 0, 1) : 0;
@@ -1930,11 +1975,15 @@
   function drawMince(c, x, y, flat, dimple) {
     var rx = 70 + 62 * flat, ry = 66 - 30 * flat, top = 26 - 14 * flat;
     c.save(); c.translate(x, y);
-    c.beginPath(); c.ellipse(0, top * 0.6, rx, ry * 0.55 + 10, 0, 0, TAU); c.fillStyle = '#D9656F'; c.fill(); ink(c, 4.5);
-    c.beginPath(); c.ellipse(0, -top * 0.4, rx, ry * 0.55 + 10, 0, 0, TAU); c.fillStyle = '#E37C86'; c.fill(); ink(c, 4.5);
-    var r = seeded(23); c.fillStyle = 'rgba(255,220,225,.75)';
-    for (var i = 0; i < 26; i++) { var a = r() * TAU, k = Math.sqrt(r()); c.beginPath(); c.arc(Math.cos(a) * rx * 0.85 * k, -top * 0.4 + Math.sin(a) * (ry * 0.55 + 6) * k, 2 + r() * 2.5, 0, TAU); c.fill(); }
-    if (dimple) { c.beginPath(); c.ellipse(0, -top * 0.4, 26 * dimple, 9 * dimple, 0, 0, TAU); c.fillStyle = '#C9505C'; c.fill(); }
+    D.shadow(c, 0, top * 0.6 + ry * 0.55 + 6, rx * 0.95, 14);
+    shape(c, D.ellPath(0, top * 0.6, rx, ry * 0.55 + 10), '#D9656F', { lw: 5, depth: 6, dx: 0 });
+    shape(c, D.ellPath(0, -top * 0.4, rx, ry * 0.55 + 10), '#E37C86', {
+      lw: 5, depth: 0, inside: function (c) {
+        var r = seeded(23); c.fillStyle = 'rgba(255,220,225,.75)';
+        for (var i = 0; i < 26; i++) { var a = r() * TAU, k = Math.sqrt(r()); c.beginPath(); c.arc(Math.cos(a) * rx * 0.85 * k, -top * 0.4 + Math.sin(a) * (ry * 0.55 + 6) * k, 2 + r() * 2.5, 0, TAU); c.fill(); }
+        if (dimple) { c.beginPath(); c.ellipse(0, -top * 0.4, 26 * dimple, 9 * dimple, 0, 0, TAU); c.fillStyle = '#C9505C'; c.fill(); }
+      }
+    });
     c.restore();
   }
   function ShapeScene() {
@@ -1956,10 +2005,7 @@
       },
       update: function (dt) { squish = Math.max(0, squish - dt * 5); if (phase === 'done') dimple = Math.min(1, dimple + dt * 4); },
       draw: function (c) {
-        c.beginPath(); rr(c, 70, 170, 500, 320, 34); c.fillStyle = 'rgba(42,35,64,.15)'; c.save(); c.translate(0, 10); c.fill(); c.restore();
-        rr(c, 70, 170, 500, 320, 34); c.fillStyle = '#F2C48D'; c.fill(); ink(c, 5);
-        c.strokeStyle = '#E0AD72'; c.lineWidth = 4;
-        for (var y = 210; y < 470; y += 46) { c.beginPath(); c.moveTo(110, y); c.quadraticCurveTo(320, y + 12, 530, y); c.stroke(); }
+        drawCuttingBoard(c, 70, 170, 500, 320, false);
         c.save(); c.translate(X, Y); c.scale(1 + squish * 0.08, 1 - squish * 0.12); drawMince(c, 0, 0, flat, dimple); c.restore();
         if (phase === 'press') drawRing(c, X, 110, flat);
       }
@@ -1974,13 +2020,14 @@
       // a square slice that softens and drips over the edges as it melts
       c.save(); c.translate(x, y); c.scale(s, s); c.rotate(0.2);
       var h = 80 + m * 14;
-      c.beginPath(); c.moveTo(-h, -h + m * 30);
-      [[-h, -h], [h, -h], [h, h], [-h, h]].forEach(function (q, i, all) {
-        var nx = all[(i + 1) % 4], mx = (q[0] + nx[0]) / 2, my = (q[1] + nx[1]) / 2, out = 1 + m * 0.35;
-        c.quadraticCurveTo(q[0] * (1 - m * 0.25), q[1] * (1 - m * 0.25), mx * out, my * out);
-      });
-      c.closePath(); c.fillStyle = '#FFC93C'; c.globalAlpha = 0.92; c.fill(); c.globalAlpha = 1; ink(c, 4);
-      c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(-24, -30, 26, 8, -0.4, 0, TAU); c.fill();
+      shape(c, function (p) {
+        p.moveTo(-h, -h + m * 30);
+        [[-h, -h], [h, -h], [h, h], [-h, h]].forEach(function (q, i, all) {
+          var nx = all[(i + 1) % 4], mx = (q[0] + nx[0]) / 2, my = (q[1] + nx[1]) / 2, out = 1 + m * 0.35;
+          p.quadraticCurveTo(q[0] * (1 - m * 0.25), q[1] * (1 - m * 0.25), mx * out, my * out);
+        });
+        p.closePath();
+      }, 'rgba(255,201,60,.92)', { lw: 4, depth: 8, shine: [-24, -30, 26, 8, -0.4] });
       c.restore();
     }
     return {
@@ -2004,7 +2051,7 @@
       },
       draw: function (c) {
         drawPan(c, PX, PY, 180, '#3FA7F5', true);
-        c.beginPath(); c.ellipse(SIDE.x, SIDE.y + 10, 80, 26, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
+        drawSidePlate(c, SIDE.x, SIDE.y + 10, 80);
         drawBunBottom(c, SIDE.x, SIDE.y + 4, 0.42);
         if (phase === 'wait') { c.beginPath(); c.ellipse(CH.x, CH.y + 36, 60, 14, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 3.5); drawSlice(c, CH.x, CH.y, 0.42, 0); }
         if (phase === 'done') { drawLayer(c, { kind: 'patty', tone: dish.patty }, SIDE.x, SIDE.y - 10, 0.42); drawLayer(c, { kind: 'cheese' }, SIDE.x, SIDE.y - 27, 0.42); return; }
@@ -2019,14 +2066,18 @@
   }
 
   /* ---- Step: wash the lettuce ---- */
+  var LETTUCE_LEAF = new Path2D();
+  LETTUCE_LEAF.moveTo(-60, 10);
+  for (var li = 0; li <= 8; li++) { var lt = li / 8, lx = -60 + 120 * lt; LETTUCE_LEAF.quadraticCurveTo(lx - 7, -44 - Math.sin(lt * Math.PI) * 14 + (li % 2) * 12, lx, -30 - Math.sin(lt * Math.PI) * 16); }
+  LETTUCE_LEAF.quadraticCurveTo(70, 20, 30, 38); LETTUCE_LEAF.quadraticCurveTo(0, 50, -30, 38); LETTUCE_LEAF.quadraticCurveTo(-70, 20, -60, 10); LETTUCE_LEAF.closePath();
   function drawLettuce(c, x, y, s, dirt, a) {
     c.save(); c.translate(x, y); c.rotate(a || 0); c.scale(s, s);
-    c.beginPath(); c.moveTo(-60, 10);
-    for (var i = 0; i <= 8; i++) { var t = i / 8, xx = -60 + 120 * t; c.quadraticCurveTo(xx - 7, -44 - Math.sin(t * Math.PI) * 14 + (i % 2) * 12, xx, -30 - Math.sin(t * Math.PI) * 16); }
-    c.quadraticCurveTo(70, 20, 30, 38); c.quadraticCurveTo(0, 50, -30, 38); c.quadraticCurveTo(-70, 20, -60, 10); c.closePath();
-    c.fillStyle = '#7BD389'; c.fill(); ink(c, 4);
-    c.strokeStyle = '#B8EBA8'; c.lineWidth = 4; c.beginPath(); c.moveTo(0, 40); c.lineTo(0, -30); c.moveTo(0, 10); c.lineTo(-28, -16); c.moveTo(0, 10); c.lineTo(28, -16); c.stroke();
-    if (dirt > 0) { c.globalAlpha = dirt; c.fillStyle = '#8A5A2B'; var r = seeded(61); for (var j = 0; j < 9; j++) { c.beginPath(); c.arc((r() - 0.5) * 90, (r() - 0.5) * 50, 3 + r() * 4, 0, TAU); c.fill(); } c.globalAlpha = 1; }
+    shape(c, LETTUCE_LEAF, '#7BD389', {
+      lw: 4, depth: 6, inside: function (c) {
+        c.strokeStyle = '#B8EBA8'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 40); c.lineTo(0, -30); c.moveTo(0, 10); c.lineTo(-28, -16); c.moveTo(0, 10); c.lineTo(28, -16); c.stroke();
+        if (dirt > 0) { c.globalAlpha = dirt; c.fillStyle = '#8A5A2B'; var r = seeded(61); for (var j = 0; j < 9; j++) { c.beginPath(); c.arc((r() - 0.5) * 90, (r() - 0.5) * 50, 3 + r() * 4, 0, TAU); c.fill(); } c.globalAlpha = 1; }
+      }
+    });
     c.restore();
   }
   function LettuceScene() {
@@ -2070,11 +2121,14 @@
         c.save(); rr(c, TOWEL.x - 200, TOWEL.y - 40, 400, 74, 14); c.clip(); c.fillStyle = '#FF9EB0';
         for (var tx = TOWEL.x - 200; tx < TOWEL.x + 200; tx += 40) c.fillRect(tx, TOWEL.y - 40, 20, 74);
         c.restore(); rr(c, TOWEL.x - 200, TOWEL.y - 40, 400, 74, 14); ink(c, 4);
-        c.beginPath(); c.ellipse(BX2, BY2 + 150, 200, 26, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
-        c.beginPath(); c.moveTo(BX2 - 230, BY2); c.bezierCurveTo(BX2 - 230, BY2 + 150, BX2 + 230, BY2 + 150, BX2 + 230, BY2); c.closePath(); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 5);
-        c.beginPath(); c.ellipse(BX2, BY2, 230, 70, 0, 0, TAU); c.fillStyle = '#E8ECF2'; c.fill(); ink(c, 5);
-        c.beginPath(); c.ellipse(BX2, BY2 + 6, 206, 56, 0, 0, TAU); c.fillStyle = 'rgba(140,205,250,.85)'; c.fill();
-        c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(BX2 - 90, BY2 - 14, 60, 8, -0.1, 0, TAU); c.fill();
+        D.shadow(c, BX2, BY2 + 112, 170, 18);
+        shape(c, function (p) { p.moveTo(BX2 - 230, BY2); p.bezierCurveTo(BX2 - 230, BY2 + 150, BX2 + 230, BY2 + 150, BX2 + 230, BY2); p.closePath(); }, D.tone(c, '#C3CBD4', BY2, BY2 + 112), { lw: 5, depth: 14, shine: [BX2 - 170, BY2 + 50, 12, 30, 0.5, 0.35] });
+        shape(c, D.ellPath(BX2, BY2, 230, 70), '#E8ECF2', {
+          lw: 5, depth: 0, inside: function (c) {
+            c.beginPath(); c.ellipse(BX2, BY2 + 6, 206, 56, 0, 0, TAU); c.fillStyle = 'rgba(140,205,250,.85)'; c.fill();
+            c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(BX2 - 90, BY2 - 14, 60, 8, -0.1, 0, TAU); c.fill();
+          }
+        });
         leaves.forEach(function (l, i) {
           if (l.state === 'clean') drawLettuce(c, TOWEL.x - 120 + i * 120, TOWEL.y - 6, 0.7, 0, l.a);
           else if (l.state === 'fly') { var k = easeOut(l.t); drawLettuce(c, lerp(l.from.x, TOWEL.x - 120 + i * 120, k), lerp(l.from.y, TOWEL.y - 6, k) - Math.sin(k * Math.PI) * 120, lerp(0.9, 0.7, k), 0, l.a); }
@@ -2094,8 +2148,8 @@
   function ChipsScene() {
     var FX = 320, FY = 380, T_OK = 2.6, T_BURN = 5.4, T_MAX = 8;
     var phase = 'wait', drop = 0, t = 0, said = 0, swipe = null, lift = 0, fry = Sound.loop('sizzle');
-    var chips = []; var r = seeded(77); for (var i = 0; i < 16; i++) chips.push({ x: (r() - 0.5) * 170, y: (r() - 0.5) * 30, a: (r() - 0.5) * 0.9, l: 46 + r() * 22 });
-    function colour() { return t < T_OK ? mixHex('#FFF4CC', CHIP_TONE.perfect, t / T_OK) : t <= T_BURN ? CHIP_TONE.perfect : mixHex(CHIP_TONE.perfect, CHIP_TONE.burnt, clamp((t - T_BURN) / 2, 0, 1)); }
+    var chips = []; var r = seeded(77); for (var i = 0; i < 16; i++) { var q = { x: (r() - 0.5) * 170, y: (r() - 0.5) * 30, a: (r() - 0.5) * 0.9, l: 46 + r() * 22 }; q.path = D.rrPath(-q.l / 2, -7, q.l, 14, 4); chips.push(q); }
+    function colour() { return t < T_OK ? D.mix('#FFF4CC', CHIP_TONE.perfect, t / T_OK) : t <= T_BURN ? CHIP_TONE.perfect : D.mix(CHIP_TONE.perfect, CHIP_TONE.burnt, clamp((t - T_BURN) / 2, 0, 1)); }
     function basketY() { return lerp(FY - 150, FY - 10, easeOut(drop)) - easeOut(lift) * 150; }
     return {
       enter: function () { say('Tap the basket to fry the chips'); },
@@ -2140,17 +2194,22 @@
         if (phase === 'done') { drawBurgerScene(c, dish); return; }
         if (phase === 'fry') drawGauge(c, FX, t, T_OK, T_BURN, T_MAX, ['#FFF4CC', '#6A3A1E']);
         // the fryer: a steel pot of hot oil
-        c.beginPath(); c.ellipse(FX, FY + 200, 240, 26, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
-        rr(c, FX - 230, FY - 40, 460, 240, 30); c.fillStyle = '#C3CBD4'; c.fill(); ink(c, 5);
-        rr(c, FX - 230, FY + 120, 460, 24, 6); c.fillStyle = '#FF6B57'; c.fill(); ink(c, 3.5);
-        c.beginPath(); c.ellipse(FX, FY - 40, 230, 54, 0, 0, TAU); c.fillStyle = '#E8ECF2'; c.fill(); ink(c, 5);
+        D.shadow(c, FX, FY + 200, 240, 26);
+        // the red band goes right round the pot: drawn inside it, so its ends meet the pot's outline
+        shape(c, D.rrPath(FX - 230, FY - 40, 460, 240, 30), D.tone(c, '#C3CBD4', FY - 40, FY + 200), {
+          lw: 5, depth: 14, inside: function (c) {
+            c.fillStyle = '#FF6B57'; c.fillRect(FX - 240, FY + 120, 480, 24);
+            c.beginPath(); c.moveTo(FX - 240, FY + 120); c.lineTo(FX + 240, FY + 120); c.moveTo(FX - 240, FY + 144); c.lineTo(FX + 240, FY + 144); ink(c, 3);
+          }
+        });
+        shape(c, D.ellPath(FX, FY - 40, 230, 54), '#E8ECF2', { lw: 5, depth: 0 });
         c.beginPath(); c.ellipse(FX, FY - 34, 206, 42, 0, 0, TAU); c.fillStyle = '#F6C445'; c.fill();
         // basket with chips
         var by = basketY(), col = colour();
         c.save(); c.translate(FX, by);
         rr(c, 120, -60, 140, 20, 10); c.fillStyle = '#2A2340'; c.fill();
         c.beginPath(); c.moveTo(-150, -40); c.lineTo(-136, 30); c.lineTo(136, 30); c.lineTo(150, -40); c.closePath(); c.fillStyle = 'rgba(160,170,184,.35)'; c.fill(); ink(c, 4.5);
-        chips.forEach(function (q) { c.save(); c.translate(q.x, q.y - 14); c.rotate(q.a + Math.PI / 2); rr(c, -q.l / 2, -7, q.l, 14, 4); c.fillStyle = col; c.fill(); ink(c, 2.5); c.restore(); });
+        chips.forEach(function (q) { shape(c, q.path, col, { m: new DOMMatrix().translate(q.x, q.y - 14).rotate((q.a + Math.PI / 2) * 180 / Math.PI), lw: 3, depth: 3 }); });
         c.strokeStyle = 'rgba(42,35,64,.5)'; c.lineWidth = 2;
         for (var gx = -130; gx <= 130; gx += 20) { c.beginPath(); c.moveTo(gx, -38); c.lineTo(gx * 0.92, 28); c.stroke(); }
         c.restore();
@@ -2230,12 +2289,15 @@
   }
   /* the floury wooden board the pizza is made on */
   function drawBoard(c) {
-    c.beginPath(); c.ellipse(ZX, ZY + 34, 290, 80, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
-    rr(c, ZX + 270, ZY - 4, 70, 30, 14); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
-    c.beginPath(); c.ellipse(ZX, ZY + 20, 290, 80, 0, 0, TAU); c.fillStyle = '#E3AE6E'; c.fill(); ink(c, 5);
-    c.beginPath(); c.ellipse(ZX, ZY + 14, 280, 74, 0, 0, TAU); c.fillStyle = '#F0C489'; c.fill();
-    c.fillStyle = 'rgba(255,255,255,.55)'; var r = seeded(41);
-    for (var i = 0; i < 40; i++) { var a = r() * TAU, k = Math.sqrt(r()); c.beginPath(); c.arc(ZX + Math.cos(a) * 270 * k, ZY + 14 + Math.sin(a) * 70 * k, 1.5 + r() * 2.5, 0, TAU); c.fill(); }
+    D.shadow(c, ZX, ZY + 34, 290, 80);
+    shape(c, D.rrPath(ZX + 270, ZY - 4, 70, 30, 14), '#C98B4B', { lw: 4, depth: 4, dx: 0 });
+    shape(c, D.ellPath(ZX, ZY + 20, 290, 80), '#E3AE6E', {
+      lw: 5, depth: 0, inside: function (c) {
+        c.beginPath(); c.ellipse(ZX, ZY + 14, 280, 74, 0, 0, TAU); c.fillStyle = '#F0C489'; c.fill();
+        c.fillStyle = 'rgba(255,255,255,.55)'; var r = seeded(41);
+        for (var i = 0; i < 40; i++) { var a = r() * TAU, k = Math.sqrt(r()) * 0.95; c.beginPath(); c.arc(ZX + Math.cos(a) * 270 * k, ZY + 14 + Math.sin(a) * 70 * k, 1.5 + r() * 2.5, 0, TAU); c.fill(); }
+      }
+    });
   }
   /* screen point -> flat pizza coordinates (-200..200 from the middle) */
   function toPizza(p) { return { x: p.x - ZX, y: (p.y - ZY) / ZSQ }; }
@@ -2244,11 +2306,15 @@
   /* a ball of pizza dough: shaggy and floury at first, smooth when kneaded */
   function drawDoughBall(c, x, y, r, smooth, squash) {
     c.save(); c.translate(x, y); c.scale(1 + (squash || 0) * 0.25, 1 - (squash || 0) * 0.3);
-    c.beginPath();
-    for (var i = 0; i <= 30; i++) { var a = i / 30 * TAU, w = 1 + (1 - smooth) * (0.09 * Math.sin(a * 5) + 0.06 * Math.sin(a * 9 + 1)); c.lineTo(Math.cos(a) * r * 1.2 * w, Math.sin(a) * r * 0.8 * w); }
-    c.closePath(); c.fillStyle = mixHex('#E9D3A6', '#F6E3BC', smooth); c.fill(); ink(c, 5);
-    c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-r * 0.35, -r * 0.35, r * 0.4, r * 0.14, -0.2, 0, TAU); c.fill();
-    if (smooth < 1) { c.fillStyle = 'rgba(255,255,255,' + (0.9 * (1 - smooth)) + ')'; var q = seeded(3); for (var j = 0; j < 22; j++) { c.beginPath(); c.arc((q() - 0.5) * r * 1.8, (q() - 0.5) * r, 2 + q() * 4, 0, TAU); c.fill(); } }
+    shape(c, function (p) {
+      for (var i = 0; i <= 30; i++) { var a = i / 30 * TAU, w = 1 + (1 - smooth) * (0.09 * Math.sin(a * 5) + 0.06 * Math.sin(a * 9 + 1)); p.lineTo(Math.cos(a) * r * 1.2 * w, Math.sin(a) * r * 0.8 * w); }
+      p.closePath();
+    }, D.mix('#E9D3A6', '#F6E3BC', smooth), {
+      lw: 5, depth: r * 0.14, inside: function (c) {
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-r * 0.35, -r * 0.35, r * 0.4, r * 0.14, -0.2, 0, TAU); c.fill();
+        if (smooth < 1) { c.fillStyle = 'rgba(255,255,255,' + (0.9 * (1 - smooth)) + ')'; var q = seeded(3); for (var j = 0; j < 22; j++) { c.beginPath(); c.arc((q() - 0.5) * r * 1.8, (q() - 0.5) * r, 2 + q() * 4, 0, TAU); c.fill(); } }
+      }
+    });
     c.restore();
   }
 
@@ -2299,7 +2365,7 @@
       draw: function (c) {
         drawBoard(c);
         var cx = ZX, cy = ZY - 10;
-        if (phase === 'knead' || phase === 'done') drawDoughBall(c, cx, cy - 20, 76, pushes / NEED, squash);
+        if (phase === 'knead' || phase === 'done') { D.shadow(c, cx, cy + 36, 96, 14); drawDoughBall(c, cx, cy - 20, 76, pushes / NEED, squash); }
         else {
           // a mound of flour with a well in the middle, filling with water
           if (flour > 0) {
@@ -2316,9 +2382,14 @@
           // the yeast packet
           var yk = yeast ? easeOut(Math.min(1, yeast.t / 0.6)) : 0, yx = lerp(YS.x, cx - 30, yk), yy = lerp(YS.y, cy - 90, yk) - Math.sin(yk * Math.PI) * 90;
           c.save(); c.translate(yx, yy); c.rotate(yeast && yeast.t > 0.6 ? 2.2 : -0.2);
-          rr(c, -34, -26, 68, 52, 6); c.fillStyle = '#FFC93C'; c.fill(); ink(c, 4);
-          c.beginPath(); c.moveTo(-34, -16); for (var z = -34; z <= 34; z += 8.5) c.lineTo(z, -26 + ((z + 34) / 8.5 % 2) * 6); c.lineTo(34, -16); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
-          c.fillStyle = '#FF6B57'; c.beginPath(); c.arc(0, 4, 10, 0, TAU); c.fill();
+          shape(c, D.rrPath(-34, -26, 68, 52, 6), '#FFC93C', {
+            lw: 4, depth: 5, inside: function (c) {
+              // the crimped strip along the top
+              c.beginPath(); c.moveTo(-34, -15); c.lineTo(34, -15); c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
+              c.beginPath(); for (var z = -34; z <= 34; z += 8.5) { c.moveTo(z, -26); c.lineTo(z, -15); } c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 2; c.stroke();
+              c.fillStyle = '#FF6B57'; c.beginPath(); c.arc(0, 4, 10, 0, TAU); c.fill();
+            }
+          });
           c.restore();
         }
         if (phase === 'knead') drawRing(c, ZX, 160, pushes / NEED);
@@ -2363,19 +2434,23 @@
   }
 
   /* ---- Step: grate the cheese over the pizza ---- */
+  var GRATER = new Path2D(); GRATER.moveTo(-46, 60); GRATER.lineTo(-36, -80); GRATER.lineTo(36, -80); GRATER.lineTo(46, 60); GRATER.closePath();
   function GrateScene() {
     var cells = [], STEP = 40, R = ZRX - 46, shreds = [], falling = [], down = false, grater = null, lastY = null, acc = 0, done = false, fade = 0, rub = Sound.loop('rub');
     for (var x = -R; x <= R; x += STEP) for (var y = -R; y <= R; y += STEP) if (Math.hypot(x, y) < R) cells.push({ x: x, y: y, on: false });
     function coverage() { return cells.filter(function (q) { return q.on; }).length / cells.length; }
     function drawGrater(c, p) {
       c.save(); c.translate(p.x, p.y);
-      c.beginPath(); c.moveTo(-46, 60); c.lineTo(-36, -80); c.lineTo(36, -80); c.lineTo(46, 60); c.closePath(); c.fillStyle = '#D5DBE3'; c.fill(); ink(c, 4.5);
-      rr(c, -30, -110, 60, 30, 12); c.fillStyle = '#FF6B57'; c.fill(); ink(c, 4);
-      c.fillStyle = '#8A93A0'; for (var gy = -66; gy < 50; gy += 16) for (var gx = -28; gx <= 28; gx += 14) { c.beginPath(); c.ellipse(gx + (gy / 16 % 2) * 7, gy, 4, 2.5, 0, 0, TAU); c.fill(); }
+      shape(c, D.rrPath(-30, -110, 60, 30, 12), '#FF6B57', { lw: 4, depth: 4 });
+      shape(c, GRATER, D.tone(c, '#D5DBE3', 0, 0, -46, 46), {
+        lw: 4, depth: 0, inside: function (c) {
+          // the holes stay clear of the edges
+          c.fillStyle = '#8A93A0'; for (var gy = -66; gy < 50; gy += 16) { var half = 36 + (gy + 80) / 14 - 9; for (var gx = -28; gx <= 28; gx += 14) { var hx = gx + (gy / 16 % 2) * 7; if (Math.abs(hx) > half) continue; c.beginPath(); c.ellipse(hx, gy, 4, 2.5, 0, 0, TAU); c.fill(); } }
+        }
+      });
       // the block of cheese rubbing up and down the front
       var off = Math.sin(performance.now() / 70) * (down ? 22 : 0);
-      rr(c, 22, -30 + off, 58, 70, 8); c.fillStyle = '#FFD86A'; c.fill(); ink(c, 4);
-      c.fillStyle = '#F2B400'; c.beginPath(); c.arc(44, -6 + off, 5, 0, TAU); c.arc(62, 18 + off, 4, 0, TAU); c.fill();
+      shape(c, D.rrPath(22, -30 + off, 58, 70, 8), '#FFD86A', { lw: 4, depth: 5, inside: function (c) { c.fillStyle = '#F2B400'; c.beginPath(); c.arc(44, -6 + off, 5, 0, TAU); c.arc(62, 18 + off, 4, 0, TAU); c.fill(); } });
       c.restore();
     }
     return {
@@ -2502,10 +2577,12 @@
         // the rolling pin follows the finger
         if (pin && !done) {
           c.save(); c.translate(clamp(pin.x, 150, 490), pin.y - 20);
-          rr(c, -170, -10, 50, 20, 10); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
-          rr(c, 120, -10, 50, 20, 10); c.fillStyle = '#C98B4B'; c.fill(); ink(c, 4);
-          rr(c, -124, -24, 248, 48, 22); c.fillStyle = '#F1C88E'; c.fill(); ink(c, 5);
-          c.beginPath(); c.moveTo(-100, -12); c.lineTo(100, -12); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 5; c.lineCap = 'round'; c.stroke();
+          D.shadow(c, 0, 34, 150, 10);
+          shape(c, D.rrPath(-170, -10, 50, 20, 10), '#C98B4B', { lw: 4, depth: 4, dx: 0 });
+          shape(c, D.rrPath(120, -10, 50, 20, 10), '#C98B4B', { lw: 4, depth: 4, dx: 0 });
+          shape(c, D.rrPath(-124, -24, 248, 48, 22), D.tone(c, '#F1C88E', -24, 24), {
+            lw: 5, depth: 8, dx: 0, inside: function (c) { c.beginPath(); c.moveTo(-100, -12); c.lineTo(100, -12); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 5; c.lineCap = 'round'; c.stroke(); }
+          });
           c.restore();
         }
         // progress ring
@@ -2610,12 +2687,15 @@
     var MOUTH = { x: OX2, y: OY2 + 60 };
     function drawOven(c, glow) {
       // a round brick pizza oven with a fire inside
-      c.beginPath(); c.moveTo(OX2 - 230, OY2 + 120); c.bezierCurveTo(OX2 - 240, OY2 - 160, OX2 + 240, OY2 - 160, OX2 + 230, OY2 + 120); c.closePath();
-      c.fillStyle = '#D9774F'; c.fill(); ink(c, 5);
-      c.save(); c.clip(); c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = 3;
-      for (var y = OY2 - 120; y < OY2 + 120; y += 30) { c.beginPath(); c.moveTo(OX2 - 240, y); c.lineTo(OX2 + 240, y); c.stroke(); for (var x = OX2 - 240 + ((y / 30) % 2) * 30; x < OX2 + 240; x += 60) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 30); c.stroke(); } }
-      c.restore();
-      rr(c, OX2 - 260, OY2 + 110, 520, 30, 10); c.fillStyle = '#B8B2C4'; c.fill(); ink(c, 4);
+      // the chimney stands on the dome: it's drawn first and runs down behind it, so there's no gap
+      shape(c, D.rrPath(OX2 + 70, OY2 - 160, 50, 100, 6), D.tone(c, '#B8B2C4', 0, 0, OX2 + 70, OX2 + 120), { lw: 4, depth: 0 });
+      shape(c, function (p) { p.moveTo(OX2 - 230, OY2 + 120); p.bezierCurveTo(OX2 - 240, OY2 - 160, OX2 + 240, OY2 - 160, OX2 + 230, OY2 + 120); p.closePath(); }, '#D9774F', {
+        lw: 5, depth: 18, inside: function (c) {
+          c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = 3;
+          for (var y = OY2 - 120; y < OY2 + 120; y += 30) { c.beginPath(); c.moveTo(OX2 - 240, y); c.lineTo(OX2 + 240, y); c.stroke(); for (var x = OX2 - 240 + ((y / 30) % 2) * 30; x < OX2 + 240; x += 60) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 30); c.stroke(); } }
+        }, shine: [OX2 - 120, OY2 - 50, 50, 18, -0.6, 0.16]
+      });
+      shape(c, D.rrPath(OX2 - 260, OY2 + 110, 520, 30, 10), '#B8B2C4', { lw: 4, depth: 5, dx: 0 });
       // the opening
       c.beginPath(); c.moveTo(OX2 - 150, OY2 + 110); c.lineTo(OX2 - 150, OY2 + 20); c.bezierCurveTo(OX2 - 150, OY2 - 80, OX2 + 150, OY2 - 80, OX2 + 150, OY2 + 20); c.lineTo(OX2 + 150, OY2 + 110); c.closePath();
       var g = c.createRadialGradient(OX2, OY2 + 80, 10, OX2, OY2 + 40, 170);
@@ -2628,8 +2708,6 @@
         c.beginPath(); c.moveTo(OX2 + f[0] - 16, OY2 + 60); c.quadraticCurveTo(OX2 + f[0] - 14, OY2 + 60 - h * 0.7, OX2 + f[0], OY2 + 60 - h); c.quadraticCurveTo(OX2 + f[0] + 14, OY2 + 60 - h * 0.7, OX2 + f[0] + 16, OY2 + 60); c.closePath();
         c.fillStyle = i % 2 ? '#FFC93C' : '#FF6B57'; c.fill();
       });
-      // chimney
-      rr(c, OX2 + 70, OY2 - 160, 50, 60, 6); c.fillStyle = '#B8B2C4'; c.fill(); ink(c, 4);
     }
     return {
       enter: function () { say('Tap the pizza to bake it!'); },
