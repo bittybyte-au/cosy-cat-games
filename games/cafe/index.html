@@ -19,7 +19,7 @@
    Single bright look by design. */
 body { background: #F6D9BF; }
 .middle { flex: 1; display: flex; justify-content: center; gap: 8px; min-width: 0; }
-.pill { font: 800 1.15rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 7px 14px 5px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.pill { font: 800 1.15rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 7px 14px 5px; box-shadow: 0 3px 0 var(--ink), var(--soft); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
 .pill svg { width: 22px; height: 22px; }
 .pill.bump { animation: bump .45s ease; }
 .pill.ouch { animation: ouch .45s ease; }
@@ -33,10 +33,10 @@ body { background: #F6D9BF; }
 .ings { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 440px; }
 .ing {
   width: 64px; height: 64px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; cursor: pointer; padding: 2px;
-  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink);
+  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink), var(--soft);
 }
 .ing img { width: 54px; height: 54px; pointer-events: none; }
-.ing:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.ing:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .trayrow { display: flex; align-items: center; gap: 10px; }
 .tray {
   display: flex; gap: 6px; padding: 6px 10px; border: 3px solid var(--ink); border-radius: 999px; background: #D9C2A7; box-shadow: inset 0 -5px 0 rgba(42, 35, 64, .15);
@@ -45,14 +45,14 @@ body { background: #F6D9BF; }
 .slot.full { border: 3px solid var(--ink); background: #fff; cursor: pointer; animation: present .35s cubic-bezier(.3, 1.6, .5, 1); }
 .slot img { width: 46px; height: 46px; pointer-events: none; }
 .bell {
-  width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--ink); background: var(--sun); cursor: pointer; box-shadow: 0 4px 0 var(--ink);
+  width: 76px; height: 76px; border-radius: 50%; border: 4px solid var(--ink); background: var(--sun); cursor: pointer; box-shadow: 0 4px 0 var(--ink), var(--soft);
   display: grid; place-items: center; padding: 0;
 }
 .bell svg { width: 50px; height: 50px; }
 .bell:disabled { background: #EEE8F3; box-shadow: none; cursor: default; }
 .bell:disabled svg { opacity: .4; }
 .bell:not(:disabled) { animation: hop .7s ease-in-out infinite alternate; }
-.bell:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.bell:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 
 .say { position: fixed; left: 50%; bottom: calc(var(--bar-h, 180px) + 14px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(10px); }
@@ -60,7 +60,7 @@ body { background: #F6D9BF; }
 /* start screen: Fun or Challenge */
 .modes { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .mode {
-  border: 4px solid var(--ink); border-radius: 22px; padding: 12px 16px; cursor: pointer; text-align: left; box-shadow: 0 5px 0 var(--ink);
+  border: 4px solid var(--ink); border-radius: 22px; padding: 12px 16px; cursor: pointer; text-align: left; box-shadow: 0 5px 0 var(--ink), var(--soft);
   display: flex; align-items: center; gap: 12px; font: 800 1rem var(--body); color: var(--ink);
 }
 .mode b { display: block; font: 800 1.5rem/1.05 var(--display); }
@@ -68,15 +68,15 @@ body { background: #F6D9BF; }
 .mode svg { flex: none; width: 54px; height: 54px; }
 .mode.fun { background: #C7EBD2; }
 .mode.chal { background: #FFD9A8; }
-.mode:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.mode:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .days { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .day {
-  width: 62px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; cursor: pointer; padding: 4px 2px; box-shadow: 0 3px 0 var(--ink);
+  width: 62px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; cursor: pointer; padding: 4px 2px; box-shadow: 0 3px 0 var(--ink), var(--soft);
   font: 800 1.05rem/1.1 var(--display); display: flex; flex-direction: column; align-items: center;
 }
 .day small { font: 800 .75rem var(--body); color: #E0A100; letter-spacing: 1px; min-height: 1em; }
 .day.now { background: var(--sun); }
-.day:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.day:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .bigstars { display: flex; gap: 6px; justify-content: center; }
 .bigstars svg { width: 58px; height: 58px; animation: present .5s cubic-bezier(.3, 1.6, .5, 1) backwards; }
 .bigstars svg:nth-child(2) { animation-delay: .15s; }
@@ -158,6 +158,7 @@ body { background: #F6D9BF; }
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="game.js"></script>
 </body>

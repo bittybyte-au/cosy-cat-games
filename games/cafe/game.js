@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -21,12 +21,7 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  var rr = D.rr, ink = D.ink;
   function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
 
@@ -47,128 +42,154 @@
     return null;
   }
 
-  /* ================= drawing: ingredients (centred, about 100 wide) ================= */
-  function bowl(c, fill) {
-    c.beginPath(); c.moveTo(-40, -6); c.quadraticCurveTo(-38, 38, 0, 38); c.quadraticCurveTo(38, 38, 40, -6); c.closePath();
-    c.fillStyle = '#7CC4FF'; c.fill(); ink(c, 4);
-    ell(c, 0, -6, 40, 11); c.fillStyle = fill; c.fill(); ink(c, 4);
-    c.beginPath(); c.moveTo(-26, 12); c.quadraticCurveTo(0, 22, 26, 12); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke();
+  /* ================= drawing: ingredients (centred, about 100 wide) =================
+     House style (shared/draw.js): fill, details clipped inside, outline last. Handles, spoons and whisks start
+     inside what holds them and are drawn first, so the bowl (or the food in it) covers the join. */
+  /* a blue bowl: `fill` is what's in it. `stuck` (spoon, whisk) is drawn first so the food covers its end;
+     `heap` is food piled above the rim, drawn before the bowl's front. */
+  function bowl(c, fill, stuck, heap) {
+    if (stuck) stuck(c);
+    D.shape(c, D.ellPath(0, -6, 40, 11), fill, { lw: LW.mid, depth: 0, shine: [-14, -9, 10, 2.5, 0, 0.5] });
+    if (heap) heap(c);
+    D.shape(c, function (p) { p.moveTo(40, -6); p.quadraticCurveTo(38, 38, 0, 38); p.quadraticCurveTo(-38, 38, -40, -6); p.ellipse(0, -6, 40, 11, 0, Math.PI, 0, true); p.closePath(); },
+      D.tone(c, '#7CC4FF', -6, 38), { lw: LW.mid, depth: 7, inside: function (c) {
+        c.beginPath(); c.moveTo(-26, 14); c.quadraticCurveTo(0, 24, 26, 14); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3; c.stroke();
+      } });
   }
   function drawIng(c, id) {
     c.lineJoin = 'round'; c.lineCap = 'round';
     if (id === 'rice') {
-      bowl(c, '#FFFFFF');
-      c.beginPath(); c.moveTo(-36, -6); c.quadraticCurveTo(-30, -34, 0, -34); c.quadraticCurveTo(30, -34, 36, -6); c.closePath(); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 4);
-      c.fillStyle = '#D9CDB4'; [[-16, -16], [-4, -24], [10, -18], [20, -10], [-24, -8], [2, -10]].forEach(function (q) { ell(c, q[0], q[1], 4, 2, 0.5); c.fill(); });
+      bowl(c, '#FFFFFF', null, function (c) {
+        // a heap of rice: filled down to the rim (the bowl's front covers its base), outlined only along the top
+        var dome = function (p) { p.moveTo(-36, -6); p.quadraticCurveTo(-30, -34, 0, -34); p.quadraticCurveTo(30, -34, 36, -6); };
+        D.shape(c, function (p) { dome(p); p.ellipse(0, -6, 36, 12, 0, 0, Math.PI); p.closePath(); }, D.tone(c, '#FFFFFF', -34, 4), { lw: 0, depth: 5, inside: function (c) {
+          c.fillStyle = '#D9CDB4'; [[-16, -16], [-4, -24], [10, -18], [20, -10], [-24, -8], [2, -10]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 4, 2, 0.5, 0, TAU); c.fill(); });
+        } });
+        c.beginPath(); dome(c); D.ink(c, LW.mid);
+      });
     } else if (id === 'fish') {
       c.save(); c.rotate(-0.2);
-      rr(c, -40, -20, 80, 40, 14); c.fillStyle = '#FF8A5B'; c.fill(); ink(c, 4);
-      c.strokeStyle = '#FFD3BD'; c.lineWidth = 5; [-18, 0, 18].forEach(function (x) { c.beginPath(); c.moveTo(x - 6, -16); c.quadraticCurveTo(x + 6, 0, x - 4, 16); c.stroke(); });
+      D.shape(c, D.rrPath(-40, -20, 80, 40, 14), D.tone(c, '#FF8A5B', -20, 20), { lw: LW.mid, depth: 6, inside: function (c) {
+        c.strokeStyle = '#FFD3BD'; c.lineWidth = 5; [-18, 0, 18].forEach(function (x) { c.beginPath(); c.moveTo(x - 6, -24); c.quadraticCurveTo(x + 6, 0, x - 4, 24); c.stroke(); });
+      } });
       c.restore();
     } else if (id === 'seaweed') {
       c.save(); c.rotate(0.1);
-      rr(c, -36, -36, 72, 72, 6); c.fillStyle = '#2E4A3A'; c.fill(); ink(c, 4);
-      c.strokeStyle = '#3D6450'; c.lineWidth = 3; for (var i = -24; i <= 24; i += 12) { c.beginPath(); c.moveTo(i, -30); c.lineTo(i, 30); c.stroke(); }
+      D.shape(c, D.rrPath(-36, -36, 72, 72, 6), '#2E4A3A', { lw: LW.mid, depth: 8, shade: 'rgba(0,0,0,.2)', inside: function (c) {
+        c.strokeStyle = '#3D6450'; c.lineWidth = 3; for (var i = -24; i <= 24; i += 12) { c.beginPath(); c.moveTo(i, -40); c.lineTo(i, 40); c.stroke(); }
+      } });
       c.restore();
     } else if (id === 'bun') {
-      c.beginPath(); c.moveTo(-44, 14); c.quadraticCurveTo(-44, -36, 0, -36); c.quadraticCurveTo(44, -36, 44, 14); c.closePath(); c.fillStyle = '#F2B25C'; c.fill(); ink(c, 4);
-      rr(c, -44, 12, 88, 18, 8); c.fillStyle = '#FFE2A8'; c.fill(); ink(c, 4);
-      c.fillStyle = '#FFF6DE'; [[-20, -18], [0, -26], [18, -16], [-6, -10], [28, -4], [-30, -2]].forEach(function (q) { ell(c, q[0], q[1], 4, 2.2, 0.6); c.fill(); });
+      // the dome sits on the base, which is drawn over its bottom edge
+      D.shape(c, function (p) { p.moveTo(-44, 16); p.quadraticCurveTo(-44, -36, 0, -36); p.quadraticCurveTo(44, -36, 44, 16); p.closePath(); }, D.tone(c, '#F2B25C', -36, 16), { lw: LW.mid, depth: 7, inside: function (c) {
+        c.fillStyle = '#FFF6DE'; [[-20, -18], [0, -26], [18, -16], [-6, -10], [28, -4], [-30, -2]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 4, 2.2, 0.6, 0, TAU); c.fill(); });
+      } });
+      D.shape(c, D.rrPath(-44, 12, 88, 18, 8), D.tone(c, '#FFE2A8', 12, 30), { lw: LW.mid, depth: 4 });
     } else if (id === 'patty') {
-      rr(c, -44, -16, 88, 32, 16); c.fillStyle = '#8A5034'; c.fill(); ink(c, 4);
-      c.strokeStyle = '#5E3220'; c.lineWidth = 4; [-24, -4, 16].forEach(function (x) { c.beginPath(); c.moveTo(x, -10); c.lineTo(x + 10, 10); c.stroke(); });
+      D.shape(c, D.rrPath(-44, -16, 88, 32, 16), D.tone(c, '#8A5034', -16, 16), { lw: LW.mid, depth: 6, shade: 'rgba(0,0,0,.15)', inside: function (c) {
+        c.strokeStyle = '#5E3220'; c.lineWidth = 4; [-24, -4, 16].forEach(function (x) { c.beginPath(); c.moveTo(x, -10); c.lineTo(x + 10, 10); c.stroke(); });
+      } });
     } else if (id === 'cheese') {
-      c.beginPath(); c.moveTo(-42, 26); c.lineTo(42, 26); c.lineTo(42, -10); c.lineTo(-42, -30); c.closePath(); c.fillStyle = '#FFD23F'; c.fill(); ink(c, 4);
-      c.beginPath(); c.moveTo(-42, -30); c.lineTo(42, -10); c.lineTo(42, -2); c.lineTo(-42, -22); c.closePath(); c.fillStyle = '#FFE98A'; c.fill();
-      c.fillStyle = '#E8AE00'; circle(c, -16, 8, 7); c.fill(); circle(c, 16, 12, 5); c.fill(); circle(c, 24, -2, 4); c.fill();
+      D.shape(c, function (p) { p.moveTo(-42, 26); p.lineTo(42, 26); p.lineTo(42, -10); p.lineTo(-42, -30); p.closePath(); }, D.tone(c, '#FFD23F', -30, 26), { lw: LW.mid, depth: 6, inside: function (c) {
+        // the lighter top face, then the holes
+        c.beginPath(); c.moveTo(-50, -34); c.lineTo(50, -12); c.lineTo(50, -2); c.lineTo(-50, -24); c.closePath(); c.fillStyle = '#FFE98A'; c.fill();
+        c.fillStyle = '#E8AE00'; circle(c, -16, 8, 7); c.fill(); circle(c, 16, 12, 5); c.fill(); circle(c, 24, -2, 4); c.fill();
+      } });
     } else if (id === 'dough') {
-      ell(c, 0, 6, 44, 22); c.fillStyle = '#F7E3C2'; c.fill(); ink(c, 4);
-      ell(c, -8, 0, 22, 9); c.fillStyle = '#FFF3DD'; c.fill();
-      c.fillStyle = '#FFFFFF'; [[-26, 10], [18, -2], [24, 14], [-6, 18]].forEach(function (q) { circle(c, q[0], q[1], 2.5); c.fill(); });
+      D.shape(c, D.ellPath(0, 6, 44, 22), D.tone(c, '#F7E3C2', -16, 28), { lw: LW.mid, depth: 6, inside: function (c) {
+        c.beginPath(); c.ellipse(-8, 0, 22, 9, 0, 0, TAU); c.fillStyle = '#FFF3DD'; c.fill();
+        c.fillStyle = '#FFFFFF'; [[-26, 10], [18, -2], [24, 14], [-6, 18]].forEach(function (q) { circle(c, q[0], q[1], 2.5); c.fill(); });
+      } });
     } else if (id === 'sauce') {
-      bowl(c, '#E8362B');
-      c.fillStyle = '#FF7A6B'; ell(c, -10, -9, 10, 3); c.fill();
-      c.save(); c.translate(26, -30); c.rotate(0.6); rr(c, -5, -26, 10, 40, 5); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3); c.restore();
+      bowl(c, '#E8362B', function (c) {
+        // a wooden spoon standing in the sauce
+        c.save(); c.translate(22, -24); c.rotate(0.6); D.shape(c, D.rrPath(-5, -30, 10, 44, 5), D.tone(c, '#E6B98A', -30, 14), { lw: LW.fine, depth: 3 }); c.restore();
+      });
     } else if (id === 'batter') {
-      bowl(c, '#FFE7A0');
-      c.save(); c.translate(18, -28); c.rotate(0.5);
-      c.beginPath(); c.moveTo(0, 10); c.lineTo(0, -26); c.strokeStyle = INK; c.lineWidth = 6; c.stroke(); c.strokeStyle = '#C9C2D6'; c.lineWidth = 3; c.stroke();
-      ell(c, 0, 18, 9, 14); c.strokeStyle = INK; c.lineWidth = 3; c.stroke(); ell(c, 0, 18, 4, 14); c.stroke();
-      c.restore();
+      bowl(c, '#FFE7A0', function (c) {
+        // a whisk dipped in the batter: wires first, then the handle over their ends
+        c.save(); c.translate(16, -20); c.rotate(0.5);
+        c.beginPath(); c.ellipse(0, 12, 9, 14, 0, 0, TAU); c.moveTo(0, -2); c.ellipse(0, 12, 4, 14, 0, -Math.PI / 2, Math.PI * 1.5); D.ink(c, LW.fine);
+        D.shape(c, D.rrPath(-4, -34, 8, 34, 4), '#C9C2D6', { lw: LW.fine, depth: 2 });
+        c.restore();
+      });
     } else if (id === 'berries') {
-      [[-16, 8, '#4D6BFF'], [16, 8, '#4D6BFF'], [0, -14, '#FF4D6A'], [-26, -14, '#FF4D6A'], [26, -12, '#4D6BFF']].forEach(function (b) {
-        circle(c, b[0], b[1], 15); c.fillStyle = b[2]; c.fill(); ink(c, 3.5);
-        circle(c, b[0] - 5, b[1] - 5, 3.5); c.fillStyle = 'rgba(255,255,255,.7)'; c.fill();
+      // back row first, so the front berries overlap them
+      [[0, -14, '#FF4D6A'], [-26, -14, '#FF4D6A'], [26, -12, '#4D6BFF'], [-16, 8, '#4D6BFF'], [16, 8, '#4D6BFF']].forEach(function (b) {
+        D.shape(c, D.ellPath(b[0], b[1], 15, 15), b[2], { lw: LW.fine, depth: 5, shine: [b[0] - 5, b[1] - 5, 4, 3, -0.5, 0.7] });
       });
     } else if (id === 'syrup') {
-      c.beginPath(); c.moveTo(-22, 40); c.lineTo(-22, -4); c.quadraticCurveTo(-22, -18, -8, -22); c.lineTo(-8, -34); c.lineTo(8, -34); c.lineTo(8, -22); c.quadraticCurveTo(22, -18, 22, -4); c.lineTo(22, 40); c.closePath();
-      c.fillStyle = '#C9711A'; c.fill(); ink(c, 4);
-      rr(c, -10, -44, 20, 12, 4); c.fillStyle = '#FF6B57'; c.fill(); ink(c, 3);
-      rr(c, -16, 2, 32, 24, 5); c.fillStyle = '#FFF3E4'; c.fill(); ink(c, 2.5);
-      c.beginPath(); c.moveTo(0, 6); c.quadraticCurveTo(8, 16, 0, 22); c.quadraticCurveTo(-8, 16, 0, 6); c.fillStyle = '#C9711A'; c.fill();
-      c.beginPath(); c.moveTo(-15, -6); c.lineTo(-15, 34); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 4; c.stroke();
+      // the cap goes on first; the bottle's neck covers its lower edge
+      D.shape(c, D.rrPath(-10, -44, 20, 14, 4), '#FF6B57', { lw: LW.fine, depth: 3 });
+      D.shape(c, function (p) { p.moveTo(-22, 40); p.lineTo(-22, -4); p.quadraticCurveTo(-22, -18, -8, -22); p.lineTo(-8, -34); p.lineTo(8, -34); p.lineTo(8, -22); p.quadraticCurveTo(22, -18, 22, -4); p.lineTo(22, 40); p.closePath(); },
+        D.tone(c, '#C9711A', -34, 40), { lw: LW.mid, depth: 7, inside: function (c) {
+          D.shape(c, D.rrPath(-16, 2, 32, 24, 5), '#FFF3E4', { lw: LW.fine, depth: 0 });
+          c.beginPath(); c.moveTo(0, 6); c.quadraticCurveTo(8, 16, 0, 22); c.quadraticCurveTo(-8, 16, 0, 6); c.fillStyle = '#C9711A'; c.fill();
+          c.beginPath(); c.moveTo(-15, -6); c.lineTo(-15, -2); c.moveTo(-15, 30); c.lineTo(-15, 36); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 4; c.stroke();
+        } });
     }
   }
 
   /* the four dishes, drawn in the same style: a plate, then the food. Centred, about 200 wide. */
   function plate(c) {
-    ell(c, 0, 30, 96, 34); c.fillStyle = '#FFFFFF'; c.fill(); ink(c, 5);
-    ell(c, 0, 28, 70, 22); c.strokeStyle = '#E9E3F2'; c.lineWidth = 3; c.stroke();
+    D.shadow(c, 0, 36, 92, 30);
+    D.shape(c, D.ellPath(0, 30, 96, 34), D.tone(c, '#FFFFFF', -4, 64), { lw: LW.big, depth: 8, inside: function (c) {
+      c.beginPath(); c.ellipse(0, 28, 70, 22, 0, 0, TAU); c.strokeStyle = '#E9E3F2'; c.lineWidth = 3; c.stroke();
+    } });
   }
   function drawSushi(c) {
     plate(c);
-    [[-52, 20], [52, 20], [0, 8]].forEach(function (q) {
+    [[-52, 20], [52, 20], [0, 8]].sort(function (a, b) { return a[1] - b[1]; }).forEach(function (q) {
       c.save(); c.translate(q[0], q[1]);
-      // a maki roll standing up: nori side, then the top with rice and filling
-      c.beginPath(); c.moveTo(-30, -14); c.lineTo(-30, 14); c.ellipse(0, 14, 30, 11, 0, Math.PI, 0, true); c.lineTo(30, -14); c.closePath();
-      c.fillStyle = '#2E4A3A'; c.fill(); ink(c, 4);
-      ell(c, 0, -14, 30, 11); c.fillStyle = '#2E4A3A'; c.fill(); ink(c, 4);
-      ell(c, 0, -14, 25, 8.5); c.fillStyle = '#FFFFFF'; c.fill();
-      ell(c, -3, -15, 9, 4); c.fillStyle = '#FF8A5B'; c.fill();
-      ell(c, 8, -13, 4, 2.5); c.fillStyle = '#7BD389'; c.fill();
+      // a maki roll standing up: the nori side, then its top with the rice and filling inside it
+      D.shape(c, function (p) { p.moveTo(-30, -14); p.lineTo(-30, 14); p.ellipse(0, 14, 30, 11, 0, Math.PI, 0, true); p.lineTo(30, -14); p.closePath(); }, '#2E4A3A', { lw: LW.mid, depth: 6, shade: 'rgba(0,0,0,.2)' });
+      D.shape(c, D.ellPath(0, -14, 30, 11), '#2E4A3A', { lw: LW.mid, depth: 0, inside: function (c) {
+        c.beginPath(); c.ellipse(0, -14, 25, 8.5, 0, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill();
+        c.beginPath(); c.ellipse(-3, -15, 9, 4, 0, 0, TAU); c.fillStyle = '#FF8A5B'; c.fill();
+        c.beginPath(); c.ellipse(8, -13, 4, 2.5, 0, 0, TAU); c.fillStyle = '#7BD389'; c.fill();
+      } });
       c.restore();
     });
   }
   function drawBurger(c) {
     plate(c);
     c.save(); c.translate(0, 20);
-    // bottom bun
-    rr(c, -58, -10, 116, 26, 12); c.fillStyle = '#F2B25C'; c.fill(); ink(c, 4.5);
-    // patty
-    rr(c, -64, -34, 128, 28, 14); c.fillStyle = '#8A5034'; c.fill(); ink(c, 4.5);
-    // cheese with drips
-    c.beginPath(); c.moveTo(-60, -38); c.lineTo(60, -38); c.lineTo(58, -30); c.lineTo(44, -30); c.lineTo(38, -14); c.lineTo(30, -30); c.lineTo(-10, -30); c.lineTo(-18, -16); c.lineTo(-26, -30); c.lineTo(-60, -30); c.closePath();
-    c.fillStyle = '#FFD23F'; c.fill(); ink(c, 3.5);
-    // top bun
-    c.beginPath(); c.moveTo(-62, -36); c.quadraticCurveTo(-62, -96, 0, -96); c.quadraticCurveTo(62, -96, 62, -36); c.closePath();
-    c.fillStyle = '#F2B25C'; c.fill(); ink(c, 4.5);
-    c.fillStyle = '#FFF6DE'; [[-30, -64], [-6, -80], [20, -70], [38, -54], [-42, -48], [4, -56]].forEach(function (q) { ell(c, q[0], q[1], 5, 2.6, 0.5); c.fill(); });
+    D.shape(c, D.rrPath(-58, -10, 116, 26, 12), D.tone(c, '#F2B25C', -10, 16), { lw: LW.mid, depth: 5 });
+    D.shape(c, D.rrPath(-64, -34, 128, 28, 14), D.tone(c, '#8A5034', -34, -6), { lw: LW.mid, depth: 5, shade: 'rgba(0,0,0,.15)' });
+    D.shape(c, function (p) { p.moveTo(-60, -38); p.lineTo(60, -38); p.lineTo(58, -30); p.lineTo(44, -30); p.lineTo(38, -14); p.lineTo(30, -30); p.lineTo(-10, -30); p.lineTo(-18, -16); p.lineTo(-26, -30); p.lineTo(-60, -30); p.closePath(); }, '#FFD23F', { lw: LW.fine, depth: 0 });
+    D.shape(c, function (p) { p.moveTo(-62, -36); p.quadraticCurveTo(-62, -96, 0, -96); p.quadraticCurveTo(62, -96, 62, -36); p.closePath(); }, D.tone(c, '#F2B25C', -96, -36), { lw: LW.mid, depth: 9,
+      shine: [-26, -76, 16, 6, -0.4, 0.4], inside: function (c) {
+        c.fillStyle = '#FFF6DE'; [[-30, -64], [-6, -80], [20, -70], [38, -54], [-42, -48], [4, -56]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 5, 2.6, 0.5, 0, TAU); c.fill(); });
+      } });
     c.restore();
   }
   function drawPancakes(c) {
     plate(c);
     for (var i = 0; i < 4; i++) {
       var y = 22 - i * 16;
-      ell(c, 0, y + 6, 66, 18); c.fillStyle = '#D9913F'; c.fill(); ink(c, 4);
-      ell(c, 0, y, 66, 18); c.fillStyle = '#F4C16A'; c.fill(); ink(c, 4);
+      D.shape(c, D.ellPath(0, y + 6, 66, 18), '#D9913F', { lw: LW.mid, depth: 0 });
+      D.shape(c, D.ellPath(0, y, 66, 18), D.tone(c, '#F4C16A', y - 18, y + 18), { lw: LW.mid, depth: 0, inside: i < 3 ? null : function (c) {
+        // syrup on the top pancake (its drips run down over the edge in front)
+        c.beginPath(); c.ellipse(0, -26, 44, 11, 0, 0, TAU); c.fillStyle = '#C9711A'; c.fill();
+      } });
     }
-    // syrup and berries on top
-    c.beginPath(); c.ellipse(0, -26, 44, 11, 0, 0, TAU); c.fillStyle = '#C9711A'; c.fill();
-    c.beginPath(); c.moveTo(30, -20); c.quadraticCurveTo(40, 0, 36, 10); c.quadraticCurveTo(30, 6, 26, -16); c.fill();
-    c.beginPath(); c.moveTo(-36, -22); c.quadraticCurveTo(-46, -6, -42, 2); c.quadraticCurveTo(-36, 0, -30, -20); c.fill();
-    [[-14, -32, '#4D6BFF'], [6, -36, '#FF4D6A'], [18, -28, '#4D6BFF'], [-2, -24, '#4D6BFF']].forEach(function (b) { circle(c, b[0], b[1], 8); c.fillStyle = b[2]; c.fill(); ink(c, 2.5); });
-    rr(c, -10, -46, 20, 12, 3); c.fillStyle = '#FFF3B0'; c.fill(); ink(c, 2.5);
+    c.fillStyle = '#C9711A';
+    c.beginPath(); c.moveTo(30, -22); c.quadraticCurveTo(40, 0, 36, 10); c.quadraticCurveTo(30, 6, 24, -18); c.fill();
+    c.beginPath(); c.moveTo(-36, -24); c.quadraticCurveTo(-46, -6, -42, 2); c.quadraticCurveTo(-36, 0, -28, -20); c.fill();
+    D.shape(c, D.rrPath(-10, -46, 20, 12, 3), '#FFF3B0', { lw: LW.fine, depth: 0 });
+    [[-14, -32, '#4D6BFF'], [6, -36, '#FF4D6A'], [18, -28, '#4D6BFF'], [-2, -24, '#4D6BFF']].forEach(function (b) { D.shape(c, D.ellPath(b[0], b[1], 8, 8), b[2], { lw: LW.fine, depth: 3, shine: [b[0] - 3, b[1] - 3, 2.5, 2, 0, 0.7] }); });
   }
   function drawPizza(c) {
     plate(c);
     c.save(); c.translate(0, 18);
-    ell(c, 0, 2, 82, 32); c.fillStyle = '#E8A85C'; c.fill(); ink(c, 5);
-    ell(c, 0, 0, 70, 25); c.fillStyle = '#E8362B'; c.fill();
-    c.beginPath();
-    for (var i = 0; i <= 24; i++) { var a = i / 24 * TAU, r = 62 + Math.sin(i * 2.7) * 4; c.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.36); }
-    c.closePath(); c.fillStyle = '#FFE07A'; c.fill();
-    [[-32, -6], [10, -12], [36, 4], [-8, 9], [-48, 6], [24, -2]].forEach(function (q) { ell(c, q[0], q[1], 9, 4); c.fillStyle = '#D83A3A'; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke(); });
-    c.fillStyle = '#4FB868'; [[-18, -2], [28, -12], [4, 3]].forEach(function (q) { ell(c, q[0], q[1], 4, 2, 0.5); c.fill(); });
+    D.shape(c, D.ellPath(0, 2, 82, 32), D.tone(c, '#E8A85C', -30, 34), { lw: LW.big, depth: 6, inside: function (c) {
+      c.beginPath(); c.ellipse(0, 0, 70, 25, 0, 0, TAU); c.fillStyle = '#E8362B'; c.fill();
+      c.beginPath();
+      for (var i = 0; i <= 24; i++) { var a = i / 24 * TAU, r = 62 + Math.sin(i * 2.7) * 4; c.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.36); }
+      c.closePath(); c.fillStyle = '#FFE07A'; c.fill();
+      [[-32, -6], [10, -12], [36, 4], [-8, 9], [-48, 6], [24, -2]].forEach(function (q) { D.shape(c, D.ellPath(q[0], q[1], 9, 4), '#D83A3A', { lw: 2.5, depth: 0 }); });
+      c.fillStyle = '#4FB868'; [[-18, -2], [28, -12], [4, 3]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 4, 2, 0.5, 0, TAU); c.fill(); });
+    } });
     c.restore();
   }
   var DRAW_DISH = { sushi: drawSushi, burger: drawBurger, pizza: drawPizza, pancakes: drawPancakes };
@@ -553,28 +574,26 @@
   function peekCat(c, x, y, size, opts) {
     var k = size / 88;
     c.save(); c.translate(x, y - 50 * k);
-    try { GGCat.draw(c, catOpts(opts, { pose: 'peek', size: size })); } catch (e) { circle(c, 0, 0, size / 2); c.fillStyle = '#FFA94D'; c.fill(); ink(c, 4); }
+    GGCat.draw(c, catOpts(opts, { pose: 'peek', size: size }));
     c.restore();
   }
   function drawWall(c) {
     var W = L.W, H = L.H;
     c.fillStyle = '#FFF1DC'; c.fillRect(0, 0, W, L.CY);
     c.fillStyle = '#FFE4C4'; for (var x = 20; x < W; x += 64) c.fillRect(x, 0, 30, L.CY);
-    // bunting
-    c.save();
+    // bunting: the flags first, then the string over their tops.
     // tall screens: two short strings either side of the hatch (clear of the queue and the order bubbles)
     var runs = L.tall ? [[8, L.hatch.x - 34, L.hatch.y + 30], [L.hatch.x + L.hatch.w + 34, W - 8, L.hatch.y + 30]] : [[380, W - 20, 24]];
     var cols = ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'];
     runs.forEach(function (r, ri) {
       var xs = r[0], xe = r[1], y0 = r[2], sag = L.tall ? 18 : 30;
-      c.beginPath(); c.moveTo(xs, y0); c.quadraticCurveTo((xs + xe) / 2, y0 + sag, xe, y0); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
       var n = Math.max(2, Math.floor((xe - xs) / 46));
       for (var i = 0; i <= n; i++) {
         var t = (i + 0.5) / (n + 1), bx = lerp(xs, xe, t), by = y0 + sag * 2 * t * (1 - t);
-        c.beginPath(); c.moveTo(bx - 13, by); c.lineTo(bx + 13, by); c.lineTo(bx, by + 24); c.closePath(); c.fillStyle = cols[(i + ri * 2) % cols.length]; c.fill(); ink(c, 2.5);
+        D.shape(c, function (p) { p.moveTo(bx - 13, by - 1); p.lineTo(bx + 13, by - 1); p.lineTo(bx, by + 24); p.closePath(); }, cols[(i + ri * 2) % cols.length], { lw: LW.fine, depth: 4 });
       }
+      c.beginPath(); c.moveTo(xs, y0); c.quadraticCurveTo((xs + xe) / 2, y0 + sag, xe, y0); D.ink(c, LW.fine);
     });
-    c.restore();
   }
   function drawHatch(c) {
     var h = L.hatch, C = G ? G.chef : { state: 'idle', t: 0 };
@@ -584,10 +603,11 @@
     c.strokeStyle = '#C8E2EC'; c.lineWidth = 3;
     for (var x = h.x; x < h.x + h.w; x += 32) { c.beginPath(); c.moveTo(x, h.y); c.lineTo(x, h.y + h.h); c.stroke(); }
     for (var y = h.y; y < h.y + h.h; y += 32) { c.beginPath(); c.moveTo(h.x, y); c.lineTo(h.x + h.w, y); c.stroke(); }
-    // pots hanging
+    // pots hanging on hooks: the hook line and the side handles tuck in behind each pot
     [[h.x + 40, '#FF6B57'], [h.x + h.w - 44, '#7CC4FF']].forEach(function (p) {
-      c.beginPath(); c.moveTo(p[0], h.y); c.lineTo(p[0], h.y + 26); c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
-      rr(c, p[0] - 20, h.y + 26, 40, 30, 8); c.fillStyle = p[1]; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(p[0], h.y); c.lineTo(p[0], h.y + 34); D.ink(c, LW.fine);
+      [-1, 1].forEach(function (s) { D.shape(c, D.rrPath(p[0] + s * 17 - 7, h.y + 32, 14, 8, 4), D.darker(p[1], 0.2), { lw: LW.fine, depth: 0 }); });
+      D.shape(c, D.rrPath(p[0] - 20, h.y + 26, 40, 30, 8), D.tone(c, p[1], h.y + 26, h.y + 56), { lw: LW.fine, depth: 5, shine: [p[0] - 10, h.y + 33, 5, 2.5, 0, 0.55] });
     });
     // the chef
     var bob = C.state === 'cook' ? Math.sin(time * 18) * 3 : Math.sin(time * 2) * 1.5;
@@ -596,12 +616,12 @@
     c.save(); c.translate(0, bob);
     peekCat(c, cx, ly + 2, L.tall ? 120 : 126, { preset: 'chef', face: face });
     c.restore();
-    // a pan while cooking, with steam
+    // a pan while cooking, with steam: the handle goes in first and the pan covers its end
     if (C.state === 'cook') {
       var px = cx + 74, py = ly - 18 + Math.sin(time * 20) * 3;
       c.save(); c.translate(px, py); c.rotate(Math.sin(time * 10) * 0.08);
-      ell(c, 0, 0, 34, 12); c.fillStyle = '#4A4458'; c.fill(); ink(c, 3);
-      rr(c, 30, -4, 40, 9, 4); c.fillStyle = '#8E7FA8'; c.fill(); ink(c, 3);
+      D.shape(c, D.rrPath(22, -4, 48, 9, 4.5), '#8E7FA8', { lw: LW.fine, depth: 0 });
+      D.shape(c, D.ellPath(0, 0, 34, 12), '#4A4458', { lw: LW.fine, depth: 4, shade: 'rgba(0,0,0,.25)', shine: [-12, -4, 10, 2.5, 0, 0.25] });
       c.restore();
       for (var i = 0; i < 3; i++) {
         var ph = (time * 1.2 + i / 3) % 1;
@@ -613,18 +633,20 @@
       c.fillText('?', cx + 70, h.y + 70 + Math.sin(time * 6) * 4);
     }
     c.restore();
-    rr(c, h.x, h.y, h.w, h.h, 16); ink(c, 5);
-    // awning
-    var aw = h.w + 40, ax = h.x - 20, ay = h.y - 22, nS = 8;
-    for (var s = 0; s < nS; s++) {
-      var sx = ax + s * aw / nS;
-      c.beginPath(); c.moveTo(sx, ay); c.lineTo(sx + aw / nS, ay); c.lineTo(sx + aw / nS, ay + 26);
-      c.arc(sx + aw / nS / 2, ay + 26, aw / nS / 2, 0, Math.PI); c.closePath();
-      c.fillStyle = s % 2 ? '#FFFFFF' : '#FF8FAB'; c.fill(); ink(c, 3);
-    }
-    // the pass: a ledge where finished dishes wait
-    rr(c, h.x - 26, L.ledgeY, h.w + 52, 18, 6); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 4);
-    [h.x + 10, h.x + h.w - 10].forEach(function (bx) { c.beginPath(); c.moveTo(bx, L.ledgeY + 18); c.lineTo(bx + (bx < h.x + h.w / 2 ? 18 : -18), L.ledgeY + 40); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(); });
+    rr(c, h.x, h.y, h.w, h.h, 16); D.ink(c, LW.big);
+    // awning: one scalloped strip, its stripes clipped inside, outlined once
+    var aw = h.w + 40, ax = h.x - 20, ay = h.y - 22, nS = 8, sw = aw / nS;
+    D.shape(c, function (p) {
+      p.moveTo(ax, ay); p.lineTo(ax + aw, ay); p.lineTo(ax + aw, ay + 26);
+      for (var s = nS - 1; s >= 0; s--) p.arc(ax + s * sw + sw / 2, ay + 26, sw / 2, 0, Math.PI);
+      p.closePath();
+    }, '#FFFFFF', { lw: LW.fine, depth: 6, inside: function (c) {
+      c.fillStyle = '#FF8FAB'; for (var s = 0; s < nS; s += 2) c.fillRect(ax + s * sw, ay - 2, sw, 60);
+      c.strokeStyle = INK; c.lineWidth = LW.fine; for (var s2 = 1; s2 < nS; s2++) { c.beginPath(); c.moveTo(ax + s2 * sw, ay); c.lineTo(ax + s2 * sw, ay + 26); c.stroke(); }
+    } });
+    // the pass: a ledge where finished dishes wait, on brackets that tuck in under it
+    [h.x + 10, h.x + h.w - 10].forEach(function (bx) { c.beginPath(); c.moveTo(bx, L.ledgeY + 10); c.lineTo(bx + (bx < h.x + h.w / 2 ? 18 : -18), L.ledgeY + 40); D.ink(c, LW.mid); });
+    D.shape(c, D.rrPath(h.x - 26, L.ledgeY, h.w + 52, 18, 6), D.tone(c, '#E6B98A', L.ledgeY, L.ledgeY + 18), { lw: LW.mid, depth: 5 });
   }
   function drawPass(c) {
     if (!G) return;
@@ -643,16 +665,18 @@
   }
   function drawCounter(c) {
     var W = L.W, y = L.CY;
-    c.fillStyle = '#C98B5B'; c.fillRect(0, y, W, L.H - y);
+    c.fillStyle = D.tone(c, '#C98B5B', y, L.H); c.fillRect(0, y, W, L.H - y);
     c.strokeStyle = '#B57A4C'; c.lineWidth = 4;
     for (var x = 60; x < W; x += 150) { rr(c, x, y + 34, 110, L.H - y - 50, 10); c.stroke(); }
-    rr(c, -10, y - 4, W + 20, 26, 8); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 4);
-    // bin for unwanted dishes
+    D.shape(c, D.rrPath(-10, y - 4, W + 20, 26, 8), D.tone(c, '#E6B98A', y - 4, y + 22), { lw: LW.mid, depth: 6 });
+    // bin for unwanted dishes: the lid sits on the bin, the slats are inside it
     var b = L.bin;
     c.save(); c.translate(b.x, b.y);
-    c.beginPath(); c.moveTo(-30, -66); c.lineTo(30, -66); c.lineTo(24, 0); c.lineTo(-24, 0); c.closePath(); c.fillStyle = '#9BD7C4'; c.fill(); ink(c, 4);
-    rr(c, -36, -78, 72, 14, 6); c.fillStyle = '#7CC4AE'; c.fill(); ink(c, 3.5);
-    c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 3; [-12, 0, 12].forEach(function (x) { c.beginPath(); c.moveTo(x, -54); c.lineTo(x * 0.8, -12); c.stroke(); });
+    D.shadow(c, 0, 2, 34, 7);
+    D.shape(c, function (p) { p.moveTo(-30, -70); p.lineTo(30, -70); p.lineTo(24, 0); p.lineTo(-24, 0); p.closePath(); }, D.tone(c, '#9BD7C4', -70, 0), { lw: LW.mid, depth: 7, inside: function (c) {
+      c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 3; [-12, 0, 12].forEach(function (x) { c.beginPath(); c.moveTo(x, -54); c.lineTo(x * 0.8, -12); c.stroke(); });
+    } });
+    D.shape(c, D.rrPath(-36, -78, 72, 14, 6), D.tone(c, '#7CC4AE', -78, -64), { lw: LW.fine, depth: 4 });
     var hot = drag && drag.moved && binHit(drag.x, drag.y);
     if (hot) { rr(c, -44, -88, 88, 96, 16); c.strokeStyle = '#7BD389'; c.lineWidth = 5; c.stroke(); }
     c.restore();
@@ -665,7 +689,7 @@
     for (var i = 0; i < n; i++) {
       var cu = q[i], x = L.tall ? x0 + i * sp : x0 + (n - 1 - i) * sp, y = L.queue.y + Math.sin(time * 3 + cu.id) * 2;
       c.save(); c.translate(x, y);
-      try { GGCat.draw(c, catOpts(cu.look, { size: size, face: 'open' })); } catch (e) {}
+      GGCat.draw(c, catOpts(cu.look, { size: size, face: 'open' }));
       c.restore();
     }
     c.font = '800 20px Nunito, system-ui, sans-serif'; c.fillStyle = '#7A6F8E'; c.textAlign = 'center';
@@ -711,6 +735,15 @@
     });
     c.restore();
   }
+  /* a speech bubble with its pointer as one shape, so there's no line across the join */
+  function bubblePath(x0, y0, w, h, r, tx) {
+    return function (p) {
+      var x1 = x0 + w, y1 = y0 + h;
+      p.moveTo(x0 + r, y0); p.arcTo(x1, y0, x1, y1, r); p.arcTo(x1, y1, x0, y1, r);
+      p.lineTo(tx + 12, y1); p.lineTo(tx, y1 + 16); p.lineTo(tx - 12, y1);
+      p.arcTo(x0, y1, x0, y0, r); p.arcTo(x0, y0, x1, y0, r); p.closePath();
+    };
+  }
   function drawBubbles(c) {
     if (!G) return;
     G.slots.forEach(function (cu, i) {
@@ -721,17 +754,15 @@
       var hot = drag && drag.moved && custHit(drag.x, drag.y) === i;
       c.save();
       if (cu.mood === 'doze') c.globalAlpha = 0.55;
-      rr(c, x - bw / 2, by, bw, bh, 22); c.fillStyle = hot ? '#E6FBE9' : '#FFFFFF'; c.fill(); ink(c, 4);
-      c.beginPath(); c.moveTo(x - 12, by + bh - 2); c.lineTo(x, by + bh + 16); c.lineTo(x + 12, by + bh - 2); c.fillStyle = hot ? '#E6FBE9' : '#FFFFFF'; c.fill();
-      c.beginPath(); c.moveTo(x - 12, by + bh); c.lineTo(x, by + bh + 16); c.lineTo(x + 12, by + bh); ink(c, 4);
+      D.shape(c, bubblePath(x - bw / 2, by, bw, bh, 22, x), hot ? '#E6FBE9' : '#FFFFFF', { lw: LW.mid, depth: 6 });
       blit(c, dishPic(cu.order), x, by + 40, 104);
       var need = dishDef(cu.order).need;
       need.forEach(function (id, j) { blit(c, ingPic(id), x + (j - 1) * 42, by + 92, 36); });
       if (G.mode === 'chal') {
         var r = clamp(cu.pat / cu.patMax, 0, 1);
-        rr(c, x - bw / 2 + 14, by + bh - 16, bw - 28, 10, 5); c.fillStyle = '#EEE8F3'; c.fill();
-        if (r > 0) { rr(c, x - bw / 2 + 14, by + bh - 16, (bw - 28) * r, 10, 5); c.fillStyle = r > 0.6 ? '#7BD389' : r > 0.4 ? '#FFD23F' : '#FF6B57'; c.fill(); }
-        rr(c, x - bw / 2 + 14, by + bh - 16, bw - 28, 10, 5); ink(c, 2.5);
+        D.shape(c, D.rrPath(x - bw / 2 + 14, by + bh - 16, bw - 28, 10, 5), '#EEE8F3', { lw: 2.5, depth: 0, inside: function (c) {
+          c.fillStyle = r > 0.6 ? '#7BD389' : r > 0.4 ? '#FFD23F' : '#FF6B57'; c.fillRect(x - bw / 2 + 14, by + bh - 16, (bw - 28) * r, 10);
+        } });
       }
       if (hot) { rr(c, x - bw / 2 - 6, by - 6, bw + 12, bh + 12, 26); c.strokeStyle = '#7BD389'; c.lineWidth = 6; c.stroke(); }
       c.restore();
@@ -760,7 +791,7 @@
       if (p.kind === 'text') {
         c.font = '800 ' + p.r + 'px "Baloo 2", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
         c.lineWidth = 6; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.strokeText(p.text, 0, 0); c.fillStyle = p.color; c.fillText(p.text, 0, 0);
-        c.translate(p.r * 0.95, 0); star(c, p.r * 0.45); c.fillStyle = p.color === '#FF5A5F' ? '#C9C2D6' : '#FFD23F'; c.fill(); ink(c, 2.5);
+        c.translate(p.r * 0.95, 0); star(c, p.r * 0.45); c.fillStyle = p.color === '#FF5A5F' ? '#C9C2D6' : '#FFD23F'; c.fill(); ink(c, LW.fine);
         c.restore(); return;
       }
       c.rotate(p.kind === 'heart' ? 0 : p.life * p.spin);
@@ -768,7 +799,7 @@
       else if (p.kind === 'heart') { c.beginPath(); c.moveTo(0, p.r * 0.4); c.bezierCurveTo(-p.r * 1.2, -p.r * 0.4, -p.r * 0.5, -p.r * 1.2, 0, -p.r * 0.5); c.bezierCurveTo(p.r * 0.5, -p.r * 1.2, p.r * 1.2, -p.r * 0.4, 0, p.r * 0.4); }
       else { c.beginPath(); c.arc(0, 0, p.r * 0.6, 0, TAU); }
       c.fillStyle = p.color; c.fill();
-      if (p.kind === 'heart') ink(c, 2);
+      if (p.kind === 'heart') ink(c, LW.fine);
       c.restore();
     });
   }
@@ -871,7 +902,7 @@
     drawParts(ctx);
     ctx.restore();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rr(ctx, OX, OY, L.W * K, L.H * K, 22); ink(ctx, 5);
+    rr(ctx, OX, OY, L.W * K, L.H * K, 22); ink(ctx, LW.big);
     ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * OX, dpr * OY);
     drawDrag(ctx);
     requestAnimationFrame(frame);
