@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Bath Time</title>
+<meta name="theme-color" content="#DDF3FF">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Toddler game: a muddy kitten in a bathtub (canvas) with three big tools along the bottom: sponge, shower,
+   towel. No words needed. Single bright look by design. */
+body { background: #CFEAF7; }
+.middle { flex: 1; }
+.tools {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 10px max(10px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: flex; gap: 16px; justify-content: center;
+}
+.tool {
+  width: 92px; height: 92px; border: 4px solid var(--ink); border-radius: 26px; background: #fff; box-shadow: 0 5px 0 var(--ink); cursor: pointer; padding: 0;
+  display: grid; place-items: center;
+}
+.tool img { width: 76px; height: 76px; pointer-events: none; }
+.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 9px 0 var(--ink); }
+.tool.next:not([aria-pressed="true"]) { animation: nudge 1.2s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { transform: none; } 50% { transform: translateY(-6px) rotate(-4deg); } }
+@media (max-width: 420px) { .tool { width: 80px; height: 80px; border-radius: 22px; } .tool img { width: 64px; height: 64px; } }
+@media (prefers-reduced-motion: reduce) { .tool.next:not([aria-pressed="true"]) { animation: none; outline: 4px dashed var(--sun); outline-offset: 3px; } }
+.haptic { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="A muddy kitten in a bath. Pick the sponge, the shower or the towel and rub the kitten."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle"></div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="tools" id="tools">
+  <button class="tool" type="button" data-tool="sponge" aria-label="Sponge" aria-pressed="true"></button>
+  <button class="tool" type="button" data-tool="shower" aria-label="Shower" aria-pressed="false"></button>
+  <button class="tool" type="button" data-tool="towel" aria-label="Towel" aria-pressed="false"></button>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

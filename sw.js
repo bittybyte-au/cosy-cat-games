@@ -1,6 +1,6 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v89';
+const VERSION = 'ccg-v90';
 const FILES = [
   './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js',
   './fonts/fonts.css', './fonts/baloo-2-latin-600-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/nunito-latin-700-normal.woff2', './fonts/nunito-latin-800-normal.woff2',
@@ -17,7 +17,8 @@ const FILES = [
   './games/feed/', './games/feed/index.html', './games/feed/game.js',
   './games/yarn-dash/', './games/yarn-dash/index.html', './games/yarn-dash/game.js',
   './games/seek/', './games/seek/index.html', './games/seek/game.js',
-  './games/mouse-pop/', './games/mouse-pop/index.html', './games/mouse-pop/game.js'
+  './games/mouse-pop/', './games/mouse-pop/index.html', './games/mouse-pop/game.js',
+  './games/bath/', './games/bath/index.html', './games/bath/game.js'
 ];
 
 self.addEventListener('install', (e) => {
