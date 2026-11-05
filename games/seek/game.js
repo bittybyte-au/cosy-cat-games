@@ -1,4 +1,4 @@
-/* Hide and Seek – a toddler game (about age 3). A picture (garden, bedroom or beach) with a few things peeking out
+/* Hide and Seek – a toddler game (about age 3). A picture (garden, bedroom, beach or kitchen) with a few things peeking out
    from behind the bushes, beds and sandcastles. The cards at the bottom show what to find; tap one in the picture
    and it pops out and its card gets a big tick. Find them all for a little party, then play the same picture again
    (everything moves around) or pick another. Every round is freshly made, so it's never quite the same.
@@ -214,12 +214,51 @@
     c.beginPath(); c.moveTo(-44, -10); c.lineTo(-50, -2); c.moveTo(44, -10); c.lineTo(50, -2); c.strokeStyle = col || '#FF5A5F'; c.lineWidth = 6; c.stroke();
     rr(c, -46, -18, 92, 8, 4); fillInk(c, col || '#FF5A5F', 3);
   };
+  /* kitchen things */
+  ITEMS.mug = function (c, col) {
+    c.beginPath(); c.arc(34, 0, 16, -1.3, 1.3); c.strokeStyle = INK; c.lineWidth = 13; c.stroke(); c.strokeStyle = col || '#FF8FAB'; c.lineWidth = 6; c.stroke();
+    rr(c, -36, -34, 72, 72, 14); fillInk(c, col || '#FF8FAB', 4.5);
+    ell(c, 0, -34, 36, 9); fillInk(c, '#8A5A2B', 3.5);
+    circle(c, -6, 6, 10); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill(); circle(c, 12, 2, 6); c.fill();
+  };
+  ITEMS.egg = function (c) {
+    c.beginPath(); c.moveTo(0, -46); c.bezierCurveTo(30, -46, 38, 2, 34, 18); c.bezierCurveTo(28, 44, -28, 44, -34, 18); c.bezierCurveTo(-38, 2, -30, -46, 0, -46); c.closePath(); fillInk(c, '#FFF6E8', 4.5);
+    circle(c, -10, 2, 4); c.fillStyle = INK; c.fill(); circle(c, 10, 2, 4); c.fill();
+    c.beginPath(); c.moveTo(-6, 14); c.quadraticCurveTo(0, 19, 6, 14); ink(c, 3);
+    c.fillStyle = 'rgba(255,143,171,.5)'; circle(c, -20, 12, 6); c.fill(); circle(c, 20, 12, 6); c.fill();
+  };
+  ITEMS.cheese = function (c) {
+    c.beginPath(); c.moveTo(-44, 26); c.lineTo(-44, -6); c.lineTo(40, -32); c.lineTo(44, 26); c.closePath(); fillInk(c, '#FFD23F', 4.5);
+    c.beginPath(); c.moveTo(-44, -6); c.lineTo(40, -32); c.lineTo(44, -18); c.lineTo(-40, 2); c.closePath(); fillInk(c, '#FFE680', 3.5);
+    c.fillStyle = '#E8B400'; [[-22, 12, 7], [8, 6, 9], [28, 16, 5], [-6, 20, 4]].forEach(function (q) { circle(c, q[0], q[1], q[2]); c.fill(); });
+  };
+  ITEMS.banana = function (c) {
+    c.save(); c.rotate(-0.3);
+    c.beginPath(); c.moveTo(-46, -12); c.quadraticCurveTo(-10, 40, 44, -14); c.quadraticCurveTo(46, -22, 40, -20); c.quadraticCurveTo(-6, 16, -38, -18); c.closePath(); fillInk(c, '#FFD23F', 4.5);
+    c.beginPath(); c.moveTo(-40, -8); c.quadraticCurveTo(-6, 24, 36, -10); c.strokeStyle = '#E8B400'; c.lineWidth = 3; c.stroke();
+    rr(c, -52, -22, 12, 12, 3); fillInk(c, '#8A5A2B', 3); circle(c, 44, -18, 3.5); c.fillStyle = INK; c.fill();
+    c.restore();
+  };
+  ITEMS.teapot = function (c, col) {
+    c.beginPath(); c.moveTo(26, 0); c.quadraticCurveTo(50, -6, 52, -30); c.lineTo(44, -32); c.quadraticCurveTo(42, -14, 26, -12); c.closePath(); fillInk(c, col || '#7CC4FF', 4);
+    c.beginPath(); c.arc(-34, -2, 16, 1.6, 4.7); c.strokeStyle = INK; c.lineWidth = 12; c.stroke(); c.strokeStyle = col || '#7CC4FF'; c.lineWidth = 5; c.stroke();
+    ell(c, 0, 4, 34, 30); fillInk(c, col || '#7CC4FF', 4.5);
+    ell(c, 0, -24, 22, 7); fillInk(c, '#fff', 3.5); circle(c, 0, -34, 7); fillInk(c, col || '#7CC4FF', 3.5);
+    c.fillStyle = '#fff'; [[-14, 6], [0, 14], [14, 6]].forEach(function (q) { circle(c, q[0], q[1], 5); c.fill(); });
+  };
+  ITEMS.spoon = function (c) {
+    c.save(); c.rotate(-0.7);
+    rr(c, -8, -4, 16, 54, 8); fillInk(c, '#C98B5B', 4);
+    ell(c, 0, -26, 20, 26); fillInk(c, '#E6B98A', 4.5);
+    ell(c, -5, -32, 6, 11, 0.2); c.fillStyle = 'rgba(255,255,255,.5)'; c.fill();
+    c.restore();
+  };
   /* colours a thing can come in (one colour per thing in a picture) */
   var ITEM_COLS = {
     block: ['#FF5A5F', '#3D8BFF', '#3FC46A', '#FFC93C'], car: ['#3D8BFF', '#FF5A5F', '#3FC46A'], book: ['#B48CFF', '#FF8FAB', '#7CC4FF'],
     crayon: ['#FF9F43', '#3D8BFF', '#A86BFF', '#3FC46A'], flower: ['#FF8FAB', '#B48CFF', '#FFFFFF', '#7CC4FF'], leaf: ['#7BD389', '#FFC93C', '#FF9A2E'],
     butterfly: ['#B48CFF', '#7CC4FF', '#FF8FAB'], shell: ['#FFC2DA', '#FFE7A8', '#FFFFFF'], icecream: ['#FF9EC4', '#FFF3C4', '#A8E6CF'],
-    sunglasses: ['#FF5A5F', '#3D8BFF', '#FFC93C'], kitten: KITTEN_COLS
+    sunglasses: ['#FF5A5F', '#3D8BFF', '#FFC93C'], mug: ['#FF8FAB', '#7CC4FF', '#FFD23F', '#7BD389'], teapot: ['#7CC4FF', '#FF9EC4', '#7BD389'], kitten: KITTEN_COLS
   };
   var ITEM_IDS = Object.keys(ITEMS);
 
@@ -319,13 +358,53 @@
       c.beginPath(); c.moveTo(-115, -70); c.lineTo(115, -70); c.quadraticCurveTo(100, 0, 60, 0); c.lineTo(-60, 0); c.quadraticCurveTo(-100, 0, -115, -70); c.closePath(); fillInk(c, p.col, 5);
       c.beginPath(); c.moveTo(-108, -48); c.lineTo(108, -48); c.strokeStyle = '#fff'; c.lineWidth = 8; c.stroke();
       c.beginPath(); c.moveTo(-20, -70); c.lineTo(-20, -110); c.moveTo(20, -70); c.lineTo(60, -112); ink(c, 6);
-    }, cols: ['#FF6B57', '#3D8BFF', '#FFD23F'] }
+    }, cols: ['#FF6B57', '#3D8BFF', '#FFD23F'] },
+    /* kitchen */
+    fridge: { w: 150, h: 290, cols: ['#FFFFFF', '#BFE6FF', '#FFD6E5', '#D9F2D0'], draw: function (c, p) {
+      rr(c, -75, -290, 150, 290, 22); fillInk(c, p.col, 5);
+      c.beginPath(); c.moveTo(-75, -190); c.lineTo(75, -190); ink(c, 4);
+      rr(c, 50, -260, 10, 50, 5); fillInk(c, '#C9C2D6', 3); rr(c, 50, -170, 10, 60, 5); fillInk(c, '#C9C2D6', 3);
+      // magnets and a drawing on the door
+      rr(c, -52, -150, 56, 44, 4); fillInk(c, '#fff', 3); c.beginPath(); c.moveTo(-44, -116); c.lineTo(-30, -136); c.lineTo(-20, -124); c.lineTo(-8, -140); c.strokeStyle = '#3D8BFF'; c.lineWidth = 3; c.stroke();
+      circle(c, -24, -152, 6); fillInk(c, '#FF5A5F', 2.5); circle(c, -40, -240, 9); fillInk(c, '#FFD23F', 3); circle(c, -12, -226, 7); fillInk(c, '#7BD389', 3);
+      rr(c, -66, -10, 132, 10, 4); c.fillStyle = 'rgba(42,35,64,.2)'; c.fill();
+    } },
+    counter: { w: 230, h: 130, cols: ['#7CC4FF', '#FF9EC4', '#7BD389', '#FFC93C'], draw: function (c, p) {
+      rr(c, -108, -112, 216, 112, 8); fillInk(c, p.col, 5);
+      c.beginPath(); c.moveTo(0, -112); c.lineTo(0, 0); ink(c, 4);
+      rr(c, -98, -102, 88, 92, 8); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 4; c.stroke(); rr(c, 10, -102, 88, 92, 8); c.stroke();
+      circle(c, -16, -56, 6); fillInk(c, '#fff', 3); circle(c, 16, -56, 6); fillInk(c, '#fff', 3);
+      rr(c, -115, -130, 230, 22, 6); fillInk(c, '#F4E9DA', 4.5);
+    } },
+    oven: { w: 170, h: 140, cols: ['#FFFFFF', '#FFE7A8', '#C7EBD2'], draw: function (c, p) {
+      rr(c, -82, -128, 164, 128, 10); fillInk(c, p.col, 5);
+      rr(c, -66, -84, 132, 64, 10); fillInk(c, '#3D3650', 4); rr(c, -54, -74, 108, 44, 8); c.fillStyle = '#FF9F43'; c.globalAlpha = 0.55; c.fill(); c.globalAlpha = 1;
+      rr(c, -50, -100, 100, 8, 4); fillInk(c, '#C9C2D6', 3);
+      [-48, -18, 18, 48].forEach(function (x) { circle(c, x, -114, 6); fillInk(c, '#C9C2D6', 2.5); });
+      rr(c, -86, -140, 172, 16, 5); fillInk(c, '#3D3650', 4);
+      [-40, 40].forEach(function (x) { ell(c, x, -140, 26, 6); c.strokeStyle = '#8A8296'; c.lineWidth = 4; c.stroke(); });
+    } },
+    table: { w: 250, h: 120, cols: ['#E6B98A', '#C98B5B', '#FFFFFF'], draw: function (c, p) {
+      [-100, 100].forEach(function (x) { rr(c, x - 8, -100, 16, 100, 6); fillInk(c, '#C98B5B', 4); });
+      rr(c, -125, -122, 250, 26, 10); fillInk(c, p.col, 5);
+      c.save(); rr(c, -125, -122, 250, 26, 10); c.clip(); c.fillStyle = 'rgba(255,90,95,.55)'; for (var x = -125; x < 125; x += 28) c.fillRect(x, -122, 14, 26); c.restore();
+      rr(c, -125, -122, 250, 26, 10); ink(c, 5);
+    } },
+    stool: { w: 90, h: 110, cols: ['#FF6B57', '#FFC93C', '#7CC4FF'], draw: function (c, p) {
+      c.beginPath(); c.moveTo(-30, 0); c.lineTo(-22, -96); c.moveTo(30, 0); c.lineTo(22, -96); c.moveTo(-26, -40); c.lineTo(26, -40); ink(c, 6);
+      ell(c, 0, -100, 44, 14); fillInk(c, p.col, 4.5);
+    } },
+    bin: { w: 80, h: 100, cols: ['#C9C2D6', '#7BD389', '#FF9EC4'], draw: function (c, p) {
+      c.beginPath(); c.moveTo(-34, -88); c.lineTo(34, -88); c.lineTo(28, 0); c.lineTo(-28, 0); c.closePath(); fillInk(c, p.col, 4.5);
+      rr(c, -38, -100, 76, 14, 6); fillInk(c, p.col, 4); rr(c, -10, -108, 20, 8, 4); fillInk(c, '#3D3650', 3);
+    } }
   };
   /* rocks belong at the beach and in the garden */
   var SCENES = [
     { id: 'garden', kinds: ['bush', 'bush', 'pot', 'rock', 'can', 'tree'], big: ['tree'], ground: 0.42 },
     { id: 'bedroom', kinds: ['bed', 'toybox', 'basket', 'armchair', 'plant', 'toybox'], big: ['bed', 'armchair'], ground: 0.5 },
-    { id: 'beach', kinds: ['castle', 'bucket', 'rock', 'beachchair', 'boat', 'castle', 'bucket'], big: ['boat', 'beachchair'], ground: 0.5 }
+    { id: 'beach', kinds: ['castle', 'bucket', 'rock', 'beachchair', 'boat', 'castle', 'bucket'], big: ['boat', 'beachchair'], ground: 0.5 },
+    { id: 'kitchen', kinds: ['fridge', 'counter', 'oven', 'table', 'stool', 'bin'], big: ['fridge', 'table'], ground: 0.5 }
   ];
   function sceneDef(id) { for (var i = 0; i < SCENES.length; i++) if (SCENES[i].id === id) return SCENES[i]; return SCENES[0]; }
 
@@ -401,6 +480,25 @@
       c.strokeStyle = '#D9A877'; c.lineWidth = 3; for (var fy = gy + 40; fy < H; fy += 50) { c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); c.stroke(); }
       c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
       ell(c, W * S.rugX, gy + (H - gy) * 0.55, W * 0.28, (H - gy) * 0.22); fillInk(c, S.rug, 4);
+    } else if (S.def.id === 'kitchen') {
+      c.fillStyle = S.wall; c.fillRect(0, 0, W, gy);
+      // tiles behind the worktops
+      var ty = gy - Math.min(120, gy * 0.32);
+      c.fillStyle = '#FFFFFF'; c.fillRect(0, ty, W, gy - ty);
+      c.strokeStyle = 'rgba(42,35,64,.14)'; c.lineWidth = 2;
+      for (var tyy = ty; tyy < gy; tyy += 30) { c.beginPath(); c.moveTo(0, tyy); c.lineTo(W, tyy); c.stroke(); }
+      for (var txx = 0; txx < W; txx += 30) { c.beginPath(); c.moveTo(txx, ty); c.lineTo(txx, gy); c.stroke(); }
+      c.beginPath(); c.moveTo(0, ty); c.lineTo(W, ty); ink(c, 3);
+      var kx = S.winX * W;
+      rr(c, kx - 90, gy * 0.12, 180, ty - gy * 0.12 - 24, 12); fillInk(c, '#9EDCFF', 5);
+      c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(kx, gy * 0.12 + 4); c.lineTo(kx, ty - 28); c.stroke();
+      circle(c, kx + 50, gy * 0.24, 16); c.fillStyle = '#FFE14D'; c.fill();
+      drawCurtains(c, kx - 90, gy * 0.12, 180, ty - gy * 0.12 - 24, S.curtain);
+      // checked floor
+      var tile = 60; c.fillStyle = '#F4E9DA'; c.fillRect(0, gy, W, H - gy); c.fillStyle = '#E3CDB1';
+      for (var fy2 = gy, r2 = 0; fy2 < H; fy2 += tile, r2++) for (var fx2 = (r2 % 2) * tile; fx2 < W; fx2 += tile * 2) c.fillRect(fx2, fy2, tile, tile);
+      c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
+      ell(c, W * S.rugX, gy + (H - gy) * 0.6, W * 0.2, (H - gy) * 0.16); fillInk(c, S.rug, 4);
     } else {
       c.fillStyle = '#BFE6FF'; c.fillRect(0, 0, W, gy * 0.7);
       circle(c, W * 0.14, H * 0.1, 40); fillInk(c, '#FFE14D', 4);
@@ -420,15 +518,18 @@
   var POOLS = {
     bedroom: ['yarn', 'ball', 'duck', 'star', 'teddy', 'block', 'car', 'book', 'crayon', 'sock', 'bell', 'mouse', 'kitten', 'cupcake'],
     garden: ['apple', 'carrot', 'flower', 'ladybug', 'snail', 'leaf', 'butterfly', 'ball', 'duck', 'mouse', 'kitten', 'yarn'],
-    beach: ['shell', 'starfish', 'crab', 'icecream', 'sunglasses', 'fish', 'ball', 'duck', 'kitten', 'cupcake', 'yarn']
+    beach: ['shell', 'starfish', 'crab', 'icecream', 'sunglasses', 'fish', 'ball', 'duck', 'kitten', 'cupcake', 'yarn'],
+    kitchen: ['mug', 'egg', 'cheese', 'banana', 'teapot', 'spoon', 'apple', 'carrot', 'cupcake', 'fish', 'mouse', 'kitten', 'yarn', 'duck']
   };
   var FURNITURE = {
     bedroom: [['bed', 1], ['toybox', 1], ['shelf', 2], ['armchair', 1], ['basket', 1], ['plant', 1]],
     garden: [['tree', 1], ['bush', 2], ['pot', 2], ['rock', 1], ['can', 1]],
-    beach: [['castle', 2], ['beachchair', 1], ['bucket', 1], ['rock', 1], ['towel', 1]]
+    beach: [['castle', 2], ['beachchair', 1], ['bucket', 1], ['rock', 1], ['towel', 1]],
+    kitchen: [['fridge', 1], ['counter', 2], ['oven', 1], ['shelf', 1], ['table', 1], ['stool', 1], ['bin', 1]]
   };
   /* where things can sit on top of furniture: [left, right, height] as fractions of its width/height */
-  var SURF = { bed: [-0.42, 0.36, -0.69], toybox: [-0.4, 0.4, -1.0], shelf: [-0.42, 0.42, -1.0], rock: [-0.25, 0.15, -0.92], towel: [-0.4, 0.4, -0.2] };
+  var SURF = { bed: [-0.42, 0.36, -0.69], toybox: [-0.4, 0.4, -1.0], shelf: [-0.42, 0.42, -1.0], rock: [-0.25, 0.15, -0.92], towel: [-0.4, 0.4, -0.2],
+    counter: [-0.42, 0.42, -1.0], table: [-0.4, 0.4, -1.0], oven: [-0.36, 0.36, -1.0], stool: [-0.15, 0.15, -0.95] };
   PROPS.shelf = { w: 230, h: 22, peek: [], cols: ['#C98B5B', '#E6B98A'], draw: function (c, p) {
     rr(c, -115, -22, 230, 14, 5); fillInk(c, p.col, 4);
     [-80, 80].forEach(function (x) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x, 8); c.lineTo(x + (x < 0 ? 14 : -14), -8); ink(c, 4); });
@@ -467,7 +568,7 @@
           if (kind === 'shelf') { y = rand(gy * 0.45, gy * 0.75); k = 0.95; }
           else { y = rand(gy + 40, H - 30); k = scaleAt(y); }
           var w = P.w * k, x = rand(w / 2 + 10, W - w / 2 - 10);
-          if (kind === 'shelf' && id === 'bedroom' && Math.abs(x - S.winX * W) < w / 2 + 130) continue;
+          if (kind === 'shelf' && (id === 'bedroom' || id === 'kitchen') && Math.abs(x - S.winX * W) < w / 2 + 130) continue;
           var clash = S.props.some(function (q) { return (q.kind === 'shelf') === (kind === 'shelf') && Math.abs(q.x - x) < (q.w + w) * 0.45 && Math.abs(q.y - y) < (kind === 'shelf' ? 80 : 110); });
           if (clash) continue;
           S.props.push({ kind: kind, x: x, y: y, s: k, w: w, h: P.h * k, col: pick(P.cols), flower: pick(['#B48CFF', '#FF5A5F', '#7CC4FF']), berries: Math.random() < 0.4 ? pick(['#FF5A5F', '#B48CFF']) : null });
