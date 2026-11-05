@@ -2853,7 +2853,12 @@
       var lockedR = window.GGPass && !window.GGPass.allows('cooking', r.id);
       if (r.ready && lockedR) return '<button class="recipe hero needs-pass" type="button" data-id="' + r.id + '"><span class="soon">' + PADLOCK + 'Unlock</span>' + RECIPE_ART[r.id] + '<span>' + r.name + '</span><small>Needs a pass</small></button>';
       return r.ready
-        ? '<button class="recipe hero" type="button" data-id="' + r.id + '">' + RECIPE_ART[r.id] + '<span>' + r.name + '</span><small>' + RECIPE_DEFS[r.id].steps.map(function (st) { return st.name; }).join(' \u00b7 ') + '</small></button>'
+        ? (function (steps) {
+          // how long a recipe is: a "6 steps" sticker and a row of the steps' little icons
+          return '<button class="recipe hero" type="button" data-id="' + r.id + '" aria-label="' + r.name + ', ' + steps.length + ' steps: ' + steps.map(function (st) { return st.name; }).join(', ') + '">' +
+            '<span class="count">' + steps.length + ' steps</span>' + RECIPE_ART[r.id] + '<span>' + r.name + '</span>' +
+            '<span class="step-icons" aria-hidden="true">' + steps.map(function (st) { return '<i title="' + st.name + '">' + st.icon + '</i>'; }).join('') + '</span></button>';
+        })(RECIPE_DEFS[r.id].steps)
         : '<div class="recipe locked"><span class="soon">Soon</span>' + RECIPE_ART[r.id] + '<span>' + r.name + '</span></div>';
     }).join('');
     $('recipes').querySelectorAll('button.recipe').forEach(function (b) {
