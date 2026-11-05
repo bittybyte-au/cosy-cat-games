@@ -20,7 +20,7 @@ body { background: #D9C3A5; }
 .middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; min-width: 0; }
 .basket {
   display: flex; align-items: center; gap: 8px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px;
-  padding: 5px 12px 5px 8px; box-shadow: 0 3px 0 var(--ink); min-width: 0; flex: 0 1 300px;
+  padding: 5px 12px 5px 8px; box-shadow: 0 3px 0 var(--ink), var(--soft); min-width: 0; flex: 0 1 300px;
 }
 .basket svg { width: 30px; height: 30px; flex: none; }
 .basket .bar { flex: 1; height: 14px; border-radius: 99px; border: 2.5px solid var(--ink); background: #EEE6F6; overflow: hidden; min-width: 50px; }
@@ -67,6 +67,7 @@ body { background: #D9C3A5; }
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="../../shared/avatar.js"></script>
 <script src="game.js"></script>
