@@ -84,8 +84,33 @@
     document.documentElement.style.setProperty('--bar-h', Math.round(ch - (tools.hidden ? ch : tools.getBoundingClientRect().top)) + 'px');
     PS = Math.max(160, Math.min(cw - 24, bottom - top, 760));
     PX = (cw - PS) / 2; PY = top + Math.max(0, (bottom - top - PS) / 2);
+    var zb = $('zoomBox'); if (zb) { zb.style.top = (PY + 8) + 'px'; zb.style.right = Math.max(8, cw - (PX + PS) + 8) + 'px'; }
   }
-  function toPage(x, y) { return { x: (x - PX) / PS * 400, y: (y - PY) / PS * 400 }; }
+  /* ---------- zoom: the view shows the page at view.z times, centred on page point (cx, cy) ---------- */
+  var view = { z: 1, cx: 200, cy: 200 };
+  var ZMAX = 4;
+  function clampView() {
+    view.z = clamp(view.z, 1, ZMAX);
+    var h = 200 / view.z;
+    view.cx = clamp(view.cx, h, 400 - h); view.cy = clamp(view.cy, h, 400 - h);
+    renderZoom();
+  }
+  function vScale() { return PS * view.z / 400; }                 // screen px per page unit
+  function toPage(x, y) { var k = vScale(); return { x: view.cx + (x - PX - PS / 2) / k, y: view.cy + (y - PY - PS / 2) / k }; }
+  function onPage(x, y) { return x >= PX && x <= PX + PS && y >= PY && y <= PY + PS; }
+  // zoom to z keeping the page point under screen (sx, sy) where it is
+  function zoomAt(z, sx, sy) {
+    var before = toPage(sx, sy);
+    view.z = clamp(z, 1, ZMAX);
+    var k = vScale();
+    view.cx = before.x - (sx - PX - PS / 2) / k; view.cy = before.y - (sy - PY - PS / 2) / k;
+    clampView();
+  }
+  function resetZoom() { view.z = 1; view.cx = view.cy = 200; renderZoom(); }
+  function renderZoom() {
+    if (!$('zoomIn')) return;
+    $('zoomIn').disabled = view.z >= ZMAX - 0.01; $('zoomOut').disabled = view.z <= 1.01;
+  }
 
   /* ---------- state ---------- */
   var mode = 'pick';               // pick | colour
@@ -200,17 +225,18 @@
     isNew = fresh;
     history = [];
     mode = 'colour';
-    $('picker').hidden = true; tools.hidden = false;
+    $('picker').hidden = true; tools.hidden = false; $('zoomBox').hidden = false;
     $('homeBtn').hidden = true; $('backBtn').hidden = false;
     $('titleLabel').textContent = CP.get(pic.page).name;
     setTool('fill');
     renderButtons();
+    resetZoom();
     layout();
     if (fresh && !TODDLER) say('Tap a shape to colour it in!', 2);
   }
   function showPicker() {
     mode = 'pick'; pic = null;
-    $('picker').hidden = false; tools.hidden = true;
+    $('picker').hidden = false; tools.hidden = true; $('zoomBox').hidden = true;
     $('homeBtn').hidden = false; $('backBtn').hidden = true;
     $('titleLabel').textContent = 'Colour Me';
     renderPicker(); layout();
@@ -248,20 +274,42 @@
     for (var i = pic.st.length - 1; i >= 0; i--) if (Math.hypot(pic.st[i][1] - x, pic.st[i][2] - y) < 24) return i;
     return -1;
   }
+  /* Pointers: a tap colours a shape (or adds a sticker); two fingers pinch to zoom and move the page; when zoomed
+     in, one finger dragging (in Colour mode) moves the page. Toddler mode has no zoom and colours on touch. */
+  var ptrs = {}, gesture = null, tapDown = null;
+  function ptrList() { return Object.keys(ptrs).map(function (k) { return ptrs[k]; }); }
+  function fillAt(p) {
+    var r = CP.hit(pic.page, p.x, p.y);
+    if (r < 0 || pic.f[r] === current) { if (r >= 0) { Sound.pick(); } return; }
+    snapshot();
+    anim = { region: r, x: p.x, y: p.y, r: 0, from: pic.f[r] || '#FFFFFF' };
+    pic.f[r] = current;
+    if (current.charAt(0) !== '#') { Sound.sparkle(); sparkle(p.x, p.y, 8); } else Sound.splat();
+    buzz(6);
+    commit();
+  }
+  function startPinch() {
+    var l = ptrList(); if (l.length < 2) return;
+    var a = l[0], b = l[1], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    gesture = { kind: 'pinch', d0: Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)), z0: view.z, m: toPage(mx, my) };
+  }
   canvas.addEventListener('pointerdown', function (e) {
     if (mode !== 'colour') return;
     Sound.init();
+    if (!onPage(e.clientX, e.clientY) && !Object.keys(ptrs).length) return;
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+    if (!TODDLER && Object.keys(ptrs).length >= 2) {
+      // a second finger: this is a pinch, so the first finger's tap or sticker drag is called off
+      tapDown = null;
+      if (drag) { if (drag.fresh) { history.pop(); pic.st.splice(drag.i, 1); commit(); } else if (drag.moved && drag.snap) { var h = JSON.parse(drag.snap); pic.st = h.st; } drag = null; }
+      startPinch(); return;
+    }
     var p = toPage(e.clientX, e.clientY);
     if (p.x < 0 || p.y < 0 || p.x > 400 || p.y > 400) return;
     if (tool === 'fill') {
-      var r = CP.hit(pic.page, p.x, p.y);
-      if (r < 0 || pic.f[r] === current) { if (r >= 0) { Sound.pick(); } return; }
-      snapshot();
-      anim = { region: r, x: p.x, y: p.y, r: 0, from: pic.f[r] || '#FFFFFF' };
-      pic.f[r] = current;
-      if (current.charAt(0) !== '#') { Sound.sparkle(); sparkle(p.x, p.y, 8); } else Sound.splat();
-      buzz(6);
-      commit();
+      if (TODDLER) { fillAt(p); return; }
+      tapDown = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, panning: false };
     } else {
       var i = stickerAt(p.x, p.y);
       if (i >= 0) { drag = { i: i, id: e.pointerId, moved: false, sx: p.x, sy: p.y, snap: JSON.stringify({ f: pic.f, st: pic.st }) }; }
@@ -273,18 +321,41 @@
         Sound.boop(); buzz(6);
         commit();
       }
-      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     }
   });
   canvas.addEventListener('pointermove', function (e) {
+    if (!ptrs[e.pointerId]) return;
+    ptrs[e.pointerId].x = e.clientX; ptrs[e.pointerId].y = e.clientY;
+    if (gesture && gesture.kind === 'pinch') {
+      var l = ptrList(); if (l.length < 2) return;
+      var a = l[0], b = l[1], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      view.z = clamp(gesture.z0 * Math.hypot(a.x - b.x, a.y - b.y) / gesture.d0, 1, ZMAX);
+      var k = vScale();
+      view.cx = gesture.m.x - (mx - PX - PS / 2) / k; view.cy = gesture.m.y - (my - PY - PS / 2) / k;
+      clampView(); e.preventDefault(); return;
+    }
+    if (tapDown && tapDown.id === e.pointerId) {
+      var dx = e.clientX - tapDown.x, dy = e.clientY - tapDown.y;
+      if (!tapDown.panning && Math.hypot(dx, dy) > (view.z > 1.01 ? 10 : 30)) tapDown.panning = true;   // a wobbly tap still colours
+      if (tapDown.panning && view.z > 1.01) { var k2 = vScale(); view.cx = tapDown.cx - dx / k2; view.cy = tapDown.cy - dy / k2; clampView(); }
+      return;
+    }
     if (!drag || drag.id !== e.pointerId) return;
     var p = toPage(e.clientX, e.clientY);
     if (!drag.moved && Math.hypot(p.x - drag.sx, p.y - drag.sy) < 6) return;
     if (!drag.moved) { history.push(drag.snap); drag.moved = true; }
     pic.st[drag.i][1] = Math.round(clamp(p.x, -30, 430)); pic.st[drag.i][2] = Math.round(clamp(p.y, -30, 430));
-  });
+  }, { passive: false });
   function endDrag(e) {
-    if (!drag || drag.id !== e.pointerId) return;
+    var had = !!ptrs[e.pointerId];
+    delete ptrs[e.pointerId];
+    if (gesture) { if (Object.keys(ptrs).length < 2) gesture = null; return; }
+    if (tapDown && tapDown.id === e.pointerId) {
+      var t = tapDown; tapDown = null;
+      if (!t.panning && e.type === 'pointerup' && mode === 'colour') { var p = toPage(t.x, t.y); if (p.x >= 0 && p.y >= 0 && p.x <= 400 && p.y <= 400) fillAt(p); }
+      return;
+    }
+    if (!had || !drag || drag.id !== e.pointerId) return;
     var s = pic.st[drag.i];
     // dragged off the page: the sticker is peeled off
     if (s && (s[1] < 0 || s[2] < 0 || s[1] > 400 || s[2] > 400)) { pic.st.splice(drag.i, 1); Sound.undo(); }
@@ -293,6 +364,19 @@
   }
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+  // mouse wheel and trackpad pinch zoom around the pointer
+  canvas.addEventListener('wheel', function (e) {
+    if (mode !== 'colour' || TODDLER || !onPage(e.clientX, e.clientY)) return;
+    e.preventDefault();
+    if (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX) && !e.shiftKey && e.deltaMode === 0 && Math.abs(e.deltaY) >= 40 || e.deltaMode !== 0) {
+      zoomAt(view.z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)), e.clientX, e.clientY);
+    } else {
+      var k = vScale(); view.cx += e.deltaX / k; view.cy += e.deltaY / k; clampView();   // two-finger trackpad scroll moves the page
+    }
+  }, { passive: false });
+  function zoomStep(f) { Sound.init(); Sound.pick(); zoomAt(view.z * f, PX + PS / 2, PY + PS / 2); }
+  $('zoomIn').addEventListener('click', function () { zoomStep(1.6); });
+  $('zoomOut').addEventListener('click', function () { if (view.z / 1.6 < 1.15) { Sound.init(); Sound.pick(); resetZoom(); } else zoomStep(1 / 1.6); });
 
   function sparkle(x, y, n) {
     if (reduceMotion) n = 3;
@@ -370,10 +454,11 @@
       ctx.fillStyle = 'rgba(42,35,64,.14)'; GGDraw.rr(ctx, PX - 2, PY + 10, PS + 8, PS + 8, 22); ctx.fill();
       ctx.fillStyle = GGDraw.INK; GGDraw.rr(ctx, PX - 4, PY - 4, PS + 8, PS + 10, 22); ctx.fill();
       GGDraw.rr(ctx, PX, PY, PS, PS, 18); ctx.clip();
-      ctx.translate(PX, PY);
-      CP.drawPage(ctx, pic, PS, { anim: anim });
+      var vk = vScale();
+      ctx.translate(PX + PS / 2 - view.cx * vk, PY + PS / 2 - view.cy * vk);
+      CP.drawPage(ctx, pic, PS * view.z, { anim: anim });
       // sparkles
-      ctx.scale(PS / 400, PS / 400);
+      ctx.scale(vk, vk);
       parts.forEach(function (p) {
         var k = 1 - p.life / p.max; ctx.save(); ctx.globalAlpha = k; ctx.translate(p.x, p.y); ctx.rotate(p.life * 6);
         ctx.beginPath(); for (var j = 0; j < 8; j++) { var a = j * Math.PI / 4, r = j % 2 ? p.r * 0.35 : p.r; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath();
@@ -395,7 +480,8 @@
   window.__colour = {
     pic: function () { return pic && JSON.parse(JSON.stringify(pic)); },
     saved: function () { return JSON.parse(JSON.stringify(S)); },
-    toScreen: function (x, y) { return { x: PX + x / 400 * PS, y: PY + y / 400 * PS }; },
+    toScreen: function (x, y) { var k = vScale(); return { x: PX + PS / 2 + (x - view.cx) * k, y: PY + PS / 2 + (y - view.cy) * k }; },
+    view: function () { return { z: view.z, cx: view.cx, cy: view.cy }; },
     regionCentre: function (i) { // a point inside region i (for tests)
       var pg = CP.get(pic.page);
       for (var y = 4; y < 400; y += 6) for (var x = 4; x < 400; x += 6) if (CP.hit(pic.page, x, y) === i) return { x: x, y: y };
