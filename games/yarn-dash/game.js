@@ -69,7 +69,7 @@
     catKey = key;
     CAT = { color: av.type === 'calico' ? '#FFFFFF' : av.type === 'tuxedo' ? '#3D3650' : av.color };
     try {
-      var svg = GGAvatar.svg(av, 240).replace(/<circle cx="60" cy="60" r="57"[^>]*\/>/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      var svg = GGAvatar.svg(av, 240, { bare: true });
       var img = new Image();
       img.onload = function () { catImg = img; };
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);

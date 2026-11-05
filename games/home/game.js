@@ -190,9 +190,7 @@
       eyeColor: av.face === 'mask' ? '#FFF8EC' : undefined
     };
     try {
-      var svg = GGAvatar.svg(av, 240)
-        .replace(/<circle cx="60" cy="60" r="57"[^>]*\/>/, '')
-        .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      var svg = GGAvatar.svg(av, 240, { bare: true });
       var img = new Image();
       img.onload = function () { catImg = img; };
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
