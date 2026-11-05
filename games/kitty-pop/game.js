@@ -604,20 +604,13 @@
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('kittypop'); p.level = p.level || 1; return p; }
 
-  /* levels past the free ones need the pass: the last free level replays underneath.
-     Uses GG.allows from the new shared layer, or the older GGPass while that's still in place. */
-  function passBlocks(n) {
-    if (window.GG && typeof GG.allows === 'function') return !GG.allows('kitty-pop', n);
-    return !!(window.GGPass && !window.GGPass.allows('kitty-pop', n));
-  }
+  /* Levels the shared layer doesn't allow (the free taster, once accounts exist) replay the last allowed level.
+     GG.allows doesn't exist yet, so for now every level is open. */
+  function passBlocks(n) { return !!(window.GG && typeof GG.allows === 'function' && !GG.allows('kitty-pop', n)); }
   function lastFreeLevel(n) { while (n > 1 && passBlocks(n)) n--; return n; }
-  function showPassLock() {
-    if (!window.GGPass || !window.GGPass.lockScreen) return;
-    window.GGPass.lockScreen({ title: 'You\u2019ve finished the free levels!', text: 'A grown-up can unlock every Kitty Pop level, and all the other games, for a year.', backLabel: 'Keep playing' });
-  }
 
   function startLevel(n) {
-    if (passBlocks(n)) { n = lastFreeLevel(n); showPassLock(); }
+    if (passBlocks(n)) n = lastFreeLevel(n);
     level = levelDef(n);
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
     $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
@@ -918,7 +911,6 @@
   startLevel(progress().level);
   function recheck() { if (level && passBlocks(level.n)) startLevel(level.n); }
   window.addEventListener('gg-change', recheck);
-  window.addEventListener('ggpass', recheck); // older shared code; harmless once it's gone
   requestAnimationFrame(frame);
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
 
