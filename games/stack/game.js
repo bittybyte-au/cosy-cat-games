@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -16,12 +16,6 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
   function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
 
@@ -32,7 +26,7 @@
   var canvas = $('stage'), ctx = canvas.getContext('2d'), topbar = $('topbar');
   var cw = 0, ch = 0, dpr = 1, K = 1, OX = 0, OY = 0, W = 1000, H = 700;
   var CAT = 96;                 // cat size (GGCat units)
-  var k = CAT / 88, CW = 176 * k, CH = 100 * k, STEP = 78 * k;   // loaf width, height, and how much each cat adds
+  var k = CAT / 88, CW = 176 * k, CH = 100 * k, STEP = 62 * k;   // loaf width, height, and how much each cat adds
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     cw = window.innerWidth; ch = window.innerHeight;
@@ -43,7 +37,7 @@
     var tall = aw / ah < 1.05;
     W = tall ? 600 : 1000; H = tall ? clamp(Math.round(600 * ah / aw), 800, 1150) : clamp(Math.round(1000 * ah / aw), 620, 760);
     // smaller cats on wide screens so the tower can still get tall
-    CAT = tall ? 96 : 92; k = CAT / 88; CW = 176 * k; CH = 100 * k; STEP = 78 * k;
+    CAT = tall ? 96 : 92; k = CAT / 88; CW = 176 * k; CH = 100 * k; STEP = 62 * k;
     K = Math.min(aw / W, ah / H);
     OX = (cw - W * K) / 2; OY = top + (ah - H * K) / 2;
   }
@@ -161,22 +155,36 @@
   }
 
   /* ================= drawing ================= */
+  /* Four little legs under the lying cat (in GGCat's 100-unit space), so each cat stands on the one below.
+     They start inside the body and are drawn first, so the body covers the join. The whole cat is lifted by the
+     legs' length, so the feet (not the tummy) rest where the tummy used to. */
+  var LEGS = [-52, -32, -2, 16].map(function (lx) { return D.rrPath(lx - 8, 26, 16, 32, 8); });
+  function lookColour(look) { var p = look.preset && GGCat.PRESETS[look.preset]; return look.color || (p && p.color) || '#FFFFFF'; }
   function drawLoaf(c, look, x, y, face, rot, sq) {
-    c.save(); c.translate(x, y); if (rot) c.rotate(rot); if (sq && sq !== 1) c.scale(1 + (1 - sq) * 0.5, sq);
+    c.save(); c.translate(x, y - 12 * k); if (rot) c.rotate(rot); if (sq && sq !== 1) c.scale(1 + (1 - sq) * 0.5, sq);
     c.translate(8 * k, 0);
     var o = {}; for (var key in look) o[key] = look[key]; o.pose = 'lie'; o.size = CAT; o.face = face;
-    try { GGCat.draw(c, o); } catch (e) { ell(c, 0, 0, CW / 2, CH / 2); c.fillStyle = '#FFA94D'; c.fill(); ink(c, 4); }
+    c.save(); c.scale(k, k);
+    var col = lookColour(look);
+    LEGS.forEach(function (p) { D.shape(c, p, col, { lw: D.LW.mid, depth: 3, shade: GGCat.shadeFor(col) }); });
+    c.restore();
+    try { GGCat.draw(c, o); } catch (e) { ell(c, 0, 0, CW / 2, CH / 2); c.fillStyle = '#FFA94D'; c.fill(); D.ink(c, 4); }
     c.restore();
   }
+  var cushion = null, cushionAt = '';
   function drawRoom(c) {
-    // the cushion the tower stands on
-    rr(c, W / 2 - CW * 0.75, baseTop(), CW * 1.5, 50, 22); c.fillStyle = '#FF8FAB'; c.fill(); ink(c, 4.5);
-    c.fillStyle = '#FFC2DA'; [-0.45, 0, 0.45].forEach(function (f) { circle(c, W / 2 + f * CW, baseTop() + 25, 6); c.fill(); });
+    // the cushion the tower stands on: shaded, its buttons inside, outline last
+    var x = W / 2 - CW * 0.75, y = baseTop(), w = CW * 1.5, key = x + ',' + y + ',' + w;
+    if (key !== cushionAt) { cushion = D.rrPath(x, y, w, 50, 22); cushionAt = key; }
+    D.shadow(c, W / 2, y + 50, w * 0.52, 9);
+    D.shape(c, cushion, '#FF8FAB', { lw: D.LW.big, depth: 8, shine: [x + w * 0.22, y + 12, w * 0.14, 5, 0, 0.4], inside: function (c) {
+      c.fillStyle = '#FFC2DA'; [-0.45, 0, 0.45].forEach(function (f) { circle(c, W / 2 + f * CW, y + 25, 6); c.fill(); });
+    } });
   }
   function frameScene(c) {
     c.fillStyle = '#E8E0FF'; c.fillRect(0, 0, W, H);
     c.fillStyle = '#DCD2FA'; for (var x = 0; x < W; x += 80) c.fillRect(x, 0, 40, floorY());
-    c.fillStyle = '#E6B98A'; c.fillRect(0, floorY(), W, H - floorY()); c.beginPath(); c.moveTo(0, floorY()); c.lineTo(W, floorY()); ink(c, 4);
+    c.fillStyle = D.tone(c, '#E6B98A', floorY(), H); c.fillRect(0, floorY(), W, H - floorY()); c.beginPath(); c.moveTo(0, floorY()); c.lineTo(W, floorY()); D.ink(c, D.LW.mid);
     c.save(); c.translate(W / 2, floorY()); c.scale(zoom, zoom); c.translate(-W / 2, -floorY());
     drawRoom(c);
     // sway: the whole tower leans a little, more as it gets taller
@@ -286,13 +294,13 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
     ctx.save();
-    rr(ctx, OX, OY, W * K, H * K, 24); ctx.clip();
+    D.rr(ctx, OX, OY, W * K, H * K, 24); ctx.clip();
     ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * OX, dpr * OY);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     frameScene(ctx);
     ctx.restore();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rr(ctx, OX, OY, W * K, H * K, 24); ink(ctx, 5);
+    D.rr(ctx, OX, OY, W * K, H * K, 24); D.ink(ctx, D.LW.big);
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', layout);
