@@ -246,10 +246,12 @@
 
   /* a single ear standing on a flat edge (the game tiles): the same ear, turned so its base is level */
   function earSVG(side, cls) {
-    var rot = side * 41.2, mid = side * 24;
-    return '<svg class="' + (cls || '') + '" viewBox="-26 -36 52 40" aria-hidden="true"><g transform="rotate(' + (-rot) + ') translate(' + (-mid) + ' 16)">' +
-      '<path d="' + earPath(side) + '" fill="var(--tile, #fff)" stroke="' + INK + '" stroke-width="5" stroke-linejoin="round"/>' +
-      '<path d="' + earInner(side) + '" fill="#FF8FAB" opacity=".75"/></g></svg>';
+    // the shared ear, turned so its base lies flat and leaning outward like a cat's; no line along the base,
+    // so it sits on the tile's own border
+    var rot = side * 41.2, mid = side * 24, open = earPath(side).replace(/Z$/, '');
+    return '<svg class="' + (cls || '') + '" viewBox="-26 -38 52 38" aria-hidden="true"><g transform="scale(-1 1) rotate(' + (-rot) + ') translate(' + (-mid) + ' 16)">' +
+      '<path d="' + earPath(side) + '" fill="var(--tile, #fff)"/><path d="' + earInner(side) + '" fill="#FF8FAB" opacity=".75"/>' +
+      '<path d="' + open + '" fill="none" stroke="' + INK + '" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/></g></svg>';
   }
   /* a pair of cat ears on something that isn't a cat (the clouds): <g data-cat-ears='{"x":98,"y":28,"k":0.75}'> */
   function earsG(o) {

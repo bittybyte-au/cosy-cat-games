@@ -132,7 +132,7 @@ a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
 .tile h2, .tile h3 { margin: 0; font: 800 1.9rem/1 var(--display); }
 .tile p { margin: 0; font-weight: 800; font-size: 1rem; }
 /* the ears on top of every tile come from the shared cat (GGCat.earSVG); their base sits on the tile border */
-.tile .ear { position: absolute; top: -43px; width: 64px; height: 50px; overflow: visible; pointer-events: none; }
+.tile .ear { position: absolute; top: -43px; width: 60px; height: 44px; overflow: visible; pointer-events: none; }
 .tile .ear.l { left: 18px; }
 .tile .ear.r { right: 18px; }
 .tile .badge {
