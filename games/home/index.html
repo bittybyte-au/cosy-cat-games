@@ -19,7 +19,7 @@
 :root { --wall: #FFF1DC; }
 body { background: #F7E2C6; }
 .middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
-.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
+.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); white-space: nowrap; }
 
 .drawer {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
@@ -30,22 +30,22 @@ body { background: #F7E2C6; }
 .tabs { display: flex; gap: 6px; flex: 1; min-width: 0; }
 .tab {
   border: 3px solid var(--ink); border-radius: 999px; background: #fff; padding: 6px 12px; font: 800 .95rem var(--body); cursor: pointer;
-  display: flex; align-items: center; gap: 5px; box-shadow: 0 3px 0 var(--ink);
+  display: flex; align-items: center; gap: 5px; box-shadow: 0 3px 0 var(--ink), var(--soft);
 }
 .tab[aria-selected="true"] { background: var(--sun); }
-.tab:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.tab:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .act {
   border: 3px solid var(--ink); border-radius: 16px; background: var(--grass); padding: 4px 12px; font: 800 .95rem var(--body); cursor: pointer;
-  display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 0 var(--ink); min-height: 44px; flex: none;
+  display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); min-height: 44px; flex: none;
 }
 .act.paint { background: #FFC2DA; }
 .act svg { width: 24px; height: 24px; }
-.act:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.act:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .items { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; min-height: 96px; align-items: stretch; }
 .item {
   flex: none; width: 84px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; padding: 4px; cursor: grab;
   display: flex; flex-direction: column; align-items: center; gap: 2px; font: 800 .72rem/1.1 var(--body); text-align: center;
-  touch-action: pan-x; position: relative; box-shadow: 0 3px 0 var(--ink);
+  touch-action: pan-x; position: relative; box-shadow: 0 3px 0 var(--ink), var(--soft);
 }
 .item img { width: 66px; height: 66px; display: block; pointer-events: none; }
 .item.placed { opacity: .45; box-shadow: none; }
@@ -62,7 +62,7 @@ body { background: #F7E2C6; }
 .items.painting { flex-direction: column; overflow-x: hidden; gap: 6px; min-height: 0; }
 .paintrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 4px 2px; }
 .plabel { flex: none; width: 52px; font: 800 .95rem var(--body); }
-.paintrow .sw { flex: none; width: 46px; height: 46px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.paintrow .sw { flex: none; width: 46px; height: 46px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink), var(--soft); }
 .paintrow .sw[aria-pressed="true"] { transform: translateY(-3px) scale(1.08); outline: 3px solid var(--sun); outline-offset: 2px; }
 .say {
   position: fixed; left: 50%; bottom: calc(var(--bar-h, 180px) + 14px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content;
