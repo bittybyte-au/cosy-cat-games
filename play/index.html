@@ -47,13 +47,12 @@ h1 a { color: inherit; text-decoration: none; }
 .toddler-chip[aria-pressed="true"] { background: var(--sun); }
 .toddler-chip[aria-pressed="true"] .knob { background: var(--grass); }
 .toddler-chip[aria-pressed="true"] .knob::after { left: 20px; }
-.toddler-chip .tod-ico { display: none; width: 26px; height: 26px; flex: none; }
-/* on phones the switch is just a rattle and the knob, so the header stays on one line */
-@media (max-width: 560px) {
-  .toddler-chip { padding: 0 8px; gap: 6px; }
-  .toddler-chip .tod-ico { display: block; }
-  #toddlerLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-}
+.toddler-chip { min-height: 48px; }
+.av-foot #todSwitch { flex-basis: 100%; justify-content: flex-start; text-align: left; }
+.toddler-chip > svg { width: 24px; height: 24px; flex: none; }
+.tod-dot { position: absolute; left: -6px; bottom: -6px; width: 26px; height: 26px; border-radius: 50%; background: #C7EBD2; border: 2.5px solid var(--ink); display: grid; place-items: center; }
+.tod-dot svg { width: 18px; height: 18px; }
+
 @media (max-width: 400px) {
   .player-chip { padding-right: 10px; font-size: 1rem; min-height: 54px; }
   .player-chip svg, .plus { width: 40px; height: 40px; }
@@ -86,6 +85,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   background: #C7EBD2; border: 3px solid var(--ink); border-radius: 999px; padding: 3px 11px 3px 6px; font: 800 .9rem var(--body); white-space: nowrap;
 }
 .tile .tod-tag svg { width: 22px; height: 22px; }
+body.toddler .tile .tod-tag { display: none; }
 
 /* avatar builder (layout from Lily's sketch) */
 .panel.av-builder {
@@ -167,7 +167,6 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   <header>
     <h1 class="sticker-title"><a href="../index.html">Cosy Cat Games</a></h1>
     <div class="head-btns">
-      <button class="chip toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><svg class="tod-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 13.5 L20 20" stroke="#2A2340" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6" fill="#FFD23F" stroke="#2A2340" stroke-width="1.8"/><circle cx="9" cy="9" r="7" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.2"/><circle cx="7" cy="7" r="1.6" fill="#fff"/><circle cx="11" cy="10.5" r="1.3" fill="#fff"/></svg><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
       <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your nickname or cat"></button>
       <a class="round" id="homeBtn" href="../games/home/index.html" aria-label="My cosy home" hidden><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 5l11 10" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13v13h16V13" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M13.5 26v-6.5h5V26" fill="#FF6B57" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg></a>
     </div>
@@ -213,6 +212,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   var overlay = document.getElementById('overlay');
   var panel = document.getElementById('panel');
 
+  var RATTLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 13.5 L20 20" stroke="#2A2340" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6" fill="#FFD23F" stroke="#2A2340" stroke-width="1.8"/><circle cx="9" cy="9" r="7" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.2"/><circle cx="7" cy="7" r="1.6" fill="#fff"/><circle cx="11" cy="10.5" r="1.3" fill="#fff"/></svg>';
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   function renderHeader() {
@@ -220,7 +220,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     renderMascot(p);
     if (p) {
       var fresh = newItems(p);
-      chip.innerHTML = GGAvatar.svg(GGAvatar.normalise(p.avatar, p.color), 46) + '<span>' + esc(p.name) + '</span>' + (fresh.length ? '<span class="new-dot" aria-label="New things to wear"></span>' : '');
+      chip.innerHTML = GGAvatar.svg(GGAvatar.normalise(p.avatar, p.color), 46) + '<span>' + esc(p.name) + '</span>' + (toddlerOn() ? '<span class="tod-dot" title="Toddler profile">' + RATTLE + '</span>' : '') + (fresh.length ? '<span class="new-dot" aria-label="New things to wear"></span>' : '');
       greet.textContent = fresh.length
         ? 'You earned ' + (fresh.length > 1 ? fresh.length + ' new things' : article(GGAvatar.item(fresh[0]).name + (GGAvatar.TYPES.some(function (t) { return t.id === fresh[0]; }) ? ' cat' : ''))) + '! Tap your picture to try ' + (fresh.length > 1 ? 'them' : 'it') + ' on.'
         : 'Hi ' + p.name + '! Pick a game.';
@@ -272,7 +272,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       '<div class="av-stage"><div class="av-prev" id="avPrev"></div><div class="av-cushion" aria-hidden="true"></div>' +
       '<div class="av-nick"><label class="field-label" for="nameInput">Nickname <span class="av-hint-text">(e.g. Unicorn15, don’t use your real name)</span></label>' +
       '<input class="field big" id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Unicorn15"></div></div>' +
-      '<div class="av-foot"><p class="note">Saved on this device only. No sign-up needed.</p><button class="btn go" type="button" id="saveBtn">' + (p ? 'Save' : 'Let’s play!') + '</button></div>';
+      '<div class="av-foot">' + (p && toddlerReady() ? '<button class="toddler-chip chip" type="button" id="todSwitch" aria-pressed="' + toddlerOn() + '">' + RATTLE + '<span class="knob" aria-hidden="true"></span><span>Make this a toddler profile</span></button>' : '') + '<p class="note">Saved on this device only. No sign-up needed.</p><button class="btn go" type="button" id="saveBtn">' + (p ? 'Save' : 'Let’s play!') + '</button></div>';
     open();
     var input = document.getElementById('nameInput'), save = document.getElementById('saveBtn'), pane = document.getElementById('avPane');
     input.value = p ? p.name : '';
@@ -324,6 +324,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     var back = document.getElementById('backBtn'); if (back) back.addEventListener('click', function () { markSeen(); close(); });
     save.addEventListener('click', function () { GG.addPlayer(input.value.trim(), av); markSeen(); close(); });
     if (!p) setTimeout(function () { input.focus(); }, 50);
+    var ts = document.getElementById('todSwitch'); if (ts) ts.addEventListener('click', toddlerFlow);
   }
   var LOCK = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="3" fill="#5E5675"/><path d="M8 10 V7 a4 4 0 0 1 8 0 V10" fill="none" stroke="#5E5675" stroke-width="2.6"/></svg>';
 
@@ -337,17 +338,12 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
   function toddlerReady() { return toddlerGames().length >= 3; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
-  var RATTLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 13.5 L20 20" stroke="#2A2340" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6" fill="#FFD23F" stroke="#2A2340" stroke-width="1.8"/><circle cx="9" cy="9" r="7" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.2"/><circle cx="7" cy="7" r="1.6" fill="#fff"/><circle cx="11" cy="10.5" r="1.3" fill="#fff"/></svg>';
   function renderTiles() {
     var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.more');
     box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });
     var tod = toddlerOn();
     document.body.classList.toggle('toddler', tod);
     sleepy.hidden = tod;
-    var tb = document.getElementById('toddlerBtn');
-    tb.hidden = !toddlerReady();
-    tb.setAttribute('aria-pressed', String(tod));
-    document.getElementById('toddlerLabel').textContent = tod ? 'Toddler mode on' : 'Toddler mode';
     GGGames.visible(tod ? { toddler: true } : {}).forEach(function (g) {
       var ok = GGGames.playable(g);
       var t = document.createElement(ok ? 'a' : 'div');
@@ -368,7 +364,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   }
   renderTiles();
 
-  document.getElementById('toddlerBtn').addEventListener('click', function () {
+  function toddlerFlow() {
     panel.classList.remove('av-builder');
     if (!toddlerOn()) {
       panel.innerHTML = '<h2 id="panelTitle">Turn on toddler mode?</h2>' +
@@ -398,7 +394,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') check(); });
       document.getElementById('sumNo').addEventListener('click', close);
     })();
-  });
+  }
   overlay.addEventListener('click', function (e) { if (e.target === overlay && GG.current()) close(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden && GG.current()) close(); });
   window.addEventListener('pageshow', function () { GG.reload(); renderHeader(); });
