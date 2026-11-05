@@ -26,7 +26,7 @@
   var canvas = $('stage'), ctx = canvas.getContext('2d'), topbar = $('topbar');
   var cw = 0, ch = 0, dpr = 1, K = 1, OX = 0, OY = 0, W = 1000, H = 700;
   var CAT = 96;                 // cat size (GGCat units)
-  var k = CAT / 88, CW = 176 * k, CH = 100 * k, STEP = 62 * k;   // loaf width, height, and how much each cat adds
+  var k = CAT / 88, CW = 176 * k, CH = 100 * k, STEP = 70 * k;   // cat width, height, and how much each cat adds
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     cw = window.innerWidth; ch = window.innerHeight;
@@ -37,7 +37,7 @@
     var tall = aw / ah < 1.05;
     W = tall ? 600 : 1000; H = tall ? clamp(Math.round(600 * ah / aw), 800, 1150) : clamp(Math.round(1000 * ah / aw), 620, 760);
     // smaller cats on wide screens so the tower can still get tall
-    CAT = tall ? 96 : 92; k = CAT / 88; CW = 176 * k; CH = 100 * k; STEP = 62 * k;
+    CAT = tall ? 96 : 92; k = CAT / 88; CW = 176 * k; CH = 100 * k; STEP = 70 * k;
     K = Math.min(aw / W, ah / H);
     OX = (cw - W * K) / 2; OY = top + (ah - H * K) / 2;
   }
@@ -155,19 +155,12 @@
   }
 
   /* ================= drawing ================= */
-  /* Four little legs under the lying cat (in GGCat's 100-unit space), so each cat stands on the one below.
-     They start inside the body and are drawn first, so the body covers the join. The whole cat is lifted by the
-     legs' length, so the feet (not the tummy) rest where the tummy used to. */
-  var LEGS = [-52, -32, -2, 16].map(function (lx) { return D.rrPath(lx - 8, 26, 16, 32, 8); });
-  function lookColour(look) { var p = look.preset && GGCat.PRESETS[look.preset]; return look.color || (p && p.color) || '#FFFFFF'; }
+  /* The shared cat's 'lie' pose (a loaf with little paws). It's lifted by the paws' height so the paws rest where
+     the tummy used to: on the cushion, or on the head of the cat below. */
   function drawLoaf(c, look, x, y, face, rot, sq) {
-    c.save(); c.translate(x, y - 12 * k); if (rot) c.rotate(rot); if (sq && sq !== 1) c.scale(1 + (1 - sq) * 0.5, sq);
+    c.save(); c.translate(x, y - 6 * k); if (rot) c.rotate(rot); if (sq && sq !== 1) c.scale(1 + (1 - sq) * 0.5, sq);
     c.translate(8 * k, 0);
     var o = {}; for (var key in look) o[key] = look[key]; o.pose = 'lie'; o.size = CAT; o.face = face;
-    c.save(); c.scale(k, k);
-    var col = lookColour(look);
-    LEGS.forEach(function (p) { D.shape(c, p, col, { lw: D.LW.mid, depth: 3, shade: GGCat.shadeFor(col) }); });
-    c.restore();
     try { GGCat.draw(c, o); } catch (e) { ell(c, 0, 0, CW / 2, CH / 2); c.fillStyle = '#FFA94D'; c.fill(); D.ink(c, 4); }
     c.restore();
   }

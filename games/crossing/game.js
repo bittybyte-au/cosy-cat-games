@@ -227,11 +227,20 @@
     c.restore();
   }
   function drawKitten(c, k) {
-    var hop = Math.abs(Math.sin(k.hop)) * 10 + (k.bounce > 0 ? Math.sin(k.bounce / 0.5 * Math.PI) * 24 : 0);
+    // walking kittens use the shared cat's side-on walk, facing the way they're going; waiting ones sit
+    var moving = k.lx !== undefined && Math.abs(k.x - k.lx) + Math.abs(k.y - k.ly) > 0.01;
+    if (moving && Math.abs(k.x - k.lx) > 0.02) k.dir = k.x > k.lx ? 1 : -1;
+    k.lx = k.x; k.ly = k.y;
+    var walking = moving && !(k.state === 'park' && k.t < 1.5);
+    var hop = k.bounce > 0 ? Math.sin(k.bounce / 0.5 * Math.PI) * 24 : 0;
     var o = {}; for (var key in k.look) o[key] = k.look[key];
-    o.pose = k.state === 'park' && k.t < 1.5 ? 'wave' : 'sit'; o.size = 62; o.face = k.state === 'cross' || k.state === 'park' ? 'happy' : (k.bounce > 0 ? 'happy' : 'open');
+    o.pose = k.state === 'park' && k.t < 1.5 ? 'wave' : walking ? 'walk' : 'sit'; o.size = 62;
+    o.face = k.state === 'cross' || k.state === 'park' ? 'happy' : (k.bounce > 0 ? 'happy' : 'open');
+    if (walking) { o.step = k.hop; o.moving = true; o.dir = k.dir || 1; o.wag = time * 3; }
     c.save(); c.translate(k.x, k.y - 40 - hop);
-    D.shadow(c, 0, 40 + hop, 22, 6);
+    D.shadow(c, 0, 40 + hop, walking ? 34 : 22, 6);
+    // the walk stands on its paws (67.5 units down) where the sitting cat's feet are (95 down); its body is centred
+    if (walking) c.translate(12.7 * o.dir, (95 - 67.5) * 62 / 88);
     try { GGCat.draw(c, o); } catch (e) {}
     c.restore();
   }
