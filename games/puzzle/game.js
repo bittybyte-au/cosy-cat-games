@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -19,75 +19,87 @@
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  var rr = D.rr, ink = D.ink;
   function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
   function fillInk(c, col, w) { c.fillStyle = col; c.fill(); ink(c, w || 4); }
+  function path(f) { var p = new Path2D(); f(p); return p; }
+  function tube(c, p, col, w) { c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = w + 8; c.stroke(p); c.strokeStyle = col; c.lineWidth = w; c.stroke(p); }
   function cat(c, x, y, o) { c.save(); c.translate(x, y); try { GGCat.draw(c, o); } catch (e) {} c.restore(); }
   function stars(c, n, col) { c.fillStyle = col; for (var i = 0; i < n; i++) { var x = (i * 97) % 400, y = (i * 53) % 260; c.beginPath(); for (var k = 0; k < 10; k++) { var a = k * Math.PI / 5, r = k % 2 ? 2.5 : 6; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.fill(); } }
 
   /* ================= pictures (each 400 x 400) ================= */
+  /* Each is drawn once (cached) in the house style: things that join start inside what they join and go first,
+     details and shading sit inside each shape, outlines last. */
   var PICTURES = [
     function teacup(c) {
-      c.fillStyle = '#FFE0EC'; c.fillRect(0, 0, 400, 400);
+      c.fillStyle = D.tone(c, '#FFE0EC', 0, 400); c.fillRect(0, 0, 400, 400);
       c.fillStyle = '#FFC2DA'; for (var i = 0; i < 400; i += 50) for (var j = 0; j < 400; j += 50) { circle(c, i + 25, j + 25, 6); c.fill(); }
-      ell(c, 200, 352, 170, 30); fillInk(c, '#FFFFFF', 5);
+      D.shadow(c, 200, 362, 172, 18);
+      D.shape(c, D.ellPath(200, 352, 170, 30), '#FFFFFF', { lw: 5, depth: 8, inside: function (c) { ell(c, 200, 346, 120, 16); c.fillStyle = '#EEF6FF'; c.fill(); } });
       cat(c, 200, 186, { preset: 'ginger', size: 190, face: 'happy' });
-      c.beginPath(); c.moveTo(60, 230); c.lineTo(340, 230); c.quadraticCurveTo(330, 350, 200, 352); c.quadraticCurveTo(70, 350, 60, 230); c.closePath(); fillInk(c, '#7CC4FF', 5);
-      c.beginPath(); c.arc(342, 270, 34, -1.2, 1.2); c.strokeStyle = INK; c.lineWidth = 16; c.stroke(); c.strokeStyle = '#7CC4FF'; c.lineWidth = 8; c.stroke();
-      c.fillStyle = '#fff'; [[110, 280], [200, 300], [290, 280]].forEach(function (q) { circle(c, q[0], q[1], 14); c.fill(); });
+      // the handle starts inside the cup and goes first, so the cup covers the join
+      tube(c, path(function (p) { p.moveTo(318, 246); p.bezierCurveTo(390, 222, 392, 316, 300, 300); }), '#7CC4FF', 10);
+      var cup = path(function (p) { p.moveTo(60, 230); p.lineTo(340, 230); p.quadraticCurveTo(330, 350, 200, 352); p.quadraticCurveTo(70, 350, 60, 230); p.closePath(); });
+      D.shape(c, cup, '#7CC4FF', { lw: 5, depth: 14, shine: [110, 252, 26, 8, -0.1, 0.4], inside: function (c) {
+        c.fillStyle = '#fff'; [[110, 284], [200, 304], [290, 284]].forEach(function (q) { circle(c, q[0], q[1], 14); c.fill(); });
+      } });
     },
     function rocket(c) {
-      c.fillStyle = '#2E2A5E'; c.fillRect(0, 0, 400, 400); stars(c, 22, '#FFE14D');
-      circle(c, 330, 70, 36); fillInk(c, '#FFD9A8', 4);
+      c.fillStyle = D.tone(c, '#2E2A5E', 0, 400); c.fillRect(0, 0, 400, 400); stars(c, 22, '#FFE14D');
+      D.shape(c, D.ellPath(330, 70, 36, 36), '#FFD9A8', { lw: 4, depth: 7, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.1)'; circle(c, 318, 60, 8); c.fill(); circle(c, 342, 84, 6); c.fill(); } });
       c.save(); c.translate(200, 210); c.rotate(0.5);
-      c.beginPath(); c.moveTo(0, -150); c.quadraticCurveTo(70, -80, 60, 90); c.lineTo(-60, 90); c.quadraticCurveTo(-70, -80, 0, -150); c.closePath(); fillInk(c, '#FFFFFF', 5);
-      c.beginPath(); c.moveTo(-60, 40); c.lineTo(-100, 110); c.lineTo(-56, 100); c.closePath(); fillInk(c, '#FF5A5F', 4.5);
-      c.beginPath(); c.moveTo(60, 40); c.lineTo(100, 110); c.lineTo(56, 100); c.closePath(); fillInk(c, '#FF5A5F', 4.5);
-      c.beginPath(); c.moveTo(-34, 96); c.quadraticCurveTo(0, 170, 34, 96); c.closePath(); fillInk(c, '#FFD23F', 4);
-      circle(c, 0, -20, 48); fillInk(c, '#9EDCFF', 5);
-      cat(c, 0, -14, { preset: 'purple', size: 76, face: 'happy' });
+      // flame and fins start inside the body and go first; the body covers their joins
+      D.shape(c, path(function (p) { p.moveTo(-34, 80); p.quadraticCurveTo(0, 170, 34, 80); p.closePath(); }), '#FFD23F', { lw: 4, depth: 6, inside: function (c) { ell(c, 0, 108, 12, 22); c.fillStyle = '#FF9F43'; c.fill(); } });
+      [-1, 1].forEach(function (s) { D.shape(c, path(function (p) { p.moveTo(s * 50, 30); p.lineTo(s * 100, 110); p.lineTo(s * 40, 98); p.closePath(); }), '#FF5A5F', { lw: 4.5, depth: 5 }); });
+      var body = path(function (p) { p.moveTo(0, -150); p.quadraticCurveTo(70, -80, 60, 90); p.lineTo(-60, 90); p.quadraticCurveTo(-70, -80, 0, -150); p.closePath(); });
+      D.shape(c, body, '#FFFFFF', { lw: 5, depth: 14, inside: function (c) { c.fillStyle = '#FF5A5F'; c.fillRect(-80, 62, 160, 12); } });
+      // the porthole: the cat is clipped inside it, the rim goes on last
+      D.shape(c, D.ellPath(0, -20, 48, 48), '#9EDCFF', { lw: 5, depth: 0, shine: [-18, -42, 12, 6, -0.6, 0.6], inside: function (c) { cat(c, 0, -10, { preset: 'purple', size: 76, face: 'happy' }); } });
       c.restore();
     },
     function boat(c) {
-      c.fillStyle = '#BFE6FF'; c.fillRect(0, 0, 400, 400);
-      circle(c, 70, 70, 34); fillInk(c, '#FFE14D', 4);
-      c.fillStyle = '#4DB6E8'; c.fillRect(0, 300, 400, 100);
+      c.fillStyle = D.tone(c, '#BFE6FF', 0, 300); c.fillRect(0, 0, 400, 400);
+      D.shape(c, D.ellPath(70, 70, 34, 34), '#FFE14D', { lw: 4, depth: 6 });
+      c.fillStyle = D.tone(c, '#4DB6E8', 300, 400); c.fillRect(0, 300, 400, 100);
       c.beginPath(); c.moveTo(0, 300); for (var x = 0; x <= 400; x += 25) c.lineTo(x, 300 + Math.sin(x / 25 * Math.PI) * 6); ink(c, 4);
-      c.beginPath(); c.moveTo(205, 70); c.lineTo(205, 250); ink(c, 6);
-      c.beginPath(); c.moveTo(212, 80); c.lineTo(320, 230); c.lineTo(212, 230); c.closePath(); fillInk(c, '#FFFFFF', 4.5);
-      c.beginPath(); c.moveTo(198, 100); c.lineTo(120, 230); c.lineTo(198, 230); c.closePath(); fillInk(c, '#FF8FAB', 4.5);
-      cat(c, 150, 238, { preset: 'white', size: 84, face: 'happy', pose: 'peek' });
-      c.beginPath(); c.moveTo(60, 256); c.lineTo(340, 256); c.quadraticCurveTo(320, 318, 280, 318); c.lineTo(120, 318); c.quadraticCurveTo(80, 318, 60, 256); c.closePath(); fillInk(c, '#FF9F43', 5);
-      c.beginPath(); c.moveTo(70, 276); c.lineTo(330, 276); c.strokeStyle = '#fff'; c.lineWidth = 7; c.stroke();
+      // mast starts inside the hull; the sails hang from it, touching it
+      c.beginPath(); c.moveTo(205, 70); c.lineTo(205, 270); ink(c, 7);
+      D.shape(c, path(function (p) { p.moveTo(209, 82); p.lineTo(320, 232); p.lineTo(209, 232); p.closePath(); }), '#FFFFFF', { lw: 4.5, depth: 7 });
+      D.shape(c, path(function (p) { p.moveTo(201, 100); p.lineTo(120, 232); p.lineTo(201, 232); p.closePath(); }), '#FF8FAB', { lw: 4.5, depth: 7 });
+      cat(c, 150, 230, { preset: 'white', size: 84, face: 'happy', pose: 'peek' });
+      var hull = path(function (p) { p.moveTo(60, 256); p.lineTo(340, 256); p.quadraticCurveTo(320, 318, 280, 318); p.lineTo(120, 318); p.quadraticCurveTo(80, 318, 60, 256); p.closePath(); });
+      D.shape(c, hull, '#FF9F43', { lw: 5, depth: 10, inside: function (c) { c.fillStyle = '#fff'; c.fillRect(40, 272, 320, 8); } });
     },
     function balloon(c) {
-      c.fillStyle = '#C7EBD2'; c.fillRect(0, 0, 400, 400);
+      c.fillStyle = D.tone(c, '#C7EBD2', 0, 330); c.fillRect(0, 0, 400, 400);
       c.fillStyle = '#9FD8B2'; c.fillRect(0, 330, 400, 70); c.beginPath(); c.moveTo(0, 330); c.lineTo(400, 330); ink(c, 4);
-      c.beginPath(); c.moveTo(250, 250); c.quadraticCurveTo(290, 190, 280, 140); ink(c, 3);
-      c.beginPath(); c.ellipse(282, 90, 58, 66, 0.15, 0, TAU); fillInk(c, '#FF5A5F', 5);
-      c.beginPath(); c.moveTo(276, 154); c.lineTo(268, 168); c.lineTo(290, 166); c.closePath(); fillInk(c, '#FF5A5F', 3);
-      ell(c, 262, 66, 12, 22, 0.4); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill();
+      D.shadow(c, 170, 372, 80, 10);
+      // string from the cat's raised paw to the knot; knot starts inside the balloon and goes first
+      c.beginPath(); c.moveTo(255, 262); c.quadraticCurveTo(292, 200, 278, 158); ink(c, 3);
+      D.shape(c, path(function (p) { p.moveTo(276, 146); p.lineTo(266, 168); p.lineTo(290, 166); p.closePath(); }), '#FF5A5F', { lw: 3, depth: 0 });
+      D.shape(c, D.ellPath(282, 90, 58, 66, 0.15), '#FF5A5F', { lw: 5, depth: 12, shine: [262, 66, 12, 22, 0.4, 0.6] });
       cat(c, 170, 200, { preset: 'blue', size: 160, face: 'happy', pose: 'wave' });
     },
     function box(c) {
-      c.fillStyle = '#FFF1DC'; c.fillRect(0, 0, 400, 400);
-      c.fillStyle = '#E6B98A'; c.fillRect(0, 320, 400, 80); c.beginPath(); c.moveTo(0, 320); c.lineTo(400, 320); ink(c, 4);
+      c.fillStyle = D.tone(c, '#FFF1DC', 0, 320); c.fillRect(0, 0, 400, 400);
+      c.fillStyle = D.tone(c, '#E6B98A', 320, 400); c.fillRect(0, 320, 400, 80); c.beginPath(); c.moveTo(0, 320); c.lineTo(400, 320); ink(c, 4);
+      D.shadow(c, 200, 362, 140, 12);
+      // the box's open flaps fold out from its top corners, behind the cat
+      D.shape(c, path(function (p) { p.moveTo(76, 212); p.lineTo(30, 170); p.lineTo(84, 150); p.lineTo(110, 212); p.closePath(); }), '#D9A066', { lw: 4.5, depth: 6 });
+      D.shape(c, path(function (p) { p.moveTo(324, 212); p.lineTo(370, 170); p.lineTo(316, 150); p.lineTo(290, 212); p.closePath(); }), '#D9A066', { lw: 4.5, depth: 6 });
       cat(c, 200, 176, { preset: 'black', size: 170, face: 'happy', pose: 'peek' });
-      c.beginPath(); c.moveTo(70, 210); c.lineTo(20, 160); c.lineTo(70, 160); c.closePath(); fillInk(c, '#D9A066', 4.5);
-      c.beginPath(); c.moveTo(330, 210); c.lineTo(380, 160); c.lineTo(330, 160); c.closePath(); fillInk(c, '#D9A066', 4.5);
-      rr(c, 70, 210, 260, 150, 6); fillInk(c, '#E8B577', 5);
-      c.beginPath(); c.moveTo(70, 236); c.lineTo(330, 236); c.strokeStyle = '#C98B5B'; c.lineWidth = 5; c.stroke();
-      c.font = '800 40px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#C98B5B'; c.textAlign = 'center'; c.fillText('♥', 200, 310);
+      D.shape(c, D.rrPath(70, 210, 260, 150, 6), '#E8B577', { lw: 5, depth: 12, inside: function (c) {
+        c.beginPath(); c.moveTo(60, 236); c.lineTo(340, 236); c.strokeStyle = '#C98B5B'; c.lineWidth = 5; c.stroke();
+        // a heart sticker
+        c.beginPath(); c.moveTo(200, 312); c.bezierCurveTo(170, 292, 176, 270, 192, 272); c.quadraticCurveTo(198, 273, 200, 280); c.quadraticCurveTo(202, 273, 208, 272); c.bezierCurveTo(224, 270, 230, 292, 200, 312); c.closePath();
+        c.fillStyle = '#C98B5B'; c.fill();
+      } });
     },
     function moon(c) {
-      c.fillStyle = '#3A3470'; c.fillRect(0, 0, 400, 400); stars(c, 26, '#FFF3B0');
-      c.beginPath(); c.arc(200, 230, 140, 0.4, Math.PI * 2 - 0.4); c.arc(250, 190, 120, Math.PI * 2 - 0.62, 0.62, true); c.closePath(); fillInk(c, '#FFE14D', 5);
+      c.fillStyle = D.tone(c, '#3A3470', 0, 400); c.fillRect(0, 0, 400, 400); stars(c, 26, '#FFF3B0');
+      var moon = path(function (p) { p.arc(200, 230, 140, 0.4, Math.PI * 2 - 0.4); p.arc(250, 190, 120, Math.PI * 2 - 0.62, 0.62, true); p.closePath(); });
+      D.shape(c, moon, '#FFE14D', { lw: 5, depth: 14, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.08)'; circle(c, 110, 200, 14); c.fill(); circle(c, 140, 300, 10); c.fill(); circle(c, 92, 258, 7); c.fill(); } });
       cat(c, 150, 248, { preset: 'pink', size: 120, face: 'sleep', pose: 'lie' });
       c.font = '800 34px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#FFF3B0'; c.textAlign = 'center'; c.fillText('z', 250, 120); c.font = '800 24px "Baloo 2", system-ui, sans-serif'; c.fillText('z', 274, 92);
     }
@@ -273,7 +285,8 @@
     c.save(); c.translate(p.px, p.py); c.scale(s * p.sc, s * p.sc);
     if (p.wig > 0) c.rotate(Math.sin(p.wig * 20) * 0.08);
     c.translate(-p.cx, -p.cy); s = s * p.sc;
-    if (lift) { c.save(); c.translate(6, 10); c.fillStyle = 'rgba(42,35,64,.22)'; c.fill(p.path); c.restore(); }
+    // a soft shadow under a piece in the tray, a bigger one while it's held up
+    if (!p.placed) { c.save(); c.translate(lift ? 6 : 2, lift ? 10 : 5); c.fillStyle = lift ? 'rgba(42,35,64,.22)' : 'rgba(42,35,64,.12)'; c.fill(p.path); c.restore(); }
     c.save(); c.clip(p.path); c.drawImage(img, 0, 0, 400, 400); c.restore();
     c.lineWidth = (done ? 0 : 4) / s + 0.01; c.strokeStyle = INK; c.lineJoin = 'round';
     if (!done) c.stroke(p.path);
@@ -287,7 +300,7 @@
     // the board with a faint copy of the picture
     var bounce = done ? 1 + Math.sin(Math.min(done, 1) * Math.PI * 3) * 0.03 * (1 - Math.min(done, 1)) : 1;
     c.save(); c.translate(BOARD.x + B / 2, BOARD.y + B / 2); c.scale(bounce, bounce); c.translate(-(BOARD.x + B / 2), -(BOARD.y + B / 2));
-    rr(c, BOARD.x - 14, BOARD.y - 14, B + 28, B + 28, 26); c.fillStyle = INK; c.fill(); rr(c, BOARD.x - 14, BOARD.y - 18, B + 28, B + 28, 26); c.fillStyle = '#C98B5B'; c.fill(); ink(c, 4);
+    rr(c, BOARD.x - 14, BOARD.y - 14, B + 28, B + 28, 26); c.fillStyle = INK; c.fill(); D.shape(c, D.rrPath(BOARD.x - 14, BOARD.y - 18, B + 28, B + 28, 26), '#C98B5B', { lw: D.LW.mid, depth: 8 });
     c.save(); rr(c, BOARD.x, BOARD.y, B, B, 10); c.clip();
     c.fillStyle = '#FFF8EC'; c.fillRect(BOARD.x, BOARD.y, B, B);
     c.globalAlpha = 0.28; c.drawImage(pictureCanvas(pic), BOARD.x, BOARD.y, B, B); c.globalAlpha = 1;
@@ -302,6 +315,8 @@
     });
     // placed pieces are drawn as one shape, so there's no hairline gap where two pieces meet
     var placed = pieces.filter(function (p) { return p.placed; });
+    // placed pieces stay inside the board's rounded well
+    c.save(); rr(c, BOARD.x, BOARD.y, B, B, 10); c.clip();
     if (placed.length) {
       var u = new Path2D(); placed.forEach(function (p) { u.addPath(p.path); });
       c.save(); c.translate(BOARD.x, BOARD.y); c.scale(s, s);
@@ -314,7 +329,8 @@
     }
     // once it's finished, the whole picture is shown in one go
     if (done) c.drawImage(pictureCanvas(pic), BOARD.x, BOARD.y, B, B);
-    if (done) { rr(c, BOARD.x, BOARD.y, B, B, 10); ink(c, 5); }
+    c.restore();
+    rr(c, BOARD.x, BOARD.y, B, B, 10); ink(c, done ? D.LW.big : D.LW.fine);
     c.restore();
     pieces.forEach(function (p) { if (!p.placed) drawPiece(c, p, drag && drag.p === p); });
   }
@@ -428,6 +444,7 @@
   window.__puzzle = {
     state: function () { return { n: pieces.length, placed: pieces.filter(function (p) { return p.placed; }).length, done: done, round: round, saved: P.done,
       pieces: pieces.map(function (p) { return { x: p.px, y: p.py, hx: homeX(p), hy: homeY(p), placed: p.placed }; }) }; },
-    toScreen: function (x, y) { return { x: OX + x * K, y: OY + y * K }; }
+    toScreen: function (x, y) { return { x: OX + x * K, y: OY + y * K }; },
+    picture: function (i) { return pictureCanvas(i); }, pictures: PICTURES.length
   };
 })();

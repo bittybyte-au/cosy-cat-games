@@ -19,7 +19,7 @@
 body { background: #FFF4E0; }
 .middle { flex: 1; display: flex; justify-content: center; }
 /* how many pieces: three picture buttons (2, 4 or 6) */
-.sizes { display: flex; gap: 8px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink); }
+.sizes { display: flex; gap: 8px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink), var(--soft); }
 .size { width: 52px; height: 44px; border-radius: 999px; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .size svg { width: 34px; height: 34px; }
 .size[aria-pressed="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
@@ -38,6 +38,7 @@ body { background: #FFF4E0; }
 
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
