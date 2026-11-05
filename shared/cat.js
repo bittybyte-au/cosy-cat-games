@@ -8,7 +8,10 @@
      GGCat.svg(opts)        a whole <svg> (pages, avatars)
      GGCat.g(opts)          an SVG <g> to place inside another picture (x, y, size)
      GGCat.draw(ctx, opts)  onto a canvas at the current origin (games); opts.size = width in px
-   opts.pose: 'head' (default), 'sit', 'wave' (sit with a waving paw), 'peek' (paws on a ledge), 'lie' (asleep). */
+   opts.pose: 'head' (default), 'sit', 'wave' (sit with a waving paw), 'peek' (paws on a ledge), 'lie' (asleep, paws tucked under the chin),
+     'walk' (side-on, the one walk for every game). Walking takes opts.step (a phase in radians that the game moves on
+     while the cat is moving, e.g. step += dt * 16), opts.moving (legs only step while true), opts.dir (1 faces right,
+     -1 left) and opts.wag (a phase for the tail sway, e.g. the time in seconds). */
 (function () {
   var INK = '#2A2340';
 
@@ -158,7 +161,7 @@
   }
 
   /* the picture's bounds in the 100-unit space, per pose */
-  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 134, 172], wave: [-66, -72, 134, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 176, 100] };
+  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 134, 172], wave: [-66, -72, 134, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 192, 104], walk: [-126, -72, 186, 150], walkLeft: [-60, -72, 186, 150] };
 
   function allShapes(o) {
     var pose = o.pose || 'head';
@@ -167,9 +170,14 @@
       // asleep: body and curled tail on the left, head resting on the right
       var f = c.fill;
       var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f }, { d: ell(-20, 22, 46, 22) + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: ell(-20, 22, 46, 22) }, { d: ell(-20, 22, 46, 22), stroke: INK, lw: 5 }];
+      // little paws: two tucked under the chin and a back one peeking out, each with pink beans
+      [[12, 43], [34, 42], [-52, 41]].forEach(function (q) {
+        body.push({ d: ell(q[0], q[1], 10, 7), fill: f, stroke: INK, lw: 4 }, { d: circ(q[0] - 4, q[1] + 1, 1.8) + circ(q[0], q[1] + 2, 1.8) + circ(q[0] + 4, q[1] + 1, 1.8), fill: '#FFB3C7' });
+      });
       var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [30, 2, 0, 0.78]; if (s.tf) t.tf2 = s.tf; return t; });
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
+    if (pose === 'walk') return walkShapes(o, c);
     var p = poseShapes(pose, c.fill);
     if (o.rays) {
       var r = '', minSin = o.rays === 'down' ? 0.2 : -0.55;
@@ -177,6 +185,26 @@
       p.back.unshift({ d: r, stroke: INK, lw: 5 });
     }
     return { list: p.back.concat(c.shapes, p.front), head: c.head };
+  }
+
+  /* the walk: Yarn Dash's cat, side-on. A soft body behind the head, four little round paws that step in turn,
+     a tail that sways, and the head bobbing at the front. Steps are rounded to 16 positions so the paths stay cached. */
+  function walkShapes(o, c) {
+    var f = c.fill, d = o.dir < 0 ? -1 : 1;
+    var ph = Math.round(((o.step || 0) % (Math.PI * 2)) / (Math.PI / 8)) * (Math.PI / 8);
+    var run = o.moving ? Math.sin(ph) : 0, wag = Math.round(Math.sin(o.wag || 0) * 4) * 1.5;
+    var X = function (x) { return n(x * d); };
+    var tail = 'M' + X(-62) + ' 24Q' + X(-112) + ' ' + n(10 + run * 10) + ' ' + X(-104) + ' ' + n(-30 + wag);
+    var list = [{ d: tail, stroke: INK, lw: 13 }, { d: tail, stroke: f, lw: 6 }];
+    [[-54, 1], [-37, -1], [-17, 1], [0, -1]].forEach(function (l) {
+      var x = l[0] + run * 7 * l[1], y = 59 - Math.max(0, run * l[1]) * 6;
+      list.push({ d: ell(X(x), n(y), 10, 8.5), fill: f, stroke: INK, lw: 3.5 });
+    });
+    var body = ell(X(-31), 31, 49, 29);
+    list.push({ d: body, fill: f }, { d: body + ell(X(-31) - 5 * d, 24, 49, 29), fill: shadeFor(f), rule: 'evenodd', clipTo: body }, { d: body, stroke: INK, lw: 5 });
+    var bob = run ? -Math.abs(run) * 4 : 0;
+    var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [0, n(bob), 0, 1]; if (s.tf) t.tf2 = s.tf; return t; });
+    return { list: list.concat(head), head: c.head };
   }
 
   /* ---------- SVG ---------- */
@@ -209,12 +237,12 @@
       if (s.wave) waving += piece; else out += piece;
     });
     if (waving) out += '<g class="cat-wave" style="transform-box:fill-box;transform-origin:20% 100%">' + waving + '</g>';
-    if (o.zzz) out += '<text x="58" y="-30" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="70" y="-46" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="26" fill="#5E5675">Z</text>';
+    if (o.zzz) out += '<text x="' + (o.pose === 'lie' ? '66" y="-10' : '58" y="-30') + '" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#5E5675">z</text><text x="' + (o.pose === 'lie' ? '76" y="-26' : '70" y="-46') + '" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="26" fill="#5E5675">Z</text>';
     return out + (o.svgFront || '');
   }
   function svg(o) {
     o = o || {};
-    var b = BOX[o.pose || 'head'];
+    var b = BOX[o.pose === 'walk' && o.dir < 0 ? 'walkLeft' : (o.pose || 'head')];
     var w = o.size || 64, h = Math.round(w * b[3] / b[2]);
     var dims = o.fluid ? '' : ' width="' + w + '" height="' + h + '"';
     return '<svg viewBox="' + b.join(' ') + '"' + dims + (o.cls ? ' class="' + o.cls + '"' : '') + ' aria-hidden="true">' + inner(o) + '</svg>';
