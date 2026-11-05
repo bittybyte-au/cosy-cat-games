@@ -148,7 +148,7 @@
     var back = [], front = [];
     var paw = function (x, y) { return [{ d: ell(x, y, 14, 15), fill: fill, stroke: INK, lw: 4 }, { d: circ(x, y + 3, 4) + circ(x - 6, y - 4, 2.2) + circ(x, y - 7, 2.2) + circ(x + 6, y - 4, 2.2), fill: '#FFB3C7' }]; };
     if (pose === 'sit' || pose === 'wave') {
-      back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: '#FFB26B', lw: 6 });
+      back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: fill, lw: 6 });
       back.push({ d: ell(0, 64, 38, 26), fill: fill }, { d: ell(0, 64, 38, 26) + ell(-5, 57, 38, 26), fill: shadeFor(fill), rule: 'evenodd', clipTo: ell(0, 64, 38, 26) }, { d: ell(0, 64, 38, 26), stroke: INK, lw: 5 });
       back.push({ d: ell(-14, 88, 11, 7) + ell(14, 88, 11, 7), fill: fill, stroke: INK, lw: 4 });
       if (pose === 'wave') front.push({ d: 'M28 70Q44 62 46 44', stroke: INK, lw: 16, wave: true }, { d: 'M28 70Q44 62 46 44', stroke: fill, lw: 8, wave: true }, { d: ell(47, 36, 12, 13), fill: fill, stroke: INK, lw: 4, wave: true }, { d: circ(47, 39, 3.6) + circ(41, 31, 2) + circ(47, 28, 2) + circ(53, 31, 2), fill: '#FFB3C7', wave: true });
@@ -166,7 +166,7 @@
     if (pose === 'lie') {
       // asleep: body and curled tail on the left, head resting on the right
       var f = c.fill;
-      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: '#FFB26B', lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f }, { d: ell(-20, 22, 46, 22) + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: ell(-20, 22, 46, 22) }, { d: ell(-20, 22, 46, 22), stroke: INK, lw: 5 }];
+      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f }, { d: ell(-20, 22, 46, 22) + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: ell(-20, 22, 46, 22) }, { d: ell(-20, 22, 46, 22), stroke: INK, lw: 5 }];
       var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [30, 2, 0, 0.78]; if (s.tf) t.tf2 = s.tf; return t; });
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
