@@ -19,7 +19,8 @@ const FILES = [
   './games/seek/', './games/seek/index.html', './games/seek/game.js',
   './games/mouse-pop/', './games/mouse-pop/index.html', './games/mouse-pop/game.js',
   './games/bath/', './games/bath/index.html', './games/bath/game.js',
-  './games/puzzle/', './games/puzzle/index.html', './games/puzzle/game.js'
+  './games/puzzle/', './games/puzzle/index.html', './games/puzzle/game.js',
+  './games/stack/', './games/stack/index.html', './games/stack/game.js'
 ];
 
 self.addEventListener('install', (e) => {

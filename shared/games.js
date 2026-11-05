@@ -91,6 +91,11 @@
       id: 'puzzle', save: 'puzzle', name: 'Cat Puzzles', blurb: 'Put the picture back together',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"30\" y=\"16\" width=\"118\" height=\"118\" rx=\"10\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"4\"/>" + cat({ preset: 'ginger', face: 'happy', x: 89, y: 66, size: 60 }) + "<path d=\"M50 86 H128 Q124 124 89 124 Q54 124 50 86 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M89 16 V60 Q76 66 89 74 V134\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-dasharray=\"7 6\"/><g transform=\"translate(178 82) rotate(12)\"><path d=\"M-30 -46 H22 V-6 Q34 0 22 8 V46 H-30 Z\" fill=\"#FFE0EC\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M-30 10 H22 V46 H-30 Z\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-4\" cy=\"-14\" r=\"16\" fill=\"#FFA94D\" stroke=\"#2A2340\" stroke-width=\"3\"/></g></svg>"
+    },
+    {
+      id: 'stack', save: 'stack', name: 'Stack the Cats', blurb: 'Build a wobbly cat tower',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#E2D9FF',
+      art: "<svg viewBox=\"0 0 240 150\"><rect x=\"70\" y=\"128\" width=\"100\" height=\"14\" rx=\"7\" fill=\"#FF8FAB\" stroke=\"#2A2340\" stroke-width=\"3.5\"/>" + cat({ preset: 'purple', pose: 'lie', face: 'happy', x: 122, y: 108, size: 44 }) + cat({ preset: 'ginger', pose: 'lie', face: 'sleep', x: 116, y: 80, size: 44 }) + cat({ color: '#A7E3B8', pose: 'lie', face: 'happy', x: 126, y: 52, size: 44 }) + cat({ preset: 'pink', pose: 'lie', face: 'surprised', x: 112, y: 20, size: 44 }) + "</svg>"
     }
   ];
 
