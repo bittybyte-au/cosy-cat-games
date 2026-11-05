@@ -17,6 +17,9 @@
 /* Layout: a soft pink room; top bar, then a goal panel that stays on screen (beside the board on wide screens); the board (canvas) fills the rest. Single bright look by design. */
 :root { --wall: #FFE6F0; --wall2: #FFD6E6; }
 .topbar { flex-wrap: wrap; }
+/* on wide screens the board starts beside the corner buttons, under the top bar's empty middle: let taps through to it */
+.topbar, .topbar .middle { pointer-events: none; }
+.topbar a, .topbar button, .topbar .level, .topbar .goals { pointer-events: auto; }
 body { background: var(--wall) radial-gradient(circle at 20px 20px, var(--wall2) 6px, transparent 7px) 0 0 / 56px 56px; }
 .middle { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .level { font-size: 1rem; padding: 4px 12px 2px; }
