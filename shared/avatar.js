@@ -1,8 +1,8 @@
 /* Cosy Cat Games: cat avatars.
    An avatar is { type, color, bg, head, face }, drawn as SVG in code.
-   Some items are earned by things done in the games (levels finished, dishes cooked), never by
-   days played, streaks or paying. Unlock rules read the progress games already save.
-   New games add 2–3 earned items of their own here. */
+   Every item is open to everyone from the start (ALL_OPEN): nothing to unlock, collect or buy.
+   The old `earn` rules (things done in the games, never days played, streaks or paying) are kept on
+   the items below in case gentle surprise unlocks come back; with ALL_OPEN they're removed at load. */
 (function () {
   var INK = '#2A2340';
 
@@ -69,6 +69,8 @@
     { id: 'mask', name: 'Superhero mask', earn: { hint: 'Finish 25 Kitty Match levels', test: function (s) { return s.kittypop >= 25; } } }
   ];
   var ALL = TYPES.concat(HEADS, FACES);
+  var ALL_OPEN = true;
+  if (ALL_OPEN) ALL.forEach(function (it) { delete it.earn; });
   function find(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
 
   /* ---------- drawing (viewBox 0 0 120 120, head centred near 60,70) ---------- */

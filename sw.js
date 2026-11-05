@@ -1,6 +1,6 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v78';
+const VERSION = 'ccg-v79';
 const FILES = [
   './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js',
   './fonts/fonts.css', './fonts/baloo-2-latin-600-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/nunito-latin-700-normal.woff2', './fonts/nunito-latin-800-normal.woff2',
