@@ -205,9 +205,8 @@
     stack: svg(
       shadow(120, 142, 54, 4) + sh(R(70, 128, 100, 14, 7), '#FF8FAB', { lw: 3, k: 3 }) +
       [['purple', '#B48CFF', 'happy', 122], ['ginger', '#FFA94D', 'sleep', 116], [0, '#A7E3B8', 'happy', 126], ['pink', '#FF9EC4', 'surprised', 112]].map(function (c, i) {
-        // each cat stands on the one below on four little legs (as in the game), drawn first so the body covers the join
-        var y = 102.6 - i * 28.2, legs = [-52, -32, -2, 16].map(function (lx) { return sh(R(lx - 8, 26, 16, 32, 8), c[1], { lw: 4, k: 3 }); }).join('');
-        return '<g transform="translate(' + c[3] + ' ' + y + ') scale(.4545)">' + legs + '</g>' + cat({ preset: c[0] || undefined, color: c[0] ? undefined : c[1], pose: 'lie', face: c[2], x: c[3], y: y, size: 40 });
+        // each cat's little paws rest on the head of the cat below, as in the game
+        return cat({ preset: c[0] || undefined, color: c[0] ? undefined : c[1], pose: 'lie', face: c[2], x: c[3], y: 106.4 - i * 30.2, size: 38 });
       }).join('')),
 
     peekaboo: svg(
@@ -227,15 +226,35 @@
       ln('M60 28Q120 2 180 28', 3, 0, ' stroke-dasharray="6 6"') + ln('M172 20L182 29L170 34', 3)),
 
     crossing: svg(sh(R(6, 8, 228, 136, 16), '#A9DC8F', { k: 0, in:
-      '<rect x="0" y="52" width="240" height="60" fill="#5E5675"/>' + ln('M0 52H240M0 112H240', 3) +
-      [58, 72, 86, 100].map(function (y) { return '<rect x="96" y="' + y + '" width="48" height="8" rx="2" fill="#fff"/>'; }).join('') +
-      '<rect x="160" y="80" width="22" height="4" rx="2" fill="#fff" opacity=".6"/><rect x="200" y="80" width="22" height="4" rx="2" fill="#fff" opacity=".6"/>' +
-      shadow(44, 108, 32, 3) +
-      sh(P(14, 104, 'v-12l10 -2l8 -12h22l8 12l10 2v12z'), '#FF5A5F', { lw: 3, k: 3, in: sh(P(35, 81, 'h8v8h-13z'), '#CDE8FF', { lw: 2.5, k: 0 }) + sh(P(46, 81, 'h6l5 8h-11z'), '#CDE8FF', { lw: 2.5, k: 0 }) }) +
-      sh(E(28, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) + sh(E(58, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) +
-      cat({ preset: 'white', face: 'happy', x: 106, y: 68, size: 32 }) + cat({ preset: 'pink', face: 'happy', x: 138, y: 94, size: 32 }) +
-      shadow(200, 134, 12, 3) + tube('M200 134V60', '#B9AED0', 4) +
-      sh(E(200, 44, 20, 20), '#FF5A5F', { k: 3, in: '<circle cx="200" cy="44" r="13" fill="none" stroke="#fff" stroke-width="3"/>' }) })),
+      '<rect x="0" y="40" width="240" height="76" fill="#5E5675"/>' + ln('M0 40H240M0 116H240', 3) +
+      [46, 60, 74, 88, 102].map(function (y) { return '<rect x="92" y="' + y + '" width="56" height="8" rx="2" fill="#fff"/>'; }).join('') +
+      '<rect x="12" y="76" width="20" height="4" rx="2" fill="#fff" opacity=".6"/><rect x="50" y="76" width="20" height="4" rx="2" fill="#fff" opacity=".6"/>' +
+      // two cars waiting at the crossing, one each way
+      [['#FF5A5F', 14, 110, 1], ['#7CC4FF', 226, 70, -1]].map(function (c) {
+        var s = c[3], x = c[1], y = c[2];
+        return shadow(x + s * 29, y, 32, 3) +
+          sh(P(x, y, 'v-12l' + 10 * s + ' -2l' + 8 * s + ' -12h' + 22 * s + 'l' + 8 * s + ' 12l' + 10 * s + ' 2v12z'), c[0], { lw: 3, k: 3, in:
+            sh(P(x + 21 * s, y - 23, 'h' + 8 * s + 'v8h' + -13 * s + 'z'), '#CDE8FF', { lw: 2.5, k: 0 }) + sh(P(x + 32 * s, y - 23, 'h' + 6 * s + 'l' + 5 * s + ' 8h' + -11 * s + 'z'), '#CDE8FF', { lw: 2.5, k: 0 }) }) +
+          sh(E(x + 14 * s, y, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) + sh(E(x + 44 * s, y, 6, 6), '#3D3650', { lw: 2.5, k: 0 });
+      }).join('') +
+      // whole kittens walking over the zebra crossing
+      shadow(95, 81, 20, 3) + cat({ preset: 'white', pose: 'walk', step: 1.2, moving: true, face: 'happy', x: 104, y: 58, size: 30 }) +
+      shadow(133, 119, 20, 3) + cat({ preset: 'pink', pose: 'walk', step: 4, moving: true, face: 'happy', x: 142, y: 96, size: 30 }) +
+      shadow(214, 136, 10, 3) + tube('M214 136V100', '#B9AED0', 4) +
+      sh(E(214, 96, 14, 14), '#FF5A5F', { lw: 3.5, k: 3, in: '<circle cx="214" cy="96" r="9" fill="none" stroke="#fff" stroke-width="2.5"/>' }) })),
+
+    slide: (function () {
+      // a 3x3 picture puzzle: each square shows its part of one picture; the bottom-right square slides into the gap
+      var pic = '<rect x="0" y="0" width="240" height="150" fill="#FFE0EC"/><rect x="0" y="116" width="240" height="40" fill="#A9DC8F"/>' + cat({ preset: 'ginger', face: 'happy', x: 120, y: 68, size: 80 });
+      var sq = '';
+      for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) {
+        if (r === 2 && c > 0) continue;
+        sq += sh(R(62 + c * 40, 16 + r * 40, 36, 36, 5), '#FFE0EC', { lw: 2.5, k: 3, in: pic });
+      }
+      sq += sh(R(122, 96, 36, 36, 5), '#FFE0EC', { lw: 2.5, k: 3, in: '<g transform="translate(-20 0)">' + pic + '</g>' });
+      return svg(shadow(120, 142, 70, 5) + sh(R(52, 6, 136, 136, 14), '#C98B5B', { k: 5 }) + sh(R(59, 13, 122, 122, 7), '#8A5A34', { lw: 3, k: 0 }) + sq +
+        ln('M228 114H198', 3.5) + ln('M206 106L198 114L206 122', 3.5));
+    })(),
 
     kittenkitchen: svg(
       cat({ preset: 'ginger', face: 'happy', x: 50, y: 70, size: 60 }) +
@@ -304,6 +323,11 @@
       id: 'yarn-dash', save: 'yarndash', name: 'Yarn Dash', blurb: 'Run and catch the yarn',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F2DDC0',
       badge: level, art: ART.yarndash
+    },
+    {
+      id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
+      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
+      art: ART.slide
     },
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
