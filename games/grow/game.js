@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var INK = GGDraw.INK;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var GP = window.GGPlants;
@@ -24,12 +24,7 @@
   function easeBack(t) { t = clamp(t, 0, 1); var c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
   function rand(a, b) { return a + Math.random() * (b - a); }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  var D = window.GGDraw, rr = D.rr, ink = D.ink;
   function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
   function findDef(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
@@ -155,10 +150,12 @@
     // positions on the bench, in room units for the current layout
     var tall = LAY.W < 700, W = LAY.W, H = LAY.H;
     var top = tall ? H * 0.66 : H * 0.7;
+    // the sun is outside, seen through the window, so the window is wide enough to show it whole
+    var win = tall ? { x: W * 0.14, y: H * 0.07, w: W * 0.72, h: H * 0.27 } : { x: W * 0.08, y: H * 0.08, w: W * 0.42, h: H * 0.3 };
     return {
-      top: top, pot: { x: W * 0.5, y: top },
+      top: top, pot: { x: W * 0.5, y: top }, win: win,
       bag: { x: tall ? W * 0.17 : W * 0.2, y: top }, can: { x: tall ? W * 0.84 : W * 0.8, y: top },
-      sun: { x: tall ? W * 0.8 : W * 0.82, y: tall ? H * 0.16 : H * 0.18 }
+      sun: { x: win.x + win.w / 2, y: win.y + win.h * 0.42 }
     };
   }
   var STEPS = {
@@ -230,7 +227,7 @@
       grow.seed = true; grow.poke = 0.5; Sound.poke(); buzz(10);
       sparkle(B.pot.x, B.pot.y - 60, '#8B5A3C', 6, 0.5);
       setTimeout(function () { if (grow && grow.step === 'plant') setStep('water'); }, 450);
-    } else if (grow.step === 'water' && Math.hypot(r.x - (grow.can ? grow.can.x : B.can.x), r.y - (grow.can ? grow.can.y : B.can.y - 50)) < 90) {
+    } else if (grow.step === 'water' && Math.hypot(r.x - (grow.can ? grow.can.x : B.can.x + 20), r.y - (grow.can ? grow.can.y : B.can.y - 35)) < 90) {
       grow.canHeld = e.pointerId; grow.can = { x: r.x, y: r.y };
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
       Sound.pick();
@@ -297,8 +294,8 @@
     var unlocked = seedsUnlocked();
     var gotNew = unlocked.length > before ? unlocked[unlocked.length - 1] : null;
     setTimeout(function () {
-      $('cardImg').src = thumb(function (c) { GP.drawPotted(c, pl, 1, 0); }, 110, d.h + 64);
-      $('cardTitle').textContent = 'You grew ' + (/s$/.test(d.name) || /^(catnip|catgrass|lavender)$/.test(d.id) ? 'some ' + d.name.toLowerCase() : (/^[aeiou]/i.test(d.name) ? 'an ' : 'a ') + d.name.toLowerCase()) + '!';
+      $('cardImg').src = thumb(function (c) { GP.drawPotted(c, pl, 1, 0); }, 110, d.h + 64, 400);
+      $('cardTitle').textContent = 'You grew ' + d.grew + '!';
       $('cardNote').textContent = (gotNew ? 'New seed unlocked: ' + gotNew.name + '! ' : '') + 'It\u2019s waiting in your Cosy Home.';
       $('cardWrap').hidden = false;
       $('againBtn').focus();
@@ -350,43 +347,58 @@
   }
 
   function drawBench(c) {
-    var B = bench(), W = LAY.W, H = LAY.H;
-    // a sunny garden shed: wall, window, bench
+    var B = bench(), W = LAY.W, H = LAY.H, win = B.win;
+    // a sunny garden shed: striped wall, and a window looking out at the sun
     c.fillStyle = '#E3F4D9'; c.fillRect(0, 0, W, H);
     c.fillStyle = '#D2EBC4'; for (var x = 0; x < W; x += 50) c.fillRect(x, 0, 24, B.top);
-    rr(c, W * 0.08, H * 0.08, W * 0.42, H * 0.3, 14); c.fillStyle = '#9EDCFF'; c.fill(); ink(c, 4);
-    c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(W * 0.29, H * 0.08); c.lineTo(W * 0.29, H * 0.38); c.stroke();
-    drawCurtains(c, W * 0.08, H * 0.08, W * 0.42, H * 0.3, { pat: 'gingham', col: '#FF6B57', col2: '#FFFFFF', tie: '#7BD389', rod: '#A86B3C' });
-    // sun (the tap target in the sun step)
-    var sunPulse = grow.step === 'sun' ? 1 + Math.sin(time * 5) * 0.08 : 1;
-    c.save(); c.translate(B.sun.x, B.sun.y); c.scale(sunPulse, sunPulse);
-    c.strokeStyle = '#FFC93C'; c.lineWidth = 7; c.lineCap = 'round';
-    for (var i = 0; i < 10; i++) { var a = i * TAU / 10 + time * 0.3; c.beginPath(); c.moveTo(Math.cos(a) * 52, Math.sin(a) * 52); c.lineTo(Math.cos(a) * 70, Math.sin(a) * 70); c.stroke(); }
-    try { GGCat.draw(c, { preset: 'sun', face: grow.step === 'growing' || grow.step === 'done' ? 'happy' : 'open', size: 90 }); } catch (e) { circle(c, 0, 0, 44); c.fillStyle = '#FFC93C'; c.fill(); }
-    c.restore();
-    // bench
-    rr(c, -10, B.top, W + 20, 26, 6); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 4);
-    c.fillStyle = '#C9965F'; c.fillRect(0, B.top + 26, W, H - B.top - 26);
-    [W * 0.12, W * 0.88].forEach(function (lx) { rr(c, lx - 12, B.top + 26, 24, H - B.top - 26, 4); c.fillStyle = '#B57F4B'; c.fill(); ink(c, 3); });
-    // soil bag
+    var pane = D.rrPath(win.x, win.y, win.w, win.h, 14);
+    D.shape(c, pane, D.tone(c, '#9EDCFF', win.y, win.y + win.h), { lw: 4, depth: 0, inside: function (c) {
+      // the sun (the tap target in the sun step), rising from behind a hill outside
+      var sunPulse = grow.step === 'sun' ? 1 + Math.sin(time * 5) * 0.08 : 1;
+      c.save(); c.translate(B.sun.x, B.sun.y); c.scale(sunPulse, sunPulse);
+      c.strokeStyle = '#FFC93C'; c.lineWidth = 7; c.lineCap = 'round';
+      for (var i = 0; i < 10; i++) { var a = i * TAU / 10 + time * 0.3; c.beginPath(); c.moveTo(Math.cos(a) * 52, Math.sin(a) * 52); c.lineTo(Math.cos(a) * 70, Math.sin(a) * 70); c.stroke(); }
+      try { GGCat.draw(c, { preset: 'sun', face: grow.step === 'growing' || grow.step === 'done' ? 'happy' : 'open', size: 90 }); } catch (e) { circle(c, 0, 0, 44); c.fillStyle = '#FFC93C'; c.fill(); }
+      c.restore();
+      c.beginPath(); c.moveTo(win.x - 10, win.y + win.h * 0.82); c.quadraticCurveTo(win.x + win.w * 0.35, win.y + win.h * 0.62, win.x + win.w + 10, win.y + win.h * 0.8);
+      c.lineTo(win.x + win.w + 10, win.y + win.h + 10); c.lineTo(win.x - 10, win.y + win.h + 10); c.closePath();
+      c.fillStyle = D.tone(c, '#8FD88F', win.y + win.h * 0.62, win.y + win.h); c.fill(); D.ink(c, 3);
+    } });
+    // the sill
+    D.shape(c, D.rrPath(win.x - 14, win.y + win.h - 4, win.w + 28, 16, 6), D.tone(c, '#FFF3E4', win.y + win.h - 4, win.y + win.h + 12), { lw: 4, depth: 3 });
+    drawCurtains(c, win.x, win.y, win.w, win.h, { pat: 'gingham', col: '#FF6B57', col2: '#FFFFFF', tie: '#7BD389', rod: '#A86B3C' });
+    // bench, with soft shadows on its top board under the things standing on it
+    var restCan = { x: B.can.x + 20, y: B.can.y - 20 };
+    c.fillStyle = D.tone(c, '#C9965F', B.top + 26, H); c.fillRect(0, B.top + 26, W, H - B.top - 26);
+    [W * 0.12, W * 0.88].forEach(function (lx) { D.shape(c, D.rrPath(lx - 12, B.top + 20, 24, H - B.top - 10, 4), '#B57F4B', { lw: 3, depth: 4 }); });
+    D.shape(c, D.rrPath(-10, B.top, W + 20, 26, 6), D.tone(c, '#E6B98A', B.top, B.top + 26), { lw: 4, depth: 5, inside: function (c) {
+      D.shadow(c, B.bag.x + 4, B.top + 2, 56, 9);
+      if (!grow.can) D.shadow(c, restCan.x, B.top + 2, 46, 8);
+      if (grow.pot >= 0 && (grow.step !== 'seed' && grow.step !== 'pot' || grow.anim > 0.33)) D.shadow(c, B.pot.x + 4, B.top + 2, 56, 9);
+    } });
+    // soil bag: the soil at the back of the open top, then the bag in front of it
     c.save(); c.translate(B.bag.x, B.bag.y);
     var bagBounce = grow.step === 'soil' ? Math.sin(time * 6) * 3 : 0;
     c.translate(0, -bagBounce);
-    c.beginPath(); c.moveTo(-50, 0); c.lineTo(-44, -110); c.quadraticCurveTo(0, -128, 44, -110); c.lineTo(50, 0); c.closePath(); c.fillStyle = '#C48A55'; c.fill(); ink(c, 4);
-    ell(c, 0, -112, 40, 10); c.fillStyle = '#7A4E2D'; c.fill(); ink(c, 3);
-    rr(c, -30, -76, 60, 40, 8); c.fillStyle = '#FFF3E4'; c.fill(); ink(c, 2.5);
-    c.save(); c.translate(0, -50); leaf(c, 0, 0, 18, -2.4, '#5CCB75'); leaf(c, 0, 0, 18, -0.7, '#5CCB75'); c.restore();
+    D.shape(c, D.ellPath(0, -112, 40, 11), '#7A4E2D', { lw: 3, depth: 0 });
+    D.shape(c, function (p) { p.moveTo(-50, 0); p.lineTo(-44, -110); p.quadraticCurveTo(0, -98, 44, -110); p.lineTo(50, 0); p.closePath(); },
+      D.tone(c, '#C48A55', -110, 0), { lw: 4, depth: 9, inside: function (c) {
+        D.shape(c, D.rrPath(-30, -76, 60, 40, 8), '#FFF3E4', { lw: 2.5, depth: 0 });
+        c.save(); c.translate(0, -50); leaf(c, 0, 0, 18, -2.4, '#5CCB75'); leaf(c, 0, 0, 18, -0.7, '#5CCB75'); c.restore();
+      } });
     c.restore();
-    // watering can (resting, or held)
-    var can = grow.can || { x: B.can.x + 20, y: B.can.y - 60 };
+    // watering can (resting on the bench, or held)
+    var can = grow.can || restCan;
     var tilt = grow.pouring ? -0.55 : grow.canHeld !== false && grow.can ? -0.2 : 0;
     c.save(); c.translate(can.x, can.y); c.rotate(tilt);
-    if (grow.step === 'water' && !grow.can) { c.globalAlpha = 0.4 + 0.3 * Math.sin(time * 5); circle(c, 0, 0, 80); c.fillStyle = '#fff'; c.fill(); c.globalAlpha = 1; }
-    c.beginPath(); c.moveTo(-36, -10); c.lineTo(-90, -48); c.lineTo(-84, -56); c.lineTo(-30, -24); c.closePath(); c.fillStyle = '#7CC4FF'; c.fill(); ink(c, 3);
-    rr(c, -86, -60, 16, 12, 4); c.fillStyle = '#3B8FD6'; c.fill(); ink(c, 2.5);
-    rr(c, -40, -50, 80, 70, 14); c.fillStyle = '#7CC4FF'; c.fill(); ink(c, 4);
-    c.beginPath(); c.arc(10, -50, 26, Math.PI, 0); ink(c, 6);
-    c.fillStyle = '#fff'; circle(c, -14, -18, 6); c.fill(); circle(c, 8, -10, 5); c.fill();
+    if (grow.step === 'water' && !grow.can) { c.globalAlpha = 0.4 + 0.3 * Math.sin(time * 5); circle(c, 0, -15, 80); c.fillStyle = '#fff'; c.fill(); c.globalAlpha = 1; }
+    // the handle and spout start inside the body, which is drawn over their ends
+    c.beginPath(); c.arc(10, -44, 26, Math.PI, 0); D.ink(c, 10); c.strokeStyle = '#7CC4FF'; c.lineWidth = 4; c.stroke();
+    D.shape(c, function (p) { p.moveTo(-30, -6); p.lineTo(-88, -48); p.lineTo(-82, -56); p.lineTo(-26, -26); p.closePath(); }, '#7CC4FF', { lw: 3, depth: 0 });
+    D.shape(c, D.rrPath(-90, -61, 16, 12, 4), '#3B8FD6', { lw: 2.5, depth: 0 });
+    D.shape(c, D.rrPath(-40, -50, 80, 70, 14), D.tone(c, '#7CC4FF', -50, 20), { lw: 4, depth: 8, inside: function (c) {
+      c.fillStyle = '#fff'; circle(c, -14, -18, 6); c.fill(); circle(c, 8, -10, 5); c.fill();
+    } });
     c.restore();
     // water drops
     grow.drops.forEach(function (d) { ell(c, d.x, d.y, 4, 7); c.fillStyle = '#7CC4FF'; c.fill(); });

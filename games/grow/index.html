@@ -17,7 +17,7 @@
 /* Layout: the potting bench (canvas) fills the screen, with a strip of choices along the bottom. Single bright look by design. */
 body { background: #CFE9C0; }
 .middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
-.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
+.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); white-space: nowrap; }
 .growbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
   padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
@@ -27,11 +27,11 @@ body { background: #CFE9C0; }
 .choices { display: flex; gap: 10px; overflow-x: auto; justify-content: safe center; padding: 2px 2px 6px; min-height: 86px; align-items: center; }
 .choice {
   flex: none; width: 78px; height: 78px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; cursor: pointer; padding: 2px;
-  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); position: relative;
+  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink), var(--soft); position: relative;
 }
 .choice img { width: 64px; height: 64px; pointer-events: none; }
 .choice.swatch { width: 60px; height: 60px; border-radius: 50%; }
-.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .choice.locked { cursor: default; background: #EEE8F3; border-style: dashed; box-shadow: none; }
 .choice.locked img { filter: grayscale(1) brightness(1.25); opacity: .4; }
 .choice .lock { position: absolute; bottom: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 2.5px solid var(--ink); display: grid; place-items: center; }
@@ -86,6 +86,7 @@ body.toddler #grownCount { display: none; }
 
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="plants.js"></script>
 <script src="game.js"></script>
 </body>
