@@ -1,6 +1,7 @@
 /* Cat Puzzles – a toddler game. A picture of a cat (in a teacup, on a rocket, in a boat...) is cut into a few
    big pieces with wobbly edges. The board shows a faint copy; drag each piece to its place and it clicks in.
-   Finish the picture and it bounces and sparkles, then the next one comes. Starts with 2 pieces, then 3, then 4.
+   Finish the picture and it bounces and sparkles, then the next one comes. Picture buttons at the top choose 2, 4 or 6
+   pieces (remembered).
    A piece dropped in the wrong place just stays there. A piece wiggles as a hint after a quiet while.
    Saves a count to GG.setProgress('puzzle', { done }). */
 (function () {
@@ -102,7 +103,7 @@
 
   /* ================= cutting a picture into pieces =================
      A grid of cols x rows; each inside edge gets a gentle bump in or out, so pieces only fit their own place. */
-  var GRIDS = { 2: [2, 1], 3: [3, 1], 4: [2, 2] };
+  var GRIDS = { 2: [2, 1], 4: [2, 2], 6: [3, 2] };
   function edge(x0, y0, x1, y1, bump) {
     // points from (x0,y0) to (x1,y1) with a rounded bump in the middle (bump = +1 / -1 / 0)
     var pts = [], n = 24, dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
@@ -161,7 +162,7 @@
   function toScene(x, y) { return { x: (x - OX) / K, y: (y - OY) / K }; }
 
   /* ================= a puzzle ================= */
-  var P = (function () { var p = {}; try { p = GG.getProgress('puzzle') || {}; } catch (e) {} if (typeof p.done !== 'number') p.done = 0; return p; })();
+  var P = (function () { var p = {}; try { p = GG.getProgress('puzzle') || {}; } catch (e) {} if (typeof p.done !== 'number') p.done = 0; if ([2, 4, 6].indexOf(p.size) < 0) p.size = 2; return p; })();
   function save() { try { GG.setProgress('puzzle', P); } catch (e) {} }
   var pieces = [], pic = 0, lastPic = -1, time = 0, parts = [], drag = null, idleT = 0, done = 0, round = 0;
   /* A piece is the whole picture clipped to its shape, drawn around its middle (px, py). While it waits in the
@@ -169,24 +170,32 @@
   var TRAY_SC = 0.6;
   function homeX(p) { return BOARD.x + p.cx * BOARD.s; }
   function homeY(p) { return BOARD.y + p.cy * BOARD.s; }
+  /* waiting pieces sit in a loose grid in the tray, one per cell, with a little wobble so it looks tipped out */
   function scatter(p) {
-    // somewhere in the tray, as far as possible from the other pieces
-    var s = BOARD.s * TRAY_SC, best = null, bd = -1;
-    var hw = Math.min(p.w * s * 0.55, TRAY.w / 2 - 1), hh = Math.min(p.h * s * 0.55, TRAY.h / 2 - 1);
-    for (var t = 0; t < 40; t++) {
-      var cx = rand(TRAY.x + hw, TRAY.x + TRAY.w - hw), cy = rand(TRAY.y + hh, TRAY.y + TRAY.h - hh);
-      var md = pieces.reduce(function (m, q) { return q === p || q.placed || q.px === undefined ? m : Math.min(m, Math.hypot(q.px - cx, q.py - cy)); }, 1e9);
-      if (md > bd) { bd = md; best = { cx: cx, cy: cy }; }
-    }
-    p.px = best.cx; p.py = best.cy; p.sc = TRAY_SC;
+    var n = pieces.length, a = TRAY.w / TRAY.h;
+    var cols = clamp(Math.round(Math.sqrt(n * a)), 1, n), rows = Math.ceil(n / cols);
+    var cell = p.cell !== undefined ? p.cell : 0, cx = cell % cols, cy = Math.floor(cell / cols);
+    var cwid = TRAY.w / cols, chei = TRAY.h / rows;
+    p.sc = Math.min(TRAY_SC, (cwid * 0.9) / (p.w * BOARD.s), (chei * 0.9) / (p.h * BOARD.s));
+    p.px = TRAY.x + (cx + 0.5) * cwid + rand(-0.06, 0.06) * cwid;
+    p.py = TRAY.y + (cy + 0.5) * chei + rand(-0.06, 0.06) * chei;
+    p.traySc = p.sc;
   }
+  function renderSizes() { document.querySelectorAll('.size').forEach(function (b) { b.setAttribute('aria-pressed', String(+b.dataset.n === P.size)); }); }
+  document.querySelector('.sizes').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-n]'); if (!b) return;
+    Sound.init();
+    P.size = +b.dataset.n; save(); renderSizes();
+    drag = null; done = 0; doneFx = false; newPuzzle();
+  });
   function newPuzzle() {
-    var n = round < 2 ? 2 : round < 4 ? 3 : 4;
+    var n = GRIDS[P.size] ? P.size : 2;
     do { pic = Math.floor(Math.random() * PICTURES.length); } while (pic === lastPic);
     lastPic = pic;
     pieces = cut(n);
     pieces.forEach(function (p) { p.px = undefined; });
-    shuffle(pieces).forEach(function (p) { scatter(p); p.placed = false; p.t = 0; p.wig = 0; });
+    var cells = shuffle(pieces.map(function (p, i) { return i; }));
+    pieces.forEach(function (p, i) { p.cell = cells[i]; scatter(p); p.placed = false; p.t = 0; p.wig = 0; });
     done = 0; idleT = 0;
     Sound.pop();
   }
@@ -232,7 +241,7 @@
     } else {
       Sound.drop();
       // dropped somewhere else: it shrinks back down where it is (kept on screen)
-      p.sc = TRAY_SC;
+      p.sc = p.traySc || TRAY_SC;
     }
   }
   canvas.addEventListener('pointerup', drop);
@@ -411,6 +420,7 @@
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
 
   layout();
+  renderSizes();
   newPuzzle();
   requestAnimationFrame(frame);
 

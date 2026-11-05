@@ -17,7 +17,12 @@
 /* Toddler game: a picture board with its pieces scattered beside it (one canvas). Drag a piece to its place.
    No words needed. Single bright look by design. */
 body { background: #FFF4E0; }
-.middle { flex: 1; }
+.middle { flex: 1; display: flex; justify-content: center; }
+/* how many pieces: three picture buttons (2, 4 or 6) */
+.sizes { display: flex; gap: 8px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink); }
+.size { width: 52px; height: 44px; border-radius: 999px; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.size svg { width: 34px; height: 34px; }
+.size[aria-pressed="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
 </style>
 </head>
 <body class="game">
@@ -27,7 +32,7 @@ body { background: #FFF4E0; }
   <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
     <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
   </a>
-  <div class="middle"></div>
+  <div class="middle"><div class="sizes" role="group" aria-label="How many pieces"><button class="size" type="button" data-n="2" aria-label="2 pieces" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4.0" y="4.0" width="12.0" height="24.0" rx="2" fill="#FF8FAB" stroke="#2A2340" stroke-width="2"/><rect x="16.0" y="4.0" width="12.0" height="24.0" rx="2" fill="#7CC4FF" stroke="#2A2340" stroke-width="2"/></svg></button><button class="size" type="button" data-n="4" aria-label="4 pieces" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4.0" y="4.0" width="12.0" height="12.0" rx="2" fill="#FF8FAB" stroke="#2A2340" stroke-width="2"/><rect x="16.0" y="4.0" width="12.0" height="12.0" rx="2" fill="#7CC4FF" stroke="#2A2340" stroke-width="2"/><rect x="4.0" y="16.0" width="12.0" height="12.0" rx="2" fill="#FFD23F" stroke="#2A2340" stroke-width="2"/><rect x="16.0" y="16.0" width="12.0" height="12.0" rx="2" fill="#7BD389" stroke="#2A2340" stroke-width="2"/></svg></button><button class="size" type="button" data-n="6" aria-label="6 pieces" aria-pressed="false"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4.0" y="4.0" width="8.0" height="12.0" rx="2" fill="#FF8FAB" stroke="#2A2340" stroke-width="2"/><rect x="12.0" y="4.0" width="8.0" height="12.0" rx="2" fill="#7CC4FF" stroke="#2A2340" stroke-width="2"/><rect x="20.0" y="4.0" width="8.0" height="12.0" rx="2" fill="#FFD23F" stroke="#2A2340" stroke-width="2"/><rect x="4.0" y="16.0" width="8.0" height="12.0" rx="2" fill="#7BD389" stroke="#2A2340" stroke-width="2"/><rect x="12.0" y="16.0" width="8.0" height="12.0" rx="2" fill="#B48CFF" stroke="#2A2340" stroke-width="2"/><rect x="20.0" y="16.0" width="8.0" height="12.0" rx="2" fill="#FF9F43" stroke="#2A2340" stroke-width="2"/></svg></button></div></div>
   <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
 </div>
 
