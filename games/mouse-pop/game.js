@@ -190,23 +190,16 @@
     c.beginPath(); c.arc(39, 0, 5, 0, TAU); c.fillStyle = '#FF7FA6'; c.fill(); D.ink(c, lf);
     c.restore();
   }
-  /* a cat strolling across, seen from the side: the shared cat's head on a body shaded the same way */
-  var CAT_BODY = D.ellPath(0, 0, 72, 36);
+  /* a cat strolling across: the shared walking cat (the same walk in every game) */
+  var CAT_SIZE = 104;
   function drawCat(c, k) {
-    var step = Math.sin(k.t * 7);
     var o = {}; for (var key in k.look) o[key] = k.look[key];
-    var col = o.color || (GGCat.PRESETS && GGCat.PRESETS[o.preset] && GGCat.PRESETS[o.preset].color) || '#FFA94D';
+    var s = CAT_SIZE / 88;
     D.shadow(c, k.x, k.y + 52, 80, 14);
-    c.save(); c.translate(k.x, k.y); c.scale(k.dir, 1);
-    // tail starts inside the body, so the body covers the join
-    c.beginPath(); c.moveTo(-56, -8); c.quadraticCurveTo(-110, -20, -100, -80 + Math.sin(time * 3) * 6); c.strokeStyle = INK; c.lineWidth = 18; c.lineCap = 'round'; c.stroke(); c.strokeStyle = col; c.lineWidth = 10; c.stroke();
-    // legs go up under the body
-    [[-44, 1], [-22, -1], [24, 1], [46, -1]].forEach(function (l) { D.shape(c, D.rrPath(l[0] - 8 + step * 8 * l[1], 0, 18, 52, 9), col, { lw: D.LW.mid, depth: 4, dx: -3 * k.dir, dy: -4 }); });
-    // the shade falls to the lower right on screen, so it flips with the cat
-    D.shape(c, CAT_BODY, D.tone(c, col, -36, 36), { lw: D.LW.big, depth: 9, dx: -6 * k.dir, dy: -9 });
-    c.restore();
-    c.save(); c.translate(k.x + k.dir * 66, k.y - 46 + Math.abs(step) * -3);
-    o.size = 104; o.face = k.happy > 0 ? 'happy' : 'open';
+    // the body stays centred on the cat's spot, with the paws on the shadow
+    c.save(); c.translate(k.x + k.dir * 31 * s, k.y + 52 - 67 * s);
+    o.pose = 'walk'; o.size = CAT_SIZE; o.dir = k.dir; o.step = k.t * 7; o.moving = true; o.wag = time * 3;
+    o.face = k.happy > 0 ? 'happy' : 'open';
     try { GGCat.draw(c, o); } catch (e) {}
     c.restore();
   }

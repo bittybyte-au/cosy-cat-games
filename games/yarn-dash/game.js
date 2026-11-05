@@ -72,14 +72,6 @@
   }
   catSetup();
   window.addEventListener('gg-change', catSetup);
-  function bodyColour() { return CAT.color || (window.GGCat && GGCat.PRESETS && GGCat.PRESETS[CAT.preset] && GGCat.PRESETS[CAT.preset].color) || '#FFA94D'; }
-  // the avatar picture is 120 wide with the cat's head centred at (60, 66.36), 68 wide
-  function drawHead(c, x, y, size, face) {
-    if (catImg && !face) { var k = size / 68; c.drawImage(catImg, x - 60 * k, y - 66.36 * k, 120 * k, 120 * k); return; }
-    c.save(); c.translate(x, y);
-    try { var o = {}; for (var key in CAT) o[key] = CAT[key]; o.size = size * 88 / 104 * 1.05; o.face = face || 'open'; GGCat.draw(c, o); } catch (e) { circle(c, 0, 0, size / 2); c.fillStyle = bodyColour(); c.fill(); D.ink(c, D.LW.mid); }
-    c.restore();
-  }
 
   /* ================= layout ================= */
   var canvas = $('stage'), ctx = canvas.getContext('2d'), topbar = $('topbar');
@@ -492,29 +484,31 @@
     c.restore();
     c.restore();
   }
-  /* your cat, from above-ish: body and tail pointing where it's running, your avatar's head on top */
-  var CAT_BODY = D.ellPath(0, 10, 34, 20);
-  function drawCat(c, C, size) {
-    var col = bodyColour();
+  /* your cat: the shared walking cat (the same walk in every game), in your avatar's colours, facing where it runs.
+     When it isn't startled, your avatar's own head (with any hat or glasses) sits on top, bobbing with the walk. */
+  var CAT_SIZE = 60;
+  function drawCat(c, C) {
     var hop = C.fright > 0 ? Math.sin((0.8 - C.fright) / 0.8 * Math.PI) * 40 : 0;
     var blink = C.safe > 0 && C.fright <= 0 && Math.sin(time * 30) > 0.3;
-    c.save(); c.translate(C.x, C.y);
-    D.shadow(c, 0, 26, 36 - hop * 0.2, 12);
+    var dir = Math.cos(C.dir) >= 0 ? 1 : -1, moving = Math.hypot(C.vx, C.vy) > 20;
+    var k = CAT_SIZE / 88;
+    D.shadow(c, C.x, C.y + 32, 36 - hop * 0.2, 12);
+    c.save();
     if (blink) c.globalAlpha = 0.55;
-    c.translate(0, -hop);
-    var face = Math.cos(C.dir) >= 0 ? 1 : -1;
-    var run = Math.hypot(C.vx, C.vy) > 20 ? Math.sin(C.step) : 0;
-    c.save(); c.scale(face, 1);
-    // tail, starting inside the body
-    c.beginPath(); c.moveTo(-22, 4); c.quadraticCurveTo(-56, -6 + run * 8, -50, -34 + Math.sin(time * 4) * 4); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 13; c.stroke(); c.strokeStyle = col; c.lineWidth = 7; c.stroke();
-    // legs, tucked under the body
-    [[-16, 1], [-4, -1], [10, 1], [22, -1]].forEach(function (l) { D.shape(c, D.ellPath(l[0] + run * 5 * l[1], 26 - Math.max(0, run * l[1]) * 4, 7, 6), col, { lw: D.LW.fine, depth: 0 }); });
-    // body, shaded lower right on screen whichever way it runs
-    D.shape(c, CAT_BODY, D.tone(c, col, -10, 30), { lw: D.LW.mid, depth: 1, dx: -5 * face, dy: -7 });
-    c.restore();
-    var hx = face * 22, hy = -12 + (run ? Math.abs(run) * -3 : 0);
-    drawHead(c, hx, hy, size, C.fright > 0 ? 'surprised' : null);
-    if (C.fright > 0) { c.font = '800 40px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#FF6B57'; c.textAlign = 'center'; c.fillText('!', hx + 30, hy - 40); }
+    // the head sits at the front; the paws land on the shadow, where the old cat's did
+    var hx = C.x + dir * 22, hy = C.y + 32 - 67 * k - hop;
+    c.translate(hx, hy);
+    var o = {}; for (var key in CAT) o[key] = CAT[key];
+    o.pose = 'walk'; o.size = CAT_SIZE; o.dir = dir; o.step = C.step; o.moving = moving; o.wag = time * 4;
+    o.face = C.fright > 0 ? 'surprised' : 'open';
+    try { GGCat.draw(c, o); } catch (e) {}
+    if (catImg && C.fright <= 0) {
+      // the walk bobs the head by up to 4 of the cat's units on each step (shared/cat.js, walkShapes)
+      var ph = Math.round(((C.step || 0) % (Math.PI * 2)) / (Math.PI / 8)) * (Math.PI / 8);
+      var bob = moving ? -Math.abs(Math.sin(ph)) * 4 * k : 0, a = CAT_SIZE / 68;
+      c.drawImage(catImg, -60 * a, bob - 66.36 * a, 120 * a, 120 * a);
+    }
+    if (C.fright > 0) { c.font = '800 40px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#FF6B57'; c.textAlign = 'center'; c.fillText('!', 30, -40); }
     c.restore();
     if (C.zoom > 0) for (var i = 0; i < 3; i++) { c.beginPath(); var za = C.dir + Math.PI, r = 40 + i * 10; c.moveTo(C.x + Math.cos(za) * r, C.y + Math.sin(za) * r + (i - 1) * 12); c.lineTo(C.x + Math.cos(za) * (r + 24), C.y + Math.sin(za) * (r + 24) + (i - 1) * 12); c.strokeStyle = 'rgba(255,210,63,.8)'; c.lineWidth = 4; c.lineCap = 'round'; c.stroke(); }
   }
@@ -535,7 +529,7 @@
     });
     if (G.mouse) drawMouse(c, G.mouse);
     G.vacs.forEach(function (v) { drawVacuum(c, v); });
-    drawCat(c, G.cat, 62);
+    drawCat(c, G.cat);
     if (G.cat.target && hold) { circle(c, G.cat.target.x, G.cat.target.y, 14 + Math.sin(time * 8) * 3); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 4; c.stroke(); }
   }
 
