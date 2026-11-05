@@ -18,7 +18,8 @@
 
   /* ---------- the progress games already save, boiled down for unlock rules ---------- */
   function stats(GG) {
-    var lv = function (k) { var p = GG.getProgress(k) || {}; return Math.max(0, (p.level || 1) - 1); };
+    // levels finished: games save { level, done }; older saves only have level (the next one to play)
+    var lv = function (k) { var p = GG.getProgress(k) || {}; return Math.max(p.done || 0, (p.level || 1) - 1); };
     var cook = GG.getProgress('cooking') || {};
     var by = cook.byDish || {};
     var s = {
