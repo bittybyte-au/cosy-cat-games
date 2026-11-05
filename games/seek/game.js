@@ -110,6 +110,117 @@
       try { GGCat.draw(c, { color: col || '#FF9EC4', size: 84, face: 'happy' }); } catch (e) { circle(c, 0, 0, 40); fillInk(c, col || '#FF9EC4', 4); }
     }
   };
+  /* more things for the busier pictures */
+  ITEMS.block = function (c, col) {
+    rr(c, -34, -30, 64, 64, 8); fillInk(c, col || '#FF5A5F', 4.5);
+    c.beginPath(); c.moveTo(-34, -30); c.lineTo(-22, -42); c.lineTo(42, -42); c.lineTo(30, -30); c.closePath(); fillInk(c, '#FFF3B0', 4);
+    c.beginPath(); c.moveTo(30, -30); c.lineTo(42, -42); c.lineTo(42, 22); c.lineTo(30, 34); c.closePath(); fillInk(c, 'rgba(42,35,64,.25)', 4);
+    c.font = '800 40px "Baloo 2", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText('A', -2, 6);
+  };
+  ITEMS.car = function (c, col) {
+    c.beginPath(); c.moveTo(-46, 12); c.lineTo(-46, -6); c.lineTo(-24, -10); c.lineTo(-12, -30); c.lineTo(18, -30); c.lineTo(32, -10); c.lineTo(46, -6); c.lineTo(46, 12); c.closePath(); fillInk(c, col || '#3D8BFF', 4.5);
+    c.beginPath(); c.moveTo(-8, -24); c.lineTo(14, -24); c.lineTo(24, -10); c.lineTo(-16, -10); c.closePath(); fillInk(c, '#BFE6FF', 3);
+    circle(c, -26, 14, 11); fillInk(c, '#3D3650', 4); circle(c, 26, 14, 11); fillInk(c, '#3D3650', 4);
+    circle(c, -26, 14, 4); c.fillStyle = '#C9C2D6'; c.fill(); circle(c, 26, 14, 4); c.fill();
+  };
+  ITEMS.book = function (c, col) {
+    rr(c, -36, -40, 72, 80, 6); fillInk(c, col || '#B48CFF', 4.5);
+    rr(c, 26, -36, 8, 72, 3); c.fillStyle = '#fff'; c.fill();
+    rr(c, -24, -26, 44, 18, 4); fillInk(c, '#fff', 3);
+    circle(c, -4, 16, 9); c.fillStyle = 'rgba(255,255,255,.7)'; c.fill();
+  };
+  ITEMS.crayon = function (c, col) {
+    c.save(); c.rotate(-0.5);
+    rr(c, -40, -11, 64, 22, 5); fillInk(c, col || '#FF9F43', 4);
+    c.beginPath(); c.moveTo(24, -11); c.lineTo(46, 0); c.lineTo(24, 11); c.closePath(); fillInk(c, '#FFE3C2', 3.5);
+    c.beginPath(); c.moveTo(38, -4); c.lineTo(46, 0); c.lineTo(38, 4); c.closePath(); c.fillStyle = col || '#FF9F43'; c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 3; [-28, 10].forEach(function (x) { c.beginPath(); c.moveTo(x, -9); c.lineTo(x, 9); c.stroke(); });
+    c.restore();
+  };
+  ITEMS.carrot = function (c) {
+    c.save(); c.rotate(0.6);
+    c.beginPath(); c.moveTo(-14, -30); c.quadraticCurveTo(0, -36, 14, -30); c.lineTo(2, 44); c.quadraticCurveTo(0, 48, -2, 44); c.closePath(); fillInk(c, '#FF9A2E', 4.5);
+    c.strokeStyle = '#D9761A'; c.lineWidth = 3; [[-8, -10, 2, -8], [-4, 10, 6, 12]].forEach(function (l) { c.beginPath(); c.moveTo(l[0], l[1]); c.lineTo(l[2], l[3]); c.stroke(); });
+    [[-10, -52], [0, -58], [10, -52]].forEach(function (q) { c.beginPath(); c.moveTo(0, -32); c.quadraticCurveTo(q[0] * 1.6, -44, q[0], q[1]); c.strokeStyle = INK; c.lineWidth = 9; c.stroke(); c.strokeStyle = '#4FB868'; c.lineWidth = 5; c.stroke(); });
+    c.restore();
+  };
+  ITEMS.flower = function (c, col) {
+    c.beginPath(); c.moveTo(0, 10); c.quadraticCurveTo(6, 30, 0, 48); c.strokeStyle = INK; c.lineWidth = 9; c.stroke(); c.strokeStyle = '#4FB868'; c.lineWidth = 5; c.stroke();
+    for (var i = 0; i < 6; i++) { var a = i * TAU / 6; circle(c, Math.cos(a) * 20, -6 + Math.sin(a) * 20, 15); fillInk(c, col || '#FF8FAB', 3.5); }
+    circle(c, 0, -6, 13); fillInk(c, '#FFD23F', 3.5);
+  };
+  ITEMS.ladybug = function (c) {
+    circle(c, 0, -30, 13); fillInk(c, '#3D3650', 4);
+    circle(c, 0, 4, 34); fillInk(c, '#FF4D4D', 4.5);
+    c.beginPath(); c.moveTo(0, -30); c.lineTo(0, 38); ink(c, 3.5);
+    c.fillStyle = INK; [[-16, -8], [16, -8], [-18, 16], [18, 16], [-6, 28], [8, 28]].forEach(function (q) { circle(c, q[0], q[1], 6); c.fill(); });
+    circle(c, -5, -32, 3); c.fillStyle = '#fff'; c.fill(); circle(c, 5, -32, 3); c.fill();
+  };
+  ITEMS.snail = function (c) {
+    c.beginPath(); c.moveTo(-46, 24); c.lineTo(36, 24); c.quadraticCurveTo(50, 24, 46, 6); c.lineTo(40, 6); c.lineTo(36, 16); c.lineTo(-40, 16); c.closePath(); fillInk(c, '#FFD9A8', 4);
+    c.beginPath(); c.moveTo(40, 6); c.lineTo(36, -16); c.moveTo(46, 6); c.lineTo(52, -14); ink(c, 3);
+    circle(c, 36, -18, 4); c.fillStyle = INK; c.fill(); circle(c, 52, -16, 4); c.fill();
+    circle(c, -4, -6, 30); fillInk(c, '#C98B5B', 4.5);
+    c.beginPath(); for (var i = 0; i < 40; i++) { var a = i * 0.35, r = 3 + i * 0.6; c.lineTo(-4 + Math.cos(a) * r, -6 + Math.sin(a) * r); } c.strokeStyle = '#7A4E2D'; c.lineWidth = 3.5; c.stroke();
+  };
+  ITEMS.leaf = function (c, col) {
+    c.save(); c.rotate(-0.5);
+    c.beginPath(); c.moveTo(-44, 0); c.quadraticCurveTo(-4, -36, 40, 0); c.quadraticCurveTo(-4, 36, -44, 0); c.closePath(); fillInk(c, col || '#7BD389', 4.5);
+    c.beginPath(); c.moveTo(-50, 0); c.lineTo(34, 0); ink(c, 3); c.strokeStyle = 'rgba(42,35,64,.4)'; c.lineWidth = 2.5; [-20, 0, 16].forEach(function (x) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 10, -14); c.moveTo(x, 0); c.lineTo(x + 10, 14); c.stroke(); });
+    c.restore();
+  };
+  ITEMS.butterfly = function (c, col) {
+    [-1, 1].forEach(function (s) {
+      c.save(); c.scale(s, 1);
+      ell(c, 22, -14, 22, 18, -0.4); fillInk(c, col || '#B48CFF', 4); ell(c, 18, 18, 15, 13, 0.4); fillInk(c, col || '#B48CFF', 4);
+      circle(c, 24, -16, 7); c.fillStyle = 'rgba(255,255,255,.65)'; c.fill();
+      c.restore();
+    });
+    rr(c, -6, -26, 12, 52, 6); fillInk(c, '#3D3650', 3.5);
+    c.beginPath(); c.moveTo(-3, -26); c.quadraticCurveTo(-8, -40, -14, -42); c.moveTo(3, -26); c.quadraticCurveTo(8, -40, 14, -42); ink(c, 3);
+  };
+  ITEMS.shell = function (c, col) {
+    c.beginPath(); c.moveTo(0, 36); c.lineTo(-40, -4); c.quadraticCurveTo(-36, -40, 0, -42); c.quadraticCurveTo(36, -40, 40, -4); c.closePath(); fillInk(c, col || '#FFC2DA', 4.5);
+    c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 3; [-24, -8, 8, 24].forEach(function (x) { c.beginPath(); c.moveTo(0, 32); c.quadraticCurveTo(x * 0.7, -10, x, -36); c.stroke(); });
+    rr(c, -12, 30, 24, 10, 4); fillInk(c, col || '#FFC2DA', 3);
+  };
+  ITEMS.starfish = function (c) {
+    c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 18 : 46; c.lineTo(Math.cos(a) * r, Math.sin(a) * r + 4); } c.closePath();
+    fillInk(c, '#FF9F43', 4.5);
+    c.fillStyle = '#FFD9A8'; [[0, -24], [-26, -4], [26, -4], [-16, 26], [16, 26], [0, 4]].forEach(function (q) { circle(c, q[0], q[1], 3.5); c.fill(); });
+  };
+  ITEMS.crab = function (c) {
+    [-1, 1].forEach(function (s) {
+      c.save(); c.scale(s, 1);
+      [[30, 10, 44, 24], [32, 18, 42, 34]].forEach(function (l) { c.beginPath(); c.moveTo(l[0], l[1]); c.lineTo(l[2], l[3]); ink(c, 4); });
+      c.beginPath(); c.moveTo(26, -8); c.lineTo(38, -22); ink(c, 5);
+      c.beginPath(); c.arc(42, -30, 12, 0.6, TAU - 0.2); c.closePath(); fillInk(c, '#FF5A5F', 3.5);
+      c.beginPath(); c.moveTo(8, -18); c.lineTo(10, -32); ink(c, 3); circle(c, 10, -34, 5); fillInk(c, '#fff', 2.5); circle(c, 10, -34, 2); c.fillStyle = INK; c.fill();
+      c.restore();
+    });
+    ell(c, 0, 4, 34, 22); fillInk(c, '#FF5A5F', 4.5);
+    c.beginPath(); c.moveTo(-8, 10); c.quadraticCurveTo(0, 16, 8, 10); ink(c, 3);
+  };
+  ITEMS.icecream = function (c, col) {
+    c.beginPath(); c.moveTo(-22, -4); c.lineTo(22, -4); c.lineTo(0, 46); c.closePath(); fillInk(c, '#E8A85C', 4);
+    c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-14, 6); c.lineTo(8, 26); c.moveTo(14, 6); c.lineTo(-8, 26); c.stroke();
+    circle(c, 0, -20, 24); fillInk(c, col || '#FF9EC4', 4.5);
+    circle(c, -8, -26, 5); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill();
+    circle(c, 4, -46, 7); fillInk(c, '#FF5A5F', 3);
+  };
+  ITEMS.sunglasses = function (c, col) {
+    c.beginPath(); c.moveTo(-14, -6); c.quadraticCurveTo(0, -12, 14, -6); ink(c, 5);
+    [-1, 1].forEach(function (s) { rr(c, s * 26 - 18, -14, 36, 26, 10); fillInk(c, '#3D3650', 4); c.beginPath(); c.moveTo(s * 26 - 10, -6); c.lineTo(s * 26 - 2, -10); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke(); });
+    c.beginPath(); c.moveTo(-44, -10); c.lineTo(-50, -2); c.moveTo(44, -10); c.lineTo(50, -2); c.strokeStyle = col || '#FF5A5F'; c.lineWidth = 6; c.stroke();
+    rr(c, -46, -18, 92, 8, 4); fillInk(c, col || '#FF5A5F', 3);
+  };
+  /* colours a thing can come in (one colour per thing in a picture) */
+  var ITEM_COLS = {
+    block: ['#FF5A5F', '#3D8BFF', '#3FC46A', '#FFC93C'], car: ['#3D8BFF', '#FF5A5F', '#3FC46A'], book: ['#B48CFF', '#FF8FAB', '#7CC4FF'],
+    crayon: ['#FF9F43', '#3D8BFF', '#A86BFF', '#3FC46A'], flower: ['#FF8FAB', '#B48CFF', '#FFFFFF', '#7CC4FF'], leaf: ['#7BD389', '#FFC93C', '#FF9A2E'],
+    butterfly: ['#B48CFF', '#7CC4FF', '#FF8FAB'], shell: ['#FFC2DA', '#FFE7A8', '#FFFFFF'], icecream: ['#FF9EC4', '#FFF3C4', '#A8E6CF'],
+    sunglasses: ['#FF5A5F', '#3D8BFF', '#FFC93C'], kitten: KITTEN_COLS
+  };
   var ITEM_IDS = Object.keys(ITEMS);
 
   /* ================= hiding places (drawn from the middle of their base, `w` wide and `h` tall) ================= */
@@ -302,50 +413,138 @@
     }
   }
 
-  /* ================= making a round ================= */
+  /* ================= making a round =================
+     A picture is a few pieces of furniture plus lots of things scattered about: on the floor, on the bed, on the
+     shelf, half behind a bush. A handful of them are the ones to find; the rest are other things (never the same
+     kind as one to find, so there's no "which duck?"). Every thing to find is checked to be at least half showing. */
+  var POOLS = {
+    bedroom: ['yarn', 'ball', 'duck', 'star', 'teddy', 'block', 'car', 'book', 'crayon', 'sock', 'bell', 'mouse', 'kitten', 'cupcake'],
+    garden: ['apple', 'carrot', 'flower', 'ladybug', 'snail', 'leaf', 'butterfly', 'ball', 'duck', 'mouse', 'kitten', 'yarn'],
+    beach: ['shell', 'starfish', 'crab', 'icecream', 'sunglasses', 'fish', 'ball', 'duck', 'kitten', 'cupcake', 'yarn']
+  };
+  var FURNITURE = {
+    bedroom: [['bed', 1], ['toybox', 1], ['shelf', 2], ['armchair', 1], ['basket', 1], ['plant', 1]],
+    garden: [['tree', 1], ['bush', 2], ['pot', 2], ['rock', 1], ['can', 1]],
+    beach: [['castle', 2], ['beachchair', 1], ['bucket', 1], ['rock', 1], ['towel', 1]]
+  };
+  /* where things can sit on top of furniture: [left, right, height] as fractions of its width/height */
+  var SURF = { bed: [-0.42, 0.36, -0.69], toybox: [-0.4, 0.4, -1.0], shelf: [-0.42, 0.42, -1.0], rock: [-0.25, 0.15, -0.92], towel: [-0.4, 0.4, -0.2] };
+  PROPS.shelf = { w: 230, h: 22, peek: [], cols: ['#C98B5B', '#E6B98A'], draw: function (c, p) {
+    rr(c, -115, -22, 230, 14, 5); fillInk(c, p.col, 4);
+    [-80, 80].forEach(function (x) { c.beginPath(); c.moveTo(x, -8); c.lineTo(x, 8); c.lineTo(x + (x < 0 ? 14 : -14), -8); ink(c, 4); });
+  } };
+  PROPS.towel = { w: 220, h: 70, peek: [], cols: ['#FF8FAB', '#7CC4FF', '#FFD23F'], draw: function (c, p) {
+    c.beginPath(); c.moveTo(-100, 0); c.lineTo(-80, -60); c.lineTo(110, -60); c.lineTo(100, 0); c.closePath(); c.fillStyle = '#fff'; c.fill();
+    c.save(); c.clip(); c.fillStyle = p.col; for (var x = -120; x < 130; x += 44) c.fillRect(x, -70, 22, 80); c.restore();
+    c.beginPath(); c.moveTo(-100, 0); c.lineTo(-80, -60); c.lineTo(110, -60); c.lineTo(100, 0); c.closePath(); ink(c, 4);
+  } };
+
   function makeScene(id, W, H, nItems) {
+    var best = null;
+    for (var tries = 0; tries < 10; tries++) {
+      var S = buildScene(id, W, H, nItems);
+      var vis = visibility(S);
+      S.minVis = Math.min.apply(null, vis.concat([1]));
+      if (S.items.length === nItems && S.minVis >= 0.5) return S;
+      if (!best || S.items.length > best.items.length || (S.items.length === best.items.length && S.minVis > best.minVis)) best = S;
+    }
+    return best;
+  }
+  function buildScene(id, W, H, nItems) {
     var def = sceneDef(id);
-    var S = { def: def, W: W, H: H, props: [], items: [], tufts: [], shells: [],
-      wall: pick(['#FFE6F0', '#E6F2FF', '#FFF3D6', '#EAF7E6']), rug: pick(['#FFC2DA', '#C7EBD2', '#DCC8FF', '#FFE7A8']), curtain: pick(CURTAINS), winX: rand(0.2, 0.8), rugX: rand(0.35, 0.65), wave: rand(0, 200) };
-    var gy = H * def.ground;
+    var S = { def: def, W: W, H: H, props: [], items: [], clutter: [], tufts: [], shells: [],
+      wall: pick(['#FFE6F0', '#E6F2FF', '#FFF3D6', '#EAF7E6']), rug: pick(['#FFC2DA', '#C7EBD2', '#DCC8FF', '#FFE7A8']), curtain: pick(CURTAINS), winX: rand(0.25, 0.75), rugX: rand(0.35, 0.65), wave: rand(0, 200) };
+    var gy = H * def.ground, wide = W > 800;
     for (var t = 0; t < 30; t++) S.tufts.push({ x: rand(10, W - 10), y: rand(gy + 10, H - 10) });
     for (var s = 0; s < 4; s++) S.shells.push({ x: rand(30, W - 30), y: rand(gy + 30, H - 20), r: rand(-0.5, 0.5), col: pick(['#FFC2DA', '#FFFFFF', '#FFD9A8']) });
-    // props: spread over the ground, smaller further back
-    var count = W > 800 ? 9 : 8, bigUsed = 0;
-    for (var tries = 0; S.props.length < count && tries < 400; tries++) {
-      var kind = pick(def.kinds);
-      var isBig = def.big.indexOf(kind) >= 0;
-      if (isBig && (bigUsed >= 2 || S.props.some(function (q) { return q.kind === kind; }))) continue;
-      var y = rand(gy + 30, H - 24), k = lerp(0.72, 1.08, (y - gy) / (H - gy));
-      var P = PROPS[kind], w = P.w * k;
-      var x = rand(w / 2 + 10, W - w / 2 - 10);
-      var clash = S.props.some(function (q) { return Math.abs(q.x - x) < (q.w + w) * 0.42 && Math.abs(q.y - y) < 90; });
-      if (clash) continue;
-      if (isBig) bigUsed++;
-      S.props.push({ kind: kind, x: x, y: y, s: k, w: w, h: P.h * k, col: pick(P.cols), flower: pick(['#B48CFF', '#FF5A5F', '#7CC4FF']), berries: Math.random() < 0.4 ? pick(['#FF5A5F', '#B48CFF']) : null });
-    }
-    S.props.sort(function (a, b) { return a.y - b.y; });
-    // things to find, each peeking out from behind a different prop
-    var ids = shuffle(ITEM_IDS.slice()).slice(0, nItems);
-    var hosts = shuffle(S.props.slice());
-    ids.forEach(function (id) {
-      for (var h = 0; h < hosts.length; h++) {
-        var p = hosts[h];
-        var spots = shuffle(PROPS[p.kind].peek.slice());   // spots where about half of a thing shows
-        for (var i = 0; i < spots.length; i++) {
-          var size = 78 * p.s;
-          var ix = p.x + spots[i][0] * p.w * 1.12, iy = p.y + spots[i][1] * p.h;
-          if (ix < size * 0.6 || ix > W - size * 0.6 || iy < 30 + size * 0.5 || iy > H - size * 0.4) continue;
-          // not covered by something standing in front of it
-          var covered = S.props.some(function (q) { return q !== p && q.y > p.y && Math.abs(q.x - ix) < q.w * 0.5 && iy > q.y - q.h * 0.95 && iy < q.y + 10; });
-          if (covered) continue;
-          S.items.push({ id: id, col: pick(KITTEN_COLS), host: p, x: ix, y: iy, size: size, rot: spots[i][0] * 0.6, found: false, t: 0 });
-          hosts.splice(h, 1);
-          return;
+    function scaleAt(y) { return lerp(0.72, 1.05, clamp((y - gy) / (H - gy), 0, 1)); }
+    // furniture
+    FURNITURE[id].forEach(function (f) {
+      var n = f[1]; if (!wide && n > 1 && Math.random() < 0.5) n = 1;
+      for (var i = 0; i < n; i++) {
+        for (var tries = 0; tries < 60; tries++) {
+          var kind = f[0], P = PROPS[kind], y, k;
+          if (kind === 'shelf') { y = rand(gy * 0.45, gy * 0.75); k = 0.95; }
+          else { y = rand(gy + 40, H - 30); k = scaleAt(y); }
+          var w = P.w * k, x = rand(w / 2 + 10, W - w / 2 - 10);
+          if (kind === 'shelf' && id === 'bedroom' && Math.abs(x - S.winX * W) < w / 2 + 130) continue;
+          var clash = S.props.some(function (q) { return (q.kind === 'shelf') === (kind === 'shelf') && Math.abs(q.x - x) < (q.w + w) * 0.45 && Math.abs(q.y - y) < (kind === 'shelf' ? 80 : 110); });
+          if (clash) continue;
+          S.props.push({ kind: kind, x: x, y: y, s: k, w: w, h: P.h * k, col: pick(P.cols), flower: pick(['#B48CFF', '#FF5A5F', '#7CC4FF']), berries: Math.random() < 0.4 ? pick(['#FF5A5F', '#B48CFF']) : null });
+          break;
         }
       }
     });
+    var surfaces = S.props.filter(function (p) { return SURF[p.kind]; });
+    // which kinds to find, and which make up the rest of the mess
+    var pool = shuffle(POOLS[id].slice());
+    var findIds = pool.slice(0, nItems), otherIds = pool.slice(nItems);
+    var cols = {};
+    pool.forEach(function (k) { cols[k] = ITEM_COLS[k] ? pick(ITEM_COLS[k]) : null; });
+    function place(kind, target) {
+      for (var tries = 0; tries < 40; tries++) {
+        var it = { id: kind, col: cols[kind], found: false, t: 0, rot: rand(-0.5, 0.5) };
+        if (surfaces.length && Math.random() < (target ? 0.35 : 0.3)) {
+          var p = pick(surfaces), sf = SURF[p.kind];
+          it.size = (target ? 62 : rand(50, 66)) * p.s;
+          it.x = p.x + rand(sf[0], sf[1]) * p.w; it.y = p.y + sf[2] * p.h - it.size * 0.3;
+          it.key = p.y + 0.5; it.on = p;
+        } else {
+          var y = rand(gy + 26, H - 26), k = scaleAt(y);
+          it.size = (target ? 66 : rand(52, 70)) * k;
+          it.x = rand(it.size * 0.6, W - it.size * 0.6); it.y = y - it.size * 0.3; it.key = y;
+        }
+        if (it.y - it.size * 0.5 < 20) continue;
+        // not on top of something to find, and not piled too high on anything else
+        var all = S.items.concat(S.clutter);
+        var bad = all.some(function (o) {
+          var d = Math.hypot(o.x - it.x, o.y - it.y);
+          if (d < (o.size + it.size) * 0.3) return true;
+          return S.items.indexOf(o) >= 0 && it.key > o.key && d < o.size * 0.62 + it.size * 0.2;
+        });
+        if (bad) continue;
+        return it;
+      }
+      return null;
+    }
+    findIds.forEach(function (k) { var it = place(k, true); if (it) S.items.push(it); });
+    var nOther = wide ? 26 : 17;
+    for (var i = 0; i < nOther; i++) { var it = place(otherIds[i % otherIds.length], false); if (it) S.clutter.push(it); }
     return S;
+  }
+
+  /* how much of each thing to find shows (0..1), by drawing the picture small with them in flat colours */
+  var maskCv = document.createElement('canvas'), soloCv = document.createElement('canvas');
+  function silhouette(c, it, rgb) {
+    var sz = Math.ceil(it.size * 1.6 * MS) + 4;
+    soloCv.width = soloCv.height = sz;
+    var s = soloCv.getContext('2d');
+    s.save(); s.translate(sz / 2, sz / 2); s.scale(MS, MS); s.translate(-it.x, -it.y); drawItem(s, it); s.restore();
+    s.globalCompositeOperation = 'source-in'; s.fillStyle = rgb; s.fillRect(0, 0, sz, sz);
+    c.drawImage(soloCv, it.x * MS - sz / 2, it.y * MS - sz / 2);
+  }
+  var MS = 0.3;
+  function countRGB(c, w, h, r, g, b) {
+    var d = c.getImageData(0, 0, w, h).data, n = 0;
+    for (var i = 0; i < d.length; i += 4) if (d[i] === r && d[i + 1] === g && d[i + 2] === b) n++;
+    return n;
+  }
+  function visibility(S) {
+    var w = Math.ceil(S.W * MS), h = Math.ceil(S.H * MS);
+    maskCv.width = w; maskCv.height = h;
+    var c = maskCv.getContext('2d');
+    var ids = S.items.map(function (it, i) { return [250, 3, 10 + i * 20]; });
+    // each alone
+    var alone = S.items.map(function (it, i) {
+      c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+      silhouette(c, it, 'rgb(' + ids[i].join(',') + ')');
+      return countRGB(c, w, h, ids[i][0], ids[i][1], ids[i][2]);
+    });
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+    c.save(); c.scale(MS, MS);
+    drawLayers(c, S, false, function (it) { var i = S.items.indexOf(it); c.restore(); silhouette(c, it, 'rgb(' + ids[i].join(',') + ')'); c.save(); c.scale(MS, MS); });
+    c.restore();
+    return S.items.map(function (it, i) { return alone[i] ? countRGB(c, w, h, ids[i][0], ids[i][1], ids[i][2]) / alone[i] : 0; });
   }
 
   function drawItem(c, it, extraScale) {
@@ -355,21 +554,33 @@
     ITEMS[it.id](c, it.col);
     c.restore();
   }
+  function drawProp(c, p) {
+    c.save(); c.translate(p.x, p.y); c.scale(p.s, p.s); c.lineJoin = 'round'; c.lineCap = 'round';
+    if (p.kind !== 'shelf' && p.kind !== 'towel') { ell(c, 0, 2, PROPS[p.kind].w * 0.46, 10); c.fillStyle = 'rgba(42,35,64,.12)'; c.fill(); }
+    PROPS[p.kind].draw(c, p);
+    c.restore();
+  }
+  /* everything in depth order: further back first; things on furniture just after it; towels flat on the ground */
+  function drawLayers(c, S, live, targetFn) {
+    var list = [];
+    S.props.forEach(function (p) { list.push({ key: p.kind === 'towel' ? -1 : p.y, prop: p }); });
+    S.clutter.forEach(function (it) { list.push({ key: it.key, item: it }); });
+    S.items.forEach(function (it) { list.push({ key: it.key, item: it, target: true }); });
+    list.sort(function (a, b) { return a.key - b.key; });
+    list.forEach(function (e) {
+      if (e.prop) { drawProp(c, e.prop); return; }
+      var it = e.item;
+      if (e.target && targetFn) { targetFn(it); return; }
+      if (live && it.found) return;
+      if (live && (it.hint > 0 || it.wob > 0)) {
+        var a = it.hint > 0 ? Math.sin(it.hint * 18) * 0.18 : Math.sin(it.wob * 30) * 0.12;
+        c.save(); c.translate(it.x, it.y); c.rotate(a); c.translate(-it.x, -it.y); drawItem(c, it); c.restore();
+      } else drawItem(c, it);
+    });
+  }
   function drawScene(c, S, live) {
     drawBackground(c, S, S.W, S.H);
-    S.props.forEach(function (p) {
-      // things hiding behind this prop go first, so the prop covers part of them
-      S.items.forEach(function (it) {
-        if (it.host !== p || (live && it.found)) return;
-        var wig = live && it.hint > 0 ? Math.sin(it.hint * 18) * 0.18 : 0;
-        c.save(); c.translate(it.x, it.y); c.rotate(wig); c.translate(-it.x, -it.y);
-        drawItem(c, it); c.restore();
-      });
-      c.save(); c.translate(p.x, p.y); c.scale(p.s, p.s); c.lineJoin = 'round'; c.lineCap = 'round';
-      ell(c, 0, 2, PROPS[p.kind].w * 0.46, 10); c.fillStyle = 'rgba(42,35,64,.12)'; c.fill();
-      PROPS[p.kind].draw(c, p);
-      c.restore();
-    });
+    drawLayers(c, S, live);
   }
 
   /* ================= saved count ================= */
@@ -406,7 +617,7 @@
   var S = null, time = 0, parts = [], idleT = 0, party = 0, picShown = false;
   var thumbCache = {};
   function itemThumb(it) {
-    var key = it.id + (it.id === 'kitten' ? it.col : '');
+    var key = it.id + (it.col || '');
     if (thumbCache[key]) return thumbCache[key];
     var cv = document.createElement('canvas'); cv.width = cv.height = 140;
     var c = cv.getContext('2d'); c.translate(70, 70); c.scale(1.15, 1.15); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -437,10 +648,15 @@
     S.items.forEach(function (it) {
       if (it.found) return;
       var d = Math.hypot(r.x - it.x, r.y - it.y);
-      if (d < it.size * 0.72 && d < bd) { bd = d; best = it; }
+      if (d < it.size * 0.62 && d < bd) { bd = d; best = it; }
     });
     if (best) found(best);
-    else { parts.push({ x: r.x, y: r.y, life: 0, max: 0.45, kind: 'ring', r: 10, vx: 0, vy: 0, g: 0, color: '#fff' }); Sound.boop(); }
+    else {
+      // not one to find: whatever was tapped gives a little wobble
+      var other = null; S.clutter.forEach(function (o) { if (Math.hypot(r.x - o.x, r.y - o.y) < o.size * 0.55) other = o; });
+      if (other) other.wob = 0.4;
+      parts.push({ x: r.x, y: r.y, life: 0, max: 0.45, kind: 'ring', r: 10, vx: 0, vy: 0, g: 0, color: '#fff' }); Sound.boop();
+    }
   });
   function found(it) {
     it.found = true; it.t = 0;
@@ -510,6 +726,7 @@
     for (var j = pops.length - 1; j >= 0; j--) { pops[j].t += dt; if (pops[j].t > 0.9) pops.splice(j, 1); }
     if (!S) return;
     S.items.forEach(function (it) { if (it.hint > 0) it.hint -= dt; });
+    S.clutter.forEach(function (it) { if (it.wob > 0) it.wob -= dt; });
     if (party > 0) {
       party += dt;
       if (party > 0.3 && party < 1.6 && Math.random() < dt * 10) sparkle(rand(60, W - 60), rand(40, H * 0.5), pick(['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF']), 8, 1);
@@ -638,7 +855,7 @@
 
   /* test hook */
   window.__seek = {
-    state: function () { return S && { scene: S.def.id, W: W, H: H, props: S.props.length, items: S.items.map(function (it) { return { id: it.id, x: it.x, y: it.y, found: it.found }; }), party: party, picker: !$('pickWrap').hidden, saved: JSON.parse(JSON.stringify(P)) }; },
+    state: function () { return S && { scene: S.def.id, W: W, H: H, props: S.props.length, clutter: S.clutter.length, minVis: S.minVis, items: S.items.map(function (it) { return { id: it.id, x: it.x, y: it.y, found: it.found }; }), party: party, picker: !$('pickWrap').hidden, saved: JSON.parse(JSON.stringify(P)) }; },
     toScreen: function (x, y) { return { x: OX + x * K, y: OY + y * K }; }
   };
 })();
