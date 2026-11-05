@@ -70,6 +70,12 @@ body { background: #F7E2C6; }
 }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 
+/* toddler profile: just plants and things, bigger tiles, tap to place */
+body.toddler #paintBtn, body.toddler .tab[data-tab="dishes"] { display: none; }
+body.toddler .tab { padding: 9px 20px; font-size: 1.1rem; }
+body.toddler .item { width: 104px; cursor: pointer; }
+body.toddler .item img { width: 86px; height: 86px; }
+body.toddler .item span { display: none; }
 @media (max-width: 420px) {
   .tab { padding: 5px 9px; font-size: .85rem; }
   .act span { display: none; }

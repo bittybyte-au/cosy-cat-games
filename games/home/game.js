@@ -517,6 +517,10 @@
   /* ================= state for the room ================= */
   var mode = 'room';
   var tab = 'plants';
+  // toddler profile: no paint, no dishes (they can't cook yet), and a tap on a drawer tile pops it into the room
+  var TODDLER = false; try { TODDLER = !!GG.getSetting('toddler', false); } catch (e) {}
+  if (TODDLER) document.body.classList.add('toddler');
+  if (TODDLER) setTimeout(function () { if (!plants().length) { tab = 'things'; renderDrawer(); } }, 0);
   var time = 0;
   var drag = null;                         // { u, it, x, y, from, place }
   var wig = {};                            // uid -> wiggle time
@@ -642,7 +646,7 @@
         var bg = f.kind === 'planks' ? 'repeating-linear-gradient(0deg,rgba(42,35,64,.2) 0 2px,transparent 2px 10px)' : f.kind === 'tiles' ? 'linear-gradient(rgba(255,255,255,.7) 2px,transparent 2px) 0 0/12px 12px,linear-gradient(90deg,rgba(255,255,255,.7) 2px,transparent 2px) 0 0/12px 12px' : 'radial-gradient(circle,rgba(255,255,255,.5) 2px,transparent 3px) 0 0/9px 9px';
         return '<button class="sw" type="button" data-floor="' + i + '" aria-label="Floor ' + (i + 1) + '" aria-pressed="' + (i === (S.floor || 0)) + '" style="background:' + bg + ',' + f.col + '"></button>';
       }).join('') + '</div>';
-    } else {
+    } else if (!TODDLER) {
       var dl = dishList();
       if (!dishesReady()) html = '<p class="empty">Dishes you cook in Cosy Kitchen will appear here.</p>';
       else if (!dl.length) html = '<p class="empty">Cook something in Cosy Kitchen and it will appear here!</p>';
@@ -657,8 +661,30 @@
     var lock = e.target.closest('[data-lock]');
     if (lock) { var t = findDef(THINGS, lock.dataset.lock); Sound.init(); Sound.mrrp(); say(t.need.text + ' to get this!', 2); return; }
     var tile = e.target.closest('.item[data-u]');
-    if (tile && !tile.classList.contains('placed') && !drag) say('Drag it up into your room!', 1.6);
+    if (!tile || drag) return;
+    if (TODDLER) { tapPlace(tile.dataset.u); return; }
+    if (!tile.classList.contains('placed')) say('Drag it up into your room!', 1.6);
   });
+  /* toddler tap: put it somewhere free in the part of the room you can see; tap again to put it away */
+  function tapPlace(u) {
+    Sound.init();
+    if (isPlaced(u)) { S.placed = S.placed.filter(function (p) { return p.u !== u; }); Sound.putAway(); save(); renderDrawer(); return; }
+    var it = resolve(u); if (!it) return;
+    var best = null, bestD = -1;
+    for (var i = 0; i < 8; i++) {
+      var x = SX + VIEW_W * rand(0.15, 0.85);
+      var y = it.def.wall ? rand(LAY.wallH * 0.3, LAY.wallH * 0.55) : LAY.floorY - 4;
+      var p = snap(it, x, y), q = placeXY(p), d = 1e9;
+      S.placed.forEach(function (o) { if (o.s === p.s) { var r = placeXY(o); d = Math.min(d, Math.hypot(r.x - q.x, r.y - q.y)); } });
+      if (d > bestD) { bestD = d; best = p; }
+    }
+    best.u = u; S.placed.push(best);
+    if (S.placed.length > 40) S.placed.shift();
+    Sound.place(); buzz(10);
+    var q2 = placeXY(best); sparkle(q2.x, q2.y - 20, '#FFD23F', 10, 0.8); wig[u] = 0.6;
+    if (u === newPlantU) newPlantU = null;
+    save(); renderDrawer();
+  }
 
   /* ---------- dragging from the drawer: an upward drag lifts the item out (sideways scrolls the drawer) ---------- */
   var press = null;
@@ -761,6 +787,7 @@
   /* ---------- wall paint ---------- */
   $('paintBtn').addEventListener('click', function () {
     Sound.init(); Sound.pick();
+    if (TODDLER) return;
     tab = tab === 'paint' ? 'plants' : 'paint'; renderDrawer(); $('items').scrollLeft = 0;
   });
   $('items').addEventListener('click', function (e) {

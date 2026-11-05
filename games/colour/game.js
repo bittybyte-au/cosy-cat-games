@@ -92,7 +92,13 @@
   var pic = null;                  // the picture being coloured
   var isNew = false;
   var tool = 'fill';
-  var current = CP.COLOURS[0], sticker = 'heart';
+  /* Toddler mode (set on the games page): only the simple pages, eight big colours, tap to fill, nothing else;
+     Done hangs the picture straight away in a frame of its own. Same pictures and save as always. */
+  var TODDLER = false;
+  try { TODDLER = !!(GG.getSetting && GG.getSetting('toddler', false)); } catch (e) {}
+  if (TODDLER) document.body.classList.add('toddler');
+  function myPages() { return CP.PAGES.filter(function (p) { return !!p.toddler === TODDLER; }); }
+  var current = (TODDLER ? CP.TODDLER_COLOURS : CP.COLOURS)[0], sticker = 'heart';
   var history = [];
   var anim = null;
   var drag = null;
@@ -115,7 +121,7 @@
     return cv.toDataURL('image/png');
   }
   function renderPicker() {
-    $('pages').innerHTML = CP.PAGES.map(function (p) {
+    $('pages').innerHTML = myPages().map(function (p) {
       return '<button class="pg" type="button" data-page="' + p.id + '"><img alt="" src="' + pageThumb(p.id) + '">' + esc(p.name) + '</button>';
     }).join('');
     var list = S.pics.slice().reverse();
@@ -154,7 +160,9 @@
   var tileURL = {};
   function renderPalette() {
     var box = $('palette'), html = '';
-    if (tool === 'fill') {
+    if (TODDLER) {
+      CP.TODDLER_COLOURS.forEach(function (c) { html += '<button class="sw" type="button" data-fill="' + c + '" style="background-color:' + c + '" aria-label="Colour" aria-pressed="' + (current === c) + '"></button>'; });
+    } else if (tool === 'fill') {
       CP.COLOURS.forEach(function (c) { html += '<button class="sw" type="button" data-fill="' + c + '" style="background-color:' + c + '" aria-label="Colour" aria-pressed="' + (current === c) + '"></button>'; });
       html += '<span class="sep" aria-hidden="true"></span>';
       CP.SPECIALS.forEach(function (s) {
@@ -198,7 +206,7 @@
     setTool('fill');
     renderButtons();
     layout();
-    if (fresh) say('Tap a shape to colour it in!', 2);
+    if (fresh && !TODDLER) say('Tap a shape to colour it in!', 2);
   }
   function showPicker() {
     mode = 'pick'; pic = null;
@@ -311,6 +319,7 @@
   $('doneBtn').addEventListener('click', function () {
     if (!pic) return;
     Sound.init(); Sound.boop();
+    if (TODDLER) { frameSel = pic.done ? (pic.fr || 0) : Math.floor(Math.random() * (CP.FRAMES.length - 1)); $('hangBtn').click(); return; }
     frameSel = pic.fr || 0;
     renderFrames();
     $('frameWrap').hidden = false;

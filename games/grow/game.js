@@ -11,6 +11,11 @@
   var FLOWER = GP.FLOWER, POTS = GP.POTS, PLANTS = GP.PLANTS;
   var drawPot = GP.drawPot, drawPlant = GP.drawPlant, soil = GP.soil, potLip = GP.potLip, leaf = GP.leaf;
   var P = GP.load();
+  /* Toddler mode (set on the games page): pick a pot, pick a plant, and it pops up fully grown with a sparkle.
+     Only seeds already open are shown; no soil, watering or waiting. Same save, so it lands in Cosy Home. */
+  var TODDLER = false;
+  try { TODDLER = !!(GG.getSetting && GG.getSetting('toddler', false)); } catch (e) {}
+  if (TODDLER) document.body.classList.add('toddler');
 
   function $(id) { return document.getElementById(id); }
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -167,6 +172,7 @@
   }
   $('againBtn').addEventListener('click', function () { Sound.init(); Sound.pop(); startGrow(); });
 
+  function setStepChoicesOff() { $('choices').innerHTML = ''; $('choices').hidden = true; layout(); }
   function setStep(step) {
     grow.step = step;
     $('stepLabel').textContent = STEPS[step];
@@ -174,6 +180,7 @@
     if (step === 'pot') POTS.forEach(function (p, i) { html += '<button class="choice" type="button" data-pot="' + i + '" aria-label="Pot ' + (i + 1) + '"><img alt="" src="' + potThumb(i) + '"></button>'; });
     else if (step === 'seed') PLANTS.forEach(function (p) {
       var ok = P.grown >= p.grown;
+      if (TODDLER && !ok) return;
       html += '<button class="choice' + (ok ? '' : ' locked') + '" type="button" data-seed="' + p.id + '" aria-label="' + p.name + (ok ? '' : ': grow ' + (p.grown - P.grown) + ' more plants to unlock') + '"><img alt="" src="' + seedThumb(p.id) + '">' +
         (ok ? '' : '<span class="lock"><svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="8" rx="2" fill="#2A2340"/><path d="M5 7 V5 A3 3 0 0 1 11 5 V7" fill="none" stroke="#2A2340" stroke-width="2"/></svg></span>') + '</button>';
     });
@@ -200,7 +207,15 @@
     else if (b.dataset.seed) {
       var p = findDef(PLANTS, b.dataset.seed);
       if (P.grown < p.grown) { Sound.mrrp(); var n = p.grown - P.grown; say('Grow ' + n + ' more plant' + (n > 1 ? 's' : '') + ' to unlock this!', 2); return; }
-      grow.t = p.id; Sound.pop(); setStep('soil');
+      grow.t = p.id; Sound.pop();
+      if (TODDLER) {
+        // straight to a fully grown plant, in a colour of its own
+        grow.soil = 3; grow.seed = true; grow.water = 1; grow.col = Math.floor(Math.random() * FLOWER.length);
+        grow.step = 'growing'; grow.g = 0.62; $('stepLabel').textContent = ''; setStepChoicesOff();
+        var B0 = bench(); sparkle(B0.pot.x, B0.pot.y - 100, '#7CC4FF', 10, 0.9);
+        return;
+      }
+      setStep('soil');
     }
     else if (b.dataset.col !== undefined) { grow.col = +b.dataset.col; Sound.pop(); setStep('sun'); }
   });
@@ -260,7 +275,7 @@
     // growing after the sun is tapped
     if (grow.step === 'growing') {
       var before = grow.g;
-      grow.g = Math.min(1, grow.g + dt / (reduceMotion ? 0.6 : 2.2));
+      grow.g = Math.min(1, grow.g + dt / (reduceMotion || TODDLER ? 0.6 : 2.2));
       [0.25, 0.5, 0.75, 0.98].forEach(function (m, i) { if (before < m && grow.g >= m) { Sound.grow(i); sparkle(B.pot.x + rand(-40, 40), B.pot.y - 60 - grow.g * 120, FLOWER[grow.col], 5, 0.6); } });
       if (grow.g >= 1) finishGrow();
     }

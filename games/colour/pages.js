@@ -196,12 +196,57 @@
       a.add(R(140, 52, 30, 22, 6), 'signCup');
     })
   ];
+  /* Toddler pages: a few big areas each (toddler mode shows only these). */
+  function toddlerPage(id, name, build) { var p = page(id, name, build); p.toddler = true; return p; }
+  PAGES.push(
+    toddlerPage('t-cat', 'Big cat', function (a) {
+      a.add(R(0, 0, 400, 400, 0), 'bg');
+      a.add('M0 330 H400 V400 H0 Z', 'floor');
+      a.cat(200, 200, 280, 'happy');
+    }),
+    toddlerPage('t-fish', 'Fish', function (a) {
+      a.add(R(0, 0, 400, 400, 0), 'water');
+      a.add('M0 340 Q100 320 200 340 Q300 360 400 336 V400 H0 Z', 'sand');
+      a.add('M290 200 L370 130 L370 270 Z', 'tail');
+      a.add(E(180, 200, 130, 92), 'body');
+      a.add('M150 116 Q190 56 240 120 Z', 'fin');
+      a.add(C(70, 70, 34), 'bubble'); a.add(C(120, 40, 20), 'bubble');
+      a.dot(C(110, 180, 12));
+      a.line('M100 236 Q130 254 160 236');
+    }),
+    toddlerPage('t-balloon', 'Balloon', function (a) {
+      a.add(R(0, 0, 400, 400, 0), 'sky');
+      a.add(C(340, 60, 40), 'sun');
+      a.add('M0 320 Q200 270 400 320 V400 H0 Z', 'grass');
+      a.add(E(200, 150, 100, 116), 'balloon');
+      a.add('M186 262 L214 262 L200 282 Z', 'knot');
+      a.line('M200 282 Q180 320 206 360');
+    }),
+    toddlerPage('t-house', 'House', function (a) {
+      a.add(R(0, 0, 400, 400, 0), 'sky');
+      a.add('M0 330 H400 V400 H0 Z', 'grass');
+      a.add(R(90, 180, 220, 160, 0), 'house');
+      a.add('M70 190 L200 70 L330 190 Z', 'roof');
+      a.add(R(174, 250, 56, 90, 10), 'door');
+      a.add(R(110, 210, 50, 50, 6), 'window'); a.add(R(244, 210, 50, 50, 6), 'window');
+    }),
+    toddlerPage('t-flower', 'Flower', function (a) {
+      a.add(R(0, 0, 400, 400, 0), 'bg');
+      a.add(R(190, 190, 20, 150, 10), 'stem');
+      a.add(E(250, 270, 50, 22, -30), 'leaf');
+      a.add(PETALS(200, 150, 62, 54, 40, 5), 'petals');
+      a.add(C(200, 150, 44), 'centre');
+      a.add('M120 330 H280 L260 400 H140 Z', 'pot');
+    })
+  );
   PAGES.forEach(function (p) { p.paths = p.regions.map(function (d) { return new Path2D(d); }); p.linePaths = p.lines.map(function (d) { return new Path2D(d); }); p.thinPaths = p.thin.map(function (d) { return new Path2D(d); }); p.dotPaths = p.dots.map(function (d) { return new Path2D(d); }); });
   function getPage(id) { for (var i = 0; i < PAGES.length; i++) if (PAGES[i].id === id) return PAGES[i]; return PAGES[0]; }
 
   /* ---------- fills ---------- */
   var COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#B7E36B', '#5CCB75', '#33C9C1', '#7CC4FF', '#4D8BFF',
     '#A77BFF', '#FF8FC8', '#FFC7A0', '#A9714B', '#B9B4C7', '#4A4160', '#FFFFFF', '#FFF3D6'];
+  /* eight big, clearly different colours for toddler mode */
+  var TODDLER_COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF', '#FF8FC8', '#A9714B'];
   var SPECIALS = [
     { id: 'rainbow', name: 'Rainbow' }, { id: 'glitter', name: 'Gold glitter' }, { id: 'pinkglitter', name: 'Pink glitter' },
     { id: 'dots', name: 'Dots' }, { id: 'stripes', name: 'Stripes' }, { id: 'stars', name: 'Stars' }, { id: 'hearts', name: 'Hearts' }
@@ -335,7 +380,7 @@
   }
 
   window.ColourPages = {
-    PAGES: PAGES, COLOURS: COLOURS, SPECIALS: SPECIALS, STICKERS: STICKERS, FRAMES: FRAMES,
+    PAGES: PAGES, COLOURS: COLOURS, TODDLER_COLOURS: TODDLER_COLOURS, SPECIALS: SPECIALS, STICKERS: STICKERS, FRAMES: FRAMES,
     get: getPage, drawPage: drawPage, drawFramed: drawFramed, hit: hit, drawSticker: drawSticker, fillStyle: fillStyle, tile: tile,
     /* the colouring game's saved pictures, newest last */
     pictures: function () {

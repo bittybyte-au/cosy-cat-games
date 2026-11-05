@@ -81,6 +81,12 @@ body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2)
 .fr span { display: block; width: 100%; height: 100%; border-radius: 6px; border: 5px solid; }
 .fr[aria-pressed="true"] { background: var(--sun); transform: translateY(-3px); }
 
+/* toddler mode: big colours only, no tools to choose, no delete buttons */
+body.toddler #fillTool, body.toddler #stickerTool, body.toddler #undoBtn, body.toddler .pg .del, body.toddler .pg small { display: none; }
+body.toddler .palette { justify-content: center; flex-wrap: wrap; overflow: visible; }
+body.toddler .sw { width: 60px; height: 60px; }
+body.toddler .tool.done { margin: 0 auto; min-height: 64px; padding: 4px 26px; }
+body.toddler .tool.done svg { width: 36px; height: 36px; }
 @media (max-width: 420px) {
   .tool { padding: 4px 9px; font-size: .85rem; }
   .tool span.lab { display: none; }

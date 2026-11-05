@@ -6,6 +6,7 @@
    save      the key the game uses with GG.getProgress / GG.setProgress
    ages      one or more of 'under5', '5-10', '11+' (suggestions only, used by filters)
    toddler   true = shown on the toddler home (and tagged as a toddler game); toddler games have no badge/counter
+   toddlerToo true = a regular game with its own toddler version: shown on both homes, not tagged
    free      what guests and expired passes can play: 'all', a list of parts, or a number of levels
    status    'live' playable, 'soon' greyed "Coming soon" tile while testing, 'dev' hidden on the live site
    season    null, or a season id (e.g. 'christmas') for games that only appear in that season
@@ -46,13 +47,13 @@
     },
     {
       id: 'colour', save: 'colour', name: 'Colour Me', blurb: 'Colour pictures to hang at home',
-      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFE7A8',
+      ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#FFE7A8',
       badge: function (p) { var n = p && Array.isArray(p.pics) ? p.pics.filter(function (x) { return x && x.done; }).length : 0; return n ? n + (n === 1 ? ' picture' : ' pictures') : ''; },
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"58\" y=\"14\" width=\"124\" height=\"124\" rx=\"10\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"4\"/><rect x=\"70\" y=\"26\" width=\"100\" height=\"100\" rx=\"6\" fill=\"#9EDCFF\" stroke=\"#2A2340\" stroke-width=\"3\"/><path d=\"M70 100 Q120 82 170 100 V126 H70 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"150\" cy=\"46\" r=\"11\" fill=\"#FFE14D\" stroke=\"#2A2340\" stroke-width=\"3\"/>" + cat({ preset: 'pink', face: 'happy', x: 112, y: 82, size: 46 }) + "<g transform=\"rotate(32 206 96)\"><rect x=\"198\" y=\"40\" width=\"16\" height=\"80\" rx=\"4\" fill=\"#A77BFF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M198 120 L206 140 L214 120 Z\" fill=\"#FFE3C2\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M203 132 L206 140 L209 132 Z\" fill=\"#A77BFF\"/></g><g transform=\"rotate(-28 34 96)\"><rect x=\"26\" y=\"44\" width=\"16\" height=\"76\" rx=\"4\" fill=\"#FF5A5F\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M26 120 L34 140 L42 120 Z\" fill=\"#FFE3C2\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M31 132 L34 140 L37 132 Z\" fill=\"#FF5A5F\"/></g></svg>"
     },
     {
       id: 'grow', save: 'grow', name: 'Grow', blurb: 'Grow plants for your home',
-      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#D4F0C4',
+      ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#D4F0C4',
       badge: function (p) { var n = p && typeof p.grown === 'number' ? p.grown : 0; return n ? n + (n === 1 ? ' plant grown' : ' plants grown') : ''; },
       art: "<svg viewBox=\"0 0 240 150\"><rect x=\"10\" y=\"112\" width=\"220\" height=\"16\" rx=\"5\" fill=\"#E6B98A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M120 98 V48\" stroke=\"#2A2340\" stroke-width=\"8\" stroke-linecap=\"round\"/><path d=\"M120 98 V48\" stroke=\"#4FB868\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M120 80 Q96 80 92 62 Q114 60 120 80 Z M120 70 Q144 70 148 52 Q126 50 120 70 Z\" fill=\"#7BD389\" stroke=\"#2A2340\" stroke-width=\"3\" stroke-linejoin=\"round\"/><g transform=\"translate(120 40)\"><circle cx=\"0\" cy=\"-13\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"12\" cy=\"-4\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"8\" cy=\"10\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-8\" cy=\"10\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle cx=\"-12\" cy=\"-4\" r=\"10\" fill=\"#FF5A7A\" stroke=\"#2A2340\" stroke-width=\"3\"/><circle r=\"8\" fill=\"#FFD23F\" stroke=\"#2A2340\" stroke-width=\"3\"/></g><path d=\"M92 96 H148 L142 124 H98 Z\" fill=\"#E8875A\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><rect x=\"88\" y=\"90\" width=\"64\" height=\"12\" rx=\"4\" fill=\"#F2A07A\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M30 112 L34 72 Q50 64 66 72 L70 112 Z\" fill=\"#C48A55\" stroke=\"#2A2340\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><ellipse cx=\"50\" cy=\"72\" rx=\"16\" ry=\"5\" fill=\"#7A4E2D\" stroke=\"#2A2340\" stroke-width=\"2.5\"/><g transform=\"translate(196 92) rotate(-14)\"><rect x=\"-18\" y=\"-16\" width=\"36\" height=\"32\" rx=\"8\" fill=\"#7CC4FF\" stroke=\"#2A2340\" stroke-width=\"3.5\"/><path d=\"M-16 -6 L-40 -24\" stroke=\"#2A2340\" stroke-width=\"8\" stroke-linecap=\"round\"/><path d=\"M-16 -6 L-40 -24\" stroke=\"#7CC4FF\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M-8 -16 Q4 -34 16 -16\" fill=\"none\" stroke=\"#2A2340\" stroke-width=\"4\"/></g>" + cat({ preset: 'sun', face: 'happy', x: 196, y: 34, size: 40 }) + "</svg>"
     },
@@ -134,7 +135,7 @@
         if (g.status === 'dev' && !dev) return false;
         if (g.tile === false && !opts.all) return false;
         if (g.season && g.season !== season) return false;
-        if (opts.toddler !== undefined && !!g.toddler !== !!opts.toddler) return false;
+        if (opts.toddler !== undefined && !!g.toddler !== !!opts.toddler && !(opts.toddler && g.toddlerToo)) return false;
         if (opts.age && g.ages.indexOf(opts.age) < 0) return false;
         return true;
       });
