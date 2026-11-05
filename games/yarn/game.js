@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = GGDraw, INK = D.INK, rr = D.rr, seeded = D.seeded;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -19,14 +19,8 @@
   function easeOut(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
   function easeInOut(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function rand(a, b) { return a + Math.random() * (b - a); }
-  function seeded(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function shuffle(a, rnd) { rnd = rnd || Math.random; for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
 
   /* The six cats, shared with Kitty Match (copied so each game stands alone). */
   /* ---------- the six cats ----------
@@ -62,30 +56,25 @@
     { name: 'teal',   fill: '#33C9C1', dark: '#168F89', angle: 0.9 }
   ];
 
-  function drawYarn(c, k, r) {
-    var Y = YARN[k];
+  /* one ball of wool, radius r; px is how many sprite pixels make one screen pixel (so the outline is the house weight) */
+  function drawYarn(c, k, r, px) {
+    var Y = YARN[k], fine = D.LW.fine * px;
     c.save();
-    // loose tail of wool
-    c.beginPath(); c.moveTo(r * 0.55, r * 0.7); c.quadraticCurveTo(r * 1.0, r * 0.95, r * 0.85, r * 1.15);
-    c.lineWidth = r * 0.16; c.lineCap = 'round'; c.strokeStyle = INK; c.stroke();
-    c.lineWidth = r * 0.09; c.strokeStyle = Y.fill; c.stroke();
-    // ball
-    c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = Y.fill; c.fill();
-    c.save(); c.clip();
-    // wraps of wool: a band of curved strands at the colour's own angle, plus a cross band
-    c.lineCap = 'round';
-    c.strokeStyle = Y.dark; c.lineWidth = r * 0.085;
-    c.save(); c.rotate(Y.angle);
-    for (var i = -3; i <= 3; i++) { c.beginPath(); c.ellipse(0, i * r * 0.28, r * 1.05, r * 0.32, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }
-    c.restore();
-    c.save(); c.rotate(Y.angle + 1.9); c.globalAlpha = 0.55;
-    for (var j = -1; j <= 1; j++) { c.beginPath(); c.ellipse(0, j * r * 0.3, r * 0.95, r * 0.4, 0, 0.15, Math.PI - 0.15); c.stroke(); }
-    c.restore();
-    // soft highlight
-    c.globalAlpha = 0.35; c.fillStyle = '#fff';
-    c.beginPath(); c.ellipse(-r * 0.35, -r * 0.42, r * 0.32, r * 0.18, -0.6, 0, TAU); c.fill();
-    c.restore();
-    c.beginPath(); c.arc(0, 0, r, 0, TAU); c.lineWidth = Math.max(2, r * 0.1); c.strokeStyle = INK; c.stroke();
+    // loose tail of wool, starting under the ball so the ball covers the join
+    c.beginPath(); c.moveTo(r * 0.45, r * 0.6); c.quadraticCurveTo(r * 1.0, r * 0.95, r * 0.85, r * 1.15);
+    c.lineCap = 'round'; c.lineWidth = r * 0.1 + fine * 2; c.strokeStyle = INK; c.stroke();
+    c.lineWidth = r * 0.1; c.strokeStyle = Y.fill; c.stroke();
+    // the ball: wraps of wool clipped inside, the shade along the lower right, then the outline
+    D.shape(c, D.ellPath(0, 0, r, r), Y.fill, { lw: fine, depth: r * 0.22, shade: 'rgba(42,35,64,.16)', shine: [-r * 0.35, -r * 0.42, r * 0.3, r * 0.17, -0.6, 0.4], inside: function (c) {
+      // a band of curved strands at the colour's own angle, plus a cross band
+      c.lineCap = 'round'; c.strokeStyle = Y.dark; c.lineWidth = r * 0.085;
+      c.save(); c.rotate(Y.angle);
+      for (var i = -3; i <= 3; i++) { c.beginPath(); c.ellipse(0, i * r * 0.28, r * 1.05, r * 0.32, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }
+      c.restore();
+      c.save(); c.rotate(Y.angle + 1.9); c.globalAlpha = 0.55;
+      for (var j = -1; j <= 1; j++) { c.beginPath(); c.ellipse(0, j * r * 0.3, r * 0.95, r * 0.4, 0, 0.15, Math.PI - 0.15); c.stroke(); }
+      c.restore();
+    } });
     c.restore();
   }
 
@@ -100,7 +89,7 @@
   }
   function buildSprites(r, catS) {
     r = Math.max(8, Math.round(r));
-    if (r !== yarnPx) { yarnPx = r; yarnSprites = YARN.map(function (y, k) { return makeSprite(r * 2, function (c) { drawYarn(c, k, r); }); }); }
+    if (r !== yarnPx) { yarnPx = r; yarnSprites = YARN.map(function (y, k) { return makeSprite(r * 2, function (c) { drawYarn(c, k, r, dpr); }); }); }
     catS = Math.max(16, Math.round(catS));
     if (catS !== catPx) {
       catPx = catS; catSprites = {};
@@ -673,12 +662,13 @@
       rr(c, x - 7, y - 7, w + 14, h + 14, w * 0.6); c.fillStyle = selected === i ? '#FFD84D' : '#FFFFFF'; c.fill();
       c.restore();
     }
-    // shadow and glass
-    rr(c, x, y + 5, w, h, w / 2); c.fillStyle = 'rgba(42,35,64,.25)'; c.fill();
-    rr(c, x, y, w, h, w / 2); c.fillStyle = 'rgba(255,255,255,.55)'; c.fill();
-    // a little woven rim at the top
-    c.save(); rr(c, x - w * 0.08, y - w * 0.06, w * 1.16, w * 0.28, w * 0.14); c.fillStyle = '#E6B98A'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke(); c.restore();
-    // yarn inside
+    // a soft shadow where it stands, then the glass, a touch shaded on the lower right
+    if (!carried) D.shadow(c, x + w / 2 + 3, y + h + 2, w * 0.62, w * 0.16);
+    var glass = D.rrPath(x, y, w, h, w / 2);
+    c.fillStyle = 'rgba(255,255,255,.4)'; c.fill(glass);
+    D.crescent(c, glass, w * 0.12, 'rgba(42,35,64,.07)');
+    // yarn inside, kept inside the glass so loose ends never poke through it
+    c.save(); c.clip(glass);
     var bs = balls[i] || [];
     for (var s = 0; s < bs.length; s++) {
       var b = bs[s];
@@ -690,12 +680,14 @@
       blitYarn(c, b.k, 0, 0, L.r);
       c.restore();
     }
-    // glass outline and shine on top of the yarn
-    rr(c, x, y, w, h, w / 2); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
-    c.save(); c.globalAlpha = 0.5; c.strokeStyle = '#fff'; c.lineWidth = w * 0.08; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(x + w * 0.22, y + w * 0.5); c.lineTo(x + w * 0.22, y + h - w * 0.6); c.stroke(); c.restore();
-    // the rim drawn again over the glass edge
-    rr(c, x - w * 0.08, y - w * 0.06, w * 1.16, w * 0.28, w * 0.14); c.fillStyle = '#E6B98A'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+    // the shine on the glass, in front of the yarn, then the glass outline last
+    c.globalAlpha = 0.5; c.strokeStyle = '#fff'; c.lineWidth = w * 0.08; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x + w * 0.22, y + w * 0.5); c.lineTo(x + w * 0.22, y + h - w * 0.6); c.stroke();
+    c.restore();
+    c.lineWidth = D.LW.mid; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(glass);
+    // a little woven rim over the open top
+    var ry = y - w * 0.06, rh = w * 0.28;
+    D.shape(c, D.rrPath(x - w * 0.08, ry, w * 1.16, rh, w * 0.14), D.tone(c, '#E6B98A', ry, ry + rh), { lw: D.LW.fine, depth: rh * 0.25 });
     // a finished tube gets a sleepy cat peeking over the top
     var dc = doneCats[i];
     if (dc) {
@@ -709,11 +701,10 @@
       c.scale(pop, pop);
       blitCat(c, dc.kind, face, 0, 0, cs);
       c.restore();
-      // paws on the rim
+      // paws resting on the rim
       c.save(); c.globalAlpha = pop;
       [-1, 1].forEach(function (d) {
-        c.beginPath(); c.ellipse(p.x + sx + d * w * 0.24, y + w * 0.02, w * 0.14, w * 0.1, 0, 0, TAU);
-        c.fillStyle = CATS[dc.kind].fill; c.fill(); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke();
+        D.shape(c, D.ellPath(p.x + sx + d * w * 0.24, y + w * 0.02, w * 0.14, w * 0.1), CATS[dc.kind].fill, { lw: D.LW.fine, depth: w * 0.03 });
       });
       c.restore();
     }

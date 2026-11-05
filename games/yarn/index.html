@@ -19,19 +19,19 @@
 :root { --wall: #F3EAFF; --wall2: #E8DAFB; }
 body { background: var(--wall) repeating-linear-gradient(45deg, transparent 0 18px, var(--wall2) 18px 22px); }
 .middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
-.level { font-size: 1.35rem; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); }
+.level { font-size: 1.35rem; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); }
 .bottombar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; display: flex; justify-content: center; gap: 12px;
   padding: 10px max(12px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
 }
 .tool {
   min-height: 60px; min-width: 96px; padding: 4px 14px; border-radius: 20px; border: 3px solid var(--ink); background: var(--cream);
-  box-shadow: 0 4px 0 var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  box-shadow: 0 4px 0 var(--ink), var(--soft); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   font: 800 .9rem var(--body);
 }
 .tool svg { width: 28px; height: 28px; }
-.tool:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.tool:disabled { opacity: .4; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink); }
+.tool:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.tool:disabled { opacity: .4; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink), var(--soft); }
 .tool.nudge { background: var(--sun); animation: nudge 1s ease-in-out infinite; }
 @keyframes nudge { 50% { transform: translateY(-5px) scale(1.06); } }
 .say { position: fixed; left: 50%; top: 50%; z-index: 6; transform: translate(-50%, -50%); pointer-events: none; transition: opacity .3s ease, transform .3s ease; }
@@ -83,6 +83,7 @@ body { background: var(--wall) repeating-linear-gradient(45deg, transparent 0 18
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="game.js"></script>
 </body>
