@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Colour Me</title>
+<meta name="theme-color" content="#FFF4E0">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Layout: a page picker (grid of pages + my pictures), then the colouring screen: the page (canvas) in the middle,
+   colours and tools along the bottom. Single bright look by design. */
+:root { --wall: #FFF4E0; --wall2: #FFE8C4; }
+body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2) 4px, transparent 5px) 0 0 / 40px 40px; }
+.middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+.picker {
+  position: fixed; inset: 0; z-index: 5; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: calc(86px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.picker .inner { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.picker h2 { margin: 6px 0 0; font: 800 clamp(1.5rem, 5vw, 2rem)/1.05 var(--display); }
+.pages, .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 14px; }
+.pg {
+  border: 4px solid var(--ink); border-radius: 22px; background: #fff; padding: 8px 8px 6px; cursor: pointer; box-shadow: 0 5px 0 var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; font: 800 1.05rem var(--display); color: var(--ink); position: relative;
+}
+.pg img { width: 100%; height: auto; border-radius: 12px; display: block; aspect-ratio: 1; }
+.pg:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.pg small { font: 800 .8rem var(--body); color: var(--muted); }
+.pg .del {
+  position: absolute; top: -12px; right: -12px; height: 36px; min-width: 36px; padding: 0 8px; border-radius: 999px; border: 3px solid var(--ink);
+  background: #fff; box-shadow: 0 3px 0 var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font: 800 .85rem var(--body);
+}
+.pg .del svg { width: 16px; height: 16px; }
+.pg .del span { display: none; }
+.pg .del.ask { background: var(--tomato); color: #fff; }
+.pg .del.ask svg path { stroke: #fff; }
+.pg .del.ask span { display: inline; }
+.empty { margin: 0; font: 800 1rem var(--body); color: var(--muted); }
+
+.tools {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.palette { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; align-items: center; }
+.sw {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink);
+  background-size: 22px 22px;
+}
+.sw[aria-pressed="true"] { transform: translateY(-4px) scale(1.12); box-shadow: 0 6px 0 var(--ink); outline: 4px solid #fff; outline-offset: -8px; }
+.sw.sticker { border-radius: 14px; background: #fff; display: grid; place-items: center; }
+.sw.sticker img { width: 34px; height: 34px; pointer-events: none; }
+.sep { flex: none; width: 3px; height: 34px; border-radius: 3px; background: var(--ink); opacity: .25; }
+.row2 { display: flex; gap: 8px; align-items: center; }
+.tool {
+  min-height: 52px; padding: 4px 12px; border-radius: 16px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer; display: flex; align-items: center; gap: 6px; font: 800 .95rem var(--body);
+}
+.tool svg { width: 26px; height: 26px; }
+.tool[aria-pressed="true"] { background: var(--sun); }
+.tool:disabled { opacity: .4; cursor: default; }
+.tool:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.tool.done { margin-left: auto; background: var(--grass); }
+.spacer { flex: 1; }
+
+.say { position: fixed; left: 50%; bottom: calc(var(--bar-h, 150px) + 12px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; transition: opacity .3s ease, transform .3s ease; }
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(10px); }
+
+.card canvas { width: min(240px, 62vw); height: auto; display: block; }
+.frames { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.fr { width: 54px; height: 54px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 6px; background: #fff; box-shadow: 0 3px 0 var(--ink); }
+.fr span { display: block; width: 100%; height: 100%; border-radius: 6px; border: 5px solid; }
+.fr[aria-pressed="true"] { background: var(--sun); transform: translateY(-3px); }
+
+@media (max-width: 420px) {
+  .tool { padding: 4px 9px; font-size: .85rem; }
+  .tool span.lab { display: none; }
+  .sw { width: 42px; height: 42px; }
+}
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="Colouring page. Tap a shape to colour it."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><path d="M5 15 L16 5 L27 15 M9 13 V27 H23 V13" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.5" y="19" width="5" height="8" fill="#2A2340"/></svg>
+  </a>
+  <button class="round" id="backBtn" type="button" aria-label="Back to the pages" hidden>
+    <svg viewBox="0 0 32 32"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div class="middle"><div class="title" id="titleLabel">Colour Me</div></div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<section class="picker" id="picker" aria-labelledby="pickTitle">
+  <div class="inner">
+    <h2 id="pickTitle">What shall we colour?</h2>
+    <div class="pages" id="pages"></div>
+    <h2>My pictures</h2>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<div class="tools" id="tools" hidden>
+  <div class="palette" id="palette" aria-label="Colours"></div>
+  <div class="row2">
+    <button class="tool" id="fillTool" type="button" aria-pressed="true">
+      <svg viewBox="0 0 32 32"><path d="M6 16 L15 7 L25 17 L16 26 Z" fill="#FFF8EC" stroke="#2A2340" stroke-width="2.8" stroke-linejoin="round"/><path d="M6 16 H25" stroke="#2A2340" stroke-width="2.8"/><path d="M6 16 L16 26 L25 17 Z" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.8" stroke-linejoin="round"/><path d="M27 20 Q30 25 27 27 Q24 25 27 20 Z" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.2"/></svg><span class="lab">Colour</span>
+    </button>
+    <button class="tool" id="stickerTool" type="button" aria-pressed="false">
+      <svg viewBox="0 0 32 32"><path d="M16 4 L19.5 12 L28 12.5 L21.5 18 L23.5 27 L16 22 L8.5 27 L10.5 18 L4 12.5 L12.5 12 Z" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/></svg><span class="lab">Stickers</span>
+    </button>
+    <button class="tool" id="undoBtn" type="button" disabled aria-label="Undo">
+      <svg viewBox="0 0 32 32"><path d="M11 9 L5 15 L11 21" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15 H19 A7 7 0 0 1 19 29 H14" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/></svg><span class="lab">Undo</span>
+    </button>
+    <button class="tool done" id="doneBtn" type="button" disabled>
+      <svg viewBox="0 0 32 32"><path d="M6 17 L13 24 L26 9" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Done</span>
+    </button>
+  </div>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="card-wrap" id="frameWrap" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="frameTitle">
+    <h2 id="frameTitle">Pick a frame</h2>
+    <canvas id="framePrev" width="480" height="560"></canvas>
+    <div class="frames" id="frames"></div>
+    <button class="big" id="hangBtn" type="button">Hang it up!</button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="pages.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
