@@ -3,7 +3,7 @@
 (function () {
   var KEY = 'cosyCatGames.v1';
 
-  function blank() { return { players: [], current: null, progress: {}, settings: { sound: true } }; }
+  function blank() { return { players: [], current: null, progress: {}, collection: {}, settings: { sound: true } }; }
 
   function load() {
     try {
@@ -14,11 +14,13 @@
       d.players = Array.isArray(d.players) ? d.players : b.players;
       d.progress = d.progress && typeof d.progress === 'object' ? d.progress : b.progress;
       d.settings = d.settings && typeof d.settings === 'object' ? d.settings : b.settings;
+      d.collection = d.collection && typeof d.collection === 'object' ? d.collection : b.collection;
       // one player per device: keep the one used most recently (earlier versions allowed several)
       if (d.players.length > 1) {
         var keep = d.players.filter(function (p) { return p.id === d.current; })[0] || d.players[d.players.length - 1];
         d.players = [keep];
         var kept = {}; kept[keep.id] = d.progress[keep.id] || {}; d.progress = kept;
+        var keptC = {}; keptC[keep.id] = d.collection[keep.id] || []; d.collection = keptC;
         try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, d, { current: keep.id }))); } catch (e) {}
       }
       d.current = d.players.length ? d.players[0].id : null;
@@ -45,6 +47,7 @@
       data.players = [p];
       data.current = p.id;
       if (data.progress.guest) { data.progress[p.id] = data.progress.guest; delete data.progress.guest; }
+      if (data.collection.guest) { data.collection[p.id] = data.collection.guest; delete data.collection.guest; }
       save();
       return p;
     },
@@ -74,6 +77,35 @@
       data.progress[id] = data.progress[id] || {};
       data.progress[id][game] = value;
       return save();
+    },
+    /* The player's collection: things made or earned in one game that other games can show
+       (dishes from Cosy Kitchen in Cosy Home). Small JSON only, no pictures; at most 200 per player.
+       collect(gameId, { type, id, data }) returns the new item's uid. */
+    collect: function (gameId, item) {
+      if (!item || typeof item !== 'object' || !item.type || !item.id) return null;
+      var json = JSON.stringify(item.data || {});
+      if (json.length > 8000) return null;
+      var who = data.current || 'guest';
+      var list = data.collection[who] = data.collection[who] || [];
+      var uid = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      list.push({ uid: uid, from: String(gameId), type: String(item.type), id: String(item.id), data: JSON.parse(json), at: Date.now() });
+      if (list.length > 200) list.splice(0, list.length - 200);
+      save();
+      return uid;
+    },
+    /* everything collected, oldest first; filter matches on any fields, e.g. { type: 'dish' } */
+    collection: function (filter) {
+      var list = data.collection[data.current || 'guest'] || [];
+      return JSON.parse(JSON.stringify(list.filter(function (it) {
+        for (var k in (filter || {})) if (it[k] !== filter[k]) return false;
+        return true;
+      })));
+    },
+    uncollect: function (uid) {
+      var who = data.current || 'guest', list = data.collection[who] || [];
+      var n = list.length;
+      data.collection[who] = list.filter(function (it) { return it.uid !== uid; });
+      if (data.collection[who].length !== n) save();
     },
     getSetting: function (k, dflt) { return k in data.settings ? data.settings[k] : dflt; },
     setSetting: function (k, v) { data.settings[k] = v; save(); },
