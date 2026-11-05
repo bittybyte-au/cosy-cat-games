@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW;
   var TAU = Math.PI * 2;
   var MAT_SPOTS = 5;
   /* The belt is always this many cat-widths long, on every screen, so cats take the same time to cross
@@ -23,14 +23,9 @@
   function easeInOut(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function easeBack(t) { t = clamp(t, 0, 1); var c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); }
   function rand(a, b) { return a + Math.random() * (b - a); }
-  function seeded(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var seeded = D.seeded, rr = D.rr;
   function shuffle(a, rnd) { rnd = rnd || Math.random; for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
 
   /* The six cats, shared with Kitty Match (copied so each game stands alone). */
   /* ---------- the six cats ----------
@@ -53,40 +48,35 @@
   }
 
 
-  /* A cat curled up in a round bed, centred on (0,0), about `s` wide. */
+  /* A cat asleep in a round bed, centred on (0,0), about `s` wide: the shared lying cat (shared/cat.js),
+     between the back of the bed and its front rim. Lines use the cat's own weights, so bed and cat match. */
   function drawBedCat(c, kind, face, s) {
-    var K = CATS[kind];
-    c.save();
-    c.lineJoin = 'round'; c.lineCap = 'round';
-    // back of the bed
-    c.beginPath(); c.ellipse(0, s * 0.3, s * 0.56, s * 0.24, 0, 0, TAU);
-    c.fillStyle = '#F2DCC3'; c.fill(); c.lineWidth = s * 0.045; c.strokeStyle = INK; c.stroke();
-    c.beginPath(); c.ellipse(0, s * 0.3, s * 0.42, s * 0.14, 0, 0, TAU); c.fillStyle = '#E2C2A2'; c.fill();
-    // curled body
-    c.beginPath(); c.ellipse(s * 0.1, s * 0.25, s * 0.36, s * 0.15, 0, Math.PI, TAU); c.fillStyle = K.fill; c.fill();
-    c.lineWidth = s * 0.035; c.strokeStyle = INK; c.stroke();
-    // head
-    c.save(); c.translate(-s * 0.04, -s * 0.02); drawCat(c, kind, face, s * 0.72); c.restore();
-    // front rim of the bed, tucked over the chin
-    c.beginPath();
-    c.moveTo(-s * 0.56, s * 0.3);
-    c.bezierCurveTo(-s * 0.5, s * 0.62, s * 0.5, s * 0.62, s * 0.56, s * 0.3);
-    c.bezierCurveTo(s * 0.4, s * 0.42, -s * 0.4, s * 0.42, -s * 0.56, s * 0.3);
-    c.closePath();
-    c.fillStyle = '#F7E6D2'; c.fill(); c.lineWidth = s * 0.045; c.strokeStyle = INK; c.stroke();
-    // tail curling over the rim
-    c.beginPath(); c.moveTo(s * 0.34, s * 0.36); c.quadraticCurveTo(s * 0.5, s * 0.5, s * 0.26, s * 0.5);
-    c.lineWidth = s * 0.1; c.strokeStyle = INK; c.stroke();
-    c.lineWidth = s * 0.06; c.strokeStyle = K.fill; c.stroke();
+    var size = s * 0.76, u = size / 88;
+    // back of the bed, with its hollow
+    D.shape(c, D.ellPath(0, s * 0.3, s * 0.56, s * 0.24), D.tone(c, '#F2DCC3', s * 0.06, s * 0.54), { lw: LW.big * u, depth: 0, inside: function (c) {
+      c.beginPath(); c.ellipse(0, s * 0.32, s * 0.44, s * 0.15, 0, 0, TAU); c.fillStyle = '#E2C2A2'; c.fill();
+    } });
+    // the cat, curled up with its paws under its chin, tail over the side
+    c.save(); c.translate(11 * u, s * 0.33 - 43 * u);
+    GGCat.draw(c, { preset: GGCat.GAME_ORDER[kind] || 'ginger', face: face, pose: 'lie', size: size });
     c.restore();
+    // front rim of the bed, tucked over the cat's tummy
+    D.shape(c, function (p) {
+      p.moveTo(-s * 0.56, s * 0.3);
+      p.bezierCurveTo(-s * 0.5, s * 0.62, s * 0.5, s * 0.62, s * 0.56, s * 0.3);
+      p.bezierCurveTo(s * 0.4, s * 0.44, -s * 0.4, s * 0.44, -s * 0.56, s * 0.3);
+      p.closePath();
+    }, D.tone(c, '#F7E6D2', s * 0.3, s * 0.54), { lw: LW.big * u, depth: s * 0.05, shine: [-s * 0.3, s * 0.42, s * 0.1, s * 0.025, 0.25, 0.6] });
   }
 
   /* Cached sprites keep things smooth on older tablets. */
   var FACES = ['open', 'blink', 'happy', 'surprised'];
   var bedSprites = {}, headSprites = {}, bedPx = 0, headPx = 0;
-  function makeSprite(px, fn) {
+  /* a sprite's canvas is `room` cat sizes across (1.3, or more for the sleeping cat's tail and whiskers) */
+  function makeSprite(px, fn, room) {
     var cv = document.createElement('canvas');
-    cv.width = cv.height = Math.ceil(px * 1.3);
+    cv.room = room || 1.3;
+    cv.width = cv.height = Math.ceil(px * cv.room);
     var c = cv.getContext('2d');
     c.translate(cv.width / 2, cv.height / 2);
     fn(c);
@@ -96,7 +86,7 @@
     bed = Math.max(24, Math.round(bed)); head = Math.max(16, Math.round(head));
     if (bed !== bedPx) {
       bedPx = bed; bedSprites = {};
-      for (var k = 0; k < CATS.length; k++) FACES.forEach(function (f) { bedSprites[k + ':' + f] = makeSprite(bed, function (c) { drawBedCat(c, k, f, bed); }); });
+      for (var k = 0; k < CATS.length; k++) FACES.forEach(function (f) { bedSprites[k + ':' + f] = makeSprite(bed, function (c) { drawBedCat(c, k, f, bed); }, 1.5); });
     }
     if (head !== headPx) {
       headPx = head; headSprites = {};
@@ -105,8 +95,9 @@
   }
   function blit(c, map, kind, face, x, y, size) {
     var img = map[kind + ':' + face];
-    var w = size * 1.3;
-    if (img) c.drawImage(img, x - w / 2, y - w / 2, w, w);
+    if (!img) return;
+    var w = size * img.room;
+    c.drawImage(img, x - w / 2, y - w / 2, w, w);
   }
   function catImageURL(kind, face, px) {
     return makeSprite(px, function (c) { c.translate(0, px * 0.03); drawCat(c, kind, face || 'open', px); }).toDataURL('image/png');
@@ -612,6 +603,15 @@
   }
 
   /* ---------- update ---------- */
+  /* The belt stops bringing cats once enough have come to fill the level (goal x 3, plus a few spare).
+     But cats sitting in half-full cubbies of other colours use up that allowance, and with four cubbies they
+     can use up all of it: then nothing on the belt or the mat fits anywhere and no more cats come, so the
+     level can't be finished. So whenever no waiting cat fits a cubby, the belt keeps bringing cats. */
+  function loose() { return cats.filter(function (c) { return c.where !== 'cubby' && !(c.where === 'flying' && c.cubby); }); }
+  function someCatFits() {
+    var open = cubbies.filter(function (cb) { return cb.state !== 'leaving' && cb.cats.length < 3; }).map(function (cb) { return cb.kind; });
+    return loose().some(function (c) { return open.indexOf(c.kind) >= 0; });
+  }
   var beltOffset = 0;
   function update(dt) {
     time += dt;
@@ -632,7 +632,7 @@
     beltOffset = (beltOffset + v * dt) % (L.catS * 0.5);
     if (!held && playing) idle += dt;
 
-    if (playing && tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal * 3 + 4) {
+    if (playing && (tucked + cats.filter(function (c) { return c.where !== 'cubby'; }).length < level.goal * 3 + 4 || !someCatFits())) {
       spawnDist += v * dt;
       // wait for a clear space at the start of the belt (cats sent back from cubbies can be sitting there)
       var startClear = !cats.some(function (c) { return (c.where === 'belt' || (c.where === 'flying' && c.returning)) && c.bx < L.beltX0 + L.catS * 0.85 && c.bx > L.beltX0 - L.catS * 2; });
@@ -720,27 +720,27 @@
       c.save(); c.globalAlpha = cb.glow * (0.6 + Math.sin(time * 6) * 0.2);
       rr(c, r.x - 8, r.y - 8, r.w + 16, r.h + 16, L.cubW * 0.2); c.fillStyle = '#FFE58A'; c.fill(); c.restore();
     }
-    // wooden frame
+    // wooden frame on its ink base, with the inside panel, the cushion and the pips all inside it
+    var inset = L.cubW * 0.08, ix = r.x + inset, iy = r.y + inset * 1.9, iw = r.w - inset * 2, ih = r.h - inset * 2.9;
     rr(c, r.x, r.y + 5, r.w, r.h, L.cubW * 0.14); c.fillStyle = INK; c.fill();
-    rr(c, r.x, r.y, r.w, r.h, L.cubW * 0.14); c.fillStyle = '#E6B98A'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
-    // inside
-    var inset = L.cubW * 0.08;
-    rr(c, r.x + inset, r.y + inset * 1.9, r.w - inset * 2, r.h - inset * 2.9, L.cubW * 0.1);
-    c.fillStyle = '#FFF3E4'; c.fill(); c.lineWidth = 2.5; c.stroke();
-    // cushion in the cubby's colour
-    c.beginPath(); c.ellipse(cb.x, r.y + r.h * 0.8, r.w * 0.4, r.h * 0.11, 0, 0, TAU);
-    c.fillStyle = K.fill; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
-    c.beginPath(); c.ellipse(cb.x, r.y + r.h * 0.78, r.w * 0.3, r.h * 0.05, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.35)'; c.fill();
+    D.shape(c, D.rrPath(r.x, r.y, r.w, r.h, L.cubW * 0.14), D.tone(c, '#E6B98A', r.y, r.y + r.h), { lw: LW.mid, depth: L.cubW * 0.04, inside: function (c) {
+      // the inside, a little shadowed under the top of the frame
+      D.shape(c, D.rrPath(ix, iy, iw, ih, L.cubW * 0.1), '#FFF3E4', { lw: LW.fine, depth: L.cubW * 0.05, dx: L.cubW * 0.035, dy: L.cubW * 0.05, shade: 'rgba(42,35,64,.08)', inside: function (c) {
+        // a cushion in the cubby's colour, resting on the floor of the cubby
+        D.shape(c, D.ellPath(cb.x, r.y + r.h * 0.8, r.w * 0.4, r.h * 0.11), D.tone(c, K.fill, r.y + r.h * 0.69, r.y + r.h * 0.91), { lw: LW.fine, depth: r.h * 0.04,
+          shine: [cb.x - r.w * 0.06, r.y + r.h * 0.765, r.w * 0.22, r.h * 0.03, 0, 0.4] });
+      } });
+      // three little pips on the frame, filled in as cats arrive
+      for (var s = 0; s < 3; s++) {
+        var px = cb.x + (s - 1) * L.cubW * 0.16, py = r.y + r.h - inset * 0.5;
+        D.shape(c, D.ellPath(px, py, Math.max(3.5, L.cubW * 0.035), Math.max(3.5, L.cubW * 0.035)), cb.cats[s] && cb.cats[s].where === 'cubby' ? K.fill : '#FFF3E4', { lw: 2.5, depth: 0 });
+      }
+    } });
     // name tag with the cat's face, hanging on the top edge
-    var tagR = L.cubW * 0.16;
-    c.beginPath(); c.arc(cb.x, r.y + inset * 0.6, tagR, 0, TAU); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 3; c.stroke();
-    blit(c, headSprites, cb.kind, 'open', cb.x, r.y + inset * 0.6, tagR * 1.55);
-    // three little pips on the frame, filled in as cats arrive
-    for (var s = 0; s < 3; s++) {
-      var px = cb.x + (s - 1) * L.cubW * 0.16, py = r.y + r.h - inset * 0.5;
-      c.beginPath(); c.arc(px, py, Math.max(3.5, L.cubW * 0.035), 0, TAU);
-      c.fillStyle = cb.cats[s] && cb.cats[s].where === 'cubby' ? K.fill : '#FFF3E4'; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
-    }
+    var tagR = L.cubW * 0.16, ty = r.y + inset * 0.6;
+    D.shape(c, D.ellPath(cb.x, ty, tagR, tagR), '#FFFFFF', { lw: LW.fine, depth: tagR * 0.12, inside: function (c) {
+      blit(c, headSprites, cb.kind, 'open', cb.x, ty, tagR * 1.55);
+    } });
     c.restore();
   }
 
@@ -762,41 +762,41 @@
     var x = (L.beltX0 + L.beltX1) / 2 - w / 2, y = L.matY - h / 2 + L.catS * 0.22;
     var full = matCount();
     rr(c, x, y + 4, w, h, h / 2); c.fillStyle = INK; c.fill();
-    rr(c, x, y, w, h, h / 2); c.fillStyle = full >= MAT_SPOTS - 1 ? '#FFD2C8' : '#D8F0D5'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
-    // a stitched edge
-    c.save(); c.setLineDash([6, 6]); c.lineWidth = 2; c.strokeStyle = 'rgba(42,35,64,.35)';
-    rr(c, x + 7, y + 7, w - 14, h - 14, (h - 14) / 2); c.stroke(); c.restore();
-    for (var i = 0; i < MAT_SPOTS; i++) {
-      if (mat[i]) continue;
-      c.beginPath(); c.ellipse(L.matX[i], L.matY + L.catS * 0.22, L.catS * 0.3, L.catS * 0.12, 0, 0, TAU);
-      c.fillStyle = 'rgba(42,35,64,.08)'; c.fill();
-    }
+    D.shape(c, D.rrPath(x, y, w, h, h / 2), D.tone(c, full >= MAT_SPOTS - 1 ? '#FFD2C8' : '#D8F0D5', y, y + h), { lw: LW.fine, depth: h * 0.1, inside: function (c) {
+      // a stitched edge, and soft dents where the cats go
+      c.save(); c.setLineDash([6, 6]); c.lineWidth = 2; c.strokeStyle = 'rgba(42,35,64,.3)';
+      rr(c, x + 7, y + 7, w - 14, h - 14, (h - 14) / 2); c.stroke(); c.restore();
+      for (var i = 0; i < MAT_SPOTS; i++) {
+        if (mat[i]) continue;
+        c.beginPath(); c.ellipse(L.matX[i], L.matY + L.catS * 0.22, L.catS * 0.3, L.catS * 0.12, 0, 0, TAU);
+        c.fillStyle = 'rgba(42,35,64,.08)'; c.fill();
+      }
+    } });
   }
 
   function drawBelt(c) {
     var y = L.beltY, h = L.beltH * 0.42;
     var top = y + L.catS * 0.18;
     var x0 = L.beltX0 - L.catS * 0.3, x1 = L.beltX1 + L.catS * 0.05, bw = x1 - x0;
-    // legs
-    c.fillStyle = '#9C8FB3';
-    for (var lx = x0 + L.catS * 0.6; lx < x1 - L.catS * 0.3; lx += L.catS * 2.2) { rr(c, lx, top + h - 4, 10, L.beltH * 0.5, 4); c.fill(); }
-    // belt body
+    // legs, tucked up under the belt (drawn first, so the belt covers their tops)
+    for (var lx = x0 + L.catS * 0.6; lx < x1 - L.catS * 0.3; lx += L.catS * 2.2) D.shape(c, D.rrPath(lx, top + h - 6, 10, L.beltH * 0.5 + 2, 4), '#9C8FB3', { lw: 0, depth: 3 });
+    // belt body on its ink base; the moving stripes and the rollers sit inside it
     rr(c, x0, top + 4, bw, h, h / 2); c.fillStyle = INK; c.fill();
-    rr(c, x0, top, bw, h, h / 2); c.fillStyle = '#6E6487'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
-    // moving stripes
-    c.save();
-    rr(c, x0 + 4, top + 5, bw - 8, h * 0.45, h * 0.2); c.clip();
-    c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = L.catS * 0.08;
-    var step = L.catS * 0.5;
-    for (var sx = x0 - step + beltOffset; sx < x1 + step; sx += step) { c.beginPath(); c.moveTo(sx, top); c.lineTo(sx - h * 0.4, top + h); c.stroke(); }
-    c.restore();
-    // rollers
-    for (var rx = x0 + L.catS * 0.5; rx < x1 - L.catS * 0.2; rx += L.catS * 1.2) {
-      c.save(); c.translate(rx, top + h * 0.72); c.rotate((beltOffset / (L.catS * 0.5)) * TAU);
-      c.beginPath(); c.arc(0, 0, h * 0.18, 0, TAU); c.fillStyle = '#B9AED0'; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
-      c.beginPath(); c.moveTo(-h * 0.12, 0); c.lineTo(h * 0.12, 0); c.stroke();
+    D.shape(c, D.rrPath(x0, top, bw, h, h / 2), D.tone(c, '#6E6487', top, top + h), { lw: LW.mid, depth: 0, inside: function (c) {
+      c.save();
+      rr(c, x0 + 4, top + 5, bw - 8, h * 0.45, h * 0.2); c.clip();
+      c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = L.catS * 0.08;
+      var step = L.catS * 0.5;
+      for (var sx = x0 - step + beltOffset; sx < x1 + step; sx += step) { c.beginPath(); c.moveTo(sx, top); c.lineTo(sx - h * 0.4, top + h); c.stroke(); }
       c.restore();
-    }
+      for (var rx = x0 + L.catS * 0.5; rx < x1 - L.catS * 0.2; rx += L.catS * 1.2) {
+        c.save(); c.translate(rx, top + h * 0.72); c.rotate((beltOffset / (L.catS * 0.5)) * TAU);
+        D.shape(c, D.ellPath(0, 0, h * 0.18, h * 0.18), '#B9AED0', { lw: 2.5, depth: 0, inside: function (c) {
+          c.beginPath(); c.moveTo(-h * 0.2, 0); c.lineTo(h * 0.2, 0); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+        } });
+        c.restore();
+      }
+    } });
   }
 
   /* The little house at the start of the belt that cats come out of (drawn over the cats). */
@@ -804,17 +804,13 @@
     var s = L.catS;
     var w = s * 0.92, h = s * 1.05;
     var x = L.beltX0 - s * 0.5, y = L.beltY + s * 0.18 + L.beltH * 0.42 - h - 2;
-    c.save();
-    // house
+    // house on its ink base, with the round doorway (facing the belt) inside its wall
     rr(c, x, y + 4, w, h, s * 0.12); c.fillStyle = INK; c.fill();
-    rr(c, x, y, w, h, s * 0.12); c.fillStyle = '#F2C38E'; c.fill(); c.lineWidth = 3.5; c.strokeStyle = INK; c.stroke();
-    // roof
-    c.beginPath(); c.moveTo(x - s * 0.1, y + s * 0.08); c.lineTo(x + w / 2, y - s * 0.32); c.lineTo(x + w + s * 0.1, y + s * 0.08); c.closePath();
-    c.fillStyle = '#FF8FAB'; c.fill(); c.lineWidth = 3.5; c.stroke();
-    // round doorway facing the belt, with a little curtain
-    c.beginPath(); c.moveTo(x + w * 0.62, y + h); c.lineTo(x + w * 0.62, y + h * 0.5); c.arc(x + w * 0.82, y + h * 0.5, w * 0.2, Math.PI, 0); c.lineTo(x + w * 1.02, y + h);
-    c.fillStyle = '#5B4E78'; c.fill(); c.lineWidth = 3; c.stroke();
-    c.restore();
+    D.shape(c, D.rrPath(x, y, w, h, s * 0.12), D.tone(c, '#F2C38E', y, y + h), { lw: LW.mid, depth: s * 0.06, inside: function (c) {
+      D.shape(c, function (p) { p.moveTo(x + w * 0.56, y + h + 4); p.lineTo(x + w * 0.56, y + h * 0.5); p.arc(x + w * 0.76, y + h * 0.5, w * 0.2, Math.PI, 0); p.lineTo(x + w * 0.96, y + h + 4); p.closePath(); }, '#5B4E78', { lw: LW.fine, depth: 0 });
+    } });
+    // roof on top
+    D.shape(c, function (p) { p.moveTo(x - s * 0.1, y + s * 0.08); p.lineTo(x + w / 2, y - s * 0.32); p.lineTo(x + w + s * 0.1, y + s * 0.08); p.closePath(); }, D.tone(c, '#FF8FAB', y - s * 0.32, y + s * 0.08), { lw: LW.mid, depth: s * 0.05 });
   }
 
   function drawBeltCat(c2, cat) {
@@ -887,7 +883,11 @@
       cubbies.forEach(function (cb) { drawCubbyCats(ctx, cb); });
       drawMat(ctx);
       drawBelt(ctx);
-      cats.forEach(function (cat) { if (cat.where === 'belt' || cat.where === 'mat') drawBeltCat(ctx, cat); });
+      // cats come out of the cat house: nothing of them shows to the left of it
+      cats.forEach(function (cat) { if (cat.where === 'mat') drawBeltCat(ctx, cat); });
+      ctx.save(); ctx.beginPath(); ctx.rect(L.beltX0 - L.catS * 0.45, 0, cw, ch); ctx.clip();
+      cats.forEach(function (cat) { if (cat.where === 'belt') drawBeltCat(ctx, cat); });
+      ctx.restore();
       drawCatDoor(ctx);
       cats.forEach(function (cat) { if (cat.where === 'flying') drawBeltCat(ctx, cat); });
       drawHint(ctx);
@@ -907,6 +907,7 @@
   window.__cubbies = {
     state: function () {
       return { mode: mode, tucked: tucked, filled: filled, goal: level.goal, n: level.n, mat: mat.map(function (c) { return c ? c.kind : -1; }),
+        matX: L.matX.slice(), matY: L.matY, matReady: mat.map(function (c) { return !!c && c.where === 'mat'; }),
         cubbies: cubbies.map(function (cb) { return { kind: cb.kind, n: cb.cats.length, state: cb.state, x: cb.x, y: cb.y }; }),
         belt: cats.filter(function (c) { return c.where === 'belt'; }).map(function (c) { return { kind: c.kind, x: c.x, y: c.y }; }) };
     },
