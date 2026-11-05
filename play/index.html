@@ -68,30 +68,63 @@ h1 a { color: inherit; text-decoration: none; }
 body.toddler .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 body.toddler .tile h2 { font-size: 2.2rem; }
 
-/* avatar builder */
-.av-prev { width: 120px; margin: -6px auto 0; }
-.av-prev svg { width: 120px; height: 120px; }
-.av-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.av-tabs button { min-height: 48px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font: 800 .95rem var(--body); color: var(--ink); cursor: pointer; padding: 0 4px; }
-.av-tabs button[aria-selected="true"] { background: var(--sun); box-shadow: 0 3px 0 var(--ink); }
-.av-pane { min-height: 220px; display: flex; flex-direction: column; gap: 14px; }
-.av-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-.av-opt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 3px solid transparent; border-radius: 18px; background: #fff; cursor: pointer; font: 800 .85rem/1.15 var(--body); color: var(--ink); }
-.av-opt svg { width: 64px; height: 64px; }
-.av-opt[aria-pressed="true"] { border-color: var(--ink); background: var(--pale-sun); }
-.av-opt.locked svg { filter: grayscale(1); opacity: .45; }
-.av-opt.locked .av-name { color: var(--muted); }
-.av-hint { display: flex; gap: 3px; align-items: flex-start; font: 700 .75rem/1.2 var(--body); color: var(--muted); text-align: left; }
-.av-hint svg { width: 12px; height: 12px; flex: none; margin-top: 1px; }
-.av-newtag { position: absolute; top: -8px; right: -4px; background: var(--tomato); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 8px; font: 800 .75rem/1.5 var(--body); }
-.av-opt.shake { animation: shake .35s; }
+/* avatar builder (layout from Lily's sketch) */
+.panel.av-builder {
+  position: relative; width: min(940px, 100%); display: grid; gap: 16px 18px; align-items: start;
+  grid-template-columns: auto minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-areas: "title title title" "rail list stage" "foot foot foot";
+}
+.av-title { grid-area: title; }
+.av-close { position: absolute; top: 14px; right: 14px; width: 52px; height: 52px; padding: 0; display: grid; place-items: center; border-radius: 50%; border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+.av-close:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.av-close svg { width: 26px; height: 26px; }
+.av-rail { grid-area: rail; display: flex; flex-direction: column; gap: 12px; padding: 10px; background: #fff; border: 3px solid var(--ink); border-radius: 26px; }
+.av-cat { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer; font: 800 .8rem/1.1 var(--body); color: var(--ink); }
+.av-ic { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--ink); background: var(--cream); display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); }
+.av-ic svg { width: 40px; height: 40px; }
+.av-cat[aria-selected="true"] .av-ic { background: var(--sun); transform: translateY(-2px); box-shadow: 0 5px 0 var(--ink); }
+.av-list { grid-area: list; min-height: 300px; max-height: min(56vh, 520px); overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 4px 6px 8px 2px; }
+.av-listtitle { margin: 0; font: 800 1.4rem/1 var(--display); }
+.av-rows { display: flex; flex-direction: column; gap: 8px; }
+.av-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px 6px 6px; border: 3px solid var(--ink); border-radius: 20px; background: #fff; cursor: pointer; text-align: left; font: 800 1rem/1.15 var(--body); color: var(--ink); }
+.av-row > svg { width: 56px; height: 56px; flex: none; }
+.av-rowtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.av-wear { flex: none; min-width: 74px; text-align: center; padding: 6px 12px; border: 3px solid var(--ink); border-radius: 999px; background: var(--grass); font: 800 .9rem var(--body); }
+.av-row[aria-pressed="true"] { background: var(--pale-sun); }
+.av-row[aria-pressed="true"] .av-wear { background: #fff; }
+.av-row.locked { border-style: dashed; }
+.av-row.locked > svg { filter: grayscale(1); opacity: .45; }
+.av-row.locked .av-name { color: var(--muted); }
+.av-row.locked .av-wear { background: #EEE8F4; min-width: 0; padding: 6px 10px; }
+.av-hint { display: flex; gap: 4px; align-items: flex-start; font: 700 .8rem/1.2 var(--body); color: var(--muted); }
+.av-hint svg { width: 12px; height: 12px; flex: none; margin-top: 2px; }
+.av-newtag { display: inline-block; background: var(--tomato); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 8px; font: 800 .75rem/1.5 var(--body); vertical-align: 2px; }
+.av-row.shake { animation: shake .35s; }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.av-swgroup { display: flex; flex-direction: column; }
 .av-sw { display: flex; flex-wrap: wrap; gap: 8px; }
 .av-sw > button, .av-custom { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; }
 .av-sw > button[aria-pressed="true"] { outline: 4px solid var(--ink); outline-offset: 2px; }
 .av-custom { position: relative; display: grid; place-items: center; background: conic-gradient(#FF6B57, #FFC93C, #7BD389, #3FA7F5, #9B7BFF, #FF7EB6, #FF6B57); font: 800 1.4rem/1 var(--body); color: #fff; text-shadow: 0 1px 2px var(--ink); }
 .av-custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-
+.av-stage { grid-area: stage; display: flex; flex-direction: column; align-items: center; gap: 0; padding-top: 6px; }
+.av-prev { position: relative; z-index: 1; width: 160px; margin-bottom: -26px; }
+.av-prev svg { width: 160px; height: 160px; }
+.av-cushion { width: 210px; height: 56px; border-radius: 50%; background: #FFB3C7; border: 4px solid var(--ink); box-shadow: inset 0 -10px 0 #FF8FAB, 0 6px 0 var(--ink); }
+.av-nick { width: 100%; margin-top: 22px; }
+.av-hint-text { font-weight: 700; color: var(--muted); font-size: .9rem; }
+.av-foot { grid-area: foot; display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+.av-foot .note { flex: 1; text-align: left; }
+@media (max-width: 760px) {
+  .panel.av-builder { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "stage" "rail" "list" "foot"; }
+  .av-title { padding-right: 56px; text-align: left; }
+  .av-rail { flex-direction: row; justify-content: space-around; padding: 8px; }
+  .av-ic { width: 56px; height: 56px; }
+  .av-list { max-height: none; min-height: 0; overflow: visible; }
+  .av-prev, .av-prev svg { width: 130px; height: 130px; }
+  .av-cushion { width: 170px; height: 46px; }
+  .av-foot .btn { flex: 1; }
+}
 /* footer */
 .foot { display: flex; justify-content: center; text-align: center; font-size: .95rem; margin: 8px 0 0; }
 .foot-note { display: inline-flex; align-items: center; gap: 8px; opacity: .75; }
@@ -99,7 +132,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
 .site-foot { margin-top: auto; padding-top: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud1, .cloud2, .mascot, .av-opt.shake { animation: none; }
+  .cloud1, .cloud2, .mascot, .av-row.shake { animation: none; }
   .toddler-chip .knob::after { transition: none; }
 }
 </style>
@@ -118,7 +151,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     <h1 class="sticker-title"><a href="../index.html">Cosy Cat Games</a></h1>
     <div class="head-btns">
       <button class="chip toddler-chip" id="toddlerBtn" type="button" aria-pressed="false" hidden><span class="knob" aria-hidden="true"></span><span id="toddlerLabel">Toddler mode</span></button>
-      <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your name or animal"></button>
+      <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your nickname or cat"></button>
     </div>
   </header>
   <div class="hello"><span class="mascot" data-cat='{"preset":"chef","pose":"wave"}'></span><p class="greeting" id="greeting"></p></div>
@@ -181,48 +214,65 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   function article(name) { var n = name.charAt(0).toLowerCase() + name.slice(1); return (/^[aeiou]/.test(n) ? 'an ' : 'a ') + n; }
 
   /* one player per device: the first visit asks for a name and builds a cat; the chip changes them later */
-  var TABS = [['type', 'Cat'], ['colours', 'Colours'], ['head', 'Hat & hair'], ['face', 'Face']];
+  /* the avatar screen, from Lily's sketch: category buttons down the side, a list of things to wear,
+     the cat on a cushion in the middle, close at the top and Save at the bottom */
+  var ICONS = {
+    head: '<svg viewBox="0 0 40 40"><rect x="13" y="7" width="14" height="17" rx="2" fill="#3A3350"/><rect x="13" y="19" width="14" height="4" fill="#FF6B57"/><ellipse cx="20" cy="26" rx="15" ry="4.5" fill="#3A3350"/></svg>',
+    face: '<svg viewBox="0 0 40 40"><g fill="#2A2340"><rect x="5" y="14" width="13" height="10" rx="4"/><rect x="22" y="14" width="13" height="10" rx="4"/></g><path d="M18 17 L22 17" stroke="#2A2340" stroke-width="3"/><path d="M8 17 L12 17 M25 17 L29 17" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    type: '',
+    colours: '<svg viewBox="0 0 40 40"><path d="M27 5 L33 11 L19 25 L13 19 Z" fill="#C98B5B" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M13 19 L19 25 Q17 33 8 34 Q9 25 13 19 Z" fill="#FF7EB6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg>'
+  };
+  var CATS = [['head', 'Hats & hair'], ['face', 'Face'], ['type', 'Cat'], ['colours', 'Colours']];
   function showSetup(tab) {
     var p = GG.current();
     var av = p ? GGAvatar.normalise(p.avatar, p.color) : GGAvatar.random();
     var got = GGAvatar.unlocked(GG);
     var fresh = p ? newItems(p) : [];
-    tab = tab || (fresh.length ? (GGAvatar.TYPES.some(function (t) { return t.id === fresh[0]; }) ? 'type' : GGAvatar.FACES.some(function (t) { return t.id === fresh[0]; }) ? 'face' : 'head') : 'type');
-    panel.innerHTML = '<div class="av-prev" id="avPrev"></div>' +
-      '<h2 id="panelTitle">' + (p ? 'Your cat' : 'Hello! Make your cat') + '</h2>' +
-      '<div><label class="field-label" for="nameInput">Your name</label><input class="field big" id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false"></div>' +
-      '<div class="av-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="av-pane" id="avPane" role="tabpanel"></div>' +
-      '<div class="row">' + (p ? '<button class="btn plain" type="button" id="backBtn">Cancel</button>' : '') +
-      '<button class="btn go" type="button" id="saveBtn">' + (p ? 'Save' : 'Let’s play!') + '</button></div>' +
-      '<p class="note">Saved on this device only. No sign-up needed.</p>';
+    var listFor = { type: GGAvatar.TYPES, head: GGAvatar.HEADS, face: GGAvatar.FACES };
+    tab = tab || (fresh.length ? ['type', 'head', 'face'].filter(function (k) { return listFor[k].some(function (t) { return t.id === fresh[0]; }); })[0] : (p ? 'head' : 'type'));
+    if (!ICONS.type) ICONS.type = GGCat.svg({ preset: 'ginger', face: 'happy', size: 40 });
+    panel.classList.add('av-builder');
+    panel.innerHTML =
+      (p ? '<button class="av-close" type="button" id="backBtn" aria-label="Close without saving"><svg viewBox="0 0 32 32"><path d="M9 9 L23 23 M23 9 L9 23" stroke="#2A2340" stroke-width="4" stroke-linecap="round"/></svg></button>' : '') +
+      '<h2 id="panelTitle" class="av-title">' + (p ? 'Your cat' : 'Hello! Make your cat') + '</h2>' +
+      '<div class="av-rail" role="tablist" aria-label="What to change">' + CATS.map(function (c) {
+        return '<button type="button" class="av-cat" role="tab" data-tab="' + c[0] + '" aria-label="' + c[1] + '"><span class="av-ic">' + ICONS[c[0]] + '</span><span class="av-catname">' + c[1] + '</span></button>';
+      }).join('') + '</div>' +
+      '<div class="av-list" id="avPane" role="tabpanel"></div>' +
+      '<div class="av-stage"><div class="av-prev" id="avPrev"></div><div class="av-cushion" aria-hidden="true"></div>' +
+      '<div class="av-nick"><label class="field-label" for="nameInput">Nickname <span class="av-hint-text">(e.g. Unicorn15, don’t use your real name)</span></label>' +
+      '<input class="field big" id="nameInput" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Unicorn15"></div></div>' +
+      '<div class="av-foot"><p class="note">Saved on this device only. No sign-up needed.</p><button class="btn go" type="button" id="saveBtn">' + (p ? 'Save' : 'Let’s play!') + '</button></div>';
     open();
     var input = document.getElementById('nameInput'), save = document.getElementById('saveBtn'), pane = document.getElementById('avPane');
     input.value = p ? p.name : '';
-    function preview() { document.getElementById('avPrev').innerHTML = GGAvatar.svg(av, 120); }
-    function opt(list, key) {
-      return '<div class="av-opts">' + list.map(function (it) {
+    function preview() { document.getElementById('avPrev').innerHTML = GGAvatar.svg(av, 160); }
+    function rows(list, key) {
+      return list.map(function (it) {
         var locked = it.earn && got.indexOf(it.id) < 0 && av[key] !== it.id;
+        var on = av[key] === it.id, isNew = fresh.indexOf(it.id) >= 0;
         var trial = {}; for (var k in av) trial[k] = av[k]; trial[key] = it.id;
-        return '<button type="button" class="av-opt' + (locked ? ' locked' : '') + (fresh.indexOf(it.id) >= 0 ? ' fresh' : '') + '" data-key="' + key + '" data-id="' + it.id + '" aria-pressed="' + (av[key] === it.id) + '"' +
-          (locked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(it.name) + (locked ? ', locked: ' + esc(it.earn.hint) : '') + '">' +
-          GGAvatar.svg(trial, 64) + '<span class="av-name">' + esc(it.name) + '</span>' +
-          (locked ? '<span class="av-hint">' + LOCK + esc(it.earn.hint) + '</span>' : (fresh.indexOf(it.id) >= 0 ? '<span class="av-newtag">New!</span>' : '')) + '</button>';
-      }).join('') + '</div>';
+        return '<button type="button" class="av-row' + (locked ? ' locked' : '') + '" data-key="' + key + '" data-id="' + it.id + '" aria-pressed="' + on + '"' +
+          ' aria-label="' + esc(it.name) + (locked ? ', locked: ' + esc(it.earn.hint) : on ? ', wearing' : '') + '">' +
+          GGAvatar.svg(trial, 56) +
+          '<span class="av-rowtext"><span class="av-name">' + esc(it.name) + (isNew ? ' <span class="av-newtag">New!</span>' : '') + '</span>' +
+          (locked ? '<span class="av-hint">' + LOCK + esc(it.earn.hint) + '</span>' : '') + '</span>' +
+          '<span class="av-wear">' + (locked ? LOCK : on ? 'Wearing' : 'Wear') + '</span></button>';
+      }).join('');
     }
     function swatches(list, key, label) {
-      return '<div><span class="field-label">' + label + '</span><div class="av-sw">' + list.map(function (c) {
+      return '<div class="av-swgroup"><span class="field-label">' + label + '</span><div class="av-sw">' + list.map(function (c) {
         return '<button type="button" data-key="' + key + '" data-col="' + c + '" aria-label="' + label + ' ' + c + '" aria-pressed="' + (av[key].toLowerCase() === c.toLowerCase()) + '" style="background:' + c + '"></button>';
       }).join('') + '<label class="av-custom" title="Pick any colour"><input type="color" data-key="' + key + '" value="' + av[key] + '" aria-label="Pick any ' + label.toLowerCase() + '"><span aria-hidden="true">+</span></label></div></div>';
     }
     function draw() {
       preview();
       panel.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
-      if (tab === 'type') pane.innerHTML = opt(GGAvatar.TYPES, 'type');
-      else if (tab === 'head') pane.innerHTML = opt(GGAvatar.HEADS, 'head');
-      else if (tab === 'face') pane.innerHTML = opt(GGAvatar.FACES, 'face');
-      else pane.innerHTML = swatches(GGAvatar.CAT_COLOURS, 'color', 'Cat colour') + (av.type === 'calico' ? '<p class="note">Calico cats are always white with patches.</p>' : '') + swatches(GGAvatar.BG_COLOURS, 'bg', 'Background');
-      pane.querySelectorAll('.av-opt').forEach(function (b) {
+      var title = CATS.filter(function (c) { return c[0] === tab; })[0][1];
+      var head = '<h3 class="av-listtitle">' + title + '</h3>';
+      if (tab === 'colours') pane.innerHTML = head + swatches(GGAvatar.CAT_COLOURS, 'color', 'Cat colour') + (av.type === 'calico' ? '<p class="note">Calico cats are always white with patches.</p>' : '') + swatches(GGAvatar.BG_COLOURS, 'bg', 'Background');
+      else pane.innerHTML = head + '<div class="av-rows">' + rows(listFor[tab], tab) + '</div>';
+      pane.querySelectorAll('.av-row').forEach(function (b) {
         b.addEventListener('click', function () {
           if (b.classList.contains('locked')) { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; }
           av[b.dataset.key] = b.dataset.id; draw();
@@ -240,8 +290,8 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     ready();
     input.addEventListener('input', ready);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && input.value.trim()) save.click(); });
-    var back = document.getElementById('backBtn'); if (back) back.addEventListener('click', function () { markSeen(); close(); });
     function markSeen() { if (GG.current()) GG.setPlayerInfo({ seen: GGAvatar.unlocked(GG) }); }
+    var back = document.getElementById('backBtn'); if (back) back.addEventListener('click', function () { markSeen(); close(); });
     save.addEventListener('click', function () { GG.addPlayer(input.value.trim(), av); markSeen(); close(); });
     if (!p) setTimeout(function () { input.focus(); }, 50);
   }
@@ -283,6 +333,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
   renderTiles();
 
   document.getElementById('toddlerBtn').addEventListener('click', function () {
+    panel.classList.remove('av-builder');
     if (!toddlerOn()) {
       panel.innerHTML = '<h2 id="panelTitle">Turn on toddler mode?</h2>' +
         '<p class="confirm-text">Only the simplest games will show, made for little ones under 5.</p>' +

@@ -80,6 +80,17 @@
     reload: function () { data = load(); }
   };
 
+  /* Visit counts (Vercel Web Analytics, from our host): no cookies and nothing that identifies anyone.
+     Only on the live site, so test copies and previews aren't counted. */
+  try {
+    if (location.protocol === 'https:' && !/claude|localhost|vercel\.app$/.test(location.hostname)) {
+      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+      var va = document.createElement('script');
+      va.defer = true; va.src = '/_vercel/insights/script.js';
+      document.head.appendChild(va);
+    }
+  } catch (e) {}
+
   /* Ask the browser not to clear our saved data when space is low (granted quietly to home screen apps). */
   try {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
