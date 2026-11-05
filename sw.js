@@ -1,6 +1,6 @@
 /* Cosy Cat Games offline support.
    Bump VERSION whenever files change so devices pick up the new copy. */
-const VERSION = 'ccg-v113';
+const VERSION = 'ccg-v114';
 const FILES = [
   './', './index.html', './play/', './play/index.html', './manifest.webmanifest', './shared/store.js',
   './fonts/fonts.css', './fonts/baloo-2-latin-600-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/nunito-latin-700-normal.woff2', './fonts/nunito-latin-800-normal.woff2',
@@ -20,6 +20,7 @@ const FILES = [
   './games/mouse-pop/', './games/mouse-pop/index.html', './games/mouse-pop/game.js',
   './games/bath/', './games/bath/index.html', './games/bath/game.js',
   './games/puzzle/', './games/puzzle/index.html', './games/puzzle/game.js',
+  './games/slide/', './games/slide/index.html', './games/slide/game.js',
   './games/stack/', './games/stack/index.html', './games/stack/game.js',
   './games/boxes/boxes.js',
   './games/peekaboo/', './games/peekaboo/index.html', './games/peekaboo/game.js',

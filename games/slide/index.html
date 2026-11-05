@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Slide Puzzle</title>
+<meta name="theme-color" content="#E6F2FF">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Slide Puzzle: a picture cut into squares with one gap. Slide the squares back into place.
+   One canvas for the board; buttons above and below. Single bright look by design. */
+:root { --wall: #E6F2FF; }
+body { background: var(--wall) radial-gradient(rgba(255,255,255,.7) 2px, transparent 2.5px) 0 0 / 28px 28px; }
+.middle { flex: 1; display: flex; justify-content: center; }
+.sizes { display: flex; gap: 6px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink), var(--soft); }
+.size { min-width: 64px; height: 42px; border-radius: 999px; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 10px; font: 800 1.05rem var(--display); color: var(--ink); }
+.size[aria-pressed="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
+.size:disabled { opacity: .45; cursor: default; }
+.size svg { width: 16px; height: 16px; }
+.tools {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; display: flex; justify-content: center; gap: 12px;
+  padding: 8px max(12px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+}
+.tools .round[aria-pressed="true"] { background: var(--sun); }
+.tools .round.wide { min-width: 56px; }
+.pics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.pic { padding: 0; border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; background: #fff; cursor: pointer; box-shadow: 0 4px 0 var(--ink), var(--soft); position: relative; aspect-ratio: 1; }
+.pic img { width: 100%; height: 100%; display: block; }
+.pic .done { position: absolute; right: 4px; bottom: 4px; width: 30px; height: 30px; border-radius: 50%; background: var(--grass); border: 3px solid var(--ink); display: grid; place-items: center; }
+.pic .done svg { width: 18px; height: 18px; }
+.pic:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.panel .note { margin-top: -6px; }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="A sliding picture puzzle. Tap a square next to the gap to slide it."></canvas>
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle"><div class="sizes" role="group" aria-label="Puzzle size">
+    <button class="size" type="button" data-n="3" aria-pressed="true">3×3</button>
+    <button class="size" type="button" data-n="4" aria-pressed="false">4×4</button>
+  </div></div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+<div class="tools">
+  <button class="round" id="picBtn" type="button" aria-label="Choose a picture"><svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" rx="4" fill="#BFE6FF" stroke="#2A2340" stroke-width="2.8"/><path d="M5 24 L12 16 L17 21 L21 17 L27 24 Z" fill="#7BD389" stroke="#2A2340" stroke-width="2.4" stroke-linejoin="round"/><circle cx="22" cy="12" r="3" fill="#FFC93C" stroke="#2A2340" stroke-width="2"/></svg></button>
+  <button class="round" id="peekBtn" type="button" aria-label="Peek at the picture (hold)"><svg viewBox="0 0 32 32"><path d="M3 16 Q16 4 29 16 Q16 28 3 16 Z" fill="#fff" stroke="#2A2340" stroke-width="2.8" stroke-linejoin="round"/><circle cx="16" cy="16" r="5.5" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.4"/><circle cx="16" cy="16" r="2" fill="#2A2340"/></svg></button>
+  <button class="round" id="numBtn" type="button" aria-label="Show numbers" aria-pressed="false"><svg viewBox="0 0 32 32"><text x="16" y="21.5" text-anchor="middle" font-family="Baloo 2, ui-rounded, sans-serif" font-weight="800" font-size="15" fill="#2A2340">123</text></svg></button>
+  <button class="round" id="shuffleBtn" type="button" aria-label="Mix it up again"><svg viewBox="0 0 32 32"><path d="M6 11 H12 Q16 11 18 16 Q20 21 24 21 H27 M6 21 H12 Q15 21 16 19 M18 13 Q20 11 24 11 H27" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><path d="M24 7 L28 11 L24 15 M24 17 L28 21 L24 25" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+
+<div class="overlay" id="pickWrap" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+    <h2 id="pickTitle">Pick a picture</h2>
+    <div class="pics" id="pics"></div>
+    <p class="note" id="lockNote"></p>
+  </div>
+</div>
+
+<div class="win" id="win" hidden>
+  <div class="card">
+    <h2>You did it!</h2>
+    <p id="winNote"></p>
+    <div class="row">
+      <button class="big" id="nextBtn" type="button">Next picture</button>
+      <button class="big again" id="againBtn" type="button">Again</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/dishes.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
