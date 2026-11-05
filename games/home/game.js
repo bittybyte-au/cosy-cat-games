@@ -67,7 +67,8 @@
   ];
   var WALLS = [
     { wall: '#FFE7C2', pat: '#FFD9A3' }, { wall: '#FFD9E4', pat: '#FFC2D4' }, { wall: '#D7F2DF', pat: '#BFE8CB' },
-    { wall: '#D9ECFF', pat: '#C0DEFF' }, { wall: '#E8DDFF', pat: '#D7C7FF' }, { wall: '#FFF3B8', pat: '#FFE88A' }
+    { wall: '#D9ECFF', pat: '#C0DEFF' }, { wall: '#E8DDFF', pat: '#D7C7FF' }, { wall: '#FFF3B8', pat: '#FFE88A' },
+    { wall: '#FFFFFF', pat: '#F1EAF8' }, { wall: '#FFD3C4', pat: '#FFBCA6' }, { wall: '#CDEFF0', pat: '#AEE3E5' }, { wall: '#5E5675', pat: '#6E6687' }
   ];
   function findDef(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
 
@@ -182,25 +183,48 @@
     };
   })();
 
-  /* ================= the player's cat ================= */
-  function catOpts() {
+  /* ================= the player's cat =================
+     The body is the shared cat with the same options the avatar uses; the head is the avatar picture itself
+     (without its round background), laid over the body's head, so colours, hats, hair and glasses all match. */
+  var CAT = { preset: 'ginger' }, catImg = null, catKey = '';
+  function catSetup() {
     var p = null;
     try { p = GG.current ? GG.current() : null; } catch (e) {}
-    if (p && window.GGAvatar) {
-      var av = GGAvatar.normalise(p.avatar, p.color);
-      return {
-        color: av.type === 'calico' ? '#FFFFFF' : av.color,
-        build: av.type === 'chubby' || av.type === 'fluffy' ? av.type : 'short',
-        markings: av.type === 'tabby' || av.type === 'calico' || av.type === 'tuxedo' ? av.type : 'none'
-      };
-    }
-    return { preset: 'ginger' };
+    if (!p || !window.GGAvatar) { CAT = { preset: 'ginger' }; catImg = null; catKey = ''; return; }
+    var av = GGAvatar.normalise(p.avatar, p.color);
+    var key = JSON.stringify(av);
+    if (key === catKey) return;
+    catKey = key;
+    CAT = {
+      color: av.type === 'calico' ? '#FFFFFF' : av.type === 'tuxedo' ? '#3D3650' : av.color,
+      build: av.type === 'chubby' || av.type === 'fluffy' ? av.type : 'short',
+      markings: av.type === 'tabby' || av.type === 'calico' || av.type === 'tuxedo' ? av.type : 'none',
+      eyes: 'happy', mouth: 'w', hat: av.head === 'chef' ? 'chef' : 'none',
+      noEyes: av.face === 'sunglasses', noMouth: av.face === 'moustache' || av.face === 'beard', noCheeks: av.face === 'cheeks',
+      eyeColor: av.face === 'mask' ? '#FFF8EC' : undefined
+    };
+    try {
+      var svg = GGAvatar.svg(av, 240)
+        .replace(/<circle cx="60" cy="60" r="57"[^>]*\/>/, '')
+        .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+      var img = new Image();
+      img.onload = function () { catImg = img; };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    } catch (e) { catImg = null; }
   }
-  var CAT = catOpts();
+  catSetup();
+  // the avatar picture is 120 wide with the cat's head centred at (60, 66.36), 68 wide
+  function drawAvatarHead(c, x, y, size) {
+    if (!catImg) return;
+    var k = size / 68;
+    c.drawImage(catImg, x - 60 * k, y - 66.36 * k, 120 * k, 120 * k);
+  }
   function drawCatPose(c, pose, face, size) {
     var o = {}; for (var k in CAT) o[k] = CAT[k];
     o.pose = pose; o.face = face; o.size = size;
     try { GGCat.draw(c, o); } catch (e) {}
+    if (pose === 'sit') drawAvatarHead(c, 0, 0, size);
+    else if (pose === 'lie') drawAvatarHead(c, 30 * size / 88, 2 * size / 88, size * 0.78);
   }
 
   /* ================= drawing plants, pots, things ================= */
@@ -236,7 +260,27 @@
     c.restore();
   }
   function stem(c, x0, y0, x1, y1, w) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + (x1 - x0) * 0.3, (y0 + y1) / 2, x1, y1); c.lineWidth = (w || 5) + 3; c.strokeStyle = INK; c.lineCap = 'round'; c.stroke(); c.lineWidth = w || 5; c.strokeStyle = '#4FB868'; c.stroke(); }
-  function soil(c, w) { ell(c, 0, -w * 0.62 + 3, w * 0.48, w * 0.08); c.fillStyle = '#7A4E2D'; c.fill(); }
+  /* the soil showing in the mouth of the pot (drawn after the pot, before the plant) */
+  function soil(c, w, amount) {
+    var h = w * 0.62; amount = amount === undefined ? 1 : amount;
+    if (amount <= 0) return;
+    ell(c, 0, -h + h * 0.08, w * 0.5 * (0.55 + 0.45 * amount), h * 0.1); c.fillStyle = '#7A4E2D'; c.fill();
+    c.fillStyle = '#5E3A1F'; circle(c, -w * 0.18, -h + h * 0.07, w * 0.025); c.fill(); circle(c, w * 0.14, -h + h * 0.1, w * 0.02); c.fill();
+  }
+  /* the front half of the pot's rim, drawn over the bottom of the plant so the stems go into the soil */
+  function potLip(c, pot, w) {
+    var P = POTS[pot] || POTS[0], h = w * 0.62;
+    c.save();
+    c.beginPath(); c.rect(-w, -h + h * 0.12, w * 2, h * 0.3); c.clip();
+    rr(c, -w * 0.56, -h, w * 1.12, h * 0.22, h * 0.08); c.fillStyle = P.fill; c.fill(); ink(c, Math.max(2, w * 0.04));
+    c.restore();
+  }
+  function drawPotted(c, pl, g, t, soilAmount) {
+    drawPot(c, pl.pot, 92);
+    soil(c, 92, soilAmount);
+    drawPlant(c, pl, g, t);
+    potLip(c, pl.pot, 92);
+  }
 
   /* A potted plant, bottom centre at (0,0). g = how grown it is (0 nothing, 1 full). */
   function drawPlant(c, pl, g, t) {
@@ -249,7 +293,7 @@
     c.save();
     // plants drawn first, pot rim drawn over their base
     c.save();
-    c.translate(0, -potH + 6);
+    c.translate(0, -potH + potH * 0.1);
     var sway = Math.sin(t * 1.3 + (pl.id || 0)) * 0.03;
     c.rotate(sway);
     var gg = easeOut(g);
@@ -323,7 +367,7 @@
     }
     c.restore();
     // seed sprout before it grows
-    if (g <= 0.01 && pl.seed) { c.save(); c.translate(0, -potH + 4); leaf(c, 0, 0, 14, -2.3, '#7BD389'); leaf(c, 0, 0, 14, -0.8, '#7BD389'); c.restore(); }
+    if (g <= 0.01 && pl.seed) { c.save(); c.translate(0, -potH + potH * 0.1); leaf(c, 0, 0, 14, -2.3, '#7BD389'); leaf(c, 0, 0, 14, -0.8, '#7BD389'); c.restore(); }
     c.restore();
   }
   function drawPottedPlant(c, pl, g, t, soilLevel) {
@@ -446,7 +490,7 @@
   /* An item in the room, bottom centre at (0,0). */
   function drawItem(c, it, t) {
     if (!it) return;
-    if (it.kind === 'plant') { drawPlant(c, it.data, 1, t); drawPot(c, it.data.pot, 92); soil(c, 92); }
+    if (it.kind === 'plant') drawPotted(c, it.data, 1, t);
     else if (it.kind === 'thing') drawThing(c, it.def.id, t);
     else if (it.kind === 'dish') drawDish(c, it.data, 100);
     else if (it.kind === 'picture') { try { ColourPages.drawFramed(c, it.data, 120); } catch (e) {} }
@@ -466,32 +510,39 @@
   function itemThumb(it) { return thumb(function (c) { drawItem(c, it, 0); }, Math.max(itemWidth(it), 90), it.h + (it.kind === 'plant' ? 58 : 0) + 6); }
 
   /* ================= room layout =================
-     Two shapes: wide (computers, tablets sideways) and tall (phones). Things are saved by surface + position
-     along it, so a room looks the same on any screen. */
-  function makeLayout(tall) {
-    if (!tall) return {
-      W: 1000, H: 640, wallH: 540, floorY: 595,
-      win: { x: 390, y: 60, w: 220, h: 220 },
-      table: { x0: 640, x1: 900, y: 440 },
-      surfaces: {
-        shelfA: { x0: 70, x1: 320, y: 230 }, shelfB: { x0: 700, x1: 940, y: 250 },
-        sill: { x0: 372, x1: 628, y: 300 }, table: { x0: 655, x1: 885, y: 440 }, floor: { x0: 50, x1: 950, y: 595 }
-      }
-    };
-    return {
-      W: 600, H: 880, wallH: 770, floorY: 830,
-      win: { x: 180, y: 50, w: 240, h: 210 },
-      table: { x0: 320, x1: 570, y: 650 },
-      surfaces: {
-        shelfA: { x0: 30, x1: 270, y: 420 }, shelfB: { x0: 330, x1: 570, y: 470 },
-        sill: { x0: 160, x1: 440, y: 280 }, table: { x0: 335, x1: 555, y: 650 }, floor: { x0: 40, x1: 560, y: 830 }
-      }
-    };
+     The room is wider than the screen and scrolls left and right. Two shapes: wide (computers, tablets
+     sideways) and tall (phones). Things are saved by surface + position along it, so a room looks the same
+     on any screen. The potting bench uses a single-screen layout. */
+  function buildSurfaces(L) {
+    L.surfaces = { floor: L.floor };
+    L.shelves.forEach(function (sh) { L.surfaces[sh.id] = sh; });
+    L.sills = L.wins.map(function (w, i) { var id = i ? 'sill' + (i + 1) : 'sill'; var sl = { id: id, x0: w.x - 18, x1: w.x + w.w + 18, y: w.y + w.h + 20 }; L.surfaces[id] = sl; return sl; });
+    L.tables.forEach(function (t) { L.surfaces[t.id] = { x0: t.x0 + 15, x1: t.x1 - 15, y: t.y }; });
+    return L;
+  }
+  function makeLayout(tall, bench) {
+    if (bench) return tall ? { W: 600, H: 880 } : { W: 1000, H: 640 };
+    if (!tall) return buildSurfaces({
+      W: 2400, H: 640, wallH: 540, floorY: 595,
+      wins: [{ x: 390, y: 60, w: 220, h: 220 }, { x: 1560, y: 60, w: 220, h: 220 }],
+      tables: [{ id: 'table', kind: 'table', x0: 640, x1: 900, y: 440 }, { id: 'sideboard', kind: 'sideboard', x0: 1140, x1: 1440, y: 420 }],
+      shelves: [{ id: 'shelfA', x0: 70, x1: 320, y: 230 }, { id: 'shelfB', x0: 700, x1: 940, y: 250 }, { id: 'shelfC', x0: 1180, x1: 1420, y: 210 },
+        { id: 'shelfD', x0: 1880, x1: 2120, y: 230 }, { id: 'shelfE', x0: 2000, x1: 2340, y: 400 }],
+      floor: { x0: 50, x1: 2350, y: 595 }
+    });
+    return buildSurfaces({
+      W: 1200, H: 880, wallH: 770, floorY: 830,
+      wins: [{ x: 180, y: 50, w: 240, h: 210 }, { x: 790, y: 50, w: 240, h: 210 }],
+      tables: [{ id: 'table', kind: 'table', x0: 320, x1: 570, y: 650 }, { id: 'sideboard', kind: 'sideboard', x0: 650, x1: 900, y: 630 }],
+      shelves: [{ id: 'shelfA', x0: 30, x1: 270, y: 420 }, { id: 'shelfB', x0: 330, x1: 570, y: 470 }, { id: 'shelfC', x0: 940, x1: 1170, y: 430 },
+        { id: 'shelfD', x0: 640, x1: 880, y: 400 }, { id: 'shelfE', x0: 950, x1: 1170, y: 600 }],
+      floor: { x0: 40, x1: 1160, y: 830 }
+    });
   }
 
   var canvas = $('stage'), ctx = canvas.getContext('2d');
   var topbar = $('topbar'), drawer = $('drawer'), growbar = $('growbar');
-  var cw = 0, ch = 0, dpr = 1, K = 1, OX = 0, OY = 0, LAY = makeLayout(false);
+  var cw = 0, ch = 0, dpr = 1, K = 1, OX = 0, OY = 0, LAY = makeLayout(false), SX = 0, VIEW_W = 1000, scrollTo = null;
 
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -503,11 +554,36 @@
     var bottom = bar.getBoundingClientRect().top - 8;
     document.documentElement.style.setProperty('--bar-h', Math.round(ch - bar.getBoundingClientRect().top) + 'px');
     var availW = cw - 16, availH = Math.max(120, bottom - top);
-    LAY = makeLayout(availW / availH < 1.05);
-    K = Math.min(availW / LAY.W, availH / LAY.H);
-    OX = (cw - LAY.W * K) / 2; OY = top + (availH - LAY.H * K) / 2;
+    var tall = availW / availH < 1.05;
+    if (mode === 'grow') {
+      LAY = makeLayout(tall, true);
+      K = Math.min(availW / LAY.W, availH / LAY.H);
+      VIEW_W = LAY.W; SX = 0;
+      OX = (cw - LAY.W * K) / 2;
+    } else {
+      LAY = makeLayout(tall, false);
+      K = Math.min(availH / LAY.H, 1.3);
+      VIEW_W = Math.min(LAY.W, availW / K);
+      OX = (cw - VIEW_W * K) / 2;
+      SX = clamp(SX, 0, LAY.W - VIEW_W);
+    }
+    OY = top + (availH - LAY.H * K) / 2;
+    placeArrows();
   }
-  function toRoom(x, y) { return { x: (x - OX) / K, y: (y - OY) / K }; }
+  function toRoom(x, y) { return { x: (x - OX) / K + SX, y: (y - OY) / K }; }
+  function maxScroll() { return Math.max(0, LAY.W - VIEW_W); }
+  function setScroll(v) { SX = clamp(v, 0, maxScroll()); placeArrows(); }
+  function placeArrows() {
+    var l = $('scrollL'), r = $('scrollR');
+    if (!l || !r) return;
+    var show = mode === 'room' && maxScroll() > 4;
+    l.hidden = r.hidden = !show;
+    if (!show) return;
+    var y = OY + LAY.H * K * 0.42;
+    l.style.left = (OX + 8) + 'px'; l.style.top = y + 'px';
+    r.style.left = (OX + VIEW_W * K - 8 - r.offsetWidth) + 'px'; r.style.top = y + 'px';
+    l.classList.toggle('off', SX <= 1); r.classList.toggle('off', SX >= maxScroll() - 1);
+  }
 
   /* where a placed item sits now, in room units */
   function placeXY(p) {
@@ -536,59 +612,83 @@
   }
 
   /* ================= room drawing ================= */
-  function drawRoom(c, t) {
-    var L = LAY, W = WALLS[S.wall] || WALLS[0];
-    // wall with a soft pattern
-    c.fillStyle = W.wall; c.fillRect(0, 0, L.W, L.wallH);
-    c.fillStyle = W.pat;
-    for (var y = 30; y < L.wallH; y += 60) for (var x = 30 + (y / 60 % 2) * 30; x < L.W; x += 60) {
-      c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill();
-    }
-    // window
-    var w = L.win;
+  var FLOORS = [
+    { col: '#C98B5B', kind: 'planks' }, { col: '#E6C08F', kind: 'planks' }, { col: '#8E6A4E', kind: 'planks' },
+    { col: '#F2B8C6', kind: 'tiles' }, { col: '#BFE0FF', kind: 'tiles' }, { col: '#9FD8A8', kind: 'carpet' }, { col: '#C9B8EE', kind: 'carpet' }
+  ];
+  function drawWindow(c, w, t, i) {
     rr(c, w.x - 10, w.y - 10, w.w + 20, w.h + 20, 18); c.fillStyle = '#fff'; c.fill(); ink(c, 4);
     rr(c, w.x, w.y, w.w, w.h, 10); c.fillStyle = '#9EDCFF'; c.fill();
     c.save(); rr(c, w.x, w.y, w.w, w.h, 10); c.clip();
-    circle(c, w.x + w.w * 0.78, w.y + w.h * 0.26, 26); c.fillStyle = '#FFE14D'; c.fill();
-    var cx = ((t * 8) % (w.w + 160)) - 80;
+    if (!i) { circle(c, w.x + w.w * 0.78, w.y + w.h * 0.26, 26); c.fillStyle = '#FFE14D'; c.fill(); }
+    var cx = ((t * 8 + i * 90) % (w.w + 160)) - 80;
     [[cx, 0.45, 1], [cx - 140, 0.25, 0.8]].forEach(function (cl) {
       c.fillStyle = '#fff'; var bx = w.x + cl[0], by = w.y + w.h * cl[1], k2 = cl[2];
       circle(c, bx, by, 18 * k2); c.fill(); circle(c, bx + 20 * k2, by - 8 * k2, 22 * k2); c.fill(); circle(c, bx + 42 * k2, by, 17 * k2); c.fill();
     });
-    c.fillStyle = '#7BD389'; c.beginPath(); c.ellipse(w.x + w.w * 0.3, w.y + w.h + 30, w.w * 0.7, 60, 0, 0, TAU); c.fill();
+    c.fillStyle = i ? '#5CCB75' : '#7BD389'; c.beginPath(); c.ellipse(w.x + w.w * (i ? 0.7 : 0.3), w.y + w.h + 30, w.w * 0.7, 60, 0, 0, TAU); c.fill();
     c.restore();
     c.strokeStyle = '#fff'; c.lineWidth = 8;
     c.beginPath(); c.moveTo(w.x + w.w / 2, w.y); c.lineTo(w.x + w.w / 2, w.y + w.h); c.moveTo(w.x, w.y + w.h / 2); c.lineTo(w.x + w.w, w.y + w.h / 2); c.stroke();
     rr(c, w.x, w.y, w.w, w.h, 10); ink(c, 3);
-    // curtains
     [-1, 1].forEach(function (side) {
       var x0 = side < 0 ? w.x - 34 : w.x + w.w + 34;
       c.beginPath(); c.moveTo(x0, w.y - 22); c.quadraticCurveTo(x0 - side * 30, w.y + w.h * 0.5, x0 + side * 6, w.y + w.h + 18); c.lineTo(x0 + side * 34, w.y + w.h + 18); c.quadraticCurveTo(x0 + side * 8, w.y + w.h * 0.5, x0 + side * 30, w.y - 22); c.closePath();
-      c.fillStyle = '#FF9EC4'; c.fill(); ink(c, 3);
+      c.fillStyle = i ? '#B48CFF' : '#FF9EC4'; c.fill(); ink(c, 3);
     });
     rr(c, w.x - 50, w.y - 30, w.w + 100, 12, 6); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3);
-    // sill
-    var sl = L.surfaces.sill; rr(c, sl.x0, sl.y, sl.x1 - sl.x0, 16, 6); c.fillStyle = '#fff'; c.fill(); ink(c, 3.5);
-    // shelves
-    ['shelfA', 'shelfB'].forEach(function (k) {
-      var s = L.surfaces[k];
+  }
+  function drawRoom(c, t) {
+    var L = LAY, W = WALLS[S.wall] || WALLS[0], F = FLOORS[S.floor || 0] || FLOORS[0];
+    // wall with a soft pattern (only the part on screen is drawn)
+    var x0 = Math.max(0, SX - 60), x1 = Math.min(L.W, SX + VIEW_W + 60);
+    c.fillStyle = W.wall; c.fillRect(0, 0, L.W, L.wallH);
+    c.fillStyle = W.pat;
+    for (var y = 30; y < L.wallH; y += 60) for (var x = 30 + (y / 60 % 2) * 30; x < x1; x += 60) {
+      if (x < x0) continue;
+      c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill();
+    }
+    L.wins.forEach(function (w, i) { drawWindow(c, w, t, i); });
+    L.sills.forEach(function (sl) { rr(c, sl.x0, sl.y, sl.x1 - sl.x0, 16, 6); c.fillStyle = '#fff'; c.fill(); ink(c, 3.5); });
+    L.shelves.forEach(function (s) {
       rr(c, s.x0, s.y, s.x1 - s.x0, 16, 5); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3.5);
       [s.x0 + 26, s.x1 - 26].forEach(function (bx) { c.beginPath(); c.moveTo(bx - 10, s.y + 16); c.lineTo(bx + 10, s.y + 16); c.lineTo(bx - 10, s.y + 40); c.closePath(); c.fillStyle = '#C9965F'; c.fill(); ink(c, 3); });
     });
-    // skirting and floor
-    c.fillStyle = '#C98B5B'; c.fillRect(0, L.wallH, L.W, L.H - L.wallH);
+    // floor
+    c.fillStyle = F.col; c.fillRect(0, L.wallH, L.W, L.H - L.wallH);
     c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = 3;
-    for (var fy = L.wallH + 22; fy < L.H; fy += 26) { c.beginPath(); c.moveTo(0, fy); c.lineTo(L.W, fy); c.stroke(); }
-    for (var i = 0; i < 12; i++) { var px = (i * 173) % L.W, py = L.wallH + 22 + (i % 4) * 26; c.beginPath(); c.moveTo(px, py); c.lineTo(px, py + 26); c.stroke(); }
+    if (F.kind === 'planks') {
+      for (var fy = L.wallH + 22; fy < L.H; fy += 26) { c.beginPath(); c.moveTo(0, fy); c.lineTo(L.W, fy); c.stroke(); }
+      for (var i = 0; i < L.W / 80; i++) { var px = (i * 173) % L.W, py = L.wallH + 22 + (i % 4) * 26; c.beginPath(); c.moveTo(px, py); c.lineTo(px, py + 26); c.stroke(); }
+    } else if (F.kind === 'tiles') {
+      c.strokeStyle = 'rgba(255,255,255,.7)';
+      for (var ty = L.wallH + 30; ty < L.H; ty += 30) { c.beginPath(); c.moveTo(0, ty); c.lineTo(L.W, ty); c.stroke(); }
+      for (var tx = 0; tx < L.W; tx += 50) { c.beginPath(); c.moveTo(tx, L.wallH); c.lineTo(tx, L.H); c.stroke(); }
+    } else {
+      c.fillStyle = 'rgba(255,255,255,.35)';
+      for (var cy = L.wallH + 18; cy < L.H; cy += 22) for (var cx2 = (cy % 44) ? 10 : 30; cx2 < L.W; cx2 += 40) { c.beginPath(); c.arc(cx2, cy, 2.5, 0, TAU); c.fill(); }
+    }
     c.fillStyle = '#fff'; c.fillRect(0, L.wallH - 14, L.W, 16);
     c.beginPath(); c.moveTo(0, L.wallH - 14); c.lineTo(L.W, L.wallH - 14); c.moveTo(0, L.wallH + 2); c.lineTo(L.W, L.wallH + 2); ink(c, 3);
   }
-  function drawTable(c) {
-    var tb = LAY.table, fy = LAY.floorY;
-    [tb.x0 + 24, tb.x1 - 24].forEach(function (lx) { rr(c, lx - 8, tb.y + 10, 16, fy - tb.y - 10, 5); c.fillStyle = '#C9965F'; c.fill(); ink(c, 3); });
-    rr(c, tb.x0, tb.y, tb.x1 - tb.x0, 20, 8); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3.5);
-    rr(c, tb.x0 + 12, tb.y + 20, tb.x1 - tb.x0 - 24, 14, 4); c.fillStyle = '#FFD3E4'; c.fill(); ink(c, 2.5);
+  function drawFurniture(c) {
+    var fy = LAY.floorY;
+    LAY.tables.forEach(function (tb) {
+      if (tb.kind === 'sideboard') {
+        rr(c, tb.x0 + 10, tb.y + 14, tb.x1 - tb.x0 - 20, fy - tb.y - 14, 8); c.fillStyle = '#F2C38E'; c.fill(); ink(c, 3.5);
+        var mid = (tb.x0 + tb.x1) / 2;
+        rr(c, tb.x0 + 24, tb.y + 30, mid - tb.x0 - 32, fy - tb.y - 50, 6); c.fillStyle = '#FFD9A8'; c.fill(); ink(c, 2.5);
+        rr(c, mid + 8, tb.y + 30, tb.x1 - mid - 32, fy - tb.y - 50, 6); c.fillStyle = '#FFD9A8'; c.fill(); ink(c, 2.5);
+        circle(c, mid - 16, tb.y + 80, 5); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 2); circle(c, mid + 16, tb.y + 80, 5); c.fill(); ink(c, 2);
+        rr(c, tb.x0, tb.y, tb.x1 - tb.x0, 18, 8); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3.5);
+        return;
+      }
+      [tb.x0 + 24, tb.x1 - 24].forEach(function (lx) { rr(c, lx - 8, tb.y + 10, 16, fy - tb.y - 10, 5); c.fillStyle = '#C9965F'; c.fill(); ink(c, 3); });
+      rr(c, tb.x0, tb.y, tb.x1 - tb.x0, 20, 8); c.fillStyle = '#E6B98A'; c.fill(); ink(c, 3.5);
+      rr(c, tb.x0 + 12, tb.y + 20, tb.x1 - tb.x0 - 24, 14, 4); c.fillStyle = '#FFD3E4'; c.fill(); ink(c, 2.5);
+    });
   }
+  function isTableSurface(id) { return LAY.tables && LAY.tables.some(function (t) { return t.id === id; }); }
 
   /* ================= state for the room ================= */
   var mode = 'room';                       // room | grow
@@ -629,12 +729,12 @@
     var beds = floorItems().filter(function (p) { return p.u === 't-catbed' || p.u === 't-rug' || p.u === 't-cushions'; });
     if (r < 0.25 && beds.length) {
       var b = beds[Math.floor(Math.random() * beds.length)];
-      cat.target = b.f; cat.state = 'walk'; cat.then = 'nap';
+      cat.target = b.f; cat.state = 'walk'; cat.then = 'nap'; cat.napU = b.u;
     } else if (r < 0.55 && floorItems().length) {
       var it = floorItems()[Math.floor(Math.random() * floorItems().length)];
-      cat.target = clamp(it.f + (Math.random() < 0.5 ? -0.12 : 0.12), 0.05, 0.95); cat.state = 'walk'; cat.then = 'sit';
+      cat.target = clamp(it.f + (Math.random() < 0.5 ? -0.04 : 0.04), 0.03, 0.97); cat.state = 'walk'; cat.then = 'sit'; cat.napU = null;
     } else {
-      cat.target = rand(0.08, 0.92); cat.state = 'walk'; cat.then = 'sit';
+      cat.target = clamp(cat.f + rand(-0.25, 0.25), 0.04, 0.96); cat.state = 'walk'; cat.then = 'sit'; cat.napU = null;
     }
   }
   function catXY() { var s = LAY.surfaces.floor; return { x: lerp(s.x0, s.x1, cat.f), y: s.y + 6 }; }
@@ -644,17 +744,21 @@
     if (cat.happy > 0) { cat.happy -= dt; return; }
     cat.blink -= dt; if (cat.blink < -0.15) cat.blink = rand(2, 6);
     if (cat.state === 'walk') {
-      var d = cat.target - cat.f, step = 0.12 * dt;
+      var d = cat.target - cat.f, step = 0.12 * dt * 1000 / (LAY.surfaces.floor.x1 - LAY.surfaces.floor.x0);
       cat.dir = d > 0 ? 1 : -1;
       if (Math.abs(d) <= step) { cat.f = cat.target; cat.state = cat.then || 'sit'; cat.t = cat.state === 'nap' ? rand(6, 10) : rand(2.5, 5); }
       else cat.f += step * cat.dir;
     } else if (cat.t <= 0) catPick();
+    // if its bed is moved away mid-nap, it wakes up
+    if (cat.state === 'nap' && cat.napU && !S.placed.some(function (p) { return p.u === cat.napU && p.s === 'floor'; })) { cat.state = 'sit'; cat.t = rand(1, 2); cat.napU = null; }
   }
   function drawCat(c) {
     var p = catXY(), s = catSize();
     var face = cat.happy > 0 ? 'happy' : cat.state === 'nap' ? 'sleep' : (cat.blink < 0 ? 'blink' : 'open');
     c.save();
     if (cat.state === 'nap') {
+      var lift = { 't-catbed': 36, 't-cushions': 68, 't-rug': 0 }[cat.napU] || 0;
+      p = { x: p.x, y: p.y - lift };
       c.translate(p.x, p.y - s * 0.34);
       c.scale(cat.dir, 1);
       drawCatPose(c, 'lie', face, s);
@@ -686,6 +790,8 @@
   }
   function renderDrawer() {
     document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
+    $('paintBtn').setAttribute('aria-pressed', String(tab === 'paint'));
+    $('items').classList.toggle('painting', tab === 'paint');
     var box = $('items'), html = '';
     if (tab === 'plants') {
       if (!S.plants.length) html = '<p class="empty">No plants yet. Tap Grow to plant your first one!</p>';
@@ -704,6 +810,14 @@
           html += '<div class="item locked" data-lock="' + t.id + '" role="button" tabindex="0" aria-label="' + t.name + ': ' + t.need.text + '"><img alt="" src="' + thumbCache[key] + '"><span>' + t.need.text + '</span></div>';
         }
       });
+    } else if (tab === 'paint') {
+      html += '<div class="paintrow"><span class="plabel">Walls</span>' + WALLS.map(function (w, i) {
+        return '<button class="sw" type="button" data-wall="' + i + '" aria-label="Wall colour ' + (i + 1) + '" aria-pressed="' + (i === S.wall) + '" style="background-color:' + w.wall + ';background-image:radial-gradient(circle,' + w.pat + ' 3px,transparent 4px);background-size:14px 14px"></button>';
+      }).join('') + '</div>';
+      html += '<div class="paintrow"><span class="plabel">Floor</span>' + FLOORS.map(function (f, i) {
+        var bg = f.kind === 'planks' ? 'repeating-linear-gradient(0deg,rgba(42,35,64,.2) 0 2px,transparent 2px 10px)' : f.kind === 'tiles' ? 'linear-gradient(rgba(255,255,255,.7) 2px,transparent 2px) 0 0/12px 12px,linear-gradient(90deg,rgba(255,255,255,.7) 2px,transparent 2px) 0 0/12px 12px' : 'radial-gradient(circle,rgba(255,255,255,.5) 2px,transparent 3px) 0 0/9px 9px';
+        return '<button class="sw" type="button" data-floor="' + i + '" aria-label="Floor ' + (i + 1) + '" aria-pressed="' + (i === (S.floor || 0)) + '" style="background:' + bg + ',' + f.col + '"></button>';
+      }).join('') + '</div>';
     } else {
       var dl = dishList();
       if (!dishesReady()) html = '<p class="empty">Dishes you cook in Cosy Kitchen will appear here.</p>';
@@ -733,7 +847,8 @@
   window.addEventListener('pointermove', function (e) {
     if (press && press.id === e.pointerId && !drag) {
       var dx = e.clientX - press.x, dy = e.clientY - press.y;
-      if (dy < -10 && Math.abs(dy) > Math.abs(dx)) {
+      var mouse = e.pointerType === 'mouse';
+      if (mouse ? Math.hypot(dx, dy) > 8 : (dy < -10 && Math.abs(dy) > Math.abs(dx) * 0.5)) {
         var it = resolve(press.u);
         if (it) { drag = { u: press.u, it: it, x: e.clientX, y: e.clientY, from: 'drawer', pid: e.pointerId }; Sound.pick(); buzz(8); }
         press = null;
@@ -789,12 +904,22 @@
       return;
     }
     var hit = placedHit(r.x, r.y);
-    if (!hit) return;
-    roomPress = { id: e.pointerId, x: e.clientX, y: e.clientY, hit: hit };
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    if (!hit) { pan = { id: e.pointerId, x: e.clientX, sx: SX }; scrollTo = null; return; }
+    roomPress = { id: e.pointerId, x: e.clientX, y: e.clientY, hit: hit };
   });
+  var pan = null;
+  canvas.addEventListener('wheel', function (e) {
+    if (mode !== 'room' || maxScroll() <= 0) return;
+    var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    scrollTo = null; setScroll(SX + d / K); e.preventDefault();
+  }, { passive: false });
+  function arrow(dir) { Sound.init(); Sound.pick(); scrollTo = clamp((scrollTo !== null ? scrollTo : SX) + dir * VIEW_W * 0.6, 0, maxScroll()); }
+  $('scrollL').addEventListener('click', function () { arrow(-1); });
+  $('scrollR').addEventListener('click', function () { arrow(1); });
   canvas.addEventListener('pointermove', function (e) {
     if (mode === 'grow') { growMove(e); return; }
+    if (pan && pan.id === e.pointerId) { setScroll(pan.sx - (e.clientX - pan.x) / K); return; }
     if (!roomPress || roomPress.id !== e.pointerId || drag) return;
     if (Math.hypot(e.clientX - roomPress.x, e.clientY - roomPress.y) < 8) return;
     drag = { u: roomPress.hit.p.u, it: roomPress.hit.it, x: e.clientX, y: e.clientY, from: 'room', pid: e.pointerId };
@@ -803,6 +928,7 @@
   });
   canvas.addEventListener('pointerup', function (e) {
     if (mode === 'grow') { growUp(e); return; }
+    if (pan && pan.id === e.pointerId) { pan = null; return; }
     if (roomPress && roomPress.id === e.pointerId) {
       // a tap on a thing gives it a happy wiggle
       wig[roomPress.hit.p.u] = 0.5; Sound.pop();
@@ -813,9 +939,15 @@
 
   /* ---------- wall paint ---------- */
   $('paintBtn').addEventListener('click', function () {
+    Sound.init(); Sound.pick();
+    tab = tab === 'paint' ? 'plants' : 'paint'; renderDrawer(); $('items').scrollLeft = 0;
+  });
+  $('items').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-wall],[data-floor]'); if (!b) return;
     Sound.init(); Sound.brush();
-    S.wall = (S.wall + 1) % WALLS.length; save();
-    sparkle(LAY.W / 2, LAY.wallH / 2, WALLS[S.wall].pat, 10, 1.4);
+    if (b.dataset.wall !== undefined) { S.wall = +b.dataset.wall; sparkle(SX + VIEW_W / 2, LAY.wallH / 2, WALLS[S.wall].pat, 12, 1.4); }
+    else { S.floor = +b.dataset.floor; sparkle(SX + VIEW_W / 2, LAY.floorY, '#FFFFFF', 10, 1); }
+    save(); renderDrawer();
   });
 
   /* ================= potting bench (Grow) ================= */
@@ -1037,16 +1169,12 @@
       var sq = grow.poke > 0 ? Math.sin(grow.poke / 0.5 * Math.PI) * 0.08 : 0;
       c.scale(1.35 + sq, 1.35 - sq);
       var pl = { t: grow.t || 'catnip', pot: grow.pot, col: grow.col, id: 1, seed: grow.seed };
-      if (grow.g > 0) drawPlant(c, pl, grow.g, time);
-      else if (grow.seed) drawPlant(c, pl, 0, time);
-      drawPot(c, grow.pot, 92);
       var potH = 92 * 0.62;
-      if (grow.soil > 0) {
-        var lvl = Math.min(3, grow.soil) / 3;
-        c.save(); c.beginPath(); c.moveTo(-46, -potH + 12); c.lineTo(46, -potH + 12); c.lineTo(40, -potH + 12 + 30 * (1 - lvl) + 6); c.lineTo(-40, -potH + 12 + 30 * (1 - lvl) + 6); c.closePath();
-        ell(c, 0, -potH + 6 + (1 - lvl) * 20, 44 - (1 - lvl) * 6, 8); c.fillStyle = '#7A4E2D'; c.fill(); c.restore();
-      }
-      if (grow.seed && grow.g <= 0) { ell(c, 0, -potH + 6, 5, 3.5); c.fillStyle = '#4A2E1A'; c.fill(); }
+      drawPot(c, grow.pot, 92);
+      soil(c, 92, Math.min(3, grow.soil) / 3);
+      if (grow.seed && grow.g <= 0) { ell(c, 0, -potH + potH * 0.08, 5, 3.5); c.fillStyle = '#4A2E1A'; c.fill(); }
+      if (grow.g > 0 || grow.seed) drawPlant(c, pl, grow.g, time);
+      potLip(c, grow.pot, 92);
       c.restore();
       // a dotted target where the pot wants tapping
       if (grow.step === 'plant') { c.save(); c.setLineDash([8, 7]); c.lineDashOffset = -time * 20; circle(c, B.pot.x, B.pot.y - 56, 60); c.lineWidth = 4; c.strokeStyle = '#FFFFFF'; c.stroke(); c.restore(); }
@@ -1083,27 +1211,27 @@
   /* ================= main loop ================= */
   function drawRoomScene(c) {
     drawRoom(c, time);
-    // draw order: wall things, shelves and sill, table, table things, flat floor things, cat and floor things
-    var order = { wall: 0, shelfA: 1, shelfB: 1, sill: 1, table: 3, floor: 4 };
+    // draw order: wall things and shelves/sills, then furniture and what's on it, then the floor (rug first)
     var list = S.placed.map(function (p) { return { p: p, it: resolve(p.u) }; }).filter(function (e) { return e.it; });
     function drawPlaced(e) {
       var q = placeXY(e.p);
+      if (q.x < SX - 200 || q.x > SX + VIEW_W + 200) return;
       c.save(); c.translate(q.x, q.y);
       if (wig[e.p.u] > 0) c.rotate(Math.sin(wig[e.p.u] * 30) * 0.06 * (wig[e.p.u] / 0.5));
       if (e.p.s !== 'wall' && !e.it.def.flat && e.it.kind !== 'dish') { ell(c, 0, 0, itemWidth(e.it) * 0.4, 6); c.fillStyle = 'rgba(42,35,64,.15)'; c.fill(); }
       drawItem(c, e.it, time);
       c.restore();
     }
-    list.filter(function (e) { return order[e.p.s] <= 1; }).sort(function (a, b) { return order[a.p.s] - order[b.p.s]; }).forEach(drawPlaced);
-    drawTable(c);
-    list.filter(function (e) { return e.p.s === 'table'; }).forEach(drawPlaced);
+    list.filter(function (e) { return e.p.s === 'wall'; }).forEach(drawPlaced);
+    list.filter(function (e) { return e.p.s !== 'wall' && e.p.s !== 'floor' && !isTableSurface(e.p.s); }).forEach(drawPlaced);
+    drawFurniture(c);
+    list.filter(function (e) { return isTableSurface(e.p.s); }).forEach(drawPlaced);
     list.filter(function (e) { return e.p.s === 'floor' && e.it.def.flat; }).forEach(drawPlaced);
     var floorThings = list.filter(function (e) { return e.p.s === 'floor' && !e.it.def.flat; });
-    // the cat goes behind tall things and in front of short ones, roughly by size
+    // the cat goes behind tall things and in front of short ones; a napping cat lies on top of its bed
     floorThings.filter(function (e) { return e.it.h > 150; }).forEach(drawPlaced);
-    if (cat.state === 'nap') drawCat(c);
     floorThings.filter(function (e) { return e.it.h <= 150; }).forEach(drawPlaced);
-    if (cat.state !== 'nap') drawCat(c);
+    drawCat(c);
   }
   function drawDrag(c) {
     if (!drag) return;
@@ -1127,25 +1255,38 @@
     time += dt;
     Object.keys(wig).forEach(function (k) { wig[k] -= dt; if (wig[k] <= 0) delete wig[k]; });
     for (var i = parts.length - 1; i >= 0; i--) { var p = parts[i]; p.life += dt; if (p.life >= p.max) { parts.splice(i, 1); continue; } p.vy += (p.g !== undefined ? p.g : 380) * dt; p.vx *= 0.97; p.x += p.vx * dt; p.y += p.vy * dt; }
-    if (mode === 'room') updateCat(dt); else if (grow) updateGrow(dt);
+    if (mode === 'room') {
+      updateCat(dt);
+      // smooth scrolling from the arrow buttons, and nudging along while carrying something near an edge
+      if (scrollTo !== null) { var d = scrollTo - SX; if (Math.abs(d) < 1) { setScroll(scrollTo); scrollTo = null; } else setScroll(SX + d * Math.min(1, dt * 8)); }
+      if (drag) {
+        var edge = 70, vx = OX + VIEW_W * K;
+        if (drag.x < OX + edge) setScroll(SX - 700 * dt * (1 - (drag.x - OX) / edge));
+        else if (drag.x > vx - edge && drag.y < drawer.getBoundingClientRect().top) setScroll(SX + 700 * dt * (1 - (vx - drag.x) / edge));
+      }
+    } else if (grow) updateGrow(dt);
 
+    var vw = (mode === 'room' ? VIEW_W : LAY.W) * K, vh = LAY.H * K;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
-    ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * OX, dpr * OY);
     ctx.save();
-    rr(ctx, 0, 0, LAY.W, LAY.H, 24); ctx.clip();
+    rr(ctx, OX, OY, vw, vh, 22); ctx.clip();
+    ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * (OX - SX * K), dpr * OY);
     if (mode === 'room') drawRoomScene(ctx); else if (grow) drawBench(ctx);
-    ctx.restore();
-    rr(ctx, 0, 0, LAY.W, LAY.H, 24); ink(ctx, 5 / K > 5 ? 5 : 5);
     drawParts(ctx);
-    if (mode === 'room') drawDrag(ctx);
+    ctx.restore();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    rr(ctx, OX, OY, vw, vh, 22); ink(ctx, 5);
+    if (mode === 'room' && drag) { ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * (OX - SX * K), dpr * OY); drawDrag(ctx); }
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', layout);
   window.addEventListener('orientationchange', function () { setTimeout(layout, 200); });
   if (window.ResizeObserver) { var ro = new ResizeObserver(function () { layout(); }); ro.observe(topbar); ro.observe(drawer); ro.observe(growbar); }
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
-  window.addEventListener('gg-change', function () { CAT = catOpts(); thumbCache = {}; renderDrawer(); });
+  function refreshCat() { catSetup(); thumbCache = {}; renderDrawer(); }
+  window.addEventListener('gg-change', refreshCat);
+  window.addEventListener('focus', catSetup);
 
   // a starter room for a brand new home: a rug and a lamp, so it doesn't feel empty
   if (!S.placed.length && !S.plants.length && !S.started) {
@@ -1167,6 +1308,9 @@
     surface: function (k) { return LAY.surfaces[k]; },
     layout: function () { return { W: LAY.W, H: LAY.H, K: K }; },
     placeXY: function (u) { for (var i = 0; i < S.placed.length; i++) if (S.placed[i].u === u) return placeXY(S.placed[i]); return null; },
-    cat: function () { return catXY(); }
+    cat: function () { return catXY(); },
+    catState: function () { return cat.state; },
+    forceNap: function (u) { var it = S.placed.filter(function (p) { return p.u === u; })[0]; if (it) { cat.target = it.f; cat.state = 'walk'; cat.then = 'nap'; cat.napU = u; } },
+    scroll: function () { return SX; }
   };
 })();

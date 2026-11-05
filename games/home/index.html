@@ -69,6 +69,14 @@ body { background: #F7E2C6; }
 .choice .lock { position: absolute; bottom: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 2.5px solid var(--ink); display: grid; place-items: center; }
 .choice .lock svg { width: 16px; height: 16px; }
 
+.scroll { position: fixed; z-index: 4; width: 52px; height: 52px; opacity: .92; transition: opacity .2s ease; }
+.scroll.off { opacity: 0; pointer-events: none; }
+.act[aria-pressed="true"] { background: var(--sun); }
+.items.painting { flex-direction: column; overflow-x: hidden; gap: 6px; min-height: 0; }
+.paintrow { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 4px 2px; }
+.plabel { flex: none; width: 52px; font: 800 .95rem var(--body); }
+.paintrow .sw { flex: none; width: 46px; height: 46px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.paintrow .sw[aria-pressed="true"] { transform: translateY(-3px) scale(1.08); outline: 3px solid var(--sun); outline-offset: 2px; }
 .say {
   position: fixed; left: 50%; bottom: calc(var(--bar-h, 180px) + 14px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content;
   transition: opacity .3s ease, transform .3s ease;
@@ -107,7 +115,7 @@ body { background: #F7E2C6; }
       <button class="tab" role="tab" type="button" data-tab="things" aria-selected="false">Things</button>
       <button class="tab" role="tab" type="button" data-tab="dishes" aria-selected="false">Dishes</button>
     </div>
-    <button class="act paint" id="paintBtn" type="button" aria-label="Paint the walls">
+    <button class="act paint" id="paintBtn" type="button" aria-label="Paint the walls and floor" aria-pressed="false">
       <svg viewBox="0 0 32 32"><rect x="5" y="5" width="20" height="9" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.5"/><path d="M25 9 H28 V17 H16 V21" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><rect x="13.5" y="21" width="5" height="8" rx="2" fill="#E6B98A" stroke="#2A2340" stroke-width="2.5"/></svg><span>Paint</span>
     </button>
     <button class="act" id="growBtn" type="button" aria-label="Grow a plant">
@@ -121,6 +129,9 @@ body { background: #F7E2C6; }
   <div class="step" id="stepLabel">Pick a pot</div>
   <div class="choices" id="choices"></div>
 </div>
+
+<button class="round scroll" id="scrollL" type="button" aria-label="Look left" hidden><svg viewBox="0 0 32 32"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button class="round scroll" id="scrollR" type="button" aria-label="Look right" hidden><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 
 <div class="say hide" id="say" aria-live="polite"></div>
 
