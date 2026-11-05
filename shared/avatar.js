@@ -89,6 +89,26 @@
     return '';
   }
 
+  /* messy tufts drawn along the head's own outline, so the hair hugs the top of the head instead of sitting on it */
+  function spiky(g, hair) {
+    function at(deg, d) { var r = deg * Math.PI / 180; return (g.cx + (g.rx + d) * Math.cos(r)).toFixed(1) + ' ' + (g.cy + (g.ry + d) * Math.sin(r)).toFixed(1); }
+    // the sides run exactly along the head outline, the tufts rise from the crown, and the fringe follows the same curve a little lower
+    var tips = [[244, 8, -10], [258, 12, -6], [272, 13, 2], [286, 11, 7], [298, 7, 10]];
+    var d = 'M' + at(212, 0) + ' Q' + at(222, 1) + ' ' + at(234, 0);
+    tips.forEach(function (t, k) {
+      var next = k < tips.length - 1 ? (t[0] + tips[k + 1][0]) / 2 : 308;
+      d += ' Q' + at(t[0] - 7, t[1] * 0.55) + ' ' + at(t[0] + t[2] * 0.4, t[1]);
+      d += ' Q' + at(next - 3, 2) + ' ' + at(next, 0);
+    });
+    d += ' Q' + at(318, 1) + ' ' + at(328, 0);
+    [[316, 304, -8], [298, 286, -10], [280, 268, -9], [262, 250, -10], [244, 228, -8], [222, 212, -3]].forEach(function (f) {
+      d += ' Q' + at(f[0], f[2] - 2) + ' ' + at(f[1], f[2] + 2);
+    });
+    var shine = 'M' + at(252, -7) + ' Q' + at(255, -3) + ' ' + at(257, 2) + ' M' + at(273, -6) + ' Q' + at(275, -2) + ' ' + at(277, 3);
+    return '<path d="' + d + ' Z" fill="' + hair + '" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/>' +
+      '<path d="' + shine + '" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.2" stroke-linecap="round"/>';
+  }
+
   function drawFront(head, hair, g) {
     var top = g.cy - g.ry;
     switch (head) {
@@ -100,8 +120,7 @@
         '<ellipse cx="0" cy="0" rx="5" ry="6" fill="#FF4F86"/></g>';
       case 'ponytail': case 'pigtails': case 'braid':
         return '<path d="M38 ' + (top + 14) + ' Q42 ' + (top - 4) + ' 60 ' + (top - 3) + ' Q78 ' + (top - 4) + ' 82 ' + (top + 14) + ' Q74 ' + (top + 6) + ' 66 ' + (top + 12) + ' Q60 ' + (top + 4) + ' 54 ' + (top + 12) + ' Q46 ' + (top + 6) + ' 38 ' + (top + 14) + ' Z" fill="' + hair + '" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/>';
-      case 'spiky': return '<path d="M38 ' + (top + 12) + ' Q35 ' + (top - 2) + ' 41 ' + (top - 12) + ' Q44 ' + (top - 3) + ' 49 ' + (top - 1) + ' Q47 ' + (top - 16) + ' 55 ' + (top - 22) + ' Q56 ' + (top - 8) + ' 61 ' + (top - 4) + ' Q65 ' + (top - 18) + ' 75 ' + (top - 19) + ' Q69 ' + (top - 8) + ' 71 ' + (top - 2) + ' Q80 ' + (top - 8) + ' 86 ' + (top - 2) + ' Q80 ' + (top + 2) + ' 82 ' + (top + 12) + ' Q72 ' + (top + 3) + ' 64 ' + (top + 8) + ' Q57 ' + (top + 2) + ' 50 ' + (top + 9) + ' Q44 ' + (top + 4) + ' 38 ' + (top + 12) + ' Z" fill="' + hair + '" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/>' +
-        '<path d="M48 ' + (top + 2) + ' Q50 ' + (top - 6) + ' 54 ' + (top - 12) + ' M64 ' + (top) + ' Q66 ' + (top - 8) + ' 71 ' + (top - 12) + '" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2.2" stroke-linecap="round"/>';
+      case 'spiky': return spiky(g, hair);
       case 'mohawk': return '<path d="M50 ' + (top + 6) + ' L48 ' + (top - 14) + ' L55 ' + (top - 6) + ' L57 ' + (top - 26) + ' L62 ' + (top - 8) + ' L68 ' + (top - 22) + ' L68 ' + (top - 4) + ' L74 ' + (top - 12) + ' L71 ' + (top + 6) + ' Z" fill="#9B7BFF" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><path d="M53 ' + (top - 2) + ' L57 ' + (top - 18) + ' M63 ' + (top - 2) + ' L67 ' + (top - 14) + '" stroke="#FF7EB6" stroke-width="3" stroke-linecap="round"/>';
       case 'tophat': return '<g stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"><ellipse cx="60" cy="' + (top + 4) + '" rx="26" ry="6" fill="#3A3350"/><rect x="45" y="' + (top - 26) + '" width="30" height="30" rx="3" fill="#3A3350"/></g><rect x="46.5" y="' + (top - 6) + '" width="27" height="6" fill="#FF6B57"/>';
       case 'fireman': return '<g stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"><path d="M28 ' + (top + 12) + ' Q30 ' + (top + 2) + ' 40 ' + (top + 6) + ' Q42 ' + (top - 20) + ' 60 ' + (top - 20) + ' Q78 ' + (top - 20) + ' 80 ' + (top + 6) + ' Q90 ' + (top + 2) + ' 92 ' + (top + 12) + ' Z" fill="#E8413B"/><path d="M60 ' + (top - 20) + ' L60 ' + (top + 6) + '" fill="none"/></g><path d="M52 ' + (top - 8) + ' L60 ' + (top - 14) + ' L68 ' + (top - 8) + ' L66 ' + (top) + ' L54 ' + (top) + ' Z" fill="#FFC93C" stroke="' + INK + '" stroke-width="2"/>';
