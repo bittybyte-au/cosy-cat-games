@@ -264,7 +264,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       panel.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
       var title = CATS.filter(function (c) { return c[0] === tab; })[0][1];
       var head = '<h3 class="av-listtitle">' + title + '</h3>';
-      if (tab === 'colours') pane.innerHTML = head + swatches(GGAvatar.CAT_COLOURS, 'color', 'Cat colour') + (av.type === 'calico' ? '<p class="note">Calico cats are always white with patches.</p>' : '') + swatches(GGAvatar.BG_COLOURS, 'bg', 'Background');
+      if (tab === 'colours') pane.innerHTML = head + swatches(GGAvatar.CAT_COLOURS, 'color', 'Cat colour') + (av.type === 'calico' ? '<p class="note">Calico cats are always white with patches.</p>' : av.type === 'tuxedo' ? '<p class="note">Tuxedo cats are always black and white.</p>' : '') + swatches(GGAvatar.BG_COLOURS, 'bg', 'Background');
       else pane.innerHTML = head + '<div class="av-grid">' + rows(listFor[tab], tab) + '</div><p class="av-tip" id="avTip" aria-live="polite"></p>';
       pane.querySelectorAll('.av-sq').forEach(function (b) {
         b.addEventListener('click', function () {

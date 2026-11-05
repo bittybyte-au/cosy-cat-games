@@ -137,7 +137,8 @@
   function svg(av, size) {
     av = normalise(av);
     size = size || 64;
-    var col = av.type === 'calico' ? '#FFFFFF' : av.color, dark = isDark(col);
+    // calico cats are always white with patches; tuxedo cats always black and white
+    var col = av.type === 'calico' ? '#FFFFFF' : av.type === 'tuxedo' ? '#3D3650' : av.color, dark = isDark(col);
     var g = headGeom(av.type), hair = shade(av.type === 'tuxedo' || av.type === 'calico' ? '#8B5A3C' : col, dark ? -0.6 : 0.35);
     if (dark) hair = '#2E2A3A';
     if (av.head === 'braid') hair = '#F2C14E';   // Rapunzel's golden hair

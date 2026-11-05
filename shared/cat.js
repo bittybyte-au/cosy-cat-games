@@ -95,11 +95,13 @@
     S.push({ d: head, fill: fill });
     if (markings === 'tabby') S.push({ d: 'M-10 -28L-10 -19M0 -29L0 -15M10 -28L10 -19M-44 4L-33 7M-44 14L-33 13M44 4L33 7M44 14L33 13', stroke: get('dark', shade(fill, 0.28)), lw: 4.5, clip: true });
     if (markings === 'calico') S.push({ d: 'M-50 -26Q-20 -30 -14 -6Q-24 8 -50 4Z', fill: '#FFA94D', clip: true }, { d: 'M50 -22Q22 -28 16 -6Q24 8 50 2Z', fill: '#4A4458', clip: true }, { d: ell(26, 40, 16, 9), fill: '#FFA94D', clip: true });
-    if (markings === 'tuxedo') S.push({ d: 'M0 -18Q-8 2 -14 10Q-18 24 0 34Q18 24 14 10Q8 2 0 -18Z', fill: '#FFFFFF', clip: true });
+    // tuxedo: a white blaze down the face, a white muzzle and chin
+    if (markings === 'tuxedo') S.push({ d: 'M0 -26Q-5 -10 -9 2Q-24 6 -24 20Q-20 40 0 44Q20 40 24 20Q24 6 9 2Q5 -10 0 -26Z', fill: '#FFFFFF', clip: true });
     if (markings === 'patch') S.push({ d: 'M14 -32Q40 -30 46 0Q30 -6 20 -10Q12 -20 14 -32Z', fill: patch, clip: true });
     S.push({ d: head, stroke: INK, lw: 5 });
-    // dark cats with a white muzzle keep dark face lines
-    if (markings === 'tuxedo') line = INK;
+    // a tuxedo cat's eyes and whiskers sit on dark fur; its nose and mouth on the white muzzle
+    var whisker = line;
+    if (markings === 'tuxedo') { whisker = '#F3EEFF'; line = INK; if (!o.eyeColor) o = Object.assign({}, o, { eyeColor: '#F3EEFF' }); }
 
     // cheeks
     if (cheeks && !o.noCheeks) S.push({ d: ell(-26, 16, 7, 4.5) + ell(26, 16, 7, 4.5), fill: 'rgba(255,120,160,.45)' });
@@ -122,7 +124,7 @@
       else S.push({ d: 'M-7 15Q-3.5 20 0 14Q3.5 20 7 15', stroke: line, lw: 3 });
     }
     // whiskers
-    S.push({ d: 'M-30 10L-47 7M-30 15L-46 17M30 10L47 7M30 15L46 17', stroke: line, lw: 1.8, alpha: 0.7 });
+    S.push({ d: 'M-30 10L-47 7M-30 15L-46 17M30 10L47 7M30 15L46 17', stroke: whisker, lw: 1.8, alpha: 0.7 });
     // little extras
     if (extra === 'bow') S.push({ d: 'M0 0L-13 -8L-13 8ZM0 0L13 -8L13 8Z', fill: '#FF4F86', stroke: INK, lw: 3, tf: [25, -30, 20] }, { d: circ(0, 0, 4), fill: '#FF4F86', stroke: INK, lw: 3, tf: [25, -30, 20] });
     if (extra === 'bell') S.push({ d: circ(0, g.cy + g.ry - 1, 7.5), fill: '#FFC93C', stroke: INK, lw: 3 }, { d: 'M-5 ' + (g.cy + g.ry) + 'L5 ' + (g.cy + g.ry), stroke: INK, lw: 3 });
