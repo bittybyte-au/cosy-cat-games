@@ -44,8 +44,8 @@
     { id: 'giantyarn', name: 'Giant yarn ball', floor: true, w: 120, h: 115, need: { save: 'yarn', level: 6, text: 'Reach level 6 in Yarn Sort' } },
     { id: 'catbed', name: 'Cat bed', floor: true, w: 170, h: 75, need: { save: 'cubbies', level: 3, text: 'Reach level 3 in Cosy Cubbies' } },
     { id: 'scratch', name: 'Scratching post', floor: true, w: 110, h: 215, need: { save: 'cubbies', level: 6, text: 'Reach level 6 in Cosy Cubbies' } },
-    { id: 'cushions', name: 'Cushions', w: 120, h: 80, need: { save: 'kittypop', level: 3, text: 'Reach level 3 in Kitty Pop' } },
-    { id: 'fishbowl', name: 'Fish bowl', w: 100, h: 110, need: { save: 'kittypop', level: 6, text: 'Reach level 6 in Kitty Pop' } },
+    { id: 'cushions', name: 'Cushions', w: 120, h: 80, need: { save: 'kittypop', level: 3, text: 'Reach level 3 in Kitty Match' } },
+    { id: 'fishbowl', name: 'Fish bowl', w: 100, h: 110, need: { save: 'kittypop', level: 6, text: 'Reach level 6 in Kitty Match' } },
     { id: 'teapot', name: 'Teapot', w: 100, h: 85, need: { save: 'cooking', made: 1, text: 'Cook a dish in Cosy Kitchen' } },
     { id: 'cake', name: 'Cake stand', w: 100, h: 125, need: { save: 'cooking', made: 5, text: 'Cook 5 dishes in Cosy Kitchen' } }
   ];

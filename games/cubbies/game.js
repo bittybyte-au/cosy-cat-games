@@ -32,7 +32,7 @@
     c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
   }
 
-  /* The six cats, shared with Kitty Pop (copied so each game stands alone). */
+  /* The six cats, shared with Kitty Match (copied so each game stands alone). */
   /* ---------- the six cats ----------
      Each colour has its own face detail so they can be told apart without relying on colour. */
   var CATS = [

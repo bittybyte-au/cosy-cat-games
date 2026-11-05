@@ -1,4 +1,4 @@
-/* Kitty Pop – a gentle match-3 with cat heads.
+/* Kitty Match (was Kitty Pop; the folder, id and save keep the old name) – a gentle match-3 with cat heads.
    Swap two neighbouring cats to line up three or more of the same colour. No move limits, no losing.
    Everything is drawn in code on one canvas; sounds are made with Web Audio (no files).
    Special cats are an optional add-on in specials.js (see the notes there). */
@@ -553,7 +553,7 @@
     e.b.textContent = got;
     e.bar.style.width = (100 * got / g.target) + '%';
     e.el.classList.toggle('done', g.shown <= 0);
-    e.el.setAttribute('aria-label', g.shown <= 0 ? 'All ' + g.target + ' ' + CATS[g.kind].name + ' cats popped' : got + ' of ' + g.target + ' ' + CATS[g.kind].name + ' cats popped');
+    e.el.setAttribute('aria-label', g.shown <= 0 ? 'All ' + g.target + ' ' + CATS[g.kind].name + ' cats matched' : got + ' of ' + g.target + ' ' + CATS[g.kind].name + ' cats matched');
     if (bump && !reduceMotion) { e.el.classList.remove('bump'); void e.el.offsetWidth; e.el.classList.add('bump'); }
   }
   function goalsMet() { return level.goals.every(function (g) { return g.left <= 0; }); }
@@ -621,7 +621,7 @@
     eachTile(function (t, r, c) { t.dr = r - ROWS - 1 - (COLS - c) * 0.15; t.falling = true; t.vy = 0; });
     until(function () { var any = false; eachTile(function (t) { if (t.falling) any = true; }); return !any; }).then(function () { busy = false; });
     var names = level.goals.map(function (g) { return CATS[g.kind].name; });
-    say(level.goals.length === 1 ? 'Pop ' + level.goals[0].target + ' ' + names[0] + ' cats!' : 'Pop the cats at the top!', 2.6);
+    say(level.goals.length === 1 ? 'Match ' + level.goals[0].target + ' ' + names[0] + ' cats!' : 'Match the cats at the top!', 2.6);
   }
 
   async function celebrate() {

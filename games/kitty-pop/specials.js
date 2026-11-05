@@ -1,4 +1,4 @@
-/* Kitty Pop – special cats (optional add-on).
+/* Kitty Match – special cats (optional add-on).
 
    ON/OFF SWITCH: set ENABLED to false below to turn special cats off.
    You can also delete the specials.js <script> line in index.html; the game works the same without this file.

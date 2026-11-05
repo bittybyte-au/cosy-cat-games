@@ -66,7 +66,7 @@
     { id: 'freckles', name: 'Freckles' },
     { id: 'moustache', name: 'Moustache', earn: { hint: 'Cook 3 burgers', test: function (s) { return s.burger >= 3; } } },
     { id: 'beard', name: 'Beard', earn: { hint: 'Cook 3 pancake stacks', test: function (s) { return s.pancakes >= 3; } } },
-    { id: 'mask', name: 'Superhero mask', earn: { hint: 'Finish 25 Kitty Pop levels', test: function (s) { return s.kittypop >= 25; } } }
+    { id: 'mask', name: 'Superhero mask', earn: { hint: 'Finish 25 Kitty Match levels', test: function (s) { return s.kittypop >= 25; } } }
   ];
   var ALL = TYPES.concat(HEADS, FACES);
   function find(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
