@@ -67,7 +67,10 @@
     var key = JSON.stringify(av);
     if (key === catKey) return;
     catKey = key;
-    CAT = { color: av.type === 'calico' ? '#FFFFFF' : av.type === 'tuxedo' ? '#3D3650' : av.color };
+    // the same cat as the avatar picture (markings matter: a tuxedo cat is black AND white)
+    CAT = { color: av.type === 'calico' ? '#FFFFFF' : av.type === 'tuxedo' ? '#3D3650' : av.color,
+      build: av.type === 'chubby' || av.type === 'fluffy' ? av.type : 'short',
+      markings: av.type === 'tabby' || av.type === 'calico' || av.type === 'tuxedo' ? av.type : 'none' };
     try {
       var svg = GGAvatar.svg(av, 240, { bare: true });
       var img = new Image();
@@ -692,6 +695,7 @@
     jump: function (n) { $('cardWrap').hidden = true; startLevel(n); running = true; },
     teleport: function (x, y) { G.cat.x = x; G.cat.y = y; },
     setGot: function (n) { G.got = n; renderHud(); },
+    fright: function () { G.cat.safe = 0; fright({ x: G.cat.x + 10, y: G.cat.y }); },
     force: function (what) { if (what === 'dog' && G.dog) { G.dog.state = 'stir'; G.dog.t = 0.01; } if (what === 'spray' && G.spray) { G.spray.state = 'shake'; G.spray.t = 0.01; } if (what === 'mouse') launchMouse(); }
   };
 })();
