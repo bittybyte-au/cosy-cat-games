@@ -31,6 +31,9 @@ body { background: var(--wall); }
 .step.now { color: var(--ink); }
 .step.now i { background: var(--sun); transform: scale(1.12); }
 .step.done i { background: var(--grass); }
+.steps.many { gap: 4px; align-items: center; }
+.steps.many .step:not(.now) i { width: 18px; height: 18px; border-width: 2.5px; }
+.steps.many .step:not(.now) i svg, .steps.many .step:not(.now) span { display: none; }
 /* Bottom tray */
 .tray {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; height: auto;

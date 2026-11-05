@@ -350,12 +350,24 @@
 
   var BX = 320, BY = 548;
 
+  /* a little pile of chips beside the burger. tone: 'pale' | 'perfect' | 'burnt' */
+  var CHIP_COLOURS = { pale: '#F7E3A0', perfect: '#F2B84B', burnt: '#9A5A26' };
+  function drawChips(c, x, y, tone) {
+    var r = seeded(7);
+    c.save(); c.translate(x, y); c.fillStyle = CHIP_COLOURS[tone] || CHIP_COLOURS.perfect;
+    for (var i = 0; i < 14; i++) {
+      var px = (r() - 0.5) * 120, py = (r() - 0.5) * 34 - (i > 8 ? 14 : 0), a = (r() - 0.5) * 1.4, l = 50 + r() * 20;
+      c.save(); c.translate(px, py); c.rotate(a); rr(c, -l / 2, -7, l, 14, 4); c.fill(); ink(c, 3); c.restore();
+    }
+    c.restore();
+  }
   function drawBurgerScene(c, d, extra) {
     extra = extra || {};
     var pl = PLATES[d.plate];
     c.beginPath(); c.ellipse(BX, BY + 14, 270, 70, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
     c.beginPath(); c.ellipse(BX, BY, 270, 70, 0, 0, TAU); c.fillStyle = pl.fill; c.fill(); ink(c, 5);
     c.beginPath(); c.ellipse(BX, BY + 2, 228, 52, 0, 0, TAU); c.strokeStyle = pl.rim; c.globalAlpha = 0.35; c.lineWidth = 4; c.stroke(); c.globalAlpha = 1;
+    if (d.chips) drawChips(c, BX + 168, BY - 6, d.chips);
     drawBunBottom(c, BX, BY - 4, 1);
     var y = BY - 44;
     var layers = [{ kind: 'patty', tone: d.patty }].concat(d.layers);
@@ -370,10 +382,11 @@
   }
 
   /* ---------- pizza (seen from the front, a little above) ----------
-     data: plate, sauce (0/1), cheese (0/1), bake (0 raw dough .. 1 golden), pz: toppings [{ k, x, y, r }]
+     data: plate, sauce (0/1), cheese (0/1), bake (0 raw dough .. 1 golden), cut (0/1, six slices), pz: toppings [{ k, x, y, r }]
      where x, y are whole pixels on the flat pizza (-200..200 from the middle) and r a turn in degrees.
      With no data it's a golden cheese pizza. */
   var ZX = 320, ZY = 450, ZRX = 236, ZRY = 96, ZSQ = ZRY / ZRX;
+  var PIZZA_CUTS = [0, 60, 120];   // the three cuts (degrees) that make six slices
   var PIZZA_TOPS = ['pepperoni', 'mushroom', 'olive', 'basil', 'pineapple', 'capsicum', 'ham'];
   function mixHex(a, b, t) {
     var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
@@ -427,6 +440,11 @@
       c.fillStyle = 'rgba(255,255,255,.5)'; [[-90, -20], [40, 10], [120, -30], [-30, 34]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 22, 7, 0, 0, TAU); c.fill(); });
     }
     (d.pz || []).forEach(function (t) { drawPizzaTopping(c, t); });
+    // cut into six slices
+    if (d.cut) PIZZA_CUTS.forEach(function (deg) {
+      var a = deg * Math.PI / 180, ex = Math.cos(a) * (ZRX - 12), ey = Math.sin(a) * (ZRX - 12) * ZSQ;
+      c.beginPath(); c.moveTo(-ex, -ey); c.lineTo(ex, ey); c.strokeStyle = 'rgba(42,35,64,.55)'; c.lineWidth = 4; c.stroke();
+    });
     c.restore();
   }
 
@@ -438,7 +456,7 @@
     burger: { draw: drawBurgerScene, x: 320, y: 410, span: 540 },
     pizza: { draw: drawPizzaScene, x: 320, y: 440, span: 560 }
   };
-  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false, sauce: 1, cheese: 1, bake: 1, pz: [] };
+  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false, chips: '', sauce: 1, cheese: 1, bake: 1, pz: [], cut: 0 };
   var round = function (v) { return typeof v === 'number' ? Math.round(v * 10) / 10 : v; };
   // positions to whole pixels, everything else to one decimal place
   function tidy(o, key) {
@@ -476,8 +494,8 @@
       drawMini: drawMini, grainBatch: grainBatch, rollEnd: rollEnd, drawHandroll: drawHandroll, drawSeed: drawSeed, drawPlateScene: drawPlateScene,
       drawLeaf: drawLeaf, gingerSlice: gingerSlice, drawGinger: drawGinger, drawWasabi: drawWasabi, cakeInfo: cakeInfo, drawStackCake: drawStackCake,
       stackOf: stackOf, stackTop: stackTop, drawButter: drawButter, drawTopping: drawTopping, drawStackScene: drawStackScene,
-      drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene,
-      ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, PIZZA_TOPS: PIZZA_TOPS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
+      drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene, CHIP_COLOURS: CHIP_COLOURS,
+      ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, PIZZA_TOPS: PIZZA_TOPS, PIZZA_CUTS: PIZZA_CUTS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
     }
   };
 })();
