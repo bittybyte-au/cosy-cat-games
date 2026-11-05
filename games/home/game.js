@@ -56,8 +56,11 @@
   ];
   function findDef(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
 
+  /* Everything is open from the start (no locked items: the user's call, to keep clear of unlock-chasing).
+     The `need` notes on THINGS are kept in case gentle surprise unlocks come back; set this to false to use them. */
+  var ALL_OPEN = true;
   function thingUnlocked(t) {
-    if (!t.need) return true;
+    if (ALL_OPEN || !t.need) return true;
     var p = {};
     try { p = GG.getProgress(t.need.save) || {}; } catch (e) {}
     if (t.need.level) return (p.level || 1) >= t.need.level;
