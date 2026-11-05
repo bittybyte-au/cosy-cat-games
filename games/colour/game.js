@@ -92,7 +92,7 @@
   var pic = null;                  // the picture being coloured
   var isNew = false;
   var tool = 'fill';
-  /* Toddler mode (set on the games page): only the simple pages, eight big colours, tap to fill, nothing else;
+  /* Toddler mode (set on the games page): only the simple pages, eight big colours, tap to fill and a big undo;
      Done hangs the picture straight away in a frame of its own. Same pictures and save as always. */
   var TODDLER = false;
   try { TODDLER = !!(GG.getSetting && GG.getSetting('toddler', false)); } catch (e) {}
@@ -366,9 +366,10 @@
     ctx.clearRect(0, 0, cw, ch);
     if (mode === 'colour' && pic) {
       ctx.save();
-      ctx.fillStyle = '#2A2340';
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(PX - 4, PY + 2, PS + 8, PS + 8, 22) : ctx.rect(PX - 4, PY + 2, PS + 8, PS + 8); ctx.fill();
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(PX, PY, PS, PS, 18) : ctx.rect(PX, PY, PS, PS); ctx.clip();
+      // the page sits on the table like a raised card: a soft shadow, then an ink edge, thicker at the bottom
+      ctx.fillStyle = 'rgba(42,35,64,.14)'; GGDraw.rr(ctx, PX - 2, PY + 10, PS + 8, PS + 8, 22); ctx.fill();
+      ctx.fillStyle = GGDraw.INK; GGDraw.rr(ctx, PX - 4, PY - 4, PS + 8, PS + 10, 22); ctx.fill();
+      GGDraw.rr(ctx, PX, PY, PS, PS, 18); ctx.clip();
       ctx.translate(PX, PY);
       CP.drawPage(ctx, pic, PS, { anim: anim });
       // sparkles

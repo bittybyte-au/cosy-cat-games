@@ -11,7 +11,7 @@
    ColourPages.hit(page, x, y)                    which region is at (x, y) in page units, or -1 */
 (function () {
   'use strict';
-  var INK = '#2A2340';
+  var INK = GGDraw.INK;   // needs shared/draw.js first
   var TAU = Math.PI * 2;
 
   /* ---------- path helpers (SVG path strings, 400-unit page) ---------- */
@@ -37,13 +37,6 @@
     return 'M' + cx + ' ' + n(cy + s * 0.9) + 'C' + n(cx - s * 1.4) + ' ' + n(cy - s * 0.1) + ' ' + n(cx - s * 0.7) + ' ' + n(cy - s * 1.1) + ' ' + cx + ' ' + n(cy - s * 0.4) +
       'C' + n(cx + s * 0.7) + ' ' + n(cy - s * 1.1) + ' ' + n(cx + s * 1.4) + ' ' + n(cy - s * 0.1) + ' ' + cx + ' ' + n(cy + s * 0.9) + 'Z';
   }
-  /* five (or more) petals as one shape */
-  function PETALS(cx, cy, r, pl, pw, count) {
-    var d = ''; count = count || 5;
-    for (var i = 0; i < count; i++) { var a = i * 360 / count - 90; var ar = a * Math.PI / 180; d += E(cx + Math.cos(ar) * r, cy + Math.sin(ar) * r, pl, pw, a); }
-    return d;
-  }
-
   /* A cat head (and optional face), in the shared cat's proportions. size = head width. face: open | happy | sleep */
   function catHead(cx, cy, size, face) {
     var k = size / 88;
@@ -63,15 +56,62 @@
     else lines.push('M' + t(-22, 4) + 'Q' + t(-16, -4) + ' ' + t(-10, 4), 'M' + t(10, 4) + 'Q' + t(16, -4) + ' ' + t(22, 4));
     dots.push('M' + t(-4, 10) + 'L' + t(4, 10) + 'L' + t(0, 14) + 'Z');
     lines.push('M' + t(-7, 15) + 'Q' + t(-3.5, 20) + ' ' + t(0, 14) + 'Q' + t(3.5, 20) + ' ' + t(7, 15));
-    var whiskers = 'M' + t(-30, 10) + 'L' + t(-47, 7) + 'M' + t(-30, 15) + 'L' + t(-46, 17) + 'M' + t(30, 10) + 'L' + t(47, 7) + 'M' + t(30, 15) + 'L' + t(46, 17);
+    // whiskers start just outside the cheeks, so they never cross a cheek's outline
+    var whiskers = 'M' + t(-35, 10) + 'L' + t(-49, 7) + 'M' + t(-35, 15) + 'L' + t(-48, 18) + 'M' + t(35, 10) + 'L' + t(49, 7) + 'M' + t(35, 15) + 'L' + t(48, 18);
     return { regions: regions, lines: lines, thin: [whiskers], dots: dots };
   }
 
+  /* A flower's petals that sit side by side, touching but never overlapping: wedges from the middle with a
+     rounded tip, rIn hidden under the flower's centre, rOut the tips. Returns one path per petal. */
+  function PETAL_LIST(cx, cy, rIn, rOut, count) {
+    var out = [], h = Math.PI / count, side = rIn + (rOut - rIn) * 0.45, k = rOut * 1.3;
+    function pt(r, a) { return n(cx + Math.cos(a) * r) + ' ' + n(cy + Math.sin(a) * r); }
+    for (var i = 0; i < count; i++) {
+      var a = i * 2 * h - Math.PI / 2, a0 = a - h, a1 = a + h;
+      out.push('M' + pt(rIn, a0) + 'L' + pt(side, a0) + 'C' + pt(k, a0 + h * 0.15) + ' ' + pt(k, a1 - h * 0.15) + ' ' + pt(side, a1) +
+        'L' + pt(rIn, a1) + 'A' + rIn + ' ' + rIn + ' 0 0 0 ' + pt(rIn, a0) + 'Z');
+    }
+    return out;
+  }
+  /* the same petals as one shape: just the scalloped outside edge (the centre covers the middle) */
+  function PETALS(cx, cy, rIn, rOut, count) {
+    count = count || 5;
+    var h = Math.PI / count, side = rIn + (rOut - rIn) * 0.45, k = rOut * 1.3, d = '';
+    function pt(r, a) { return n(cx + Math.cos(a) * r) + ' ' + n(cy + Math.sin(a) * r); }
+    for (var i = 0; i < count; i++) {
+      var a = i * 2 * h - Math.PI / 2, a0 = a - h, a1 = a + h;
+      d += (i ? '' : 'M' + pt(side, a0)) + 'C' + pt(k, a0 + h * 0.15) + ' ' + pt(k, a1 - h * 0.15) + ' ' + pt(side, a1);
+    }
+    return d + 'Z';
+  }
+
+  /* the near (lower) half of a tilted ring: outer ellipse rx x ry, hole hx x hy */
+  function ringFront(cx, cy, rx, ry, hx, hy, deg) {
+    var a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    function pt(r) { return n(cx + ca * r) + ' ' + n(cy + sa * r); }
+    return 'M' + pt(rx) + 'A' + rx + ' ' + ry + ' ' + deg + ' 0 1 ' + pt(-rx) + 'L' + pt(-hx) + 'A' + hx + ' ' + hy + ' ' + deg + ' 0 0 ' + pt(hx) + 'Z';
+  }
+
   /* ---------- the pages ---------- */
+  /* Regions keep their index for good (saved pictures store fills by index), so a page can't be rebuilt in a new order.
+     Instead the drawing order is its own list: front(i) brings a region forward, part(i, d, clip) draws another piece
+     of region i (same fill) at this point, e.g. the front of a planet's ring, and detail(i, d) is a line drawn inside
+     region i, under anything in front of it. */
   function page(id, name, build) {
-    var p = { id: id, name: name, regions: [], rules: [], lines: [], thin: [], dots: [], hints: [] };
+    var p = { id: id, name: name, regions: [], rules: [], lines: [], thin: [], dots: [], hints: [], draw: [] };
     var api = {
-      add: function (d, hint, rule) { p.regions.push(d); p.hints.push(hint || null); p.rules.push(rule || 'nonzero'); return p.regions.length - 1; },
+      add: function (d, hint, rule) {
+        p.regions.push(d); p.hints.push(hint || null); p.rules.push(rule || 'nonzero');
+        var i = p.regions.length - 1;
+        p.draw.push({ i: i, d: d, rule: rule || 'nonzero', details: [] });
+        return i;
+      },
+      front: function (i) {
+        var keep = p.draw.filter(function (e) { return e.i !== i; }), move = p.draw.filter(function (e) { return e.i === i; });
+        p.draw = keep.concat(move);
+      },
+      part: function (i, d, clip) { p.draw.push({ i: i, d: d, rule: 'nonzero', clip: clip, details: [] }); },
+      detail: function (i, d, w) { for (var j = 0; j < p.draw.length; j++) if (p.draw[j].i === i) { p.draw[j].details.push({ d: d, w: w || 4 }); return; } },
       line: function (d) { p.lines.push(d); },
       thin: function (d) { p.thin.push(d); },
       dot: function (d) { p.dots.push(d); },
@@ -89,17 +129,19 @@
     page('teacup', 'Teacup cat', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'bg');
       a.add('M0 300 H400 V400 H0 Z', 'table');
-      a.add(C(52, 352, 30), 'cookie');
-      a.add(E(200, 322, 155, 28), 'saucer');
+      var cookie = a.add(C(82, 296, 40), 'cookie');
+      a.add(E(200, 322, 172, 30), 'saucer');
       a.add(E(330, 250, 46, 44) + E(330, 250, 25, 25), 'handle', 'evenodd');
       a.cat(200, 158, 150, 'happy');
       a.add('M88 200 Q92 300 150 324 L250 324 Q308 300 312 200 Z', 'cup');
+      a.front(cookie);   // the cookie stands on the saucer, leaning on the front of the cup
       a.add(R(84, 194, 232, 18, 9), 'rim');
       a.add(E(158, 206, 22, 14), 'paw'); a.add(E(242, 206, 22, 14), 'paw');
       a.add(HEART(200, 268, 22), 'heart');
       a.line('M60 140 Q46 118 62 98 Q76 78 62 56');
       a.line('M342 140 Q328 118 344 98 Q358 78 344 56');
-      [[40, 340], [62, 360], [56, 336], [44, 362]].forEach(function (p) { a.dot(C(p[0], p[1], 4)); });
+      [[66, 278], [96, 284], [78, 306], [104, 310], [56, 300], [84, 326]].forEach(function (p) { a.dot(C(p[0], p[1], 4)); });
+      [[352, 372], [366, 380], [340, 384]].forEach(function (p) { a.dot(C(p[0], p[1], 3)); });
       a.thin('M150 200 L150 212 M158 200 L158 213 M166 200 L166 212 M234 200 L234 212 M242 200 L242 213 M250 200 L250 212');
     }),
     page('garden', 'Garden cat', function (a) {
@@ -114,9 +156,10 @@
       a.add(E(126, 350, 17, 11), 'paw'); a.add(E(174, 350, 17, 11), 'paw');
       a.cat(150, 232, 116, 'happy');
       [[290, 250, 120], [340, 270, 100], [380, 240, 130]].forEach(function (f) {
-        a.add(R(f[0] - 4, f[1], 8, 400 - f[1], 4), 'stem');
-        a.add(E(f[0] + 16, f[1] + 48, 16, 7, -30), 'leaf');
-        a.add(PETALS(f[0], f[1], 15, 13, 8, 5), 'petals');
+        var stem = a.add(R(f[0] - 4, f[1], 8, 400 - f[1], 4), 'stem');
+        a.add(E(f[0] + 13, f[1] + 50, 16, 7, -30), 'leaf');
+        a.front(stem);   // the leaf grows out from behind the stem
+        a.add(PETALS(f[0], f[1], 6, 27, 5), 'petals');
         a.add(C(f[0], f[1], 9), 'centre');
       });
       a.add(E(256, 140, 20, 14, -30), 'wing'); a.add(E(256, 164, 15, 11, 30), 'wing');
@@ -127,8 +170,11 @@
     }),
     page('space', 'Space cat', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'space');
-      a.add(C(322, 88, 44), 'planet');
-      a.add(E(322, 94, 82, 18, -14) + E(322, 94, 64, 10, -14), 'ring', 'evenodd');
+      var planet = a.add(C(312, 90, 42), 'planet');
+      var ring = a.add(E(312, 96, 78, 17, -14) + E(312, 96, 60, 10, -14), 'ring', 'evenodd');
+      // the ring goes behind the planet, and only its front half comes back over the planet
+      a.front(planet);
+      a.part(ring, ringFront(312, 96, 78, 17, 60, 10, -14), C(312, 90, 45));
       a.add(C(70, 330, 26), 'moon');
       [[60, 60, 15, 6], [118, 150, 10, 4], [360, 250, 13, 5], [36, 230, 9, 4], [250, 34, 9, 4], [330, 350, 11, 4]].forEach(function (s) { a.add(STAR(s[0], s[1], s[2], s[3]), 'star'); });
       a.add('M164 296 Q200 392 236 296 Z', 'flame');
@@ -144,17 +190,18 @@
     }),
     page('fishbowl', 'Fish bowl', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'wall');
-      a.add(E(330, 300, 54, 46), 'catBody');
-      a.cat(330, 206, 118, 'open');
+      a.add(E(340, 302, 52, 46), 'catBody');
+      a.cat(340, 208, 110, 'open');   // far enough right that the whiskers don't cross the bowl
       a.add('M0 282 H400 V400 H0 Z', 'table');
-      a.add(E(300, 284, 19, 12), 'paw'); a.add(E(358, 284, 19, 12), 'paw');
+      a.add(E(312, 284, 18, 12), 'paw'); a.add(E(368, 284, 18, 12), 'paw');
       a.add(C(168, 196, 108), 'bowl');
       a.add('M62 170 Q115 158 168 170 Q221 182 274 170 A108 108 0 1 1 62 170 Z', 'water');
       a.add('M196 288 Q184 256 202 230 Q216 206 204 186 Q224 208 216 234 Q206 260 214 288 Z', 'weed');
       a.add(E(126, 286, 15, 8), 'pebble'); a.add(E(156, 290, 13, 7), 'pebble'); a.add(E(188, 289, 15, 8), 'pebble');
       a.add('M116 232 L88 212 L88 252 Z', 'tail');
-      a.add(E(148, 232, 34, 22), 'fish');
-      a.add('M142 214 Q152 196 166 214 Z', 'fin');
+      var fish = a.add(E(148, 232, 34, 22), 'fish');
+      a.add('M134 224 Q150 174 172 224 Z', 'fin');
+      a.front(fish);   // the fin grows from behind the fish
       a.add(R(106, 80, 124, 18, 9), 'bowlRim');
       a.dot(C(166, 226, 4));
       a.line('M128 222 Q122 232 128 242');
@@ -165,34 +212,34 @@
       a.add('M318 34 A46 46 0 1 1 296 122 A40 40 0 0 0 318 34 Z', 'moon');
       a.add('M34 112 A20 20 0 0 1 52 82 A26 26 0 0 1 100 82 A20 20 0 0 1 120 112 Z', 'cloud');
       [[200, 50, 12, 5], [250, 120, 8, 3], [70, 190, 10, 4], [360, 190, 9, 4]].forEach(function (s) { a.add(STAR(s[0], s[1], s[2], s[3]), 'star'); });
-      a.add(R(56, 274, 288, 82, 40), 'cushion');
+      var cushion = a.add(R(56, 274, 288, 82, 40), 'cushion');
+      a.detail(cushion, 'M100 300 Q200 330 300 300', 2.4);   // the seam and button sit on the cushion, under the cat
+      a.detail(cushion, C(200, 316, 5), 'dot');
       a.add(C(64, 282, 11), 'tassel'); a.add(C(336, 282, 11), 'tassel'); a.add(C(64, 348, 11), 'tassel'); a.add(C(336, 348, 11), 'tassel');
       a.add(E(186, 268, 96, 44), 'body');
       a.add('M104 284 Q120 318 196 314 Q252 310 270 290 Q258 302 200 302 Q140 302 104 284 Z', 'tail');
       a.cat(262, 246, 96, 'sleep');
       a.add(E(240, 292, 20, 11), 'paw');
       a.line('M300 168 H320 L300 188 H320'); a.line('M330 140 H344 L330 154 H344');
-      a.thin('M100 300 Q200 330 300 300');
-      a.dot(C(200, 316, 5));
     }),
     page('cafe', 'Cat café', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'sky');
       a.add(R(110, 36, 180, 46, 14), 'sign');
       a.add(R(30, 88, 340, 300, 0), 'wall');
       for (var i = 0; i < 6; i++) { var x = 30 + i * 340 / 6, w = 340 / 6; a.add('M' + n(x) + ' 88 H' + n(x + w) + ' V136 Q' + n(x + w / 2) + ' 160 ' + n(x) + ' 136 Z', 'awning'); }
-      a.add(R(54, 176, 142, 108, 10), 'window');
+      var win = a.add(R(54, 176, 142, 108, 10), 'window');
+      a.detail(win, 'M125 176 V284 M54 230 H196');   // the window bars are behind the cat
       a.cat(125, 256, 72, 'happy');
       a.add(R(46, 280, 158, 16, 6), 'sill');
       a.add(R(56, 296, 138, 30, 6), 'flowerBox');
-      [[84, 290], [125, 288], [166, 290]].forEach(function (f) { a.add(PETALS(f[0], f[1] - 6, 8, 7, 5, 5), 'flower'); a.add(C(f[0], f[1] - 6, 5), 'flowerMid'); });
+      [[84, 290], [125, 288], [166, 290]].forEach(function (f) { a.add(PETALS(f[0], f[1] - 6, 3, 15, 5), 'flower'); a.add(C(f[0], f[1] - 6, 5), 'flowerMid'); });
       a.add(R(238, 176, 104, 212, 10), 'door');
       a.add(C(290, 222, 26), 'doorWindow');
       a.add(C(326, 292, 7), 'handle');
       a.add('M0 384 H400 V400 H0 Z', 'path');
       a.add(R(356, 332, 36, 52, 6), 'pot');
       a.add(C(374, 308, 28), 'bush');
-      a.line('M125 176 V284 M54 230 H196');
-      a.line('M150 52 Q144 44 150 36 M160 52 Q166 44 160 36');
+      a.line('M150 49 Q145 45 150 41 M160 49 Q165 45 160 41');
       a.add(R(140, 52, 30, 22, 6), 'signCup');
     })
   ];
@@ -208,8 +255,9 @@
       a.add(R(0, 0, 400, 400, 0), 'water');
       a.add('M0 340 Q100 320 200 340 Q300 360 400 336 V400 H0 Z', 'sand');
       a.add('M290 200 L370 130 L370 270 Z', 'tail');
-      a.add(E(180, 200, 130, 92), 'body');
-      a.add('M150 116 Q190 56 240 120 Z', 'fin');
+      var body = a.add(E(180, 200, 130, 92), 'body');
+      a.add('M140 140 Q190 0 252 146 Z', 'fin');
+      a.front(body);   // the fin grows from behind the body
       a.add(C(70, 70, 34), 'bubble'); a.add(C(120, 40, 20), 'bubble');
       a.dot(C(110, 180, 12));
       a.line('M100 236 Q130 254 160 236');
@@ -218,9 +266,10 @@
       a.add(R(0, 0, 400, 400, 0), 'sky');
       a.add(C(340, 60, 40), 'sun');
       a.add('M0 320 Q200 270 400 320 V400 H0 Z', 'grass');
-      a.add(E(200, 150, 100, 116), 'balloon');
-      a.add('M186 262 L214 262 L200 282 Z', 'knot');
-      a.line('M200 282 Q180 320 206 360');
+      var balloon = a.add(E(200, 150, 100, 116), 'balloon');
+      a.add('M176 248 L224 248 L200 296 Z', 'knot');
+      a.front(balloon);   // the knot tucks in under the balloon
+      a.line('M200 296 Q182 326 206 360');
     }),
     toddlerPage('t-house', 'House', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'sky');
@@ -232,14 +281,30 @@
     }),
     toddlerPage('t-flower', 'Flower', function (a) {
       a.add(R(0, 0, 400, 400, 0), 'bg');
-      a.add(R(190, 190, 20, 150, 10), 'stem');
-      a.add(E(250, 270, 50, 22, -30), 'leaf');
-      a.add(PETALS(200, 150, 62, 54, 40, 5), 'petals');
-      a.add(C(200, 150, 44), 'centre');
+      var stem = a.add(R(190, 190, 20, 150, 10), 'stem');
+      a.add(E(244, 274, 50, 22, -30), 'leaf');
+      a.front(stem);   // the leaf grows out from behind the stem
+      // five separate petals side by side, each its own area to fill. The first keeps index 3 (where the old
+      // one-piece petals were) and the other four go after the pot, so saved pictures keep their colours.
+      var petals = PETAL_LIST(200, 150, 30, 118, 5);
+      a.add(petals[0], 'petals');
+      var centre = a.add(C(200, 150, 44), 'centre');
       a.add('M120 330 H280 L260 400 H140 Z', 'pot');
+      for (var i = 1; i < 5; i++) a.add(petals[i], 'petals');
+      a.front(centre);
     })
   );
-  PAGES.forEach(function (p) { p.paths = p.regions.map(function (d) { return new Path2D(d); }); p.linePaths = p.lines.map(function (d) { return new Path2D(d); }); p.thinPaths = p.thin.map(function (d) { return new Path2D(d); }); p.dotPaths = p.dots.map(function (d) { return new Path2D(d); }); });
+  PAGES.forEach(function (p) {
+    p.paths = p.regions.map(function (d) { return new Path2D(d); });
+    p.draw.forEach(function (e) {
+      e.path = e.d === p.regions[e.i] ? p.paths[e.i] : new Path2D(e.d);
+      if (e.clip) e.clipPath = new Path2D(e.clip);
+      e.details.forEach(function (t) { t.path = new Path2D(t.d); });
+    });
+    p.linePaths = p.lines.map(function (d) { return new Path2D(d); });
+    p.thinPaths = p.thin.map(function (d) { return new Path2D(d); });
+    p.dotPaths = p.dots.map(function (d) { return new Path2D(d); });
+  });
   function getPage(id) { for (var i = 0; i < PAGES.length; i++) if (PAGES[i].id === id) return PAGES[i]; return PAGES[0]; }
 
   /* ---------- fills ---------- */
@@ -271,34 +336,46 @@
     tiles[id] = cv;
     return cv;
   }
+  var RAINBOW = ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF'];
+  function rainbow(c, x0, y0, x1, y1) {
+    var g = c.createLinearGradient(x0, y0, x1, y1);
+    RAINBOW.forEach(function (col, i) { g.addColorStop(i / (RAINBOW.length - 1), col); });
+    return g;
+  }
+  /* patterns and gradients are made once per canvas, not every frame */
   var patterns = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
   function fillStyle(c, f) {
     if (!f) return '#FFFFFF';
     if (f.charAt(0) === '#') return f;
-    if (f === 'rainbow') {
-      var g = c.createLinearGradient(0, 0, 400, 400);
-      ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF'].forEach(function (col, i, arr) { g.addColorStop(i / (arr.length - 1), col); });
-      return g;
-    }
     var per = patterns && patterns.get(c); if (!per) { per = {}; if (patterns) patterns.set(c, per); }
+    if (f === 'rainbow') return per.rainbow || (per.rainbow = rainbow(c, 0, 0, 400, 400));
     if (!per[f]) { try { per[f] = c.createPattern(tile(f), 'repeat'); } catch (e) { return '#FFFFFF'; } }
     return per[f];
   }
 
   /* ---------- stickers (drawn centred, about s wide) ---------- */
   var STICKERS = ['heart', 'star', 'paw', 'fish', 'flower', 'sparkle', 'bow', 'mouse'];
+  /* each sticker is a few separate parts, back to front, each filled, softly shaded and outlined (paths made once) */
+  var STICKER_PARTS = {
+    heart: [[HEART(0, -2, 16), '#FF5A7A']],
+    star: [[STAR(0, 0, 19, 8), '#FFD23F']],
+    paw: [[E(0, 6, 11, 9), '#FF9EC4'], [C(-12, -6, 5), '#FF9EC4'], [C(-5, -13, 5), '#FF9EC4'], [C(5, -13, 5), '#FF9EC4'], [C(12, -6, 5), '#FF9EC4']],
+    fish: [['M-6 0 L-19 -9 L-19 9 Z', '#7CC4FF'], [E(4, 0, 14, 9), '#7CC4FF'], [C(10, -2, 2), INK, 'dot']],
+    flower: [[PETALS(0, 0, 3, 18, 5), '#FFFFFF'], [C(0, 0, 6), '#FFD23F']],
+    sparkle: [[STAR(0, 0, 19, 5, 4), '#FFF1A8']],
+    bow: [['M2 0 L-17 -11 L-17 11 Z', '#FF5A7A'], ['M-2 0 L17 -11 L17 11 Z', '#FF5A7A'], [C(0, 0, 5), '#FF5A7A']],
+    mouse: [['M12 6 Q24 10 20 16', null, 'line'], [C(-6, -5, 5), '#B9B4C7'], [C(4, -6, 5), '#B9B4C7'], [E(2, 4, 14, 9), '#B9B4C7'], [C(-9, 3, 1.8), INK, 'dot']]
+  };
   function drawSticker(c, id, s) {
-    c.save(); c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = Math.max(1.5, s * 0.06);
-    var k = s / 40;
-    c.scale(k, k); c.lineWidth = 2.6;
-    if (id === 'heart') { c.fillStyle = '#FF5A7A'; c.fill(new Path2D(HEART(0, -2, 16))); c.stroke(new Path2D(HEART(0, -2, 16))); }
-    else if (id === 'star') { var sp = new Path2D(STAR(0, 0, 19, 8)); c.fillStyle = '#FFD23F'; c.fill(sp); c.stroke(sp); }
-    else if (id === 'paw') { c.fillStyle = '#FF9EC4'; var pp = new Path2D(E(0, 6, 11, 9) + C(-12, -6, 5) + C(-5, -13, 5) + C(5, -13, 5) + C(12, -6, 5)); c.fill(pp); c.stroke(pp); }
-    else if (id === 'fish') { c.fillStyle = '#7CC4FF'; var fp = new Path2D(E(4, 0, 14, 9) + 'M-8 0 L-19 -9 L-19 9 Z'); c.fill(fp); c.stroke(fp); c.fillStyle = INK; c.beginPath(); c.arc(10, -2, 2, 0, TAU); c.fill(); }
-    else if (id === 'flower') { var fl = new Path2D(PETALS(0, 0, 9, 8, 6, 5)); c.fillStyle = '#FFFFFF'; c.fill(fl); c.stroke(fl); var mid = new Path2D(C(0, 0, 6)); c.fillStyle = '#FFD23F'; c.fill(mid); c.stroke(mid); }
-    else if (id === 'sparkle') { var sk = new Path2D(STAR(0, 0, 19, 5, 4)); c.fillStyle = '#FFF1A8'; c.fill(sk); c.stroke(sk); }
-    else if (id === 'bow') { var bw = new Path2D('M0 0 L-17 -11 L-17 11 Z M0 0 L17 -11 L17 11 Z'); c.fillStyle = '#FF5A7A'; c.fill(bw); c.stroke(bw); var kn = new Path2D(C(0, 0, 5)); c.fill(kn); c.stroke(kn); }
-    else if (id === 'mouse') { c.fillStyle = '#B9B4C7'; var mp = new Path2D(E(2, 4, 14, 9) + C(-6, -5, 5) + C(4, -6, 5)); c.fill(mp); c.stroke(mp); c.beginPath(); c.moveTo(16, 6); c.quadraticCurveTo(24, 10, 20, 16); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(-9, 3, 1.8, 0, TAU); c.fill(); }
+    var parts = STICKER_PARTS[id]; if (!parts) return;
+    c.save();
+    c.scale(s / 40, s / 40);
+    parts.forEach(function (pt) {
+      var path = pt.path || (pt.path = new Path2D(pt[0]));
+      if (pt[2] === 'dot') { c.fillStyle = pt[1]; c.fill(path); }
+      else if (pt[2] === 'line') GGDraw.shape(c, path, null, { lw: 2.6, depth: 0 });
+      else GGDraw.shape(c, path, pt[1], { lw: 2.6, depth: 3 });
+    });
     c.restore();
   }
 
@@ -310,17 +387,22 @@
     c.save();
     c.scale(size / 400, size / 400);
     c.lineJoin = 'round'; c.lineCap = 'round';
-    for (var i = 0; i < p.paths.length; i++) {
-      var path = p.paths[i], rule = p.rules[i];
+    for (var k = 0; k < p.draw.length; k++) {
+      var e = p.draw[k], i = e.i, path = e.path, rule = e.rule;
       var anim = opts.anim && opts.anim.region === i ? opts.anim : null;
+      if (e.clip) { c.save(); c.clip(e.clipPath); }
       c.fillStyle = fillStyle(c, anim ? anim.from : f[i]);
       c.fill(path, rule);
-      if (anim) {
+      if (anim || e.details.length) {
         c.save(); c.clip(path, rule);
-        c.beginPath(); c.arc(anim.x, anim.y, anim.r, 0, TAU); c.fillStyle = fillStyle(c, f[i]); c.fill();
+        if (anim) { c.beginPath(); c.arc(anim.x, anim.y, anim.r, 0, TAU); c.fillStyle = fillStyle(c, f[i]); c.fill(); }
+        e.details.forEach(function (t) {
+          if (t.w === 'dot') { c.fillStyle = INK; c.fill(t.path); } else { c.lineWidth = t.w; c.strokeStyle = INK; c.stroke(t.path); }
+        });
         c.restore();
       }
       c.lineWidth = 4; c.strokeStyle = INK; c.stroke(path);
+      if (e.clip) c.restore();
     }
     c.lineWidth = 4; c.strokeStyle = INK;
     p.linePaths.forEach(function (lp) { c.stroke(lp); });
@@ -334,7 +416,10 @@
   function hit(pageId, x, y) {
     var p = getPage(pageId);
     if (!hitCtx) hitCtx = document.createElement('canvas').getContext('2d');
-    for (var i = p.paths.length - 1; i >= 0; i--) if (hitCtx.isPointInPath(p.paths[i], x, y, p.rules[i])) return i;
+    for (var k = p.draw.length - 1; k >= 0; k--) {
+      var e = p.draw[k];
+      if (hitCtx.isPointInPath(e.path, x, y, e.rule) && (!e.clipPath || hitCtx.isPointInPath(e.clipPath, x, y))) return e.i;
+    }
     return -1;
   }
 
@@ -346,36 +431,52 @@
     { id: 'cat', name: 'Cat ears', col: '#B48CFF', dark: '#7E55D6' },
     { id: 'rainbow', name: 'Rainbow', col: 'rainbow', dark: '#fff' }
   ];
-  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-  /* framed picture, bottom centre at (0,0), `w` wide (and about as tall, plus a little hanging string) */
+  /* framed picture, bottom centre at (0,0), `w` wide (and about as tall, plus a little hanging string).
+     The frame is shaded like everything else in the house; the picture inside stays flat, just as it was coloured. */
+  var frameFills = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
   function drawFramed(c, pic, w) {
-    var F = FRAMES[pic.fr || 0] || FRAMES[0];
-    var b = w * 0.09, x = -w / 2, y = -w;
+    var F = FRAMES[pic.fr || 0] || FRAMES[0], D = window.GGDraw;
+    var b = w * 0.09, x = -w / 2, y = -w, inner = w - 2 * b;
+    var lw = Math.max(2.5, Math.min(5, w * 0.022)), lwFine = lw * 0.7;
     c.save();
     c.lineJoin = 'round'; c.lineCap = 'round';
-    // hanging string
-    c.beginPath(); c.moveTo(x + w * 0.25, y + 2); c.lineTo(0, y - w * 0.14); c.lineTo(x + w * 0.75, y + 2); c.lineWidth = Math.max(1.5, w * 0.02); c.strokeStyle = INK; c.stroke();
-    c.beginPath(); c.arc(0, y - w * 0.14, w * 0.025, 0, TAU); c.fillStyle = INK; c.fill();
+    // soft shadow on the wall, then the string and its nail
+    c.fillStyle = 'rgba(42,35,64,.14)'; D.rr(c, x + w * 0.02, y + w * 0.035, w, w, w * 0.06); c.fill();
+    c.beginPath(); c.moveTo(x + w * 0.25, y + b * 0.5); c.lineTo(0, y - w * 0.14); c.lineTo(x + w * 0.75, y + b * 0.5); D.ink(c, lwFine);
+    D.shape(c, D.ellPath(0, y - w * 0.14, w * 0.03, w * 0.03), '#B9B4C7', { lw: lwFine, depth: w * 0.012 });
     if (F.id === 'cat') {
       [-1, 1].forEach(function (s) {
-        c.beginPath(); c.moveTo(s * w * 0.42, y + b); c.lineTo(s * w * 0.38, y - w * 0.14); c.lineTo(s * w * 0.18, y + b * 0.4); c.closePath();
-        c.fillStyle = F.col; c.fill(); c.lineWidth = Math.max(2, w * 0.025); c.strokeStyle = INK; c.stroke();
-        c.beginPath(); c.moveTo(s * w * 0.37, y + b * 0.4); c.lineTo(s * w * 0.36, y - w * 0.07); c.lineTo(s * w * 0.27, y + b * 0.3); c.closePath(); c.fillStyle = '#FFB3C7'; c.fill();
+        var ear = new Path2D();
+        ear.moveTo(s * w * 0.42, y + b); ear.lineTo(s * w * 0.38, y - w * 0.14); ear.lineTo(s * w * 0.18, y + b); ear.closePath();
+        D.shape(c, ear, D.tone(c, F.col, y - w * 0.14, y + b), { lw: lw, depth: w * 0.02, inside: function (c) {
+          c.fillStyle = '#FFB3C7'; c.beginPath(); c.moveTo(s * w * 0.375, y + b * 0.6); c.lineTo(s * w * 0.365, y - w * 0.075); c.lineTo(s * w * 0.27, y + b * 0.6); c.closePath(); c.fill();
+        } });
       });
     }
-    rr(c, x, y, w, w, w * 0.06);
-    if (F.col === 'rainbow') { var g = c.createLinearGradient(x, y, x + w, y + w); ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF'].forEach(function (col, i) { g.addColorStop(i / 5, col); }); c.fillStyle = g; }
-    else c.fillStyle = F.col;
-    c.fill(); c.lineWidth = Math.max(2, w * 0.025); c.strokeStyle = INK; c.stroke();
-    if (F.id === 'pink') { c.fillStyle = '#fff'; for (var i = 0; i < 8; i++) { c.beginPath(); c.arc(x + b / 2 + (w - b) * (i / 7), y + b / 2, b * 0.18, 0, TAU); c.fill(); c.beginPath(); c.arc(x + b / 2 + (w - b) * (i / 7), y + w - b / 2, b * 0.18, 0, TAU); c.fill(); } }
-    if (F.id === 'gold') { c.save(); c.globalAlpha = 0.6; c.fillStyle = '#FFF6C2'; c.fillRect(x + b * 0.3, y + b * 0.25, w * 0.5, b * 0.25); c.restore(); }
+    var body = D.rrPath(x, y, w, w, w * 0.06);
+    var fill;
+    if (F.col === 'rainbow') {
+      var per = frameFills && frameFills.get(c); if (!per) { per = {}; if (frameFills) frameFills.set(c, per); }
+      fill = per[w] || (per[w] = rainbow(c, x, y, x + w, y + w));
+    } else fill = D.tone(c, F.col, y, y + w);
+    D.shape(c, body, fill, { lw: lw, depth: w * 0.025, inside: function (c) {
+      if (F.id === 'wood') {   // a little wood grain
+        c.strokeStyle = D.darker(F.col, 0.18); c.lineWidth = lwFine * 0.6;
+        [0.3, 0.62].forEach(function (t) { c.beginPath(); c.moveTo(x + w * 0.08, y + b * t); c.bezierCurveTo(x + w * 0.4, y + b * (t - 0.18), x + w * 0.6, y + b * (t + 0.18), x + w * 0.92, y + b * t); c.stroke(); });
+        [0.4, 0.7].forEach(function (t) { c.beginPath(); c.moveTo(x + w * 0.1, y + w - b * t); c.bezierCurveTo(x + w * 0.45, y + w - b * (t + 0.2), x + w * 0.6, y + w - b * (t - 0.2), x + w * 0.9, y + w - b * t); c.stroke(); });
+      } else if (F.id === 'pink') {
+        c.fillStyle = '#fff';
+        for (var i = 0; i < 8; i++) { var px = x + b / 2 + (w - b) * (i / 7); c.beginPath(); c.arc(px, y + b / 2, b * 0.18, 0, TAU); c.moveTo(px + b * 0.18, y + w - b / 2); c.arc(px, y + w - b / 2, b * 0.18, 0, TAU); c.fill(); }
+      }
+      D.shine(c, x + w * 0.3, y + b * 0.35, w * 0.2, b * 0.14, 0, F.id === 'gold' ? 0.6 : 0.35);
+    } });
+    // the picture, set into the frame
     c.save();
     c.translate(x + b, y + b);
-    var inner = w - 2 * b;
-    rr(c, 0, 0, inner, inner, w * 0.03); c.clip();
-    drawPage(c, pic, inner);
+    var hole = D.rrPath(0, 0, inner, inner, w * 0.03);
+    c.save(); c.clip(hole); drawPage(c, pic, inner); c.restore();
+    c.lineWidth = lwFine; c.strokeStyle = INK; c.stroke(hole);
     c.restore();
-    rr(c, x + b, y + b, w - 2 * b, w - 2 * b, w * 0.03); c.lineWidth = Math.max(1.5, w * 0.018); c.strokeStyle = INK; c.stroke();
     c.restore();
   }
 

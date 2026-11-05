@@ -19,7 +19,7 @@
 :root { --wall: #FFF4E0; --wall2: #FFE8C4; }
 body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2) 4px, transparent 5px) 0 0 / 40px 40px; }
 .middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
-.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
 .picker {
   position: fixed; inset: 0; z-index: 5; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -29,15 +29,15 @@ body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2)
 .picker h2 { margin: 6px 0 0; font: 800 clamp(1.5rem, 5vw, 2rem)/1.05 var(--display); }
 .pages, .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 14px; }
 .pg {
-  border: 4px solid var(--ink); border-radius: 22px; background: #fff; padding: 8px 8px 6px; cursor: pointer; box-shadow: 0 5px 0 var(--ink);
+  border: 4px solid var(--ink); border-radius: 22px; background: #fff; padding: 8px 8px 6px; cursor: pointer; box-shadow: 0 5px 0 var(--ink), var(--soft);
   display: flex; flex-direction: column; align-items: center; gap: 4px; font: 800 1.05rem var(--display); color: var(--ink); position: relative;
 }
 .pg img { width: 100%; height: auto; border-radius: 12px; display: block; aspect-ratio: 1; }
-.pg:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.pg:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .pg small { font: 800 .8rem var(--body); color: var(--muted); }
 .pg .del {
   position: absolute; top: -12px; right: -12px; height: 36px; min-width: 36px; padding: 0 8px; border-radius: 999px; border: 3px solid var(--ink);
-  background: #fff; box-shadow: 0 3px 0 var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font: 800 .85rem var(--body);
+  background: #fff; box-shadow: 0 3px 0 var(--ink), var(--soft); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font: 800 .85rem var(--body);
 }
 .pg .del svg { width: 16px; height: 16px; }
 .pg .del span { display: none; }
@@ -53,22 +53,22 @@ body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2)
 }
 .palette { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; align-items: center; }
 .sw {
-  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink);
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink), var(--soft);
   background-size: 22px 22px;
 }
-.sw[aria-pressed="true"] { transform: translateY(-4px) scale(1.12); box-shadow: 0 6px 0 var(--ink); outline: 4px solid #fff; outline-offset: -8px; }
+.sw[aria-pressed="true"] { transform: translateY(-4px) scale(1.12); box-shadow: 0 6px 0 var(--ink), var(--soft); outline: 4px solid #fff; outline-offset: -8px; }
 .sw.sticker { border-radius: 14px; background: #fff; display: grid; place-items: center; }
 .sw.sticker img { width: 34px; height: 34px; pointer-events: none; }
 .sep { flex: none; width: 3px; height: 34px; border-radius: 3px; background: var(--ink); opacity: .25; }
 .row2 { display: flex; gap: 8px; align-items: center; }
 .tool {
-  min-height: 52px; padding: 4px 12px; border-radius: 16px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink);
+  min-height: 52px; padding: 4px 12px; border-radius: 16px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 3px 0 var(--ink), var(--soft);
   cursor: pointer; display: flex; align-items: center; gap: 6px; font: 800 .95rem var(--body);
 }
 .tool svg { width: 26px; height: 26px; }
 .tool[aria-pressed="true"] { background: var(--sun); }
 .tool:disabled { opacity: .4; cursor: default; }
-.tool:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.tool:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 .tool.done { margin-left: auto; background: var(--grass); }
 .spacer { flex: 1; }
 
@@ -77,16 +77,18 @@ body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2)
 
 .card canvas { width: min(240px, 62vw); height: auto; display: block; }
 .frames { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.fr { width: 54px; height: 54px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 6px; background: #fff; box-shadow: 0 3px 0 var(--ink); }
+.fr { width: 54px; height: 54px; border-radius: 14px; border: 3px solid var(--ink); cursor: pointer; padding: 6px; background: #fff; box-shadow: 0 3px 0 var(--ink), var(--soft); }
 .fr span { display: block; width: 100%; height: 100%; border-radius: 6px; border: 5px solid; }
 .fr[aria-pressed="true"] { background: var(--sun); transform: translateY(-3px); }
 
 /* toddler mode: big colours only, no tools to choose, no delete buttons */
-body.toddler #fillTool, body.toddler #stickerTool, body.toddler #undoBtn, body.toddler .pg .del, body.toddler .pg small { display: none; }
+body.toddler #fillTool, body.toddler #stickerTool, body.toddler .pg .del, body.toddler .pg small { display: none; }
 body.toddler .palette { justify-content: center; flex-wrap: wrap; overflow: visible; }
 body.toddler .sw { width: 60px; height: 60px; }
-body.toddler .tool.done { margin: 0 auto; min-height: 64px; padding: 4px 26px; }
-body.toddler .tool.done svg { width: 36px; height: 36px; }
+body.toddler .row2 { justify-content: center; gap: 14px; }
+body.toddler .tool.done, body.toddler #undoBtn { margin: 0; min-height: 64px; padding: 4px 26px; }
+body.toddler .tool.done svg, body.toddler #undoBtn svg { width: 36px; height: 36px; }
+body.toddler #undoBtn span.lab { display: inline; }
 @media (max-width: 420px) {
   .tool { padding: 4px 9px; font-size: .85rem; }
   .tool span.lab { display: none; }
@@ -148,6 +150,7 @@ body.toddler .tool.done svg { width: 36px; height: 36px; }
 
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="pages.js"></script>
 <script src="game.js"></script>
 </body>
