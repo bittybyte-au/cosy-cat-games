@@ -85,22 +85,20 @@ body.toddler .tile h2 { font-size: 2.2rem; }
 .av-cat[aria-selected="true"] .av-ic { background: var(--sun); transform: translateY(-2px); box-shadow: 0 5px 0 var(--ink); }
 .av-list { grid-area: list; min-height: 300px; max-height: min(56vh, 520px); overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 4px 6px 8px 2px; }
 .av-listtitle { margin: 0; font: 800 1.4rem/1 var(--display); }
-.av-rows { display: flex; flex-direction: column; gap: 8px; }
-.av-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px 6px 6px; border: 3px solid var(--ink); border-radius: 20px; background: #fff; cursor: pointer; text-align: left; font: 800 1rem/1.15 var(--body); color: var(--ink); }
-.av-row > svg { width: 56px; height: 56px; flex: none; }
-.av-rowtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.av-wear { flex: none; min-width: 74px; text-align: center; padding: 6px 12px; border: 3px solid var(--ink); border-radius: 999px; background: var(--grass); font: 800 .9rem var(--body); }
-.av-row[aria-pressed="true"] { background: var(--pale-sun); }
-.av-row[aria-pressed="true"] .av-wear { background: #fff; }
-.av-row.locked { border-style: dashed; }
-.av-row.locked > svg { filter: grayscale(1); opacity: .45; }
-.av-row.locked .av-name { color: var(--muted); }
-.av-row.locked .av-wear { background: #EEE8F4; min-width: 0; padding: 6px 10px; }
-.av-hint { display: flex; gap: 4px; align-items: flex-start; font: 700 .8rem/1.2 var(--body); color: var(--muted); }
-.av-hint svg { width: 12px; height: 12px; flex: none; margin-top: 2px; }
-.av-newtag { display: inline-block; background: var(--tomato); color: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 0 8px; font: 800 .75rem/1.5 var(--body); vertical-align: 2px; }
-.av-row.shake { animation: shake .35s; }
+.av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; }
+.av-sq { position: relative; aspect-ratio: 1; display: grid; place-items: center; padding: 6px; border: 3px solid var(--ink); border-radius: 20px; background: #fff; cursor: pointer; box-shadow: 0 3px 0 var(--ink); }
+.av-sq svg { width: 100%; height: auto; max-width: 72px; }
+.av-sq[aria-pressed="true"] { background: var(--sun); }
+.av-sq:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.av-sq.locked { border-style: dashed; box-shadow: none; background: #F3EEF8; }
+.av-sq.locked > svg { filter: grayscale(1); opacity: .4; }
+.av-lock { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 2px solid var(--ink); }
+.av-lock svg { width: 13px; height: 13px; }
+.av-sq.fresh::after { content: ""; position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); }
+.av-sq.shake { animation: shake .35s; }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.av-tip { margin: 0; min-height: 1.4em; font: 800 .95rem/1.3 var(--body); color: var(--muted); }
+.av-tip svg { width: 13px; height: 13px; vertical-align: -1px; }
 .av-swgroup { display: flex; flex-direction: column; }
 .av-sw { display: flex; flex-wrap: wrap; gap: 8px; }
 .av-sw > button, .av-custom { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; }
@@ -132,7 +130,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
 .site-foot { margin-top: auto; padding-top: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud1, .cloud2, .mascot, .av-row.shake { animation: none; }
+  .cloud1, .cloud2, .mascot, .av-sq.shake { animation: none; }
   .toddler-chip .knob::after { transition: none; }
 }
 </style>
@@ -250,14 +248,10 @@ body.toddler .tile h2 { font-size: 2.2rem; }
     function rows(list, key) {
       return list.map(function (it) {
         var locked = it.earn && got.indexOf(it.id) < 0 && av[key] !== it.id;
-        var on = av[key] === it.id, isNew = fresh.indexOf(it.id) >= 0;
         var trial = {}; for (var k in av) trial[k] = av[k]; trial[key] = it.id;
-        return '<button type="button" class="av-row' + (locked ? ' locked' : '') + '" data-key="' + key + '" data-id="' + it.id + '" aria-pressed="' + on + '"' +
-          ' aria-label="' + esc(it.name) + (locked ? ', locked: ' + esc(it.earn.hint) : on ? ', wearing' : '') + '">' +
-          GGAvatar.svg(trial, 56) +
-          '<span class="av-rowtext"><span class="av-name">' + esc(it.name) + (isNew ? ' <span class="av-newtag">New!</span>' : '') + '</span>' +
-          (locked ? '<span class="av-hint">' + LOCK + esc(it.earn.hint) + '</span>' : '') + '</span>' +
-          '<span class="av-wear">' + (locked ? LOCK : on ? 'Wearing' : 'Wear') + '</span></button>';
+        return '<button type="button" class="av-sq' + (locked ? ' locked' : '') + (fresh.indexOf(it.id) >= 0 ? ' fresh' : '') + '" data-key="' + key + '" data-id="' + it.id + '"' +
+          ' aria-pressed="' + (av[key] === it.id) + '" aria-label="' + esc(it.name) + (locked ? ', locked: ' + esc(it.earn.hint) : '') + '" title="' + esc(locked ? it.earn.hint : it.name) + '">' +
+          GGAvatar.svg(trial, 72) + (locked ? '<span class="av-lock">' + LOCK + '</span>' : '') + '</button>';
       }).join('');
     }
     function swatches(list, key, label) {
@@ -271,10 +265,14 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       var title = CATS.filter(function (c) { return c[0] === tab; })[0][1];
       var head = '<h3 class="av-listtitle">' + title + '</h3>';
       if (tab === 'colours') pane.innerHTML = head + swatches(GGAvatar.CAT_COLOURS, 'color', 'Cat colour') + (av.type === 'calico' ? '<p class="note">Calico cats are always white with patches.</p>' : '') + swatches(GGAvatar.BG_COLOURS, 'bg', 'Background');
-      else pane.innerHTML = head + '<div class="av-rows">' + rows(listFor[tab], tab) + '</div>';
-      pane.querySelectorAll('.av-row').forEach(function (b) {
+      else pane.innerHTML = head + '<div class="av-grid">' + rows(listFor[tab], tab) + '</div><p class="av-tip" id="avTip" aria-live="polite"></p>';
+      pane.querySelectorAll('.av-sq').forEach(function (b) {
         b.addEventListener('click', function () {
-          if (b.classList.contains('locked')) { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; }
+          if (b.classList.contains('locked')) {
+            b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+            document.getElementById('avTip').innerHTML = LOCK + ' ' + esc(GGAvatar.item(b.dataset.id).earn.hint) + ' to unlock this.';
+            return;
+          }
           av[b.dataset.key] = b.dataset.id; draw();
         });
       });
