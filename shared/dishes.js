@@ -2,7 +2,7 @@
    Cosy Kitchen uses these while you cook; other games (Cosy Home) draw the dishes you made from
    the small description saved in the collection:
      GGDish.pack(dish)              the bits needed to redraw a dish (small JSON, no pictures)
-     GGDish.draw(ctx, item, size)   draws { id: 'handroll' | 'pancakes' | 'burger', data } on its plate,
+     GGDish.draw(ctx, item, size)   draws { id: 'handroll' | 'pancakes' | 'burger' | 'pizza', data } on its plate,
                                     centred on the canvas origin, about `size` wide */
 (function () {
   'use strict';
@@ -369,14 +369,76 @@
     return y;
   }
 
+  /* ---------- pizza (seen from the front, a little above) ----------
+     data: plate, sauce (0/1), cheese (0/1), bake (0 raw dough .. 1 golden), pz: toppings [{ k, x, y, r }]
+     where x, y are whole pixels on the flat pizza (-200..200 from the middle) and r a turn in degrees.
+     With no data it's a golden cheese pizza. */
+  var ZX = 320, ZY = 450, ZRX = 236, ZRY = 96, ZSQ = ZRY / ZRX;
+  var PIZZA_TOPS = ['pepperoni', 'mushroom', 'olive', 'basil', 'pineapple', 'capsicum', 'ham'];
+  function mixHex(a, b, t) {
+    var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+    var r = Math.round(((x >> 16) & 255) * (1 - t) + ((y >> 16) & 255) * t), g = Math.round(((x >> 8) & 255) * (1 - t) + ((y >> 8) & 255) * t), bl = Math.round((x & 255) * (1 - t) + (y & 255) * t);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
+  }
+  /* one topping at (x, y) on the flat pizza; drawn squashed into the pizza's perspective */
+  function drawPizzaTopping(c, t) {
+    c.save(); c.translate(t.x || 0, (t.y || 0) * ZSQ); c.scale(1.35, 0.75); c.rotate((t.r || 0) * Math.PI / 180);
+    var k = t.k;
+    if (k === 'pepperoni') {
+      c.beginPath(); c.arc(0, 0, 24, 0, TAU); c.fillStyle = '#D83A3A'; c.fill(); ink(c, 3.5);
+      c.fillStyle = '#A82424'; [[-8, -6], [7, 5], [9, -9], [-5, 10]].forEach(function (q) { c.beginPath(); c.arc(q[0], q[1], 3.2, 0, TAU); c.fill(); });
+    } else if (k === 'mushroom') {
+      c.beginPath(); c.moveTo(-24, 2); c.quadraticCurveTo(-24, -24, 0, -24); c.quadraticCurveTo(24, -24, 24, 2); c.quadraticCurveTo(12, -2, 8, 4); c.lineTo(8, 20); c.lineTo(-8, 20); c.lineTo(-8, 4); c.quadraticCurveTo(-12, -2, -24, 2); c.closePath();
+      c.fillStyle = '#F3E3CF'; c.fill(); ink(c, 3.5);
+      c.beginPath(); c.moveTo(-18, -4); c.quadraticCurveTo(0, -10, 18, -4); c.strokeStyle = '#C9A882'; c.lineWidth = 3; c.stroke();
+    } else if (k === 'olive') {
+      c.beginPath(); c.arc(0, 0, 14, 0, TAU); c.strokeStyle = INK; c.lineWidth = 13; c.stroke(); c.strokeStyle = '#3D3650'; c.lineWidth = 7; c.stroke();
+    } else if (k === 'basil') {
+      c.beginPath(); c.moveTo(-26, 0); c.quadraticCurveTo(0, -20, 26, 0); c.quadraticCurveTo(0, 20, -26, 0); c.closePath(); c.fillStyle = '#4FB868'; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(-20, 0); c.lineTo(20, 0); c.strokeStyle = '#2E8A45'; c.lineWidth = 2.5; c.stroke();
+    } else if (k === 'pineapple') {
+      c.beginPath(); c.moveTo(-18, -14); c.lineTo(18, -14); c.lineTo(12, 14); c.lineTo(-12, 14); c.closePath(); c.fillStyle = '#FFD93F'; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(-10, -4); c.lineTo(10, -4); c.moveTo(-8, 6); c.lineTo(8, 6); c.strokeStyle = '#E8B100'; c.lineWidth = 2.5; c.stroke();
+    } else if (k === 'capsicum') {
+      c.beginPath(); c.arc(0, 8, 22, Math.PI * 1.1, Math.PI * 1.9); c.strokeStyle = INK; c.lineWidth = 12; c.stroke(); c.strokeStyle = '#3FB950'; c.lineWidth = 6; c.stroke();
+    } else if (k === 'ham') {
+      rr(c, -20, -15, 40, 30, 7); c.fillStyle = '#FF9EB0'; c.fill(); ink(c, 3);
+      c.beginPath(); c.moveTo(-12, -6); c.quadraticCurveTo(0, 0, 12, -8); c.strokeStyle = '#FFD0DA'; c.lineWidth = 3; c.stroke();
+    }
+    c.restore();
+  }
+  function drawPizzaScene(c, d) {
+    var pl = PLATES[d.plate] || PLATES[0];
+    var bake = d.bake === undefined ? 1 : clamp(d.bake, 0, 1);
+    c.beginPath(); c.ellipse(ZX, ZY + 34, 270, 72, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill();
+    c.beginPath(); c.ellipse(ZX, ZY + 22, 270, 72, 0, 0, TAU); c.fillStyle = pl.fill; c.fill(); ink(c, 5);
+    c.beginPath(); c.ellipse(ZX, ZY + 24, 226, 54, 0, 0, TAU); c.strokeStyle = pl.rim; c.globalAlpha = 0.35; c.lineWidth = 4; c.stroke(); c.globalAlpha = 1;
+    c.save(); c.translate(ZX, ZY);
+    var crust = mixHex('#F3DDB0', '#E3A050', bake);
+    // the crust's thickness, then its top
+    c.beginPath(); c.ellipse(0, 12, ZRX, ZRY, 0, 0, TAU); c.fillStyle = mixHex('#E2C08A', '#B9762F', bake); c.fill(); ink(c, 5);
+    c.beginPath(); c.ellipse(0, 0, ZRX, ZRY, 0, 0, TAU); c.fillStyle = crust; c.fill(); ink(c, 5);
+    if (bake > 0.5) { c.fillStyle = 'rgba(150,80,20,.35)'; [[-180, 30], [150, -50], [60, 70], [-90, -70], [200, 20]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1] * 0.9, 9, 4, 0, 0, TAU); c.fill(); }); }
+    if (d.sauce) { c.beginPath(); c.ellipse(0, -2, ZRX - 30, ZRY - 14, 0, 0, TAU); c.fillStyle = '#E8362B'; c.fill(); }
+    if (d.cheese) {
+      c.beginPath();
+      for (var i = 0; i <= 36; i++) { var a = i / 36 * TAU, r = ZRX - 46 + Math.sin(i * 2.7) * 9; c.lineTo(Math.cos(a) * r, -2 + Math.sin(a) * r * ZSQ); }
+      c.closePath(); c.fillStyle = bake > 0.5 ? '#FFD86A' : '#FFF3C4'; c.fill();
+      c.fillStyle = 'rgba(255,255,255,.5)'; [[-90, -20], [40, 10], [120, -30], [-30, 34]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 22, 7, 0, 0, TAU); c.fill(); });
+    }
+    (d.pz || []).forEach(function (t) { drawPizzaTopping(c, t); });
+    c.restore();
+  }
+
   /* ---------- whole dishes ---------- */
   // where each dish sits in Cosy Kitchen's 640-wide play area, and how wide a square holds it
   var DISHES = {
     handroll: { draw: drawPlateScene, x: PCX, y: PCY, span: PR * 2 + 24 },
     pancakes: { draw: drawStackScene, x: 320, y: 420, span: 556 },
-    burger: { draw: drawBurgerScene, x: 320, y: 410, span: 540 }
+    burger: { draw: drawBurgerScene, x: 320, y: 410, span: 540 },
+    pizza: { draw: drawPizzaScene, x: 320, y: 440, span: 560 }
   };
-  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false };
+  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false, sauce: 1, cheese: 1, bake: 1, pz: [] };
   var round = function (v) { return typeof v === 'number' ? Math.round(v * 10) / 10 : v; };
   // positions to whole pixels, everything else to one decimal place
   function tidy(o, key) {
@@ -389,7 +451,7 @@
     var out = {};
     for (var k in EMPTY) if (d[k] !== undefined && JSON.stringify(d[k]) !== JSON.stringify(EMPTY[k])) out[k] = tidy(d[k]);
     // keep it small: at most this many of each kind of sprinkle or topping
-    var MAX = { seeds: 60, sugar: 60, tops: 40, drips: 20, leaves: 12, ginger: 12, wasabi: 12, layers: 30 };
+    var MAX = { seeds: 60, sugar: 60, tops: 40, drips: 20, leaves: 12, ginger: 12, wasabi: 12, layers: 30, pz: 40 };
     for (var m in MAX) if (out[m] && out[m].length > MAX[m]) out[m] = out[m].slice(0, MAX[m]);
     if (out.syrup) {
       var pts = out.syrup.reduce(function (n, st) { return n + st.length; }, 0), step = Math.max(1, Math.ceil(pts / 100));
@@ -414,7 +476,8 @@
       drawMini: drawMini, grainBatch: grainBatch, rollEnd: rollEnd, drawHandroll: drawHandroll, drawSeed: drawSeed, drawPlateScene: drawPlateScene,
       drawLeaf: drawLeaf, gingerSlice: gingerSlice, drawGinger: drawGinger, drawWasabi: drawWasabi, cakeInfo: cakeInfo, drawStackCake: drawStackCake,
       stackOf: stackOf, stackTop: stackTop, drawButter: drawButter, drawTopping: drawTopping, drawStackScene: drawStackScene,
-      drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene
+      drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene,
+      ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, PIZZA_TOPS: PIZZA_TOPS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
     }
   };
 })();
