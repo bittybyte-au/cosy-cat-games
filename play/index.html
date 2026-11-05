@@ -51,9 +51,10 @@ h1 a { color: inherit; text-decoration: none; }
 #sumIn { text-align: center; }
 .confirm-text { text-align: center; font: 800 1.3rem var(--body); }
 
-/* the chef cat says hello */
+/* your own cat (your avatar) says hello */
 .hello { display: flex; align-items: center; gap: 4px; margin-block: -6px -4px; }
 .mascot { width: 96px; flex: none; animation: bob 2.6s ease-in-out infinite; }
+.mascot svg { display: block; width: 100%; height: auto; }
 .greeting {
   position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 22px; padding: 10px 18px;
   font: 800 1.3rem/1.2 var(--body); box-shadow: 0 4px 0 var(--ink); min-width: 0;
@@ -153,7 +154,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
       <a class="round" id="homeBtn" href="../games/home/index.html" aria-label="My cosy home" hidden><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 5l11 10" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13v13h16V13" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M13.5 26v-6.5h5V26" fill="#FF6B57" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg></a>
     </div>
   </header>
-  <div class="hello"><span class="mascot" data-cat='{"preset":"chef","pose":"wave"}'></span><p class="greeting" id="greeting"></p></div>
+  <div class="hello"><span class="mascot" id="mascot" aria-hidden="true"></span><p class="greeting" id="greeting"></p></div>
 
   <div id="installBanner" hidden></div>
   <main class="tiles" id="tiles">
@@ -180,6 +181,17 @@ body.toddler .tile h2 { font-size: 2.2rem; }
 (function () {
   var chip = document.getElementById('playerChip');
   var greet = document.getElementById('greeting');
+  var mascot = document.getElementById('mascot');
+  var mascotKey = '';
+  /* the cat saying hello is the player's own avatar; before there's a player, a plain waving cat */
+  function renderMascot(p) {
+    var av = p ? GGAvatar.normalise(p.avatar, p.color) : null;
+    var key = av ? JSON.stringify(av) : 'none';
+    if (key === mascotKey) return;
+    mascotKey = key;
+    if (av) mascot.innerHTML = GGAvatar.svg(av, 96);
+    else if (window.GGCat && GGCat.svg) mascot.innerHTML = GGCat.svg({ preset: 'ginger', pose: 'wave', size: 96 });
+  }
   var overlay = document.getElementById('overlay');
   var panel = document.getElementById('panel');
 
@@ -187,6 +199,7 @@ body.toddler .tile h2 { font-size: 2.2rem; }
 
   function renderHeader() {
     var p = GG.current();
+    renderMascot(p);
     if (p) {
       var fresh = newItems(p);
       chip.innerHTML = GGAvatar.svg(GGAvatar.normalise(p.avatar, p.color), 46) + '<span>' + esc(p.name) + '</span>' + (fresh.length ? '<span class="new-dot" aria-label="New things to wear"></span>' : '');
