@@ -198,12 +198,19 @@
     var k = size / 68;
     c.drawImage(catImg, x - 60 * k, y - 66.36 * k, 120 * k, 120 * k);
   }
-  function drawCatPose(c, pose, face, size) {
+  /* walk: { step, moving, dir, wag } for the shared walk */
+  function drawCatPose(c, pose, face, size, walk) {
     var o = {}; for (var k in CAT) o[k] = CAT[k];
     o.pose = pose; o.face = face; o.size = size;
+    if (walk) for (var w in walk) o[w] = walk[w];
     try { GGCat.draw(c, o); } catch (e) {}
     if (pose === 'sit') drawAvatarHead(c, 0, 0, size);
     else if (pose === 'lie') drawAvatarHead(c, 30 * size / 88, 2 * size / 88, size * 0.78);
+    else if (pose === 'walk') {
+      // the shared walk bobs the head a little with each step (shared/cat.js walkShapes); the avatar head follows it
+      var ph = Math.round(((walk.step || 0) % TAU) / (Math.PI / 8)) * (Math.PI / 8);
+      drawAvatarHead(c, 0, (walk.moving ? -Math.abs(Math.sin(ph)) * 4 : 0) * size / 88, size);
+    }
   }
 
   /* ================= drawing plants, pots, things ================= */
@@ -570,7 +577,7 @@
   }
 
   /* ================= the resident cat ================= */
-  var cat = { f: 0.3, target: 0.3, state: 'sit', t: 2, face: 'open', dir: 1, happy: 0, napOn: null, blink: 3 };
+  var cat = { f: 0.3, target: 0.3, state: 'sit', t: 2, face: 'open', dir: 1, happy: 0, napOn: null, blink: 3, step: 0 };
   function floorItems() { return S.placed.filter(function (p) { return p.s === 'floor' && resolve(p.u); }); }
   function catPick() {
     var r = Math.random();
@@ -595,7 +602,7 @@
       var d = cat.target - cat.f, step = 0.12 * dt * 1000 / (LAY.surfaces.floor.x1 - LAY.surfaces.floor.x0);
       cat.dir = d > 0 ? 1 : -1;
       if (Math.abs(d) <= step) { cat.f = cat.target; cat.state = cat.then || 'sit'; cat.t = cat.state === 'nap' ? rand(6, 10) : rand(2.5, 5); }
-      else cat.f += step * cat.dir;
+      else { cat.f += step * cat.dir; cat.step += dt * 16; }
     } else if (cat.t <= 0) catPick();
     // if its bed is moved away mid-nap, it wakes up
     if (cat.state === 'nap' && cat.napU && !S.placed.some(function (p) { return p.u === cat.napU && p.s === 'floor'; })) { cat.state = 'sit'; cat.t = rand(1, 2); cat.napU = null; }
@@ -617,11 +624,17 @@
       c.restore();
       return;
     }
-    var bob = cat.state === 'walk' ? Math.abs(Math.sin(time * 9)) * s * 0.07 : 0;
-    var hop = cat.happy > 0 ? Math.sin(clamp(cat.happy / 1.2, 0, 1) * Math.PI) * s * 0.35 : 0;
     // shadow
     D.shadow(c, p.x, p.y + 2, s * 0.5, s * 0.1);
-    c.translate(p.x, p.y - s * 100 / 88 - bob - hop);
+    if (cat.state === 'walk') {
+      // the shared side-on walk (legs step, tail sways), its body centred where the cat is; paws 67.5 units below the head
+      c.translate(p.x + cat.dir * s * 31 / 88, p.y - s * 67.5 / 88);
+      drawCatPose(c, 'walk', face, s, { step: cat.step, moving: true, dir: cat.dir, wag: time });
+      c.restore();
+      return;
+    }
+    var hop = cat.happy > 0 ? Math.sin(clamp(cat.happy / 1.2, 0, 1) * Math.PI) * s * 0.35 : 0;
+    c.translate(p.x, p.y - s * 100 / 88 - hop);
     c.scale(cat.dir, 1);
     drawCatPose(c, 'sit', face, s);
     c.restore();
