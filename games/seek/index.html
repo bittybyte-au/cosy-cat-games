@@ -24,7 +24,7 @@ body { background: #DDF3FF; }
   display: flex; gap: 12px; justify-content: center; align-items: center;
 }
 .find {
-  position: relative; width: 84px; height: 84px; border: 4px solid var(--ink); border-radius: 22px; background: #fff; box-shadow: 0 4px 0 var(--ink);
+  position: relative; width: 84px; height: 84px; border: 4px solid var(--ink); border-radius: 22px; background: #fff; box-shadow: 0 4px 0 var(--ink), var(--soft);
   display: grid; place-items: center; flex: none;
 }
 .find img { width: 70px; height: 70px; pointer-events: none; }
@@ -41,13 +41,13 @@ body { background: #DDF3FF; }
 .scenes { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .scene {
   position: relative; width: 132px; height: 96px; border: 4px solid var(--ink); border-radius: 20px; padding: 0; overflow: hidden; cursor: pointer;
-  box-shadow: 0 4px 0 var(--ink); background: #fff;
+  box-shadow: 0 4px 0 var(--ink), var(--soft); background: #fff;
 }
 .scene img { width: 100%; height: 100%; display: block; object-fit: cover; pointer-events: none; }
 .scene.same { outline: 5px solid var(--sun); outline-offset: 2px; }
 .scene .again { position: absolute; right: 4px; bottom: 4px; width: 38px; height: 38px; border-radius: 50%; background: var(--sun); border: 3px solid var(--ink); display: grid; place-items: center; }
 .scene .again svg { width: 24px; height: 24px; }
-.scene:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.scene:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
 @media (max-width: 480px) {
   .list { gap: 8px; }
   .find { width: 70px; height: 70px; border-radius: 18px; }
@@ -81,6 +81,7 @@ body { background: #DDF3FF; }
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="game.js"></script>
 </body>
