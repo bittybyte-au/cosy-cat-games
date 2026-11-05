@@ -14,10 +14,12 @@
 <link rel="stylesheet" href="../../shared/site.css">
 <link rel="stylesheet" href="../../shared/game.css">
 <style>
-/* Toddler game: a kitten hides in one of the boxes, the boxes slide about, then tap where it went (one canvas).
-   No words needed. Single bright look by design. */
+/* A shell game: a kitten hides in one of the boxes, the boxes slide about, then tap where it went (one canvas).
+   The top bar shows the level and how many kittens you've found. Single bright look by design. */
 body { background: #F6E7D2; }
-.middle { flex: 1; }
+.middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.found { display: flex; align-items: center; gap: 6px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px 2px 6px; box-shadow: 0 3px 0 var(--ink); font: 800 1rem/1 var(--display); }
+.found svg { width: 28px; height: 28px; }
 </style>
 </head>
 <body class="game">
@@ -27,7 +29,10 @@ body { background: #F6E7D2; }
   <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
     <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
   </a>
-  <div class="middle"></div>
+  <div class="middle">
+    <div class="level" id="levelLabel">Level 1</div>
+    <div class="found" aria-label="Kittens found"><svg viewBox="0 0 32 32"><path d="M5 14 H27 V27 H5 Z" fill="#E8B577" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><path d="M9 14 L11 5 L15 10 L17 10 L21 5 L23 14" fill="#FFB26B" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/></svg><b id="foundCount">0</b></div>
+  </div>
   <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
 </div>
 

@@ -235,7 +235,18 @@
       sh(E(28, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) + sh(E(58, 104, 6, 6), '#3D3650', { lw: 2.5, k: 0 }) +
       cat({ preset: 'white', face: 'happy', x: 106, y: 68, size: 32 }) + cat({ preset: 'pink', face: 'happy', x: 138, y: 94, size: 32 }) +
       shadow(200, 134, 12, 3) + tube('M200 134V60', '#B9AED0', 4) +
-      sh(E(200, 44, 20, 20), '#FF5A5F', { k: 3, in: '<circle cx="200" cy="44" r="13" fill="none" stroke="#fff" stroke-width="3"/>' }) }))
+      sh(E(200, 44, 20, 20), '#FF5A5F', { k: 3, in: '<circle cx="200" cy="44" r="13" fill="none" stroke="#fff" stroke-width="3"/>' }) })),
+
+    kittenkitchen: svg(
+      cat({ preset: 'ginger', face: 'happy', x: 50, y: 70, size: 60 }) +
+      shadow(150, 136, 80, 7) + sh(E(150, 128, 76, 13), '#fff', { k: 3 }) +
+      sh(P(96, 78, 'h108v42q-54 16 -108 0z'), '#FFB3CB', { k: 5, in: ln('M96 104q54 14 108 0', 6, '#FFF4E6') }) +
+      sh(P(94, 80, 'q56 -16 112 0v8q-8 10 -16 0q-11 12 -22 0q-12 12 -24 0q-12 12 -24 0q-11 12 -22 0q-8 10 -16 0z'), '#FFF8FB', { lw: 3, k: 0 }) +
+      [[126, '#7CC4FF', 46], [150, '#FF8FAB', 40], [174, '#7BD389', 46]].map(function (c) {
+        return sh(R(c[0] - 4.5, c[2], 9, 76 - c[2], 3), c[1], { lw: 3, k: 0 }) + sh(P(c[0], c[2] - 20, 'q8 10 0 15q-8 -5 0 -15z'), '#FFC93C', { lw: 2.5, k: 0 });
+      }).join('') +
+      sh(E(124, 110, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) + sh(E(176, 112, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) +
+      sh(P(150, 120, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 }))
   };
 
   var GAMES = [
@@ -325,14 +336,19 @@
       art: ART.peekaboo
     },
     {
-      id: 'kitten-box', save: 'kittenbox', name: 'Kitten in a Box', blurb: 'Which box is the kitten in?',
-      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFEBD1',
+      id: 'kitten-box', save: 'kittenbox', name: 'Kitten in a Box', blurb: 'Keep your eye on the kitten!',
+      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFEBD1',
       art: ART.kittenbox
     },
     {
       id: 'crossing', save: 'crossing', name: 'Kitten Crossing', blurb: 'Stop the cars so kittens can cross',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#CDEBC2',
       art: ART.crossing
+    },
+    {
+      id: 'kitten-kitchen', save: 'kittenkitchen', name: 'Kitten Kitchen', blurb: 'Decorate pizza, pancakes and cake',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE2C7',
+      art: ART.kittenkitchen
     }
   ];
 

@@ -25,6 +25,7 @@ const FILES = [
   './games/boxes/boxes.js',
   './games/peekaboo/', './games/peekaboo/index.html', './games/peekaboo/game.js',
   './games/kitten-box/', './games/kitten-box/index.html', './games/kitten-box/game.js',
+  './games/kitten-kitchen/', './games/kitten-kitchen/index.html', './games/kitten-kitchen/game.js',
   './games/crossing/', './games/crossing/index.html', './games/crossing/game.js'
 ];
 

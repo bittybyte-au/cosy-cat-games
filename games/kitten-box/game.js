@@ -1,8 +1,8 @@
-/* Kitten in a Box – a toddler game (a gentle shell game). A kitten waves from one of the boxes, hops in, and the
-   boxes slowly slide about. Tap the box you think it's in. Found it: the kitten pops out happy. Not that one: that box
-   is empty, and then the right box wiggles and the kitten peeks out ("here I am!"). Starts with 2 boxes and one slow
-   swap; adds a third box and a few more (still slow) swaps as it goes. No score, nothing to lose.
-   Saves a count to GG.setProgress('kittenbox', { found }). */
+/* Kitten in a Box – a shell game. A kitten waves from one of the boxes, hops in, and the boxes slide about.
+   Tap the box you think it's in. Found it: the kitten pops out happy and you go up a level. Not that one: that box
+   is empty, the kitten peeks out of the right one, and you try the same level again (nothing is lost).
+   Levels add swaps, speed and boxes (3, then 4, then 5); from level 3 the boxes are all the same colour.
+   Saves GG.setProgress('kittenbox', { found, level, best }). */
 (function () {
   'use strict';
 
@@ -70,11 +70,14 @@
     });
   }
 
-  var P = (function () { var p = {}; try { p = GG.getProgress('kittenbox') || {}; } catch (e) {} if (typeof p.found !== 'number') p.found = 0; return p; })();
+  var P = (function () { var p = {}; try { p = GG.getProgress('kittenbox') || {}; } catch (e) {} if (typeof p.found !== 'number') p.found = 0; if (typeof p.level !== 'number') p.level = 1; if (typeof p.best !== 'number') p.best = p.level; return p; })();
   function save() { try { GG.setProgress('kittenbox', P); } catch (e) {} }
 
   var boxes = [], slots = [], kitten = 0, look = null, phase = 'show', pt = 0, round = 0, swaps = [], swap = null, time = 0, idleT = 0, picked = -1, lastLook = null;
-  function boxW() { var n = boxes.length || 2; return TALL ? (n > 2 ? W * 0.29 : W * 0.4) : 220; }
+  function boxW() { var n = boxes.length || 3; return TALL ? [0, 0, W * 0.4, W * 0.28, W * 0.21, W * 0.17][n] : [0, 0, 220, 220, 180, 150][n]; }
+  function boxCount(l) { return l < 4 ? 3 : l < 8 ? 4 : 5; }
+  function swapCount(l) { return Math.min(3 + l, 16); }
+  function renderLevel() { $('levelLabel').textContent = 'Level ' + P.level; $('foundCount').textContent = P.found; }
   function onLayout() {
     var n = boxes.length || 2, w = boxW(), gapX = TALL ? (W - n * w) / (n + 1) : Math.min(90, (W - n * w) / (n + 1));
     slots = []; for (var i = 0; i < n; i++) slots.push(W / 2 + (i - (n - 1) / 2) * (w + gapX));
@@ -82,12 +85,13 @@
   }
   function baseY() { return TALL ? H * 0.74 : H * 0.62 + (H - H * 0.62) * 0.55; }
   function newRound() {
-    var n = round < 2 ? 2 : 3;
-    boxes = []; for (var i = 0; i < n; i++) boxes.push({ slot: i, x: 0, w: 0, open: 0, col: B.BOX_COLS[i % B.BOX_COLS.length], lift: 0, wob: 0, empty: false });
+    var n = boxCount(P.level), same = P.level >= 3;
+    boxes = []; for (var i = 0; i < n; i++) boxes.push({ slot: i, x: 0, w: 0, open: 0, col: B.BOX_COLS[same ? 0 : i % B.BOX_COLS.length], lift: 0, wob: 0, empty: false });
+    renderLevel();
     onLayout();
     kitten = Math.floor(Math.random() * n);
     do { look = pick(B.KITTEN_COLS); } while (look === lastLook); lastLook = look;
-    var m = Math.min(1 + Math.floor(round / 2), 4);
+    var m = swapCount(P.level);
     swaps = []; var lastPair = '';
     for (var s = 0; s < m; s++) {
       var a, b2, key; do { a = Math.floor(Math.random() * n); b2 = Math.floor(Math.random() * n); key = Math.min(a, b2) + '-' + Math.max(a, b2); } while (a === b2 || (key === lastPair && n > 2));
@@ -97,7 +101,8 @@
     Sound.open();
   }
   function boxInSlot(s) { for (var i = 0; i < boxes.length; i++) if (boxes[i].slot === s) return boxes[i]; return null; }
-  function swapDur() { return Math.max(0.6, 1.0 - round * 0.04); }
+  function swapDur() { return Math.max(0.26, 0.7 - P.level * 0.04) * (swapLong ? 1.2 : 1); }
+  var swapLong = false;
 
   canvas.addEventListener('pointerdown', function (e) {
     Sound.init();
@@ -110,7 +115,7 @@
   });
   function choose(i) {
     picked = i; idleT = 0;
-    if (i === kitten) { phase = 'found'; pt = 0; Sound.open(); Sound.meow(); buzz(25); P.found++; save(); if (GG.stat) GG.stat('kitten-box', 'found', 1); round++; }
+    if (i === kitten) { phase = 'found'; pt = 0; Sound.open(); Sound.meow(); buzz(25); P.found++; P.level++; P.best = Math.max(P.best, P.level); save(); renderLevel(); if (GG.stat) GG.stat('kitten-box', 'found', 1); round++; }
     else { phase = 'empty'; pt = 0; boxes[i].empty = true; Sound.open(); Sound.empty(); }
   }
 
@@ -135,7 +140,6 @@
       }
     } else if (phase === 'pick') {
       idleT += dt;
-      if (idleT > 8) { idleT = 4; K0.wob = 0.8; }
     } else if (phase === 'found') {
       K0.open = easeBack(pt / 0.35);
       if (pt > 0.35 && !fx) { fx = true; Sound.win(); sparkle(K0.x, baseY() - K0.w, '#FFD23F', 16, 1.2); heart(K0.x + K0.w * 0.3, baseY() - K0.w * 1.2); }
@@ -144,9 +148,8 @@
       var e = boxes[picked];
       e.open = easeBack(pt / 0.35);
       // then the right one wiggles and the kitten peeks out
-      if (pt > 0.9) { K0.wob = Math.max(K0.wob, pt < 1.0 ? 0.6 : K0.wob); }
-      if (pt > 1.6) { K0.open = easeBack((pt - 1.6) / 0.35); if (pt - dt <= 1.6) { Sound.open(); Sound.meow(); } }
-      if (pt > 3.4) closeAll();
+      if (pt > 0.8) { K0.open = easeBack((pt - 0.8) / 0.35); if (pt - dt <= 0.8) { Sound.open(); Sound.meow(); } }
+      if (pt > 2.6) closeAll();
     } else if (phase === 'closing') {
       boxes.forEach(function (b) { b.open = Math.min(b.open, 1 - easeOut(pt / 0.35)); });
       if (pt > 0.7) newRound();
@@ -157,6 +160,7 @@
   function nextSwap() {
     if (!swaps.length) return false;
     var s = swaps.shift(), a = boxInSlot(s[0]), b = boxInSlot(s[1]);
+    swapLong = Math.abs(s[0] - s[1]) > 1;
     swap = { a: a, b: b, sa: s[0], sb: s[1], dur: swapDur() };
     Sound.slide();
     return true;
@@ -282,7 +286,7 @@
 
   /* test hook */
   window.__kbox = {
-    state: function () { return { phase: phase, kitten: kitten, round: round, found: P.found, boxes: boxes.map(function (b) { return { x: b.x, slot: b.slot }; }), y: baseY() }; },
+    state: function () { return { level: P.level, phase: phase, kitten: kitten, round: round, found: P.found, boxes: boxes.map(function (b) { return { x: b.x, slot: b.slot }; }), y: baseY() }; },
     toScreen: function (x, y) { return { x: OX + x * K, y: OY + y * K }; }
   };
 })();
