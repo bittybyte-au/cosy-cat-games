@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = GGDraw, INK = D.INK, rr = D.rr, seeded = D.seeded;
   var TAU = Math.PI * 2;
   var ROWS = 8, COLS = 7;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -17,7 +17,6 @@
   function easeOut(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
   function easeInOut(t) { t = clamp(t, 0, 1); return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function rand(a, b) { return a + Math.random() * (b - a); }
-  function seeded(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function shuffle(a, rnd) { rnd = rnd || Math.random; for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
@@ -753,23 +752,33 @@
   var landingSoundCooldown = 0;
 
   /* ---------- drawing ---------- */
-  function rr(c, x, y, w, h, r) {
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-
+  /* The cushion and its squares only change when the screen does, so they're drawn once into a picture. */
+  var boardCv = null, boardKey = '';
   function drawBoard(c) {
-    var pad = T * 0.14;
-    // cushion
-    rr(c, BX - pad, BY - pad + 6, T * COLS + pad * 2, T * ROWS + pad * 2, T * 0.4);
-    c.fillStyle = INK; c.fill();
-    rr(c, BX - pad, BY - pad, T * COLS + pad * 2, T * ROWS + pad * 2, T * 0.4);
-    c.fillStyle = '#FFF8EC'; c.fill(); c.lineWidth = 4; c.strokeStyle = INK; c.stroke();
-    // soft checker squares
-    for (var r = 0; r < ROWS; r++) for (var col = 0; col < COLS; col++) {
-      rr(c, BX + col * T + 2, BY + r * T + 2, T - 4, T - 4, T * 0.22);
-      c.fillStyle = (r + col) % 2 ? '#FFE9D6' : '#FFF1E2'; c.fill();
+    var pad = T * 0.14, x0 = BX - pad, y0 = BY - pad, bw = T * COLS + pad * 2, bh = T * ROWS + pad * 2;
+    var m = 12, key = [x0, y0, T, dpr].join(',');
+    if (key !== boardKey) {
+      boardKey = key;
+      boardCv = boardCv || document.createElement('canvas');
+      boardCv.width = Math.ceil((bw + m * 2) * dpr); boardCv.height = Math.ceil((bh + m * 2) * dpr);
+      var b = boardCv.getContext('2d');
+      b.setTransform(dpr, 0, 0, dpr, (m - x0) * dpr, (m - y0) * dpr);
+      paintBoard(b, x0, y0, bw, bh);
     }
+    c.drawImage(boardCv, x0 - m, y0 - m, bw + m * 2, bh + m * 2);
+  }
+  function paintBoard(c, x0, y0, bw, bh) {
+    var cush = D.rrPath(x0, y0, bw, bh, T * 0.4);
+    // the raised edge underneath, like the cards and buttons
+    c.save(); c.translate(0, 6); c.fillStyle = INK; c.fill(cush); c.restore();
+    D.shape(c, cush, D.tone(c, '#FFF8EC', y0, y0 + bh), { lw: D.LW.big, depth: 8, inside: function (c) {
+      // soft checker squares, each a little dished in
+      for (var r = 0; r < ROWS; r++) for (var col = 0; col < COLS; col++) {
+        var sq = D.rrPath(BX + col * T + 2, BY + r * T + 2, T - 4, T - 4, T * 0.22);
+        c.fillStyle = (r + col) % 2 ? '#FFE9D6' : '#FFF1E2'; c.fill(sq);
+        D.crescent(c, sq, 3, 'rgba(42,35,64,.05)', 2, 3);
+      }
+    } });
   }
 
   function tileFace(t) {
@@ -807,7 +816,7 @@
       var tx = BX + held.tc * T, ty = BY + held.tr * T;
       rr(c, tx + 3, ty + 3, T - 6, T - 6, T * 0.22);
       c.fillStyle = 'rgba(255,201,60,.6)'; c.fill();
-      c.lineWidth = 3; c.setLineDash([T * 0.12, T * 0.08]); c.lineDashOffset = -time * 30; c.strokeStyle = '#E8A400'; c.stroke(); c.setLineDash([]);
+      c.lineWidth = D.LW.fine; c.setLineDash([T * 0.12, T * 0.08]); c.lineDashOffset = -time * 30; c.strokeStyle = '#E8A400'; c.stroke(); c.setLineDash([]);
     }
     var lifted = [], heldTile = null;
     for (var r = 0; r < ROWS; r++) for (var col = 0; col < COLS; col++) {
@@ -829,9 +838,9 @@
     if (held) {
       x += held.ox; y += held.oy;
       c.save(); c.beginPath(); c.arc(x, y, T * 0.58, 0, TAU); c.fillStyle = 'rgba(255,201,60,.6)'; c.fill();
-      c.lineWidth = 3; c.strokeStyle = '#E8A400'; c.stroke(); c.restore();
+      c.lineWidth = D.LW.fine; c.strokeStyle = '#E8A400'; c.stroke(); c.restore();
       sx = sy = 1.14;
-      c.save(); c.beginPath(); c.ellipse(x, y + T * 0.36, T * 0.32, T * 0.08, 0, 0, TAU); c.fillStyle = 'rgba(42,35,64,.18)'; c.fill(); c.restore();
+      D.shadow(c, x, y + T * 0.4, T * 0.34, T * 0.08);
     }
     // landing squash and bounce
     if (t.land < 1 && !reduceMotion) { var k = Math.sin(t.land * Math.PI) * (1 - t.land); sx += k * 0.35; sy -= k * 0.35; y += k * T * 0.08; }

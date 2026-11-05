@@ -160,7 +160,6 @@
   /* ---------- drawing special cats on the board ----------
      The context is already moved to the cat's centre. Return true when we drew the whole cat. */
   function drawTile(c, t, size, face, now) {
-    var ink = '#2A2340';
     if (t.special === 'rainbow') {
       c.save();
       c.rotate(Math.sin(now * 3) * 0.08);
@@ -169,7 +168,7 @@
       for (var i = 0; i < 3; i++) {
         var a = now * 2.2 + i * TAU / 3;
         c.save(); c.translate(Math.cos(a) * size * 0.5, Math.sin(a) * size * 0.42);
-        star(c, size * 0.08); c.fillStyle = hue(i / 3 + now * 0.2); c.fill(); c.lineWidth = 1.5; c.strokeStyle = ink; c.stroke();
+        star(c, size * 0.08); c.fillStyle = hue(i / 3 + now * 0.2); c.fill(); GGDraw.ink(c, 2);
         c.restore();
       }
       c.restore();
@@ -296,7 +295,7 @@
       c.strokeStyle = hue(q.i / 7 + e.t * 0.3); c.lineWidth = Math.max(2, T * 0.07);
       c.beginPath(); c.moveTo(e.x, e.y); c.lineTo(x, y); c.stroke();
       c.save(); c.translate(x, y); c.rotate(e.t * 6);
-      star(c, T * 0.14); c.fillStyle = '#FFF6B0'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#2A2340'; c.stroke();
+      star(c, T * 0.14); c.fillStyle = '#FFF6B0'; c.fill(); GGDraw.ink(c, 2);
       c.restore();
     });
     // the rainbow cat spins and fades at the centre
