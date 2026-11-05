@@ -24,11 +24,11 @@ body { background: #CFEAF7; }
   display: flex; gap: 16px; justify-content: center;
 }
 .tool {
-  width: 92px; height: 92px; border: 4px solid var(--ink); border-radius: 26px; background: #fff; box-shadow: 0 5px 0 var(--ink); cursor: pointer; padding: 0;
+  width: 92px; height: 92px; border: 4px solid var(--ink); border-radius: 26px; background: #fff; box-shadow: 0 5px 0 var(--ink), var(--soft); cursor: pointer; padding: 0;
   display: grid; place-items: center;
 }
 .tool img { width: 76px; height: 76px; pointer-events: none; }
-.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 9px 0 var(--ink); }
+.tool[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 9px 0 var(--ink), var(--soft); }
 .tool.next:not([aria-pressed="true"]) { animation: nudge 1.2s ease-in-out infinite; }
 @keyframes nudge { 0%, 100% { transform: none; } 50% { transform: translateY(-6px) rotate(-4deg); } }
 @media (max-width: 420px) { .tool { width: 80px; height: 80px; border-radius: 22px; } .tool img { width: 64px; height: 64px; } }
@@ -54,6 +54,7 @@ body { background: #CFEAF7; }
 </div>
 
 <script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="game.js"></script>
 </body>

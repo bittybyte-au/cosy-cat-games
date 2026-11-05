@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var INK = '#2A2340';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW;
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function $(id) { return document.getElementById(id); }
@@ -15,15 +15,12 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-  function rr(c, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-  }
-  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
-  function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
-  function fillInk(c, col, w) { c.fillStyle = col; c.fill(); ink(c, w || 4); }
+  /* a round bubble: white, a soft shade low down, a shine, outline last */
+  function bubble(c, x, y, r) {
+    if (r < 1) return;
+    D.shape(c, D.ellPath(x, y, r, r), '#FFFFFF', { lw: LW.fine, depth: r * 0.3, shade: 'rgba(91,180,240,.22)', shine: [x - r * 0.38, y - r * 0.4, r * 0.24, r * 0.16, -0.6, 0.9] });
+  }
 
   /* ================= saved count ================= */
   var P = (function () { var p = {}; try { p = GG.getProgress('bath') || {}; } catch (e) {} if (typeof p.washed !== 'number') p.washed = 0; return p; })();
@@ -32,22 +29,30 @@
   /* ================= the tools (drawn centred, about 100 wide) ================= */
   var TOOLS = {
     sponge: function (c) {
-      rr(c, -42, -28, 84, 56, 16); fillInk(c, '#FFD23F', 4.5);
-      c.fillStyle = '#E8B100'; [[-24, -10], [-6, 8], [14, -14], [26, 10], [-22, 14], [6, -4]].forEach(function (q) { circle(c, q[0], q[1], 4.5); c.fill(); });
-      rr(c, -42, 14, 84, 14, 6); c.fillStyle = '#7BD389'; c.fill(); ink(c, 3.5);
+      // holes and the green scourer layer are drawn inside the sponge, then its outline goes on last
+      D.shape(c, D.rrPath(-42, -28, 84, 56, 16), D.tone(c, '#FFD23F', -28, 28), { lw: LW.mid, depth: 7, shine: [-22, -18, 13, 5, -0.15, 0.55], inside: function (c) {
+        c.fillStyle = '#E8B100'; [[-24, -10], [-4, 4], [14, -14], [26, 2], [-22, 6], [4, -14]].forEach(function (q) { circle(c, q[0], q[1], 4.5); c.fill(); });
+        c.fillStyle = '#7BD389'; c.fillRect(-50, 14, 100, 20);
+        c.beginPath(); c.moveTo(-50, 14); c.lineTo(50, 14); D.ink(c, LW.fine);
+      } });
     },
     shower: function (c) {
-      c.beginPath(); c.moveTo(30, 44); c.quadraticCurveTo(30, -10, -2, -16); c.strokeStyle = INK; c.lineWidth = 14; c.stroke(); c.strokeStyle = '#C9C2D6'; c.lineWidth = 8; c.stroke();
+      // the hose tucks into the back of the head, which is drawn over it
+      c.beginPath(); c.moveTo(30, 44); c.quadraticCurveTo(30, -10, -10, -20); c.strokeStyle = INK; c.lineWidth = 15; c.stroke(); c.strokeStyle = '#C9C2D6'; c.lineWidth = 7; c.stroke();
       c.save(); c.translate(-14, -22); c.rotate(-0.6);
-      rr(c, -30, -16, 44, 32, 12); fillInk(c, '#C9C2D6', 4.5);
-      ell(c, -30, 0, 8, 18); fillInk(c, '#7CC4FF', 4);
+      D.shape(c, D.rrPath(-30, -16, 44, 32, 12), D.tone(c, '#C9C2D6', -16, 16), { lw: LW.mid, depth: 6, shine: [-10, -9, 10, 3.5, 0, 0.6], inside: function (c) {
+        D.shape(c, D.ellPath(-30, 0, 9, 18), '#7CC4FF', { lw: LW.fine, depth: 0 });
+      } });
       c.restore();
       c.fillStyle = '#7CC4FF'; [[-46, 6], [-38, 22], [-54, 22], [-30, 36]].forEach(function (q) { c.beginPath(); c.moveTo(q[0], q[1] - 7); c.quadraticCurveTo(q[0] + 5, q[1] + 2, q[0], q[1] + 5); c.quadraticCurveTo(q[0] - 5, q[1] + 2, q[0], q[1] - 7); c.fill(); });
     },
     towel: function (c) {
-      c.beginPath(); c.moveTo(-40, -34); c.lineTo(40, -34); c.quadraticCurveTo(46, 0, 38, 36); c.lineTo(-38, 36); c.quadraticCurveTo(-46, 0, -40, -34); c.closePath(); fillInk(c, '#FF8FAB', 4.5);
-      c.strokeStyle = '#fff'; c.lineWidth = 6; [-16, 18].forEach(function (y) { c.beginPath(); c.moveTo(-40, y); c.lineTo(40, y); c.stroke(); });
-      c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = 3; [-24, -6, 12, 28].forEach(function (x) { c.beginPath(); c.moveTo(x, 36); c.lineTo(x, 44); c.stroke(); });
+      // the fringe starts under the towel, so the towel covers where it's sewn on
+      c.strokeStyle = '#E86F92'; c.lineWidth = LW.fine; c.lineCap = 'round'; [-24, -6, 12, 28].forEach(function (x) { c.beginPath(); c.moveTo(x, 30); c.lineTo(x, 44); c.stroke(); });
+      D.shape(c, function (p) { p.moveTo(-40, -34); p.lineTo(40, -34); p.quadraticCurveTo(46, 0, 38, 36); p.lineTo(-38, 36); p.quadraticCurveTo(-46, 0, -40, -34); p.closePath(); },
+        D.tone(c, '#FF8FAB', -34, 36), { lw: LW.mid, depth: 8, inside: function (c) {
+          c.fillStyle = '#FFFFFF'; [-16, 18].forEach(function (y) { c.fillRect(-50, y - 3.5, 100, 7); });
+        } });
     }
   };
   function toolImg(id) {
@@ -83,7 +88,7 @@
 
   /* ================= the kitten ================= */
   var LOOKS = [{ preset: 'ginger' }, { preset: 'white' }, { preset: 'pink' }, { preset: 'blue' }, { preset: 'purple' }, { color: '#C9C2D6', markings: 'tabby' }, { color: '#FFFFFF', markings: 'calico' }, { preset: 'black' }];
-  var kit = null, lastLook = -1;
+  var kit = null, lastLook = -1, kitIds = 0;
   var CAT_S = 270;   // kitten size
   function tub() { var w = Math.min(W * 0.84, 620), h = Math.min(230, H * 0.34); return { x: W / 2, y: Math.min(H - 70, H * 0.6 + h * 0.6), w: w, h: h }; }
   function placeCat() {
@@ -95,13 +100,13 @@
   }
   function newKitten() {
     var li; do { li = Math.floor(Math.random() * LOOKS.length); } while (li === lastLook && LOOKS.length > 1); lastLook = li;
-    kit = { look: LOOKS[li], mud: [], suds: [], wet: 0, washed: false, state: 'in', t: 0, shake: 0, fluff: 0, happy: 0 };
+    kit = { id: ++kitIds, look: LOOKS[li], mud: [], suds: [], wet: 0, washed: false, state: 'in', t: 0, shake: 0, fluff: 0, happy: 0 };
     placeCat();
     var k = kit.k;
-    // mud: on the head and the chest
-    // mud on the head and the top of the chest: all above the tub's rim so every bit can be seen
+    // mud on the head, all above the water so every bit can be seen. The mud is only drawn on the cat
+    // (see drawMud), so the spots sit well inside the head and ears, where they show in full.
     var rim = (tub().y - tub().h + 10 - kit.y) / k - 14;
-    var spots = [[-28, -22], [28, -30], [0, 10], [-38, 14], [36, 8], [-14, -46], [16, -50]];
+    var spots = [[-24, -14], [24, -18], [0, 22], [-30, 14], [30, 12], [-29, -32], [29, -32]];
     spots.forEach(function (s) { if (Math.random() < 0.85) kit.mud.push({ x: (s[0] + rand(-6, 6)) * k, y: Math.min(rim, s[1] + rand(-5, 5)) * k, r: rand(11, 16) * k, amt: 1, seed: Math.random() * 10 }); });
     nextHint();
   }
@@ -203,45 +208,153 @@
     for (var x = 0; x < W; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
     for (var y = 0; y < H; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
     // floor
-    var fy = tub().y + 24; c.fillStyle = '#C9E7F5'; c.fillRect(0, fy, W, H - fy); c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); ink(c, 4);
-    // a shelf with bottles
+    var fy = tub().y + 24; c.fillStyle = D.tone(c, '#C9E7F5', fy, H); c.fillRect(0, fy, W, H - fy); c.beginPath(); c.moveTo(-5, fy); c.lineTo(W + 5, fy); D.ink(c, LW.mid);
+    // a shelf with bottles standing on it (each cap tucks into its bottle, which covers the join)
     var sx = W < 700 ? 60 : 110, sy = W < 700 ? 90 : 120;
-    rr(c, sx - 60, sy, 150, 14, 5); fillInk(c, '#E6B98A', 3.5);
-    [['#FF8FAB', -36], ['#B48CFF', 4], ['#7BD389', 44]].forEach(function (b) { rr(c, sx + b[1] - 12, sy - 52, 26, 52, 8); fillInk(c, b[0], 3.5); rr(c, sx + b[1] - 6, sy - 64, 14, 14, 4); fillInk(c, '#fff', 3); });
+    D.shape(c, D.rrPath(sx - 60, sy, 150, 14, 5), D.tone(c, '#E6B98A', sy, sy + 14), { lw: LW.fine, depth: 4 });
+    [['#FF8FAB', -36], ['#B48CFF', 4], ['#7BD389', 44]].forEach(function (b) {
+      var bx = sx + b[1];
+      D.shape(c, D.rrPath(bx - 6, sy - 64, 14, 18, 4), '#FFFFFF', { lw: LW.fine, depth: 0 });
+      D.shape(c, D.rrPath(bx - 12, sy - 52, 26, 52, 8), D.tone(c, b[0], sy - 52, sy), { lw: LW.fine, depth: 5, shine: [bx - 5, sy - 40, 3, 8, 0, 0.5] });
+    });
   }
-  function drawTub(c, front) {
-    var T = tub();
-    if (!front) {
-      // back rim and water
-      ell(c, T.x, T.y - T.h + 10, T.w / 2, 34); fillInk(c, '#FFFFFF', 5);
-      ell(c, T.x, T.y - T.h + 18, T.w / 2 - 22, 22); c.fillStyle = '#9EDCFF'; c.fill();
-      return;
+
+  /* The tub, seen from the front: the back of the rim, the water inside it, and the front (body, feet and the
+     near side of the rim) that hides whatever floats low in the water. */
+  function tubGeom() {
+    var T = tub(), rimY = T.y - T.h + 10;
+    return { T: T, rimY: rimY, rx: T.w / 2, ry: 34, wx: T.x, wy: rimY + 2, wrx: T.w / 2 - 18, wry: 22, waterY: rimY + 4 };
+  }
+  function drawTubBack(c, G) {
+    D.shape(c, D.ellPath(G.T.x, G.rimY, G.rx, G.ry), '#FFFFFF', { lw: LW.big, depth: 0 });
+    drawWater(c, G);
+  }
+  /* the water; drawn again over the kitten's lower half (front = true), so it sits in the water rather than being cut off */
+  function drawWater(c, G, front) {
+    if (front) { c.save(); c.beginPath(); c.rect(G.wx - G.wrx - 10, G.waterY, G.wrx * 2 + 20, G.wry * 2); c.clip(); }
+    D.shape(c, D.ellPath(G.wx, G.wy, G.wrx, G.wry), D.tone(c, '#9EDCFF', G.wy - G.wry, G.wy + G.wry), { lw: LW.mid, depth: 0, inside: function (c) {
+      // the tub's inside wall shows as a pale band at the back of the water
+      c.fillStyle = '#E9F6FB'; c.beginPath(); c.ellipse(G.wx, G.wy - G.wry * 0.55, G.wrx * 1.02, G.wry * 0.75, 0, Math.PI, TAU); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 3;
+      c.beginPath(); c.ellipse(G.wx - G.wrx * 0.45, G.wy + G.wry * 0.25, G.wrx * 0.18, 3, 0, 0, Math.PI); c.stroke();
+      c.beginPath(); c.ellipse(G.wx + G.wrx * 0.2, G.wy + G.wry * 0.5, G.wrx * 0.14, 3, 0, 0, Math.PI); c.stroke();
+    } });
+    if (front) c.restore();
+  }
+  function drawTubFront(c, G) {
+    var T = G.T, x0 = T.x - T.w / 2, x1 = T.x + T.w / 2;
+    // feet first, so the tub covers where they join it
+    [-1, 1].forEach(function (s) { D.shape(c, D.rrPath(T.x + s * (T.w / 2 - 80) - 18, T.y - 10, 36, 36, 10), D.tone(c, '#FFD23F', T.y - 10, T.y + 26), { lw: LW.mid, depth: 6 }); });
+    // the front: the body of the tub up to the near edge of the water
+    D.shape(c, function (p) {
+      p.moveTo(x0, G.rimY); p.quadraticCurveTo(x0, T.y, x0 + 50, T.y); p.lineTo(x1 - 50, T.y); p.quadraticCurveTo(x1, T.y, x1, G.rimY);
+      p.lineTo(G.wx + G.wrx, G.wy); p.ellipse(G.wx, G.wy, G.wrx, G.wry, 0, 0, Math.PI); p.lineTo(x0, G.rimY); p.closePath();
+    }, D.tone(c, '#FFFFFF', G.rimY, T.y), { lw: LW.big, depth: 16, inside: function (c) {
+      // the rolled lip of the rim, and a soft highlight down the left side
+      c.beginPath(); c.ellipse(T.x, G.rimY, G.rx, G.ry, 0, 0.04, Math.PI - 0.04); D.ink(c, LW.mid);
+      c.beginPath(); c.moveTo(x0 + 30, G.rimY + G.ry + 16); c.quadraticCurveTo(x0 + 34, T.y - 30, x0 + 70, T.y - 20); c.strokeStyle = '#E3F1F6'; c.lineWidth = 10; c.lineCap = 'round'; c.stroke();
+    } });
+  }
+
+  /* bubbles and the duck float on the water, scattered; the ones nearer the front dip behind the tub's edge */
+  var floatKey = '', floaters = [];
+  function makeFloaters(G) {
+    var key = W + 'x' + H;
+    if (key === floatKey) return floaters;
+    floatKey = key; floaters = [];
+    var rnd = D.seeded(11);
+    var duck0 = { kind: 'duck', x: G.wx + G.wrx * 0.58, y: G.wy + G.wry * 0.3, r: 34, ph: 0 };
+    floaters.push(duck0);
+    for (var tries = 0; tries < 400 && floaters.length < 15; tries++) {
+      var r = 9 + rnd() * 12;
+      var f = { kind: 'bubble', x: G.wx + (rnd() * 2 - 1) * G.wrx, y: G.wy + (rnd() * 2 - 1) * G.wry, r: r, ph: rnd() * TAU };
+      var e = Math.pow((f.x - G.wx) / (G.wrx - r * 0.5), 2) + Math.pow((f.y - G.wy) / G.wry, 2);
+      if (e > 0.9) continue;
+      // keep clear of the kitten's chin and the duck, and don't pile up
+      if (Math.abs(f.x - G.wx) < 70 && f.y < G.wy + G.wry * 0.5) continue;
+      if (floaters.some(function (o) { return Math.hypot(o.x - f.x, (o.y - f.y) * 1.6) < (o.r + f.r) * (o.kind === 'duck' ? 1.3 : 0.85); })) continue;
+      floaters.push(f);
     }
-    // the front of the tub, over the kitten's tummy
-    c.beginPath(); c.moveTo(T.x - T.w / 2, T.y - T.h + 10); c.lineTo(T.x + T.w / 2, T.y - T.h + 10); c.quadraticCurveTo(T.x + T.w / 2, T.y, T.x + T.w / 2 - 50, T.y); c.lineTo(T.x - T.w / 2 + 50, T.y); c.quadraticCurveTo(T.x - T.w / 2, T.y, T.x - T.w / 2, T.y - T.h + 10); c.closePath();
-    fillInk(c, '#FFFFFF', 5);
-    c.beginPath(); c.moveTo(T.x - T.w / 2 + 30, T.y - T.h + 50); c.quadraticCurveTo(T.x - T.w / 2 + 34, T.y - 30, T.x - T.w / 2 + 70, T.y - 20); c.strokeStyle = '#E3F1F6'; c.lineWidth = 10; c.stroke();
-    // feet
-    [-1, 1].forEach(function (s) { rr(c, T.x + s * (T.w / 2 - 80) - 18, T.y - 4, 36, 30, 10); fillInk(c, '#FFD23F', 4); });
-    // foam along the rim
-    c.fillStyle = '#FFFFFF'; for (var i = 0; i < 9; i++) { var fx = T.x - T.w / 2 + 40 + i * (T.w - 80) / 8; circle(c, fx, T.y - T.h + 12 + Math.sin(time * 2 + i) * 2, 16 + (i % 3) * 4); c.fill(); c.lineWidth = 2.5; c.strokeStyle = 'rgba(42,35,64,.35)'; c.stroke(); }
-    // the duck floats on the foam
-    duck.x = T.x + T.w / 2 - 90; duck.y = T.y - T.h + 2 + Math.sin(time * 2.2) * 4;
-    c.save(); c.translate(duck.x, duck.y); var sq = duck.squeak > 0 ? 1 + Math.sin(duck.squeak * 30) * 0.08 : 1; c.scale(sq, 2 - sq);
-    c.beginPath(); c.moveTo(-34, 0); c.quadraticCurveTo(-34, 24, 0, 24); c.quadraticCurveTo(30, 24, 34, 4); c.quadraticCurveTo(16, 8, 8, -2); c.closePath(); fillInk(c, '#FFD23F', 4);
-    circle(c, 10, -16, 17); fillInk(c, '#FFD23F', 4);
-    c.beginPath(); c.moveTo(24, -16); c.lineTo(40, -11); c.lineTo(24, -6); c.closePath(); fillInk(c, '#FF9A2E', 3);
-    circle(c, 14, -21, 3.5); c.fillStyle = INK; c.fill();
+    floaters.sort(function (a, b) { return a.y - b.y; });
+    return floaters;
+  }
+  function drawDuck(c, x, y) {
+    var sq = duck.squeak > 0 ? 1 + Math.sin(duck.squeak * 30) * 0.08 : 1;
+    var m = new DOMMatrix().translate(x, y).scale(sq, 2 - sq);
+    // beak first, then the head over its base, then the body over the neck
+    D.shape(c, function (p) { p.moveTo(18, -17); p.lineTo(40, -11); p.lineTo(18, -5); p.closePath(); }, '#FF9A2E', { m: m, lw: LW.fine, depth: 0 });
+    D.shape(c, D.ellPath(10, -16, 17, 17), '#FFD23F', { m: m, lw: LW.mid, depth: 4, shine: [4, -24, 5, 3, -0.5, 0.6], inside: function (c) { circle(c, 14, -20, 3.5); c.fillStyle = INK; c.fill(); } });
+    D.shape(c, function (p) { p.moveTo(-34, 0); p.quadraticCurveTo(-34, 24, 0, 24); p.quadraticCurveTo(30, 24, 34, 4); p.quadraticCurveTo(16, 8, 4, 0); p.quadraticCurveTo(-14, -6, -34, 0); p.closePath(); }, '#FFD23F', { m: m, lw: LW.mid, depth: 6,
+      inside: function (c) { c.beginPath(); c.moveTo(-14, 6); c.quadraticCurveTo(0, 14, 12, 8); c.strokeStyle = '#E8B100'; c.lineWidth = LW.fine; c.stroke(); } });
+  }
+  function drawFloaters(c, G, front) {
+    makeFloaters(G).forEach(function (f) {
+      if ((f.y >= G.waterY) !== front) return;
+      var bob = reduceMotion ? 0 : Math.sin(time * 2 + f.ph) * 2.5;
+      if (f.kind === 'duck') { duck.x = f.x; duck.y = f.y - 10 + bob; drawDuck(c, f.x, f.y + bob); }
+      else bubble(c, f.x, f.y + bob * 0.6, f.r);
+    });
+  }
+
+  /* Mud only ever shows on the kitten: it's drawn on a layer that's masked by the kitten's own shape (head, ears,
+     body, tail), pulled in by half an outline so the ink line stays on top. The mask is made once per kitten. */
+  var CBOX = [-66, -72, 134, 172];   // the sitting cat's picture box (GGCat, 100-unit space)
+  var mask = { key: '', cv: null }, mudLayer = document.createElement('canvas'), mudCtx = mudLayer.getContext('2d');
+  function mudPx() { return Math.min(K * dpr, 2.2); }
+  function kittenMask(o) {
+    var px = mudPx(), s = kit.k * px, w = Math.ceil(CBOX[2] * s), h = Math.ceil(CBOX[3] * s);
+    var key = kit.id + ':' + w + 'x' + h;
+    if (mask.key === key) return mask.cv;
+    var full = document.createElement('canvas'); full.width = w; full.height = h;
+    var f = full.getContext('2d'); f.setTransform(px, 0, 0, px, -CBOX[0] * s, -CBOX[1] * s);
+    var mo = {}; for (var k2 in o) mo[k2] = o[k2]; mo.face = 'open';
+    GGCat.draw(f, mo);
+    var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    var e = cv.getContext('2d'); e.drawImage(full, 0, 0);
+    e.globalCompositeOperation = 'destination-in';
+    var r = 2.5 * s;   // half of the cat's 5-unit outline
+    for (var i = 0; i < 12; i++) { var a = i / 12 * TAU; e.drawImage(full, Math.cos(a) * r, Math.sin(a) * r); }
+    mask.key = key; mask.cv = cv;
+    return cv;
+  }
+  function drawMud(c, o, a) {
+    var k = kit.k, any = kit.wet > 0.02 || kit.mud.some(function (m) { return m.amt > 0; });
+    if (!any) return;
+    var mk = kittenMask(o), px = mudPx(), s = k * px;
+    if (mudLayer.width !== mk.width || mudLayer.height !== mk.height) { mudLayer.width = mk.width; mudLayer.height = mk.height; }
+    var m = mudCtx;
+    m.setTransform(1, 0, 0, 1, 0, 0); m.globalCompositeOperation = 'source-over'; m.globalAlpha = 1;
+    m.clearRect(0, 0, mudLayer.width, mudLayer.height);
+    m.setTransform(px, 0, 0, px, -CBOX[0] * s, -CBOX[1] * s);
+    // wet: flat little drips of fur
+    if (kit.wet > 0.02) {
+      m.globalAlpha = Math.min(1, kit.wet * 1.5); m.fillStyle = '#5BB4F0';
+      [[-30, -36], [24, -44], [-40, 6], [38, 0], [-8, 22], [14, -60], [30, 26]].forEach(function (d) { var x = d[0] * k, y = d[1] * k + (time * 20 % 6); m.beginPath(); m.moveTo(x, y - 9); m.quadraticCurveTo(x + 6, y + 2, x, y + 5); m.quadraticCurveTo(x - 6, y + 2, x, y - 9); m.fill(); });
+    }
+    kit.mud.forEach(function (sp) {
+      if (sp.amt <= 0) return;
+      m.globalAlpha = Math.min(1, sp.amt * 1.3);
+      var sz = sp.r * 0.82 * (0.5 + 0.5 * sp.amt);
+      m.fillStyle = '#8A5A34';
+      circle(m, sp.x, sp.y, sz); m.fill();
+      for (var j = 0; j < 4; j++) { var an2 = sp.seed + j * 1.7; circle(m, sp.x + Math.cos(an2) * sz * 0.85, sp.y + Math.sin(an2) * sz * 0.85, sz * (0.38 + 0.12 * (j % 2))); m.fill(); }
+      circle(m, sp.x - sp.r * 0.3, sp.y - sp.r * 0.3, sp.r * 0.2); m.fillStyle = 'rgba(255,255,255,.25)'; m.fill();
+    });
+    m.setTransform(1, 0, 0, 1, 0, 0); m.globalAlpha = 1;
+    m.globalCompositeOperation = 'destination-in'; m.drawImage(mk, 0, 0); m.globalCompositeOperation = 'source-over';
+    c.save(); c.globalAlpha = a;
+    c.drawImage(mudLayer, CBOX[0] * k, CBOX[1] * k, mudLayer.width / px, mudLayer.height / px);
     c.restore();
   }
-  function drawKitten(c) {
+
+  function drawKitten(c, G) {
     var k = kit.k, dy = 0, sx = 1, a = 1;
     if (kit.state === 'in') dy = (1 - easeOut(kit.t / 0.7)) * 260;
     if (kit.state === 'out') { dy = -easeOut(kit.t / 0.7) * 40; a = 1 - kit.t / 0.7; }
     if (kit.state === 'shake') { sx = 1 + Math.sin(kit.t * 50) * 0.06 * (1 - kit.t); }
     var face = kit.state === 'fluffy' || kit.state === 'shake' ? 'happy' : kit.wet > 0.4 ? 'surprised' : (held && onCat(held) ? 'happy' : (Math.sin(time * 0.9) > 0.985 ? 'blink' : 'open'));
-    var T = tub();
-    c.save(); c.beginPath(); c.rect(kit.x - 54 * k, 0, 108 * k, T.y - T.h + 14); c.clip();
+    // the kitten sits in the water: everything under the water line is hidden, nothing is cut off at the sides
+    c.save(); c.beginPath(); c.rect(-W, -H, W * 3, G.waterY + H + 6); c.clip();
     c.globalAlpha = a; c.translate(kit.x, kit.y + dy); c.scale(sx, 1);
     // fluffed-up fur once dry
     if (kit.state === 'fluffy' || kit.state === 'out') {
@@ -250,31 +363,16 @@
       c.restore();
     }
     var o = {}; for (var key in kit.look) o[key] = kit.look[key]; o.pose = 'sit'; o.size = kit.size; o.face = face;
-    try { GGCat.draw(c, o); } catch (e) { circle(c, 0, 0, 100); fillInk(c, '#FFA94D', 5); }
-    // wet: a blue sheen and flat little drips of fur
-    if (kit.wet > 0.02) {
-      c.globalAlpha = a * Math.min(1, kit.wet * 1.5); c.fillStyle = '#5BB4F0';
-      [[-30, -36], [24, -44], [-40, 6], [38, 0], [-8, 22], [14, -60], [30, 26]].forEach(function (d) { var x = d[0] * k, y = d[1] * k + (time * 20 % 6); c.beginPath(); c.moveTo(x, y - 9); c.quadraticCurveTo(x + 6, y + 2, x, y + 5); c.quadraticCurveTo(x - 6, y + 2, x, y - 9); c.fill(); });
-      c.globalAlpha = a;
-    }
-    // mud
-    kit.mud.forEach(function (m) {
-      if (m.amt <= 0) return;
-      c.save(); c.globalAlpha = a * Math.min(1, m.amt * 1.3);
-      var sz = m.r * (0.5 + 0.5 * m.amt);
-      c.fillStyle = '#8A5A34';
-      circle(c, m.x, m.y, sz); c.fill();
-      for (var j = 0; j < 4; j++) { var an2 = m.seed + j * 1.7; circle(c, m.x + Math.cos(an2) * sz * 0.85, m.y + Math.sin(an2) * sz * 0.85, sz * (0.38 + 0.12 * (j % 2))); c.fill(); }
-      circle(c, m.x - m.r * 0.3, m.y - m.r * 0.3, m.r * 0.2); c.fillStyle = 'rgba(255,255,255,.25)'; c.fill();
-      c.restore();
-    });
-    // bubbles
-    kit.suds.forEach(function (s) {
-      var g = easeOut(s.t / 0.25), w = Math.sin(time * 3 + s.x) * 1.5;
-      circle(c, s.x, s.y + w, s.r * g); c.fillStyle = 'rgba(255,255,255,.9)'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = 'rgba(126,196,255,.9)'; c.stroke();
-      circle(c, s.x - s.r * 0.35, s.y - s.r * 0.35 + w, s.r * 0.22 * g); c.fillStyle = '#fff'; c.fill();
-    });
+    GGCat.draw(c, o);
+    drawMud(c, o, a);
+    c.globalAlpha = a;
+    // bubbles from the sponge
+    kit.suds.forEach(function (s) { bubble(c, s.x, s.y + Math.sin(time * 3 + s.x) * 1.5, s.r * easeOut(s.t / 0.25)); });
     c.restore();
+    drawWater(c, G, true);
+    // a ripple where the kitten meets the water
+    c.save(); c.globalAlpha = 0.85 * a; c.beginPath(); c.ellipse(kit.x, G.waterY, 46 * k, 7, 0, 0.15, Math.PI - 0.15);
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 4; c.lineCap = 'round'; c.stroke(); c.restore();
   }
   function drawHeldTool(c) {
     var p = held || hover; if (!p) return;
@@ -297,7 +395,7 @@
       var k = 1 - p.life / p.max;
       c.save(); c.globalAlpha = Math.min(1, k * 1.6); c.translate(p.x, p.y);
       if (p.kind === 'pop') { circle(c, 0, 0, p.r * (1 + (1 - k))); c.strokeStyle = 'rgba(126,196,255,.9)'; c.lineWidth = 2.5; c.stroke(); }
-      else { c.rotate(p.life * p.spin); star(c, p.r * 1.3); c.fillStyle = p.color; c.fill(); ink(c, 2); }
+      else { c.rotate(p.life * p.spin); star(c, p.r * 1.3); c.fillStyle = p.color; c.fill(); D.ink(c, LW.fine); }
       c.restore();
     });
   }
@@ -376,19 +474,22 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
     ctx.save();
-    rr(ctx, OX, OY, W * K, H * K, 24); ctx.clip();
+    D.rr(ctx, OX, OY, W * K, H * K, 24); ctx.clip();
     ctx.setTransform(dpr * K, 0, 0, dpr * K, dpr * OX, dpr * OY);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    var G = tubGeom();
     drawRoom(ctx);
-    drawTub(ctx, false);
-    if (kit) drawKitten(ctx);
-    drawTub(ctx, true);
+    drawTubBack(ctx, G);
+    drawFloaters(ctx, G, false);
+    if (kit) drawKitten(ctx, G);
+    drawFloaters(ctx, G, true);
+    drawTubFront(ctx, G);
     drawDrops(ctx);
     drawParts(ctx);
     drawHeldTool(ctx);
     ctx.restore();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    rr(ctx, OX, OY, W * K, H * K, 24); ink(ctx, 5);
+    D.rr(ctx, OX, OY, W * K, H * K, 24); D.ink(ctx, LW.big);
     requestAnimationFrame(frame);
   }
   window.addEventListener('resize', layout);
