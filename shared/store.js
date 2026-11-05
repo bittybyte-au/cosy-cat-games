@@ -123,6 +123,14 @@
     }
   } catch (e) {}
 
+  /* Games: iPhones and iPads ignore user-scalable=no, so a pinch zoomed the page in with no easy way back out.
+     Stop pinch zoom on game pages (info pages can still be zoomed). Double-tap zoom is stopped in game.css. */
+  try {
+    var noZoom = function (e) { if (document.body && document.body.classList.contains('game')) e.preventDefault(); };
+    ['gesturestart', 'gesturechange'].forEach(function (t) { document.addEventListener(t, noZoom, { passive: false }); });
+    document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) noZoom(e); }, { passive: false });
+  } catch (e) {}
+
   /* Ask the browser not to clear our saved data when space is low (granted quietly to home screen apps). */
   try {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;

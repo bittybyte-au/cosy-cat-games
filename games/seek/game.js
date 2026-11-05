@@ -216,7 +216,7 @@
   };
   /* kitchen things */
   ITEMS.mug = function (c, col) {
-    c.beginPath(); c.arc(34, 0, 16, -1.3, 1.3); c.strokeStyle = INK; c.lineWidth = 13; c.stroke(); c.strokeStyle = col || '#FF8FAB'; c.lineWidth = 6; c.stroke();
+    c.beginPath(); c.moveTo(24, -18); c.bezierCurveTo(60, -22, 60, 22, 24, 20); c.strokeStyle = INK; c.lineWidth = 15; c.stroke(); c.strokeStyle = col || '#FF8FAB'; c.lineWidth = 6; c.stroke();
     rr(c, -36, -34, 72, 72, 14); fillInk(c, col || '#FF8FAB', 4.5);
     ell(c, 0, -34, 36, 9); fillInk(c, '#8A5A2B', 3.5);
     circle(c, -6, 6, 10); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill(); circle(c, 12, 2, 6); c.fill();
@@ -240,8 +240,8 @@
     c.restore();
   };
   ITEMS.teapot = function (c, col) {
-    c.beginPath(); c.moveTo(26, 0); c.quadraticCurveTo(50, -6, 52, -30); c.lineTo(44, -32); c.quadraticCurveTo(42, -14, 26, -12); c.closePath(); fillInk(c, col || '#7CC4FF', 4);
-    c.beginPath(); c.arc(-34, -2, 16, 1.6, 4.7); c.strokeStyle = INK; c.lineWidth = 12; c.stroke(); c.strokeStyle = col || '#7CC4FF'; c.lineWidth = 5; c.stroke();
+    c.beginPath(); c.moveTo(20, 8); c.quadraticCurveTo(50, -2, 52, -30); c.lineTo(44, -32); c.quadraticCurveTo(42, -14, 20, -10); c.closePath(); fillInk(c, col || '#7CC4FF', 4);
+    c.beginPath(); c.moveTo(-20, -14); c.bezierCurveTo(-58, -22, -58, 26, -20, 20); c.strokeStyle = INK; c.lineWidth = 14; c.stroke(); c.strokeStyle = col || '#7CC4FF'; c.lineWidth = 5; c.stroke();
     ell(c, 0, 4, 34, 30); fillInk(c, col || '#7CC4FF', 4.5);
     ell(c, 0, -24, 22, 7); fillInk(c, '#fff', 3.5); circle(c, 0, -34, 7); fillInk(c, col || '#7CC4FF', 3.5);
     c.fillStyle = '#fff'; [[-14, 6], [0, 14], [14, 6]].forEach(function (q) { circle(c, q[0], q[1], 5); c.fill(); });

@@ -6,6 +6,8 @@ body.game {
   margin: 0; overflow: hidden; overscroll-behavior: none; background-color: var(--wall, var(--cream));
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
+/* no pinch or double-tap zoom in games (a fast tapper kept zooming in by accident); scrolling still works */
+body.game, body.game * { touch-action: pan-x pan-y; }
 canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
 .game button { font-family: var(--body); color: var(--ink); }
 

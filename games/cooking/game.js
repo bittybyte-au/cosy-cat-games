@@ -2780,7 +2780,8 @@
     showScreen('finish');
     Sound.chime();
     for (var i = 0; i < 4; i++) setTimeout(function () { burst(Math.random() * SIZE, -20, 14, { colors: ['#FF6B57', '#FFC93C', '#7BD389', '#3FA7F5', '#FF7EB6'], shape: 'confetti', size: 16, speed: 120, gravity: 420, life: 2.2 }); }, i * 220);
-    setTimeout(function () { if (mode === 'finish') Cat.show('Great job!', 3000); }, 500);
+    // the chef cat only pops up if there's room below the buttons (on a phone it used to cover them)
+    setTimeout(function () { if (mode === 'finish' && $('finish').querySelector('.btnrow').getBoundingClientRect().bottom < innerHeight - 214) Cat.show('Great job!', 3000); }, 500);
   }
 
   /* ---------- recipes ---------- */
@@ -2895,6 +2896,7 @@
     if (viewer) viewer.hidden = true;
     $('menu').hidden = m !== 'menu';
     $('finish').hidden = m !== 'finish';
+    $('cat').classList.toggle('low', m === 'finish');   // no tool tray on the finish screen, so the cat sits right at the bottom
     tray.hidden = m !== 'play';
     $('steps').hidden = m !== 'play';
     $('title').hidden = m === 'play';
