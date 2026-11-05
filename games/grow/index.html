@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Grow</title>
+<meta name="theme-color" content="#E3F4D9">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Layout: the potting bench (canvas) fills the screen, with a strip of choices along the bottom. Single bright look by design. */
+body { background: #CFE9C0; }
+.middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
+.growbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.growbar .step { font: 800 1.15rem/1.15 var(--display); text-align: center; }
+.choices { display: flex; gap: 10px; overflow-x: auto; justify-content: safe center; padding: 2px 2px 6px; min-height: 86px; align-items: center; }
+.choice {
+  flex: none; width: 78px; height: 78px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; cursor: pointer; padding: 2px;
+  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); position: relative;
+}
+.choice img { width: 64px; height: 64px; pointer-events: none; }
+.choice.swatch { width: 60px; height: 60px; border-radius: 50%; }
+.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.choice.locked { cursor: default; background: #EEE8F3; border-style: dashed; box-shadow: none; }
+.choice.locked img { filter: grayscale(1) brightness(1.25); opacity: .4; }
+.choice .lock { position: absolute; bottom: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 2.5px solid var(--ink); display: grid; place-items: center; }
+.choice .lock svg { width: 16px; height: 16px; }
+
+.say {
+  position: fixed; left: 50%; bottom: calc(var(--bar-h, 180px) + 14px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content;
+  transition: opacity .3s ease, transform .3s ease;
+}
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+.card .grown { width: min(200px, 56vw); height: auto; display: block; animation: present .6s cubic-bezier(.3, 1.6, .5, 1); }
+.card .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.card a.big { text-decoration: none; background: #fff; }
+.count { font: 800 .85rem var(--body); color: var(--muted); text-align: center; min-height: 1em; }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="A potting bench. Pick a pot and a seed, then fill, plant, water and grow it."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><path d="M5 15 L16 5 L27 15 M9 13 V27 H23 V13" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.5" y="19" width="5" height="8" fill="#2A2340"/></svg>
+  </a>
+  <div class="middle"><div class="title">Grow</div></div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="growbar" id="growbar">
+  <div class="step" id="stepLabel">Pick a pot</div>
+  <div class="choices" id="choices"></div>
+  <div class="count" id="grownCount"></div>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="card-wrap" id="cardWrap" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <img class="grown" id="cardImg" alt="">
+    <h2 id="cardTitle">You grew a tulip!</h2>
+    <p id="cardNote">It's waiting in your Cosy Home.</p>
+    <div class="btns">
+      <button class="big" id="againBtn" type="button">Grow another</button>
+      <a class="big" href="../home/index.html">Go to my home</a>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="plants.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -15,13 +15,13 @@
 <link rel="stylesheet" href="../../shared/game.css">
 <style>
 /* Layout: the room (canvas) fills the screen between the top bar and a drawer of things along the bottom.
-   In grow mode the drawer is swapped for a strip of choices for the potting bench. Single bright look by design. */
+   Single bright look by design. */
 :root { --wall: #FFF1DC; }
 body { background: #F7E2C6; }
 .middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
 .title { font: 800 1.35rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 18px 6px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
 
-.drawer, .growbar {
+.drawer {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
   padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
   display: flex; flex-direction: column; gap: 8px;
@@ -55,19 +55,6 @@ body { background: #F7E2C6; }
 .item.new { animation: bump .5s ease 3; background: #FFF4C2; }
 .empty { align-self: center; margin: 0 auto; font: 800 1rem var(--body); color: var(--muted); text-align: center; padding: 8px; }
 
-.growbar .step { font: 800 1.15rem/1.15 var(--display); text-align: center; }
-.choices { display: flex; gap: 10px; overflow-x: auto; justify-content: safe center; padding: 2px 2px 6px; min-height: 86px; align-items: center; }
-.choice {
-  flex: none; width: 78px; height: 78px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; cursor: pointer; padding: 2px;
-  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink); position: relative;
-}
-.choice img { width: 64px; height: 64px; pointer-events: none; }
-.choice.swatch { width: 60px; height: 60px; border-radius: 50%; }
-.choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
-.choice.locked { cursor: default; background: #EEE8F3; border-style: dashed; box-shadow: none; }
-.choice.locked img { filter: grayscale(1) brightness(1.25); opacity: .4; }
-.choice .lock { position: absolute; bottom: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 2.5px solid var(--ink); display: grid; place-items: center; }
-.choice .lock svg { width: 16px; height: 16px; }
 
 .scroll { position: fixed; z-index: 4; width: 52px; height: 52px; opacity: .92; transition: opacity .2s ease; }
 .scroll.off { opacity: 0; pointer-events: none; }
@@ -82,7 +69,6 @@ body { background: #F7E2C6; }
   transition: opacity .3s ease, transform .3s ease;
 }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-.card .grown { width: min(220px, 60vw); height: auto; display: block; animation: present .6s cubic-bezier(.3, 1.6, .5, 1); }
 
 @media (max-width: 420px) {
   .tab { padding: 5px 9px; font-size: .85rem; }
@@ -101,9 +87,6 @@ body { background: #F7E2C6; }
   <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
     <svg viewBox="0 0 32 32"><path d="M5 15 L16 5 L27 15 M9 13 V27 H23 V13" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.5" y="19" width="5" height="8" fill="#2A2340"/></svg>
   </a>
-  <button class="round" id="backBtn" type="button" aria-label="Back to my room" hidden>
-    <svg viewBox="0 0 32 32"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
   <div class="middle"><div class="title" id="titleLabel">Cosy Home</div></div>
   <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
 </div>
@@ -118,16 +101,8 @@ body { background: #F7E2C6; }
     <button class="act paint" id="paintBtn" type="button" aria-label="Paint the walls and floor" aria-pressed="false">
       <svg viewBox="0 0 32 32"><rect x="5" y="5" width="20" height="9" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.5"/><path d="M25 9 H28 V17 H16 V21" fill="none" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><rect x="13.5" y="21" width="5" height="8" rx="2" fill="#E6B98A" stroke="#2A2340" stroke-width="2.5"/></svg><span>Paint</span>
     </button>
-    <button class="act" id="growBtn" type="button" aria-label="Grow a plant">
-      <svg viewBox="0 0 32 32"><path d="M16 28 V14" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><path d="M16 16 Q6 16 6 7 Q15 7 16 16 Z" fill="#7BD389" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 19 Q26 19 26 10 Q17 10 16 19 Z" fill="#7BD389" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg><span>Grow</span>
-    </button>
   </div>
   <div class="items" id="items"></div>
-</div>
-
-<div class="growbar" id="growbar" hidden>
-  <div class="step" id="stepLabel">Pick a pot</div>
-  <div class="choices" id="choices"></div>
 </div>
 
 <button class="round scroll" id="scrollL" type="button" aria-label="Look left" hidden><svg viewBox="0 0 32 32"><path d="M20 6 L10 16 L20 26" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -135,20 +110,12 @@ body { background: #F7E2C6; }
 
 <div class="say hide" id="say" aria-live="polite"></div>
 
-<div class="card-wrap" id="cardWrap" hidden>
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
-    <img class="grown" id="cardImg" alt="">
-    <h2 id="cardTitle">You grew a tulip!</h2>
-    <p id="cardNote">It's in your drawer, ready to put in your room.</p>
-    <button class="big" id="cardBtn" type="button">Put it in my room</button>
-  </div>
-</div>
-
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="../../shared/avatar.js"></script>
 <script src="../../shared/dishes.js"></script>
 <script src="../colour/pages.js"></script>
+<script src="../grow/plants.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

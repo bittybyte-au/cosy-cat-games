@@ -1,0 +1,223 @@
+/* Cosy Cat Games: plants – the pots, seeds and plant drawings, and the player's grown plants.
+   Shared by the Grow game (games/grow/, where plants are grown) and Cosy Home (where they're displayed).
+   Plants are saved by the Grow game: GG.getProgress('grow') = { plants: [{ id, t, pot, col }], next, grown }.
+   Drawings are bottom centre at (0,0), about 92 units wide for the pot. */
+(function () {
+  'use strict';
+  var INK = '#2A2340';
+  var TAU = Math.PI * 2;
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function easeOut(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
+  function rr(c, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  function ink(c, w) { c.lineWidth = w || 4; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round'; c.stroke(); }
+  function ell(c, x, y, rx, ry, rot) { c.beginPath(); c.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot || 0, 0, TAU); }
+  function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
+  function findDef(list, id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+
+  var FLOWER = ['#FF5A7A', '#FFD23F', '#B48CFF', '#FF9F43', '#FFFFFF', '#5DB8FF'];
+  var POTS = [
+    { fill: '#E58B5B', dark: '#B9623A', deco: 'band' },
+    { fill: '#FF9EC4', dark: '#E8558E', deco: 'dots' },
+    { fill: '#7CC4FF', dark: '#3B8FD6', deco: 'stripes' },
+    { fill: '#FFD93F', dark: '#C9A20C', deco: 'dots' },
+    { fill: '#FFFFFF', dark: '#D9D3E6', deco: 'cat' },
+    { fill: '#7BD389', dark: '#3E9E58', deco: 'stripes' }
+  ];
+  /* `grown` = how many plants you need to have grown before this seed appears */
+  var PLANTS = [
+    { id: 'catnip', name: 'Catnip', colour: true, h: 125, grown: 0 },
+    { id: 'tulip', name: 'Tulips', colour: true, h: 150, grown: 0 },
+    { id: 'cactus', name: 'Cactus', colour: true, h: 125, grown: 0 },
+    { id: 'sunflower', name: 'Sunflower', h: 215, grown: 1 },
+    { id: 'catgrass', name: 'Cat grass', h: 130, grown: 2 },
+    { id: 'lavender', name: 'Lavender', h: 155, grown: 3 },
+    { id: 'lemon', name: 'Lemon tree', h: 205, grown: 5 },
+    { id: 'shroom', name: 'Glow mushrooms', colour: true, h: 120, grown: 7 }
+  ];
+  /* Things: some to start with, the rest earned in the other games (read from their saves). */
+
+  function drawPot(c, pot, w) {
+    var P = POTS[pot] || POTS[0];
+    var h = w * 0.62, top = -h;
+    c.save();
+    c.beginPath(); c.moveTo(-w * 0.5, top + h * 0.18); c.lineTo(-w * 0.38, 0); c.lineTo(w * 0.38, 0); c.lineTo(w * 0.5, top + h * 0.18); c.closePath();
+    c.fillStyle = P.fill; c.fill();
+    c.save(); c.clip();
+    c.fillStyle = P.dark;
+    if (P.deco === 'dots') for (var i = -2; i <= 2; i++) { circle(c, i * w * 0.18, top + h * 0.6 + (i % 2) * h * 0.12, w * 0.05); c.fill(); }
+    if (P.deco === 'stripes') for (var j = 0; j < 3; j++) c.fillRect(-w, top + h * (0.4 + j * 0.2), w * 2, h * 0.07);
+    if (P.deco === 'band') c.fillRect(-w, top + h * 0.55, w * 2, h * 0.12);
+    if (P.deco === 'cat') {
+      c.strokeStyle = INK; c.lineWidth = w * 0.03; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-w * 0.14, top + h * 0.56); c.quadraticCurveTo(-w * 0.1, top + h * 0.5, -w * 0.06, top + h * 0.56);
+      c.moveTo(w * 0.06, top + h * 0.56); c.quadraticCurveTo(w * 0.1, top + h * 0.5, w * 0.14, top + h * 0.56); c.stroke();
+      c.beginPath(); c.moveTo(-w * 0.05, top + h * 0.68); c.quadraticCurveTo(-w * 0.025, top + h * 0.74, 0, top + h * 0.68); c.quadraticCurveTo(w * 0.025, top + h * 0.74, w * 0.05, top + h * 0.68); c.stroke();
+      c.fillStyle = 'rgba(255,120,160,.5)'; ell(c, -w * 0.22, top + h * 0.66, w * 0.05, w * 0.03); c.fill(); ell(c, w * 0.22, top + h * 0.66, w * 0.05, w * 0.03); c.fill();
+    }
+    c.restore();
+    c.beginPath(); c.moveTo(-w * 0.5, top + h * 0.18); c.lineTo(-w * 0.38, 0); c.lineTo(w * 0.38, 0); c.lineTo(w * 0.5, top + h * 0.18); c.closePath(); ink(c, Math.max(2, w * 0.04));
+    // rim
+    rr(c, -w * 0.56, top, w * 1.12, h * 0.22, h * 0.08); c.fillStyle = P.fill; c.fill(); ink(c, Math.max(2, w * 0.04));
+    c.restore();
+    return h;
+  }
+  function leaf(c, x, y, len, ang, col) {
+    c.save(); c.translate(x, y); c.rotate(ang);
+    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(len * 0.5, -len * 0.32, len, 0); c.quadraticCurveTo(len * 0.5, len * 0.32, 0, 0); c.closePath();
+    c.fillStyle = col || '#5CCB75'; c.fill(); ink(c, 2.5);
+    c.restore();
+  }
+  function stem(c, x0, y0, x1, y1, w) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + (x1 - x0) * 0.3, (y0 + y1) / 2, x1, y1); c.lineWidth = (w || 5) + 3; c.strokeStyle = INK; c.lineCap = 'round'; c.stroke(); c.lineWidth = w || 5; c.strokeStyle = '#4FB868'; c.stroke(); }
+  /* the soil showing in the mouth of the pot (drawn after the pot, before the plant) */
+  function soil(c, w, amount) {
+    var h = w * 0.62; amount = amount === undefined ? 1 : amount;
+    if (amount <= 0) return;
+    ell(c, 0, -h + h * 0.08, w * 0.5 * (0.55 + 0.45 * amount), h * 0.1); c.fillStyle = '#7A4E2D'; c.fill();
+    c.fillStyle = '#5E3A1F'; circle(c, -w * 0.18, -h + h * 0.07, w * 0.025); c.fill(); circle(c, w * 0.14, -h + h * 0.1, w * 0.02); c.fill();
+  }
+  /* the front half of the pot's rim, drawn over the bottom of the plant so the stems go into the soil */
+  function potLip(c, pot, w) {
+    var P = POTS[pot] || POTS[0], h = w * 0.62;
+    c.save();
+    c.beginPath(); c.rect(-w, -h + h * 0.12, w * 2, h * 0.3); c.clip();
+    rr(c, -w * 0.56, -h, w * 1.12, h * 0.22, h * 0.08); c.fillStyle = P.fill; c.fill(); ink(c, Math.max(2, w * 0.04));
+    c.restore();
+  }
+  function drawPotted(c, pl, g, t, soilAmount) {
+    drawPot(c, pl.pot, 92);
+    soil(c, 92, soilAmount);
+    drawPlant(c, pl, g, t);
+    potLip(c, pl.pot, 92);
+  }
+
+  /* A potted plant, bottom centre at (0,0). g = how grown it is (0 nothing, 1 full). */
+  function drawPlant(c, pl, g, t) {
+    var d = findDef(PLANTS, pl.t) || PLANTS[0];
+    var w = 92;
+    var col = FLOWER[pl.col || 0];
+    g = g === undefined ? 1 : g;
+    t = t || 0;
+    var potH = w * 0.62;
+    c.save();
+    // plants drawn first, pot rim drawn over their base
+    c.save();
+    c.translate(0, -potH + potH * 0.1);
+    var sway = Math.sin(t * 1.3 + (pl.id || 0)) * 0.03;
+    c.rotate(sway);
+    var gg = easeOut(g);
+    if (gg > 0.01) {
+      c.scale(gg, gg);
+      ({
+        catnip: function () {
+          [[-26, -18, -2.4], [24, -16, -0.7], [-14, -40, -2.0], [14, -42, -1.1], [0, -56, -1.57], [-30, -42, -2.7], [30, -40, -0.4]].forEach(function (L) { leaf(c, 0, -6, Math.hypot(L[0], L[1]) + 16, L[2], '#6BD58A'); });
+          if (g > 0.7) [[-18, -66], [6, -74], [24, -60]].forEach(function (p) { for (var i = 0; i < 4; i++) { circle(c, p[0], p[1] + i * 7, 4.5); c.fillStyle = col === '#FFFFFF' ? '#E9DDFF' : col; c.fill(); ink(c, 1.8); } });
+        },
+        tulip: function () {
+          [[-22, -96], [0, -118], [22, -100]].forEach(function (p, i) {
+            stem(c, p[0] * 0.3, 0, p[0], p[1], 5);
+            leaf(c, p[0] * 0.3, -14, 38, i === 1 ? -1.9 : (i ? -0.6 : -2.5), '#5CCB75');
+            c.save(); c.translate(p[0], p[1]);
+            c.beginPath(); c.moveTo(-15, -6); c.lineTo(-15, -26); c.lineTo(-7, -18); c.lineTo(0, -30); c.lineTo(7, -18); c.lineTo(15, -26); c.lineTo(15, -6); c.quadraticCurveTo(0, 12, -15, -6); c.closePath();
+            c.fillStyle = col; c.fill(); ink(c, 3);
+            c.restore();
+          });
+        },
+        cactus: function () {
+          rr(c, -24, -88, 48, 92, 24); c.fillStyle = '#5CCB75'; c.fill(); ink(c, 3.5);
+          rr(c, -52, -60, 24, 40, 12); c.fill(); ink(c, 3.5);
+          c.strokeStyle = '#3E9E58'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -80); c.lineTo(0, -4); c.moveTo(-12, -74); c.lineTo(-12, -6); c.moveTo(12, -74); c.lineTo(12, -6); c.stroke();
+          c.fillStyle = INK; [[-18, -60], [18, -46], [-6, -30], [10, -70], [-40, -46]].forEach(function (p) { circle(c, p[0], p[1], 1.6); c.fill(); });
+          // a cute face
+          c.beginPath(); c.arc(-8, -54, 3.2, 0, TAU); c.arc(8, -54, 3.2, 0, TAU); c.fillStyle = INK; c.fill();
+          c.beginPath(); c.moveTo(-5, -46); c.quadraticCurveTo(0, -42, 5, -46); ink(c, 2.2);
+          if (g > 0.7) { for (var i = 0; i < 6; i++) { ell(c, Math.cos(i * TAU / 6) * 7, -92 + Math.sin(i * TAU / 6) * 7, 7, 4.5, i * TAU / 6); c.fillStyle = col; c.fill(); ink(c, 1.8); } circle(c, 0, -92, 4.5); c.fillStyle = '#FFD23F'; c.fill(); ink(c, 1.8); }
+        },
+        sunflower: function () {
+          stem(c, 0, 0, 4, -168, 7);
+          leaf(c, 2, -60, 46, -0.5, '#5CCB75'); leaf(c, 2, -95, 44, -2.6, '#5CCB75');
+          c.save(); c.translate(4, -172);
+          for (var i = 0; i < 14; i++) { ell(c, Math.cos(i * TAU / 14) * 30, Math.sin(i * TAU / 14) * 30, 16, 8, i * TAU / 14); c.fillStyle = '#FFD23F'; c.fill(); ink(c, 2.2); }
+          circle(c, 0, 0, 22); c.fillStyle = '#8B5A3C'; c.fill(); ink(c, 3);
+          c.beginPath(); c.moveTo(-10, -2); c.quadraticCurveTo(-6, -7, -2, -2); c.moveTo(2, -2); c.quadraticCurveTo(6, -7, 10, -2); c.lineWidth = 2.5; c.strokeStyle = '#FFE9B0'; c.stroke();
+          c.beginPath(); c.moveTo(-5, 6); c.quadraticCurveTo(0, 11, 5, 6); c.stroke();
+          c.restore();
+        },
+        catgrass: function () {
+          for (var i = -7; i <= 7; i++) {
+            var x = i * 5, h = 80 + ((i * 37) % 23) + Math.abs(i) * -2;
+            c.beginPath(); c.moveTo(x, 0); c.quadraticCurveTo(x + i * 1.5, -h * 0.6, x + i * 3.5, -h);
+            c.lineWidth = 7; c.strokeStyle = INK; c.lineCap = 'round'; c.stroke(); c.lineWidth = 4; c.strokeStyle = i % 2 ? '#7BD389' : '#5CCB75'; c.stroke();
+          }
+        },
+        lavender: function () {
+          [-24, -8, 8, 24].forEach(function (x, i) {
+            var top = -110 - (i % 2) * 18;
+            stem(c, x * 0.3, 0, x, top + 30, 4);
+            for (var k = 0; k < 6; k++) { ell(c, x + (k % 2 ? 4 : -4), top + k * 8, 6, 5); c.fillStyle = k % 2 ? '#A77BFF' : '#B98FFF'; c.fill(); ink(c, 1.6); }
+          });
+          leaf(c, 0, -10, 40, -2.6, '#8FBF9A'); leaf(c, 0, -10, 40, -0.5, '#8FBF9A');
+        },
+        lemon: function () {
+          c.beginPath(); c.moveTo(-7, 0); c.lineTo(-5, -96); c.lineTo(5, -96); c.lineTo(7, 0); c.closePath(); c.fillStyle = '#9A6B4A'; c.fill(); ink(c, 3);
+          circle(c, 0, -140, 58); c.fillStyle = '#4FB868'; c.fill(); ink(c, 3.5);
+          circle(c, -26, -152, 22); c.fillStyle = '#5CCB75'; c.fill();
+          [[-30, -128], [22, -150], [6, -112], [30, -118], [-8, -170]].forEach(function (p) { ell(c, p[0], p[1], 10, 8, 0.4); c.fillStyle = '#FFE14D'; c.fill(); ink(c, 2.2); });
+        },
+        shroom: function () {
+          [[-24, -46, 22], [16, -64, 28], [30, -30, 16]].forEach(function (m, i) {
+            c.save(); c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 2 + i); circle(c, m[0], m[1] - 6, m[2] * 1.6); c.fillStyle = col === '#FFFFFF' ? '#E4FFF9' : col; c.fill(); c.restore();
+            rr(c, m[0] - m[2] * 0.25, m[1], m[2] * 0.5, -m[1], 5); c.fillStyle = '#FFF3E4'; c.fill(); ink(c, 2.5);
+            c.beginPath(); c.arc(m[0], m[1] + 2, m[2], Math.PI, 0); c.closePath(); c.fillStyle = col === '#FFFFFF' ? '#7CE0D2' : col; c.fill(); ink(c, 3);
+            c.fillStyle = '#fff'; circle(c, m[0] - m[2] * 0.4, m[1] - m[2] * 0.4, m[2] * 0.16); c.fill(); circle(c, m[0] + m[2] * 0.35, m[1] - m[2] * 0.55, m[2] * 0.12); c.fill();
+          });
+        }
+      }[d.id] || function () {})();
+    }
+    c.restore();
+    // seed sprout before it grows
+    if (g <= 0.01 && pl.seed) { c.save(); c.translate(0, -potH + potH * 0.1); leaf(c, 0, 0, 14, -2.3, '#7BD389'); leaf(c, 0, 0, 14, -0.8, '#7BD389'); c.restore(); }
+    c.restore();
+  }
+  function drawPottedPlant(c, pl, g, t, soilLevel) {
+    c.save();
+    var w = 92;
+    drawPlantBack(c, pl, g, t);
+    drawPot(c, pl.pot, w);
+    if (soilLevel === undefined || soilLevel >= 1) { soil(c, w); }
+    c.restore();
+  }
+  function drawPlantBack(c, pl, g, t) { drawPlant(c, pl, g, t); }
+
+  /* ---------- the player's plants (saved by the Grow game) ---------- */
+  function load() {
+    var p = {};
+    try { p = GG.getProgress('grow') || {}; } catch (e) {}
+    // plants grown before Grow was its own game lived in Cosy Home's save: move them across once
+    if (!Array.isArray(p.plants)) {
+      var h = {};
+      try { h = GG.getProgress('home') || {}; } catch (e) {}
+      p = { plants: Array.isArray(h.plants) ? h.plants : [], next: h.next || 1, grown: h.grown || (Array.isArray(h.plants) ? h.plants.length : 0) };
+      try {
+        GG.setProgress('grow', p);
+        if (Array.isArray(h.plants)) { delete h.plants; delete h.next; delete h.grown; GG.setProgress('home', h); }
+      } catch (e) {}
+    }
+    if (typeof p.next !== 'number') p.next = p.plants.reduce(function (m, x) { return Math.max(m, x.id || 0); }, 0) + 1;
+    if (typeof p.grown !== 'number') p.grown = p.plants.length;
+    return p;
+  }
+
+  window.GGPlants = {
+    FLOWER: FLOWER, POTS: POTS, PLANTS: PLANTS,
+    def: function (id) { return findDef(PLANTS, id); },
+    drawPot: drawPot, drawPlant: drawPlant, drawPotted: drawPotted, soil: soil, potLip: potLip, leaf: leaf,
+    load: load,
+    save: function (p) { try { GG.setProgress('grow', p); } catch (e) {} },
+    list: function () { return load().plants; },
+    seedsFor: function (grown) { return PLANTS.filter(function (p) { return grown >= p.grown; }); }
+  };
+})();
