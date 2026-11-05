@@ -218,6 +218,55 @@
   ];
   function sceneDef(id) { for (var i = 0; i < SCENES.length; i++) if (SCENES[i].id === id) return SCENES[i]; return SCENES[0]; }
 
+  var CURTAINS = [
+    { pat: 'stripes', col: '#7CC4FF', col2: '#FFFFFF', tie: '#FFD23F', rod: '#C98B5B' },
+    { pat: 'dots', col: '#FF8FAB', col2: '#FFFFFF', tie: '#B48CFF', rod: '#C98B5B' },
+    { pat: 'stars', col: '#B48CFF', col2: '#FFE14D', tie: '#FFD23F', rod: '#8E7FA8' },
+    { pat: 'gingham', col: '#7BD389', col2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }
+  ];
+  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
+  var curtainTiles = {};
+  function curtainTile(st) {
+    var key = st.pat + st.col + st.col2;
+    if (curtainTiles[key]) return curtainTiles[key];
+    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
+    var c = cv.getContext('2d');
+    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
+    c.fillStyle = st.col2;
+    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
+    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
+    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
+    else if (st.pat === 'stars') {
+      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
+    }
+    return (curtainTiles[key] = cv);
+  }
+  function drawCurtains(c, x, y, w, h, st) {
+    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
+    var fill = c.createPattern(curtainTile(st), 'repeat');
+    [-1, 1].forEach(function (side) {
+      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
+      var xi = xo - side * cwid;                           // the inner edge at the top
+      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
+      c.beginPath();
+      c.moveTo(xo, top); c.lineTo(xi, top);
+      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
+      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
+      c.lineTo(xo, bot); c.closePath();
+      c.fillStyle = fill; c.fill(); ink(c, 3.5);
+      // a couple of soft folds
+      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
+      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
+      // the tie
+      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
+      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
+      c.restore();
+    });
+    // the rod with round ends
+    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
+    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
+  }
+
   function drawBackground(c, S, W, H) {
     var gy = H * S.def.ground;
     if (S.def.id === 'garden') {
@@ -236,6 +285,7 @@
       rr(c, wx - 90, gy * 0.16, 180, gy * 0.56, 12); fillInk(c, '#9EDCFF', 5);
       c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(wx, gy * 0.16 + 4); c.lineTo(wx, gy * 0.72 - 4); c.stroke();
       circle(c, wx + 50, gy * 0.3, 18); c.fillStyle = '#FFE14D'; c.fill();
+      drawCurtains(c, wx - 90, gy * 0.16, 180, gy * 0.56, S.curtain);
       c.fillStyle = '#E6B98A'; c.fillRect(0, gy, W, H - gy);
       c.strokeStyle = '#D9A877'; c.lineWidth = 3; for (var fy = gy + 40; fy < H; fy += 50) { c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); c.stroke(); }
       c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
@@ -256,7 +306,7 @@
   function makeScene(id, W, H, nItems) {
     var def = sceneDef(id);
     var S = { def: def, W: W, H: H, props: [], items: [], tufts: [], shells: [],
-      wall: pick(['#FFE6F0', '#E6F2FF', '#FFF3D6', '#EAF7E6']), rug: pick(['#FFC2DA', '#C7EBD2', '#DCC8FF', '#FFE7A8']), winX: rand(0.2, 0.8), rugX: rand(0.35, 0.65), wave: rand(0, 200) };
+      wall: pick(['#FFE6F0', '#E6F2FF', '#FFF3D6', '#EAF7E6']), rug: pick(['#FFC2DA', '#C7EBD2', '#DCC8FF', '#FFE7A8']), curtain: pick(CURTAINS), winX: rand(0.2, 0.8), rugX: rand(0.35, 0.65), wave: rand(0, 200) };
     var gy = H * def.ground;
     for (var t = 0; t < 30; t++) S.tufts.push({ x: rand(10, W - 10), y: rand(gy + 10, H - 10) });
     for (var s = 0; s < 4; s++) S.shells.push({ x: rand(30, W - 30), y: rand(gy + 30, H - 20), r: rand(-0.5, 0.5), col: pick(['#FFC2DA', '#FFFFFF', '#FFD9A8']) });

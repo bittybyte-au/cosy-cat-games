@@ -291,6 +291,49 @@
     }, 900);
   }
 
+  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
+  var curtainTiles = {};
+  function curtainTile(st) {
+    var key = st.pat + st.col + st.col2;
+    if (curtainTiles[key]) return curtainTiles[key];
+    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
+    var c = cv.getContext('2d');
+    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
+    c.fillStyle = st.col2;
+    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
+    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
+    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
+    else if (st.pat === 'stars') {
+      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
+    }
+    return (curtainTiles[key] = cv);
+  }
+  function drawCurtains(c, x, y, w, h, st) {
+    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
+    var fill = c.createPattern(curtainTile(st), 'repeat');
+    [-1, 1].forEach(function (side) {
+      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
+      var xi = xo - side * cwid;                           // the inner edge at the top
+      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
+      c.beginPath();
+      c.moveTo(xo, top); c.lineTo(xi, top);
+      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
+      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
+      c.lineTo(xo, bot); c.closePath();
+      c.fillStyle = fill; c.fill(); ink(c, 3.5);
+      // a couple of soft folds
+      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
+      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
+      // the tie
+      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
+      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
+      c.restore();
+    });
+    // the rod with round ends
+    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
+    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
+  }
+
   function drawBench(c) {
     var B = bench(), W = LAY.W, H = LAY.H;
     // a sunny garden shed: wall, window, bench
@@ -298,6 +341,7 @@
     c.fillStyle = '#D2EBC4'; for (var x = 0; x < W; x += 50) c.fillRect(x, 0, 24, B.top);
     rr(c, W * 0.08, H * 0.08, W * 0.42, H * 0.3, 14); c.fillStyle = '#9EDCFF'; c.fill(); ink(c, 4);
     c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(W * 0.29, H * 0.08); c.lineTo(W * 0.29, H * 0.38); c.stroke();
+    drawCurtains(c, W * 0.08, H * 0.08, W * 0.42, H * 0.3, { pat: 'gingham', col: '#FF6B57', col2: '#FFFFFF', tie: '#7BD389', rod: '#A86B3C' });
     // sun (the tap target in the sun step)
     var sunPulse = grow.step === 'sun' ? 1 + Math.sin(time * 5) * 0.08 : 1;
     c.save(); c.translate(B.sun.x, B.sun.y); c.scale(sunPulse, sunPulse);

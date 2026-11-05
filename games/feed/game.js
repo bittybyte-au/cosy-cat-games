@@ -173,6 +173,49 @@
   }
   var partyDone = false;
 
+  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
+  var curtainTiles = {};
+  function curtainTile(st) {
+    var key = st.pat + st.col + st.col2;
+    if (curtainTiles[key]) return curtainTiles[key];
+    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
+    var c = cv.getContext('2d');
+    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
+    c.fillStyle = st.col2;
+    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
+    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
+    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
+    else if (st.pat === 'stars') {
+      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
+    }
+    return (curtainTiles[key] = cv);
+  }
+  function drawCurtains(c, x, y, w, h, st) {
+    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
+    var fill = c.createPattern(curtainTile(st), 'repeat');
+    [-1, 1].forEach(function (side) {
+      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
+      var xi = xo - side * cwid;                           // the inner edge at the top
+      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
+      c.beginPath();
+      c.moveTo(xo, top); c.lineTo(xi, top);
+      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
+      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
+      c.lineTo(xo, bot); c.closePath();
+      c.fillStyle = fill; c.fill(); ink(c, 3.5);
+      // a couple of soft folds
+      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
+      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
+      // the tie
+      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
+      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
+      c.restore();
+    });
+    // the rod with round ends
+    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
+    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
+  }
+
   /* ================= drawing ================= */
   function drawRoom(c) {
     var W = L.W, H = L.H, T = L.tableY;
@@ -180,7 +223,8 @@
     c.fillStyle = '#FFE4C4'; for (var x = 30; x < W; x += 70) for (var y = 30; y < T; y += 70) { circle(c, x + ((y / 70) % 2 ? 35 : 0), y, 7); c.fill(); }
     // a window with a sunny sky
     var wx = W / 2 - 110, wy = L.W < 700 ? Math.max(40, T - 480) : 26, ww = 220, wh = L.W < 700 ? 220 : 120;
-    if (L.W < 700) { rr(c, wx, wy, ww, wh, 16); c.fillStyle = '#9EDCFF'; c.fill(); circle(c, wx + 170, wy + 50, 24); c.fillStyle = '#FFE14D'; c.fill(); rr(c, wx, wy, ww, wh, 16); ink(c, 5); c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(wx + ww / 2, wy + 4); c.lineTo(wx + ww / 2, wy + wh - 4); c.stroke(); }
+    if (L.W < 700) { rr(c, wx, wy, ww, wh, 16); c.fillStyle = '#9EDCFF'; c.fill(); circle(c, wx + 170, wy + 50, 24); c.fillStyle = '#FFE14D'; c.fill(); rr(c, wx, wy, ww, wh, 16); ink(c, 5); c.strokeStyle = '#fff'; c.lineWidth = 7; c.beginPath(); c.moveTo(wx + ww / 2, wy + 4); c.lineTo(wx + ww / 2, wy + wh - 4); c.stroke();
+      drawCurtains(c, wx, wy, ww, wh, { pat: 'gingham', col: '#FFD23F', col2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }); }
     // the table
     c.fillStyle = '#E6B98A'; c.fillRect(0, T, W, H - T);
     c.fillStyle = '#DDAE7C'; for (var yy = T + 50; yy < H; yy += 70) c.fillRect(0, yy, W, 4);
