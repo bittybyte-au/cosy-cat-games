@@ -1,9 +1,11 @@
 /* Slide Puzzle (ages about 5–10): a cosy picture cut into squares with one gap. Tap a square in the gap's
    row or column and it slides (with any squares between) into the gap. Put the picture back together.
-   3×3 to start; 4×4 opens after three 3×3 puzzles. Shuffles are made by sliding from the finished picture,
-   so every puzzle can be solved. A peek button shows the picture; a 123 button numbers the squares.
+   Two sizes (3×3, 4×4) and two levels, all open. Shuffles are made by sliding from the finished picture, so every
+   puzzle can be solved. Hard: 80 (3×3) or 220 (4×4) random slides, never straight back, until at least 60% of the
+   squares are out of place, which is as mixed up as a random board. Easy: a short walk of 10 (3×3) or 16 (4×4)
+   slides that never returns to an earlier arrangement, so it is at most that many slides from done. A peek button shows the picture; a 123 button numbers the squares.
    No timer, no move counter. Pictures are drawn from the shared cat, food and drawing kit.
-   Saves GG.setProgress('slide', { solved: { picId: [3, 4] }, n3, n4, pic, size, nums }). */
+   Saves GG.setProgress('slide', { solved: { picId: [3, 4] }, n3, n4, pic, size, diff, nums }). */
 (function () {
   'use strict';
 
@@ -210,12 +212,12 @@
     if (p.size !== 3 && p.size !== 4) p.size = 3;
     if (typeof p.pic !== 'string') p.pic = PICTURES[0].id;
     p.nums = !!p.nums;
+    if (p.diff !== 'easy' && p.diff !== 'hard') p.diff = 'easy';
     return p;
   })();
   function save() { try { GG.setProgress('slide', P); } catch (e) {} }
-  var UNLOCK4 = 3;
-  function bigOpen() { return P.n3 >= UNLOCK4; }
-  if (P.size === 4 && !bigOpen()) P.size = 3;
+  var UNLOCK4 = 0;                      // everything is open
+  function bigOpen() { return true; }
 
   /* ================= the board ================= */
   var n = 3, cells = [], tiles = [], gap = 0, solved = false, joinT = 0, peek = false, picId = P.pic;
@@ -225,8 +227,9 @@
     P.pic = picId; P.size = n; save();
     cells = []; for (var i = 0; i < n * n - 1; i++) cells.push(i); cells.push(-1);
     gap = n * n - 1;
-    // shuffle by sliding from the finished picture (so it can always be solved), never straight back
-    var moves = n === 3 ? 80 : 220, prev = -1;
+    if (P.diff === 'easy') { easyShuffle(); }
+    // hard: shuffle by sliding from the finished picture (so it can always be solved), never straight back
+    else { var moves = n === 3 ? 80 : 220, prev = -1;
     for (var m = 0; m < moves || isSolved() || misplaced() < n * n * 0.6; m++) {
       var gr = Math.floor(gap / n), gc = gap % n, opts = [];
       if (gr > 0) opts.push(gap - n); if (gr < n - 1) opts.push(gap + n); if (gc > 0) opts.push(gap - 1); if (gc < n - 1) opts.push(gap + 1);
@@ -234,10 +237,27 @@
       var pick = opts[Math.floor(Math.random() * opts.length)];
       cells[gap] = cells[pick]; cells[pick] = -1; prev = gap; gap = pick;
       if (m > 2000) break;
-    }
+    } }
     tiles = [];
     for (var p = 0; p < cells.length; p++) if (cells[p] >= 0) tiles[cells[p]] = { pos: p, x: p % n, y: Math.floor(p / n) };
     renderSizes(); layout();
+  }
+  // easy: a short walk that never comes back to an arrangement it has already made
+  function easyShuffle() {
+    var steps = n === 3 ? 10 : 16, minOut = n === 3 ? 5 : 8;
+    for (var tries = 0; tries < 60; tries++) {
+      cells = []; for (var i = 0; i < n * n - 1; i++) cells.push(i); cells.push(-1); gap = n * n - 1;
+      var seen = {}; seen[cells.join(',')] = 1;
+      for (var m = 0; m < steps; m++) {
+        var gr = Math.floor(gap / n), gc = gap % n, opts = [];
+        if (gr > 0) opts.push(gap - n); if (gr < n - 1) opts.push(gap + n); if (gc > 0) opts.push(gap - 1); if (gc < n - 1) opts.push(gap + 1);
+        opts = opts.filter(function (o) { var c = cells.slice(); c[gap] = c[o]; c[o] = -1; return !seen[c.join(',')]; });
+        if (!opts.length) break;
+        var pick = opts[Math.floor(Math.random() * opts.length)];
+        cells[gap] = cells[pick]; cells[pick] = -1; gap = pick; seen[cells.join(',')] = 1;
+      }
+      if (!isSolved() && misplaced() >= minOut) return;
+    }
   }
   function isSolved() { for (var i = 0; i < n * n - 1; i++) if (cells[i] !== i) return false; return true; }
   function misplaced() { var k = 0; for (var i = 0; i < n * n - 1; i++) if (cells[i] !== i) k++; return k; }
@@ -263,7 +283,7 @@
     var s = P.solved[picId] = Array.isArray(P.solved[picId]) ? P.solved[picId] : [];
     if (s.indexOf(n) < 0) s.push(n);
     var opened = false;
-    if (n === 3) { P.n3++; opened = P.n3 === UNLOCK4; } else P.n4++;
+    if (n === 3) P.n3++; else P.n4++;
     save();
     setTimeout(function () {
       Sound.chime(); buzz(30);
@@ -370,7 +390,7 @@
 
   /* ================= buttons ================= */
   function renderSizes() {
-    document.querySelectorAll('.size').forEach(function (b) {
+    document.querySelectorAll('.size[data-n]').forEach(function (b) {
       var k = +b.dataset.n, locked = k === 4 && !bigOpen();
       b.setAttribute('aria-pressed', String(k === n));
       b.disabled = locked;
@@ -378,8 +398,11 @@
       b.setAttribute('aria-label', k + ' by ' + k + (locked ? ', opens after ' + UNLOCK4 + ' small puzzles' : ''));
     });
   }
-  document.querySelectorAll('.size').forEach(function (b) { b.addEventListener('click', function () { var k = +b.dataset.n; if (k !== n && !b.disabled) newPuzzle(picId, k); }); });
+  document.querySelectorAll('.size[data-n]').forEach(function (b) { b.addEventListener('click', function () { var k = +b.dataset.n; if (k !== n && !b.disabled) newPuzzle(picId, k); }); });
   $('shuffleBtn').addEventListener('click', function () { newPuzzle(picId, n); });
+  function renderDiff() { document.querySelectorAll('.diff').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.d === P.diff)); }); }
+  document.querySelectorAll('.diff').forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.d === P.diff) return; P.diff = b.dataset.d; save(); renderDiff(); newPuzzle(picId, n); }); });
+  renderDiff();
   function renderNums() { $('numBtn').setAttribute('aria-pressed', String(P.nums)); }
   $('numBtn').addEventListener('click', function () { P.nums = !P.nums; save(); renderNums(); });
   var peekBtn = $('peekBtn');
@@ -403,7 +426,7 @@
       var done = Array.isArray(P.solved[p.id]) && P.solved[p.id].indexOf(n) >= 0;
       return '<button class="pic" type="button" data-pic="' + p.id + '" aria-label="' + p.name + (done ? ', done' : '') + '"><img alt="" src="' + thumb(p.id) + '">' + (done ? '<span class="done">' + TICK + '</span>' : '') + '</button>';
     }).join('');
-    $('lockNote').textContent = bigOpen() ? '' : 'Finish ' + Math.max(0, UNLOCK4 - P.n3) + ' more to open the 4×4 puzzles.';
+    $('lockNote').textContent = '';
     $('pickWrap').hidden = false;
   }
   $('picBtn').addEventListener('click', openPicker);

@@ -147,13 +147,20 @@
   }
 
   /* bodies for the poses, drawn behind (back) or in front of (front) the head */
-  function poseShapes(pose, fill) {
+  function poseShapes(pose, fill, markings) {
     var back = [], front = [];
     var paw = function (x, y) { return [{ d: ell(x, y, 14, 15), fill: fill, stroke: INK, lw: 4 }, { d: circ(x, y + 3, 4) + circ(x - 6, y - 4, 2.2) + circ(x, y - 7, 2.2) + circ(x + 6, y - 4, 2.2), fill: '#FFB3C7' }]; };
     if (pose === 'sit' || pose === 'wave') {
       back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: fill, lw: 6 });
-      back.push({ d: ell(0, 64, 38, 26), fill: fill }, { d: ell(0, 64, 38, 26) + ell(-5, 57, 38, 26), fill: shadeFor(fill), rule: 'evenodd', clipTo: ell(0, 64, 38, 26) }, { d: ell(0, 64, 38, 26), stroke: INK, lw: 5 });
-      back.push({ d: ell(-14, 88, 11, 7) + ell(14, 88, 11, 7), fill: fill, stroke: INK, lw: 4 });
+      var bodyE = ell(0, 64, 38, 26);
+      back.push({ d: bodyE, fill: fill });
+      // the body carries the same markings as the head: a tuxedo's white shirt front, calico patches, tabby stripes
+      if (markings === 'tuxedo') back.push({ d: ell(0, 72, 17, 24), fill: '#FFFFFF', clipTo: bodyE });
+      if (markings === 'calico') back.push({ d: ell(-26, 54, 16, 13), fill: '#FFA94D', clipTo: bodyE }, { d: ell(28, 70, 14, 12), fill: '#4A4458', clipTo: bodyE });
+      if (markings === 'tabby') back.push({ d: 'M-34 52L-24 56M-37 64L-26 66M34 52L24 56M37 64L26 66', stroke: shade(fill, 0.28), lw: 4.5, clipTo: bodyE });
+      back.push({ d: bodyE + ell(-5, 57, 38, 26), fill: shadeFor(fill), rule: 'evenodd', clipTo: bodyE }, { d: bodyE, stroke: INK, lw: 5 });
+      var feet = markings === 'tuxedo' ? '#FFFFFF' : fill;
+      back.push({ d: ell(-14, 88, 11, 7) + ell(14, 88, 11, 7), fill: feet, stroke: INK, lw: 4 });
       if (pose === 'wave') front.push({ d: 'M28 70Q44 62 46 44', stroke: INK, lw: 16, wave: true }, { d: 'M28 70Q44 62 46 44', stroke: fill, lw: 8, wave: true }, { d: ell(47, 36, 12, 13), fill: fill, stroke: INK, lw: 4, wave: true }, { d: circ(47, 39, 3.6) + circ(41, 31, 2) + circ(47, 28, 2) + circ(53, 31, 2), fill: '#FFB3C7', wave: true });
     }
     if (pose === 'peek') front = front.concat(paw(-24, 46), paw(24, 46));
@@ -178,7 +185,7 @@
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
     if (pose === 'walk') return walkShapes(o, c);
-    var p = poseShapes(pose, c.fill);
+    var p = poseShapes(pose, c.fill, o.markings);
     if (o.rays) {
       var r = '', minSin = o.rays === 'down' ? 0.2 : -0.55;
       for (var i = 0; i < 12; i++) { var a = (i / 12) * Math.PI * 2 + 0.26; if (Math.sin(a) < minSin) continue; r += 'M' + n(Math.cos(a) * 54) + ' ' + n(6 + Math.sin(a) * 46) + 'L' + n(Math.cos(a) * 66) + ' ' + n(6 + Math.sin(a) * 58); }

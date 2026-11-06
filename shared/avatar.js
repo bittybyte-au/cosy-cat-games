@@ -158,7 +158,9 @@
   // turns the box's coordinates into the cat's own 100-unit space, for extras that sit between the head and the eyes
   var TO_CAT = '<g transform="matrix(' + (1 / K).toFixed(4) + ' 0 0 ' + (1 / K).toFixed(4) + ' ' + (-CAT_X / K).toFixed(3) + ' ' + (-CAT_Y / K).toFixed(3) + ')">';
   /* opts.bare: just the cat and its hat/face things, with no circle, background or outline, at full size (head
-     centred at (60, 66.36), 68 wide). Games use it to put the player's own cat into a scene. */
+     centred at (60, 66.36), 68 wide). Games use it to put the player's own cat into a scene.
+     opts.body: the whole cat sitting (paws and tail) in front of its colour circle, in a 120 x 160 box (y from -12),
+     sized by width; the avatar builder shows this. */
   function svg(av, size, opts) {
     av = normalise(av);
     size = size || 64;
@@ -167,8 +169,9 @@
     var g = headGeom(av.type), hair = shade(av.type === 'tuxedo' || av.type === 'calico' ? '#8B5A3C' : col, dark ? -0.6 : 0.35);
     if (dark) hair = '#2E2A3A';
     if (av.head === 'braid') hair = '#F2C14E';   // Rapunzel's golden hair
+    var body = !!(opts && opts.body);
     var cat = window.GGCat.g({
-      x: CAT_X, y: CAT_Y, size: CAT_SIZE,
+      x: CAT_X, y: CAT_Y, size: CAT_SIZE, pose: body ? 'sit' : 'head',
       color: col,
       build: av.type === 'chubby' || av.type === 'fluffy' ? av.type : 'short',
       markings: av.type === 'tabby' || av.type === 'calico' || av.type === 'tuxedo' ? av.type : 'none',
@@ -180,6 +183,15 @@
       eyeColor: av.face === 'mask' ? '#FFF8EC' : undefined,
       svgOverHead: av.face === 'mask' ? TO_CAT + '<path d="M30 63 Q34 55 46 58 Q60 62 74 58 Q86 55 90 63 Q88 75 76 75 Q66 75 60 69 Q54 75 44 75 Q32 75 30 63 Z" fill="#E8413B" stroke="' + INK + '" stroke-width="2.5" stroke-linejoin="round"/></g>' : ''
     });
+    if (body) {
+      var bid = 'ggb' + (++uid);
+      return '<svg viewBox="0 -12 120 160" width="' + size + '" height="' + Math.round(size * 4 / 3) + '" aria-hidden="true">' +
+        '<defs><clipPath id="' + bid + '"><circle cx="60" cy="60" r="54"/></clipPath></defs>' +
+        '<circle cx="60" cy="60" r="54" fill="' + av.bg + '"/>' +
+        '<path clip-path="url(#' + bid + ')" d="M6 60a54 54 0 1 0 108 0a54 54 0 1 0-108 0ZM2 55a54 54 0 1 0 108 0a54 54 0 1 0-108 0Z" fill="rgba(42,35,64,.07)" fill-rule="evenodd"/>' +
+        '<circle cx="60" cy="60" r="54" fill="none" stroke="' + INK + '" stroke-width="3"/>' +
+        drawBack(av.head, hair) + cat + drawFaceAcc(av.face) + (av.head !== 'chef' ? drawFront(av.head, hair, g) : '') + '</svg>';
+    }
     if (opts && opts.bare) {
       return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="' + size + '" height="' + size + '" aria-hidden="true">' +
         drawBack(av.head, hair) + cat + drawFaceAcc(av.face) + (av.head !== 'chef' ? drawFront(av.head, hair, g) : '') + '</svg>';

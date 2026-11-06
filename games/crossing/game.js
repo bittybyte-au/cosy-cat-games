@@ -1,7 +1,9 @@
 /* Kitten Crossing – a toddler game. A road with a zebra crossing and a crossing-guard cat with a lollipop sign.
-   Kittens wander up and wait at the kerb. Press the red STOP button: the cars stop at the line and the kittens hop
-   across to the park. Press the green GO button: the cars drive again. Cars never drive while a kitten is on the
-   crossing, whatever button is pressed, so nothing can go wrong. When kittens are waiting the STOP button gives a
+   Kittens wander up and wait at the kerb. Press the red STOP button: the cars stop at their lines, then the
+   crossing-guard cat walks out to the middle of the road beside the crossing and holds the sign up to the traffic
+   (it's double-sided, turned towards the cars), and the kittens hop across to the park. Press the green GO button:
+   once nobody is on the crossing the guard walks back to the grass with the sign down, then the cars drive again.
+   Cars never drive while a kitten or the guard is on the road, whatever button is pressed, so nothing can go wrong. When kittens are waiting the STOP button gives a
    little nudge; when the road's been stopped a while with nobody waiting, GO does.
    Saves a count to GG.setProgress('crossing', { crossed }). */
 (function () {
@@ -66,6 +68,11 @@
     signFlip = 0.35;
   }
   var signFlip = 0;
+  // the crossing guard: 'kerb' (on the grass, sign down), 'out' (walking to the road), 'road' (sign up), 'back'
+  var guard = { state: 'kerb', x: 0, y: 0, step: 0, dir: 1, up: 0, placed: false };
+  function kerbSpot() { return { x: R.zx - R.zw / 2 - 74, y: R.bot + 78 }; }
+  function roadSpot() { return { x: R.zx - R.zw / 2 - 40, y: (R.top + R.bot) / 2 + 14 }; }   // feet on the middle line
+  function guardOnRoad() { return guard.state !== 'kerb'; }
   $('stopBtn').addEventListener('click', function () { Sound.init(); setStopped(true); });
   $('goBtn').addEventListener('click', function () { Sound.init(); setStopped(false); });
 
@@ -84,7 +91,7 @@
     var slot = waiting;
     kittens.push({ look: pick(LOOKS), x: R.zx + rand(-1, 1) * (W * 0.4), y: H + 60, tx: R.zx - (slot - 1.5) * 0, state: 'walk', t: 0, slot: slot, hop: 0, bounce: 0 });
   }
-  function waitSpot(i) { var n = 4, sp = Math.min(46, R.zw * 0.3); return { x: R.zx + (i - (n - 1) / 2) * sp, y: R.kerb + 10 + (i % 2) * 18 }; }
+  function waitSpot(i) { var n = 4, sp = Math.min(46, R.zw * 0.3); return { x: R.zx + 12 + (i - (n - 1) / 2) * sp, y: R.kerb + 10 + (i % 2) * 18 }; }
 
   function update(dt) {
     time += dt; signFlip = Math.max(0, signFlip - dt);
@@ -94,10 +101,11 @@
     var busy = crossingBusy();
     cars.forEach(function (c) {
       var front = c.x + c.dir * c.len / 2;
-      var stopLine = c.dir > 0 ? R.zx - R.zw / 2 - 14 : R.zx + R.zw / 2 + 14;
+      // (the left-hand line sits further back, leaving room for the crossing guard beside the crossing)
+      var stopLine = c.dir > 0 ? R.zx - R.zw / 2 - 96 : R.zx + R.zw / 2 + 14;
       var target = 150;
       var before = c.dir > 0 ? front <= stopLine + 2 : front >= stopLine - 2;
-      if ((stopped || busy) && before) {
+      if ((stopped || busy || guardOnRoad()) && before) {
         var d = Math.abs(stopLine - front);
         target = d < 4 ? 0 : Math.min(150, d * 2.2);
       }
@@ -115,6 +123,21 @@
     cars = cars.filter(function (c) { return c.x > -260 && c.x < W + 260; });
     // the road is clear at the crossing when no car is in the crossing (or right on its edge)
     var clear = !cars.some(function (c) { return Math.abs(c.x - R.zx) < R.zw / 2 + c.len / 2 + 6; }) && cars.every(function (c) { return c.v < 30 || Math.abs(c.x - R.zx) > R.zw / 2 + c.len / 2 + 60; });
+    // the crossing guard walks out once the cars have stopped, and back when GO is pressed and the crossing is empty
+    if (!guard.placed) { var ks = kerbSpot(); guard.x = ks.x; guard.y = ks.y; guard.placed = true; }
+    if (guard.state === 'kerb') { var k0 = kerbSpot(); guard.x = k0.x; guard.y = k0.y; if (stopped && clear) { guard.state = 'out'; Sound.mrrp(); } }
+    else if (guard.state === 'out' || guard.state === 'back') {
+      if (guard.state === 'out' && !stopped && !busy) guard.state = 'back';
+      else if (guard.state === 'back' && stopped) guard.state = 'out';
+      var tg = guard.state === 'out' ? roadSpot() : kerbSpot(), gdx = tg.x - guard.x, gdy = tg.y - guard.y, gd = Math.hypot(gdx, gdy);
+      var gsp = Math.min(165 * dt, gd);
+      if (gd > 1) { guard.x += gdx / gd * gsp; guard.y += gdy / gd * gsp; guard.step += dt * 14; if (Math.abs(gdx) > 0.5) guard.dir = gdx > 0 ? 1 : -1; }
+      else { guard.state = guard.state === 'out' ? 'road' : 'kerb'; if (guard.state === 'road') Sound.stop(); }
+    } else if (guard.state === 'road') {
+      var rs = roadSpot(); guard.x = rs.x; guard.y = rs.y;
+      if (!stopped && !busy) { guard.state = 'back'; }
+    }
+    guard.up = clamp(guard.up + (guard.state === 'road' ? dt : -dt) / 0.3, 0, 1);
     // kittens
     kitT -= dt; if (kitT <= 0) { spawnKitten(); kitT = rand(3, 6); }
     var waitingIdx = 0;
@@ -125,7 +148,7 @@
         var dx = spot.x - k.x, dy = spot.y - k.y, d = Math.hypot(dx, dy);
         if (d > 3) { var sp = Math.min(110 * dt, d); k.x += dx / d * sp; k.y += dy / d * sp; k.hop += dt * 10; }
         else { k.state = 'wait'; k.hop = 0; }
-        if (k.state === 'wait' && stopped && clear) {
+        if (k.state === 'wait' && stopped && guard.state === 'road' && guard.up >= 1) {
           // off they go, a little after each other
           k.state = 'cross'; k.t = -waitingIdx * 0.35 + 0.35; k.sx = k.x; k.sy = k.y; k.ex = R.zx + rand(-R.zw * 0.25, R.zw * 0.25); k.ey = R.park; Sound.meow();
         }
@@ -154,7 +177,7 @@
     Sound.init();
     var r = toScene(e.clientX, e.clientY);
     var g = guardPos();
-    if (Math.hypot(r.x - g.sx, r.y - g.sy) < 70) { setStopped(!stopped); return; }
+    if (Math.hypot(r.x - g.sx, r.y - g.sy) < 70 || Math.hypot(r.x - guard.x, r.y - (guard.y - 50)) < 55) { setStopped(!stopped); return; }
     for (var i = kittens.length - 1; i >= 0; i--) { var k = kittens[i]; if (Math.hypot(r.x - k.x, r.y - (k.y - 30)) < 50) { k.bounce = 0.5; Sound.meow(); return; } }
   });
 
@@ -182,50 +205,88 @@
     c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(R.zx - R.zw / 2 - 18, (R.top + R.bot) / 2, 6, R.bot - (R.top + R.bot) / 2 - 4); c.fillRect(R.zx + R.zw / 2 + 12, R.top + 4, 6, (R.bot - R.top) / 2 - 4);
   }
   function drawCar(c, car) {
+    // an open-top car, so the driver's whole head shows above the door, with a little windscreen in front
     c.save(); c.translate(car.x, car.y); c.scale(car.dir, 1);
     var L = car.len, h = 54;
     D.shadow(c, 0, h * 0.42, L * 0.5, 9);
-    // body (shaded inside, outline last)
     if (!car.body) {
       car.body = new Path2D(); var b = car.body;
-      b.moveTo(-L / 2, h * 0.3); b.lineTo(-L / 2, -h * 0.05); b.quadraticCurveTo(-L / 2, -h * 0.2, -L * 0.36, -h * 0.22); b.lineTo(-L * 0.2, -h * 0.62); b.lineTo(L * 0.18, -h * 0.62); b.lineTo(L * 0.34, -h * 0.22); b.lineTo(L * 0.46, -h * 0.18); b.quadraticCurveTo(L / 2, -h * 0.1, L / 2, h * 0.05); b.lineTo(L / 2, h * 0.3); b.closePath();
-      car.win = new Path2D(); var w = car.win;
-      w.moveTo(-L * 0.16, -h * 0.55); w.lineTo(L * 0.14, -h * 0.55); w.lineTo(L * 0.26, -h * 0.24); w.lineTo(-L * 0.28, -h * 0.24); w.closePath();
+      b.moveTo(-L / 2, h * 0.3); b.lineTo(-L / 2, -h * 0.1); b.quadraticCurveTo(-L / 2, -h * 0.24, -L * 0.42, -h * 0.24);
+      b.lineTo(L * 0.2, -h * 0.24); b.lineTo(L * 0.42, -h * 0.16); b.quadraticCurveTo(L / 2, -h * 0.12, L / 2, h * 0.02); b.lineTo(L / 2, h * 0.3); b.closePath();
+      car.seat = new Path2D(); car.seat.moveTo(-L * 0.3, -h * 0.2); car.seat.lineTo(-L * 0.3, -h * 0.62); car.seat.quadraticCurveTo(-L * 0.3, -h * 0.74, -L * 0.2, -h * 0.74); car.seat.quadraticCurveTo(-L * 0.12, -h * 0.74, -L * 0.12, -h * 0.62); car.seat.lineTo(-L * 0.12, -h * 0.2); car.seat.closePath();
+      car.glass = new Path2D(); car.glass.moveTo(L * 0.17, -h * 0.24); car.glass.lineTo(L * 0.25, -h * 0.74); car.glass.lineTo(L * 0.3, -h * 0.74); car.glass.lineTo(L * 0.25, -h * 0.24); car.glass.closePath();
     }
+    // seat back, then the driver, then the car body over the driver's chin, then the windscreen
+    c.fillStyle = car.col; c.fill(car.seat); c.fillStyle = 'rgba(42,35,64,.28)'; c.fill(car.seat); c.lineWidth = D.LW.fine; c.strokeStyle = INK; c.stroke(car.seat);
+    c.save(); c.translate(-L * 0.01, -h * 0.78); c.scale(car.dir, 1);
+    try { var o = {}; for (var k2 in car.driver) o[k2] = car.driver[k2]; o.size = 46; o.face = car.v < 5 ? 'open' : 'happy'; GGCat.draw(c, o); } catch (e) {}
+    c.restore();
+    // a steering wheel just peeking over the door
+    c.beginPath(); c.ellipse(L * 0.09, -h * 0.3, 4, 10, 0.3, 0, TAU); c.lineWidth = 4; c.strokeStyle = INK; c.stroke();
     D.shape(c, car.body, car.col, { lw: D.LW.mid, depth: 7 });
-    // window: glass, the driver clipped inside it, then the window's outline on top
-    c.fillStyle = '#BFE6FF'; c.fill(car.win);
-    c.save(); c.clip(car.win); D.shine(c, -L * 0.1, -h * 0.48, 10, 4, 0, 0.6); c.translate(L * 0.02, -h * 0.28); c.scale(car.dir, 1); try { var o = {}; for (var k2 in car.driver) o[k2] = car.driver[k2]; o.size = 40; o.face = car.v < 5 ? 'open' : 'happy'; GGCat.draw(c, o); } catch (e) {} c.restore();
-    c.lineWidth = D.LW.fine; c.strokeStyle = INK; c.stroke(car.win);
+    // a door line and handle
+    c.beginPath(); c.moveTo(-L * 0.06, -h * 0.2); c.lineTo(-L * 0.06, h * 0.12); c.lineWidth = 2.5; c.strokeStyle = 'rgba(42,35,64,.45)'; c.stroke();
+    rr(c, -L * 0.17, -h * 0.08, 14, 5, 2.5); c.fillStyle = 'rgba(42,35,64,.45)'; c.fill();
+    c.fillStyle = 'rgba(191,230,255,.85)'; c.fill(car.glass); c.lineWidth = D.LW.fine; c.strokeStyle = INK; c.stroke(car.glass);
     // lights
     circle(c, L / 2 - 9, -h * 0.02, 6); c.fillStyle = '#FFF3B0'; c.fill(); ink(c, 2.5);
+    circle(c, -L / 2 + 6, -h * 0.04, 4.5); c.fillStyle = '#FF8A80'; c.fill(); ink(c, 2);
     // wheels
     [-L * 0.3, L * 0.3].forEach(function (x) { circle(c, x, h * 0.3, 15); fillInk(c, '#3D3650', D.LW.mid); circle(c, x, h * 0.3, 5); c.fillStyle = '#C9C2D6'; c.fill(); });
     c.restore();
   }
-  function guardPos() { return { x: R.zx - R.zw / 2 - 70, y: R.bot + 70, sx: R.zx - R.zw / 2 - 30, sy: R.bot - 10 }; }
-  function drawGuard(c) {
-    var g = guardPos();
-    // the crossing-guard cat holding the lollipop sign up in its raised paw (the shared cat's 'wave' pose)
-    var gk = 80 / 88, px = g.x + 47 * gk, py = g.y + 38 * gk;
-    var flip = signFlip > 0 ? Math.cos(signFlip / 0.35 * Math.PI) : 1;
-    D.shadow(c, g.x, g.y + 88 * gk, 40, 8);
-    c.beginPath(); c.moveTo(px, py + 6); c.lineTo(g.sx, g.sy); ink(c, 9); c.strokeStyle = '#C9C2D6'; c.lineWidth = 4; c.stroke();
-    c.save(); c.translate(g.x, g.y);
-    try { GGCat.draw(c, { preset: 'ginger', pose: 'wave', size: 80, face: stopped ? 'open' : 'happy' }); } catch (e) {}
-    c.restore();
-    c.save(); c.translate(g.sx, g.sy - 34); c.scale(Math.abs(flip) * 0.9 + 0.1, 1);
-    D.shape(c, D.ellPath(0, 0, 34, 34), stopped ? '#FF5A5F' : '#3FC46A', { lw: D.LW.big, depth: 6, inside: function (c) {
+  // where the guard is, and where the sign is (for taps)
+  function guardPos() {
+    var gk = 80 / 88, up = guard.state === 'road';
+    return { x: guard.x, y: guard.y, sx: up ? guard.x + 34 : guard.x + 40, sy: up ? guard.y - 130 : guard.y - 40, gk: gk };
+  }
+  function drawSign(c, x, y, turn, lift) {
+    // the lollipop: a double-sided STOP sign. Held up in the road it's turned three-quarters towards the traffic
+    // (squashed, with its edge showing) but the paw still reads; carried or held down it hangs by the guard's side.
+    c.save(); c.translate(x, y);
+    var sq = lerp(1, 0.62, turn);
+    c.fillStyle = '#C94A4E'; c.beginPath(); c.ellipse(-5 * turn, 0, 34 * sq, 34, 0, 0, TAU); c.fill(); ink(c, D.LW.big);
+    c.scale(sq, 1);
+    D.shape(c, D.ellPath(0, 0, 34, 34), '#FF5A5F', { lw: D.LW.big, depth: 6, inside: function (c) {
       circle(c, 0, 0, 26); c.strokeStyle = '#fff'; c.lineWidth = 4; c.stroke();
-      if (stopped) {
-        // the paw: white beans and pad with a fine ink edge, so it reads at phone size
-        c.save(); c.scale(0.8, 0.8); c.translate(-30, -31);
-        PAW2D.forEach(function (p) { c.fillStyle = '#fff'; c.fill(p); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke(p); });
-        c.restore();
-      } else { c.beginPath(); c.moveTo(-10, -14); c.lineTo(14, 0); c.lineTo(-10, 14); c.closePath(); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(); }
+      c.save(); c.scale(0.8, 0.8); c.translate(-30, -31);
+      PAW2D.forEach(function (p) { c.fillStyle = '#fff'; c.fill(p); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke(p); });
+      c.restore();
     } });
     c.restore();
   }
+  function drawGuard(c) {
+    var gk = 80 / 88, g = guard, walking = g.state === 'out' || g.state === 'back';
+    D.shadow(c, g.x, g.y + 2, walking ? 44 : 40, 8);
+    // a little hi-vis vest is the giveaway that this is the crossing guard
+    var o = { preset: 'ginger', size: 80, face: g.state === 'road' ? 'open' : 'happy' };
+    if (walking) {
+      // carrying the sign low, pole over the shoulder, walking side-on
+      c.save(); c.translate(g.x, g.y - 67.5 * gk);
+      o.pose = 'walk'; o.step = g.step; o.moving = true; o.dir = g.dir; o.wag = time * 3;
+      try { GGCat.draw(c, o); } catch (e) {}
+      c.restore();
+      var hx = g.x + g.dir * 34, hy = g.y - 40;
+      c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + g.dir * 34, hy - 52); ink(c, 9); c.strokeStyle = '#C9C2D6'; c.lineWidth = 4; c.stroke();
+      drawSign(c, hx + g.dir * 44, hy - 76, 0.6, 0);
+      return;
+    }
+    if (g.state === 'kerb') {
+      // sitting on the grass with the sign resting down by its side
+      var bx = g.x + 46, by = g.y - 6;
+      c.beginPath(); c.moveTo(bx - 4, by - 62); c.lineTo(bx + 6, by - 8); ink(c, 9); c.strokeStyle = '#C9C2D6'; c.lineWidth = 4; c.stroke();
+      c.save(); c.translate(bx + 8, by + 4); c.rotate(0.12); c.scale(0.8, 0.8); drawSign(c, 0, 0, 0.75, 0); c.restore();
+      c.save(); c.translate(g.x, g.y - 100 * gk); o.pose = 'sit'; try { GGCat.draw(c, o); } catch (e) {} c.restore();
+      return;
+    }
+    // in the road: standing tall, the sign held high and turned to the traffic
+    var lift = easeOutBack(g.up);
+    var px = g.x + 47 * gk, py = g.y - 100 * gk + 38 * gk, sx = g.x + 34, sy = g.y - 100 * gk - 40 - 36 * lift;
+    c.beginPath(); c.moveTo(px, py + 6); c.lineTo(sx, sy + 30); ink(c, 9); c.strokeStyle = '#C9C2D6'; c.lineWidth = 4; c.stroke();
+    c.save(); c.translate(g.x, g.y - 100 * gk); o.pose = 'wave'; try { GGCat.draw(c, o); } catch (e) {} c.restore();
+    drawSign(c, sx, sy, 1, lift);
+  }
+  function easeOutBack(t) { t = clamp(t, 0, 1); var k = 1.7; return 1 + (k + 1) * Math.pow(t - 1, 3) + k * Math.pow(t - 1, 2); }
   function drawKitten(c, k) {
     // walking kittens use the shared cat's side-on walk, facing the way they're going; waiting ones sit
     var moving = k.lx !== undefined && Math.abs(k.x - k.lx) + Math.abs(k.y - k.ly) > 0.01;
@@ -250,7 +311,7 @@
     var all = [];
     cars.forEach(function (car) { all.push({ y: car.y + 20, f: function () { drawCar(c, car); } }); });
     kittens.forEach(function (k) { all.push({ y: k.y, f: function () { drawKitten(c, k); } }); });
-    all.push({ y: guardPos().y + 40, f: function () { drawGuard(c); } });
+    all.push({ y: guard.y, f: function () { drawGuard(c); } });
     all.sort(function (a, b) { return a.y - b.y; }).forEach(function (e) { e.f(); });
     parts.forEach(function (p) {
       var q = 1 - p.life / p.max;

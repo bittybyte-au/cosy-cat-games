@@ -140,7 +140,7 @@ body.toddler .tile .tod-tag { display: none; }
 .av-custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .av-stage { grid-area: stage; display: flex; flex-direction: column; align-items: center; gap: 0; padding-top: 6px; }
 .av-prev { position: relative; z-index: 1; width: 160px; margin-bottom: -26px; }
-.av-prev svg { width: 160px; height: 160px; }
+.av-prev svg { width: 160px; height: auto; display: block; }
 .av-cushion { width: 210px; height: 56px; border-radius: 50%; background: #FFB3C7; border: 4px solid var(--ink); box-shadow: inset 0 -10px 0 #FF8FAB, 0 6px 0 var(--ink); }
 .av-nick { width: 100%; margin-top: 22px; }
 .av-hint-text { font-weight: 700; color: var(--muted); font-size: .9rem; }
@@ -152,7 +152,7 @@ body.toddler .tile .tod-tag { display: none; }
   .av-rail { flex-direction: row; justify-content: space-around; padding: 8px; }
   .av-ic { width: 56px; height: 56px; }
   .av-list { max-height: none; min-height: 0; overflow: visible; }
-  .av-prev, .av-prev svg { width: 130px; height: 130px; }
+  .av-prev, .av-prev svg { width: 130px; height: auto; }
   .av-cushion { width: 170px; height: 46px; }
   .av-foot .btn { flex: 1; }
 }
@@ -289,7 +289,7 @@ body.toddler .tile .tod-tag { display: none; }
     open();
     var input = document.getElementById('nameInput'), save = document.getElementById('saveBtn'), pane = document.getElementById('avPane');
     input.value = p ? p.name : '';
-    function preview() { document.getElementById('avPrev').innerHTML = GGAvatar.svg(av, 160); }
+    function preview() { document.getElementById('avPrev').innerHTML = GGAvatar.svg(av, 160, { body: true }); }
     function rows(list, key) {
       return list.map(function (it) {
         var locked = it.earn && got.indexOf(it.id) < 0 && av[key] !== it.id;
