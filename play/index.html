@@ -322,9 +322,15 @@ body.toddler .tile .tod-tag { display: none; }
         });
       });
       pane.querySelectorAll('.av-sw > button').forEach(function (b) { b.addEventListener('click', function () { av[b.dataset.key] = b.dataset.col; draw(); }); });
+      // the "any colour" picker: update the cat and the swatches in place, never redraw the panel, because replacing
+      // the input closes the phone's colour picker on every tap
       pane.querySelectorAll('input[type=color]').forEach(function (inp) {
-        inp.addEventListener('input', function () { av[inp.dataset.key] = inp.value; preview(); });
-        inp.addEventListener('change', function () { av[inp.dataset.key] = inp.value; draw(); });
+        function pick() {
+          av[inp.dataset.key] = inp.value; preview();
+          pane.querySelectorAll('.av-sw > button[data-key="' + inp.dataset.key + '"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.col.toLowerCase() === inp.value.toLowerCase())); });
+        }
+        inp.addEventListener('input', pick);
+        inp.addEventListener('change', pick);
       });
     }
     panel.querySelectorAll('[data-tab]').forEach(function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; draw(); }); });
