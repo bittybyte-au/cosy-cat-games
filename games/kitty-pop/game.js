@@ -611,6 +611,7 @@
   function startLevel(n) {
     if (passBlocks(n)) n = lastFreeLevel(n);
     level = levelDef(n);
+    if (window.GG && GG.track) GG.track('Start level', { game: 'kitty-pop', level: n });
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
     $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
     $('win').hidden = true;
@@ -631,6 +632,7 @@
     var p = progress();
     var n = level.n;
     p.level = Math.max(p.level, n + 1);
+    if (window.GG && GG.track) GG.track('Finish level', { game: 'kitty-pop', level: n });
     p.done = (p.done || 0) + 1;
     GG.setProgress('kittypop', p);
     if (GG.stat) GG.stat('kitty-pop', 'levels', 1);

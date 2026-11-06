@@ -204,6 +204,7 @@
     var n = GRIDS[P.size] ? P.size : 2;
     do { pic = Math.floor(Math.random() * PICTURES.length); } while (pic === lastPic);
     lastPic = pic;
+    if (window.GG && GG.track) GG.track('Start puzzle', { game: 'puzzle', picture: PICTURES[pic].name || String(pic), pieces: n });
     pieces = cut(n);
     pieces.forEach(function (p) { p.px = undefined; });
     var cells = shuffle(pieces.map(function (p, i) { return i; }));

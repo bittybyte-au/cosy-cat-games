@@ -114,12 +114,36 @@
 
   /* Visit counts (Vercel Web Analytics, from our host): no cookies and nothing that identifies anyone.
      Only on the live site, so test copies and previews aren't counted. */
+  var LIVE = false;
+  try { LIVE = location.protocol === 'https:' && !/claude|localhost|vercel\.app$/.test(location.hostname); } catch (e) {}
   try {
-    if (location.protocol === 'https:' && !/claude|localhost|vercel\.app$/.test(location.hostname)) {
+    if (LIVE) {
       window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
       var va = document.createElement('script');
       va.defer = true; va.src = '/_vercel/insights/script.js';
       document.head.appendChild(va);
+    }
+  } catch (e) {}
+
+  /* Game counts (Umami, on our own analytics server): page views, plus which games are opened and which dishes,
+     scenes, levels, pictures and sizes are picked, so we can see what's popular. No cookies; never names,
+     nicknames, avatars or anything typed. Live site only: elsewhere events go to window.__ggTrack for testing.
+     GG.track('Open game', { game: 'slide' }) */
+  var trackQ = [];
+  if (!LIVE) window.__ggTrack = [];
+  window.GG.track = function (name, data) {
+    try {
+      if (!LIVE) { window.__ggTrack.push([name, data || null]); return; }
+      if (window.umami && window.umami.track) window.umami.track(name, data); else if (trackQ.length < 50) trackQ.push([name, data]);
+    } catch (e) {}
+  };
+  try {
+    if (LIVE) {
+      var um = document.createElement('script');
+      um.defer = true; um.src = 'https://analytics.bittybyte.com.au/script.js';
+      um.setAttribute('data-website-id', 'b94a9ff4-50ae-4746-8847-81cc9350bbc0');
+      um.onload = function () { var q = trackQ; trackQ = []; q.forEach(function (e) { try { window.umami.track(e[0], e[1]); } catch (err) {} }); };
+      document.head.appendChild(um);
     }
   } catch (e) {}
 

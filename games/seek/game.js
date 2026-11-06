@@ -817,6 +817,8 @@
       return '<div class="find' + (it.found ? ' got' : '') + '" data-i="' + i + '" role="img" aria-label="' + (it.found ? 'Found the ' : 'Find the ') + it.id + '"><img alt="" src="' + itemThumb(it) + '"><span class="tick">' + TICK + '</span></div>';
     }).join('');
   }
+  // counts a scene being picked (not the same scene redrawn when the screen changes size)
+  function trackScene() { if (window.GG && GG.track && S) GG.track('Pick scene', { game: 'seek', scene: S.def.id }); }
   function newRound(id, keepQuiet) {
     var n = W > 800 ? 5 : 4;
     S = makeScene(id, W, H, n);
@@ -883,7 +885,7 @@
     var b = e.target.closest('[data-scene]'); if (!b) return;
     Sound.init(); Sound.pop();
     $('pickWrap').hidden = true;
-    newRound(b.dataset.scene);
+    newRound(b.dataset.scene); trackScene();
   });
   $('pickWrap').addEventListener('click', function (e) { if (e.target === $('pickWrap') && S && !S.items.every(function (x) { return x.found; })) $('pickWrap').hidden = true; });
   $('sceneBtn').addEventListener('click', function () { Sound.init(); Sound.pop(); showPicker(false); });
@@ -1052,7 +1054,7 @@
   document.addEventListener('visibilitychange', function () { last = performance.now(); });
 
   layout();
-  newRound(sceneDef(P.scene).id, true);
+  newRound(sceneDef(P.scene).id, true); trackScene();
   layout();
   requestAnimationFrame(frame);
 

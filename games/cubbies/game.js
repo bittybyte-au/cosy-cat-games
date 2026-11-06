@@ -364,6 +364,7 @@
 
   function startLevel(n) {
     level = levelDef(n);
+    if (window.GG && GG.track) GG.track('Start level', { game: 'cubbies', level: level.n });
     cats = []; mat = []; held = null; parts = [];
     for (var i = 0; i < MAT_SPOTS; i++) mat.push(null);
     tucked = 0; filled = 0; spawnDist = 0; nextGap = 0; idle = 0; recentKinds = [];
@@ -384,6 +385,7 @@
     Sound.chime(); Sound.purr(0.4); buzz(30);
     var p = progress();
     p.level = Math.max(p.level, level.n + 1);
+    if (window.GG && GG.track) GG.track('Finish level', { game: 'cubbies', level: level.n });
     p.done = (p.done || 0) + 1;
     GG.setProgress('cubbies', p);
     if (GG.stat) GG.stat('cubbies', 'levels', 1);

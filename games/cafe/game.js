@@ -291,6 +291,7 @@
     return { id: nextId++, look: look, order: order, state: 'queue', t: 0, pat: G.patience, patMax: G.patience, wait: 0, shake: 0, mood: '' };
   }
   function start(mode, day) {
+    if (window.GG && GG.track) GG.track('Start day', { game: 'cafe', mode: mode, day: day || 0 });
     var chal = mode === 'chal';
     var R = chal ? dayRules(day) : null;
     G = {
@@ -464,6 +465,7 @@
 
   function endDay() {
     G.ended = true;
+    if (window.GG && GG.track) GG.track('Finish day', { game: 'cafe', mode: G.mode, day: G.day });
     var ratio = G.stars / G.total;
     var rating = ratio >= 0.85 ? 3 : ratio >= 0.6 ? 2 : ratio >= 0.35 ? 1 : 0;
     var d = G.day;

@@ -370,7 +370,8 @@ body.toddler .tile .tod-tag { display: none; }
         (g.toddler ? '<span class="tod-tag" title="A game for toddlers">' + RATTLE + '<span>Toddler</span></span>' : '') +
         '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2>';
       if (ok) t.addEventListener('click', function (e) {
-        if (!GG.current()) { e.preventDefault(); showSetup(); }
+        if (!GG.current()) { e.preventDefault(); showSetup(); return; }
+        if (GG.track) GG.track('Open game', { game: g.id, mode: tod ? 'toddler' : 'kids' });
       });
       box.insertBefore(t, sleepy);
     });
@@ -386,7 +387,7 @@ body.toddler .tile .tod-tag { display: none; }
         '<div class="row"><button class="btn plain" type="button" id="todNo">Not now</button><button class="btn go" type="button" id="todYes">Turn on</button></div>';
       open();
       document.getElementById('todNo').addEventListener('click', close);
-      document.getElementById('todYes').addEventListener('click', function () { GG.setSetting('toddler', true); close(); renderTiles(); });
+      document.getElementById('todYes').addEventListener('click', function () { GG.setSetting('toddler', true); if (GG.track) GG.track('Toddler profile', { on: true }); close(); renderTiles(); });
       return;
     }
     (function ask() {
@@ -400,7 +401,7 @@ body.toddler .tile .tod-tag { display: none; }
       var input = document.getElementById('sumIn');
       setTimeout(function () { input.focus(); }, 50);
       function check() {
-        if (parseInt(input.value, 10) === x + y) { GG.setSetting('toddler', false); close(); renderTiles(); }
+        if (parseInt(input.value, 10) === x + y) { GG.setSetting('toddler', false); if (GG.track) GG.track('Toddler profile', { on: false }); close(); renderTiles(); }
         else { document.getElementById('sumMsg').textContent = 'Not quite. Try this one.'; setTimeout(ask, 900); }
       }
       document.getElementById('sumYes').addEventListener('click', check);

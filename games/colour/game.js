@@ -221,6 +221,7 @@
 
   /* ---------- screens ---------- */
   function openPic(p, fresh) {
+    if (window.GG && GG.track) GG.track('Pick picture', { game: 'colour', picture: p.page, kind: fresh ? 'new' : 'again', mode: TODDLER ? 'toddler' : 'kids' });
     pic = JSON.parse(JSON.stringify(p));
     isNew = fresh;
     history = [];

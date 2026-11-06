@@ -205,6 +205,7 @@
       var p = findDef(PLANTS, b.dataset.seed);
       if (P.grown < p.grown) { Sound.mrrp(); var n = p.grown - P.grown; say('Grow ' + n + ' more plant' + (n > 1 ? 's' : '') + ' to unlock this!', 2); return; }
       grow.t = p.id; Sound.pop();
+      if (window.GG && GG.track) GG.track('Pick plant', { game: 'grow', plant: p.id, mode: TODDLER ? 'toddler' : 'kids' });
       if (TODDLER) {
         // straight to a fully grown plant, in a colour of its own
         grow.soil = 3; grow.seed = true; grow.water = 1; grow.col = Math.floor(Math.random() * FLOWER.length);

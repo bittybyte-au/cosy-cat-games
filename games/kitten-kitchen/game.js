@@ -274,6 +274,7 @@
   var picks = ORDER.map(function (k) { return { kind: k, tops: sampleList(k), wig: 0 }; });
 
   function startFood(kind) {
+    if (window.GG && GG.track) GG.track('Pick food', { game: 'kitten-kitchen', food: kind });
     food = { kind: kind, tops: [], t: 0, slide: 0, out: 0 };
     sel = FOODS[kind].tops[kind === 'pizza' ? 0 : kind === 'cake' ? 0 : 2];
     mode = 'make'; cat.hop = 0.6;
@@ -318,6 +319,7 @@
     if (mode !== 'make' || !food) return;
     Sound.init(); Sound.ding(); buzz(15);
     mode = 'serve'; food.t = 0; held = null;
+    if (window.GG && GG.track) GG.track('Serve food', { game: 'kitten-kitchen', food: food.kind, toppings: Math.min(food.tops.length, 50) });
     tray.classList.add('off'); bell.hidden = true;
     cat.happy = 1.2; cat.hop = 0.6; heart(L.cat.x, L.cat.y - L.cat.s * 2);
     var cake = food.kind === 'cake' && litCandles().length;

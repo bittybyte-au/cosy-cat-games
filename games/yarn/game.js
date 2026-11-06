@@ -362,6 +362,7 @@
 
   function startLevel(n) {
     level = levelDef(n);
+    if (window.GG && GG.track) GG.track('Start level', { game: 'yarn', level: level.n });
     tubes = makePuzzle(level);
     level.start = tubes.map(function (t) { return t.slice(); });
     reset();
@@ -384,6 +385,7 @@
     renderButtons();
     var p = progress();
     p.level = Math.max(p.level, level.n + 1);
+    if (window.GG && GG.track) GG.track('Finish level', { game: 'yarn', level: level.n });
     p.done = (p.done || 0) + 1;
     GG.setProgress('yarn', p);
     if (GG.stat) GG.stat('yarn', 'levels', 1);

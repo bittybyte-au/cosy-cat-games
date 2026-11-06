@@ -2759,6 +2759,7 @@
   }
 
   function finishDish() {
+    if (window.GG && GG.track) GG.track('Finish dish', { game: 'cooking', dish: recipe && recipe.id ? recipe.id : '' });
     var img = snapshot();
     var prog = GG.getProgress('cooking');
     prog.made = (prog.made || 0) + 1;
@@ -3016,6 +3017,7 @@
       return;
     }
     recipe = RECIPE_DEFS[id] || recipe; dish = newDish(); showScreen('play'); goStep(0);
+    if (window.GG && GG.track) GG.track('Pick dish', { game: 'cooking', dish: id });
   }
   window.addEventListener('ggpass', function () { if (mode === 'menu') renderMenu(); });
 

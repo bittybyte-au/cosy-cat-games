@@ -120,6 +120,7 @@
     return false;
   }
   function startLevel(n) {
+    if (window.GG && GG.track) GG.track('Start level', { game: 'yarn-dash', level: n });
     var R = rules(n);
     G = { n: n, R: R, got: 0, done: false, cat: { x: W / 2, y: H / 2, vx: 0, vy: 0, dir: 0, target: null, fright: 0, safe: 0, step: 0, slow: false },
       yarn: [], cukes: [], puddles: [], vacs: [], dog: null, mouse: null, spray: null, spawnT: 0.2, mouseT: rand(6, 10) };
@@ -186,6 +187,7 @@
     G.done = true; running = false;
     var n = G.n;
     if (n >= P.level) P.level = n + 1;
+    if (window.GG && GG.track) GG.track('Finish level', { game: 'yarn-dash', level: n });
     if (n > P.best) P.best = n;
     save();
     if (GG.stat) GG.stat('yarn-dash', 'levels', 1);

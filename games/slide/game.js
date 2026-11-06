@@ -224,6 +224,7 @@
   function idx(r, col) { return r * n + col; }
   function newPuzzle(id, size) {
     picId = id || picId; n = size || n; solved = false; joinT = 0;
+    if (window.GG && GG.track) GG.track('Start puzzle', { game: 'slide', picture: picId, size: n + 'x' + n, level: P.diff });
     P.pic = picId; P.size = n; save();
     cells = []; for (var i = 0; i < n * n - 1; i++) cells.push(i); cells.push(-1);
     gap = n * n - 1;
@@ -280,6 +281,7 @@
   var parts = [];
   function win() {
     solved = true;
+    if (window.GG && GG.track) GG.track('Finish puzzle', { game: 'slide', picture: picId, size: n + 'x' + n, level: P.diff });
     var s = P.solved[picId] = Array.isArray(P.solved[picId]) ? P.solved[picId] : [];
     if (s.indexOf(n) < 0) s.push(n);
     var opened = false;

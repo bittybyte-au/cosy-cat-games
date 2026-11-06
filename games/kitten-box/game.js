@@ -57,6 +57,7 @@
     var n = boxCount(P.level), same = P.level >= 3;
     boxes = []; for (var i = 0; i < n; i++) boxes.push({ slot: i, x: 0, w: 0, open: 0, col: B.BOX_COLS[same ? 0 : i % B.BOX_COLS.length], lift: 0, wob: 0, empty: false });
     renderLevel();
+    if (window.GG && GG.track) GG.track('Start level', { game: 'kitten-box', level: P.level });
     onLayout();
     kitten = Math.floor(Math.random() * n);
     do { look = pick(B.KITTEN_COLS); } while (look === lastLook); lastLook = look;
