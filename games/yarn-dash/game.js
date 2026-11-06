@@ -215,7 +215,7 @@
       else if (C.target) {
         var tx = C.target.x - C.x, ty = C.target.y - C.y, d = Math.hypot(tx, ty);
         if (d < 6) { C.vx = C.vy = 0; if (!hold) C.target = null; }
-        else { var s = Math.min(speed, d / dt); C.vx = tx / d * s; C.vy = ty / d * s; }
+        else { var s = Math.min(hold && hold.grab ? Math.max(speed, d * 12) : speed, d / dt); C.vx = tx / d * s; C.vy = ty / d * s; }
       } else { C.vx = C.vy = 0; }
       C.x += C.vx * dt; C.y += C.vy * dt;
     }
@@ -607,13 +607,25 @@
   canvas.addEventListener('pointerdown', function (e) {
     Sound.init();
     if (!G || !running) return;
-    hold = { id: e.pointerId };
-    G.cat.target = toRoom(e.clientX, e.clientY);
+    // Touch the cat to pick it up: it stays under your finger as you drag. Touch anywhere else and it walks there.
+    // Lift your finger and it stops, unless it was a quick tap, which sends the cat to that spot.
+    var at = toRoom(e.clientX, e.clientY);
+    hold = { id: e.pointerId, t: performance.now(), x: e.clientX, y: e.clientY, moved: false, grab: dist(at, G.cat) < CAT_R + 50 };
+    G.cat.target = at;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     e.preventDefault();
   });
-  canvas.addEventListener('pointermove', function (e) { if (hold && hold.id === e.pointerId && G) G.cat.target = toRoom(e.clientX, e.clientY); });
-  function release(e) { if (hold && hold.id === e.pointerId) hold = null; }
+  canvas.addEventListener('pointermove', function (e) {
+    if (!hold || hold.id !== e.pointerId || !G) return;
+    if (Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 12) hold.moved = true;
+    G.cat.target = toRoom(e.clientX, e.clientY);
+  });
+  function release(e) {
+    if (!hold || hold.id !== e.pointerId) return;
+    var tap = !hold.moved && !hold.grab && performance.now() - hold.t < 300;
+    if (!tap && G) { G.cat.target = null; G.cat.vx = G.cat.vy = 0; }
+    hold = null;
+  }
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
   var KEYMAP = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', a: 'left', d: 'right', w: 'up', s: 'down', A: 'left', D: 'right', W: 'up', S: 'down' };
