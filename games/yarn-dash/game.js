@@ -503,9 +503,8 @@
     o.face = C.fright > 0 ? 'surprised' : 'open';
     try { GGCat.draw(c, o); } catch (e) {}
     if (catImg && C.fright <= 0) {
-      // the walk bobs the head by up to 4 of the cat's units on each step (shared/cat.js, walkShapes)
-      var ph = Math.round(((C.step || 0) % (Math.PI * 2)) / (Math.PI / 8)) * (Math.PI / 8);
-      var bob = moving ? -Math.abs(Math.sin(ph)) * 4 * k : 0, a = CAT_SIZE / 68;
+      // the avatar head bobs with the shared walk
+      var bob = GGCat.walkBob(o) * k, a = CAT_SIZE / 68;
       c.drawImage(catImg, -60 * a, bob - 66.36 * a, 120 * a, 120 * a);
     }
     if (C.fright > 0) { c.font = '800 40px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#FF6B57'; c.textAlign = 'center'; c.fillText('!', 30, -40); }
