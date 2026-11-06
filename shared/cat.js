@@ -44,18 +44,32 @@
     if (build === 'fluffy') return { cx: 0, cy: 6, rx: 42, ry: 35 };
     return { cx: 0, cy: 6, rx: 44, ry: 37 };
   }
+  /* an oval with zones of pointed fur tufts (the fluffy build). zones: [from, to, count, length, sweep], in turns
+     round the oval (0 = right, .25 = bottom, .5 = left, .75 = top), in increasing order; sweep tips the tufts one
+     way round (1 = towards larger turns, -1 = smaller), so cheek fur can sweep down on both sides */
+  function tuftPath(cx, cy, rx, ry, zones) {
+    var TAU = Math.PI * 2, step = 1 / 72, S = zones[0][0], t = S;
+    function pt(u, grow) { var A = u * TAU; return n(cx + Math.cos(A) * (rx + grow)) + ' ' + n(cy + Math.sin(A) * (ry + grow)); }
+    var d = 'M' + pt(S, 0);
+    zones.forEach(function (z) {
+      while (t + step < z[0]) { t += step; d += 'L' + pt(t, 0); }
+      t = z[0]; d += 'L' + pt(t, 0);
+      var w = (z[1] - z[0]) / z[2];
+      for (var j = 0; j < z[2]; j++) {
+        var a0 = t, a1 = t + w, am = a0 + w * (0.5 + 0.38 * (z[4] || 0));
+        d += 'Q' + pt((a0 + am) / 2, z[3] * 0.3) + ' ' + pt(am, z[3]) + 'Q' + pt((am + a1) / 2, z[3] * 0.12) + ' ' + pt(a1, 0);
+        t = a1;
+      }
+    });
+    while (t + step < S + 1) { t += step; d += 'L' + pt(t, 0); }
+    return d + 'Z';
+  }
   function headPath(build, dx, dy) {
     var g = headGeom(build);
     if (dx || dy) g = { cx: g.cx + (dx || 0), cy: g.cy + (dy || 0), rx: g.rx, ry: g.ry };
     if (build !== 'fluffy') return ell(g.cx, g.cy, g.rx, g.ry);
-    var d = '', k = 16;
-    for (var i = 0; i <= k; i++) {
-      var a = (i / k) * Math.PI * 2, x = g.cx + Math.cos(a) * g.rx, y = g.cy + Math.sin(a) * g.ry;
-      if (!i) { d += 'M' + n(x) + ' ' + n(y); continue; }
-      var am = ((i - 0.5) / k) * Math.PI * 2;
-      d += 'Q' + n(g.cx + Math.cos(am) * (g.rx + 8)) + ' ' + n(g.cy + Math.sin(am) * (g.ry + 8)) + ' ' + n(x) + ' ' + n(y);
-    }
-    return d + 'Z';
+    // a smooth head with classic cheek tufts sweeping down on each side, and a little forelock between the ears
+    return tuftPath(g.cx, g.cy, g.rx, g.ry, [[-0.02, 0.17, 3, 10, 1], [0.33, 0.52, 3, 10, -1], [0.71, 0.79, 2, 6, 0]]);
   }
   /* the one ear shape: soft and rounded at the tip. side -1 left, 1 right; w stretches it for wider heads */
   function earPath(side, w) { var s = side * (w || 1); return 'M' + n(s * 40) + ' -2Q' + n(s * 44) + ' -36 ' + n(s * 36) + ' -44Q' + n(s * 24) + ' -38 ' + n(s * 8) + ' -30Z'; }
@@ -143,17 +157,20 @@
       var hatD = band + circ(-16, t - 14, 13) + circ(16, t - 14, 13) + circ(0, t - 22, 14);
       S.push({ d: hatD, stroke: INK, lw: 9 }, { d: hatD, fill: '#FFFFFF' }, { d: band, fill: '#F1ECF7' }, { d: band, stroke: INK, lw: 4.5 });
     }
-    return { shapes: S, head: head, fill: fill, inner: inner, line: line };
+    return { shapes: S, head: head, fill: fill, inner: inner, line: line, build: build };
   }
 
   /* bodies for the poses, drawn behind (back) or in front of (front) the head */
-  function poseShapes(pose, fill, markings) {
+  function poseShapes(pose, fill, markings, build) {
     var back = [], front = [];
     var paw = function (x, y) { return [{ d: ell(x, y, 14, 15), fill: fill, stroke: INK, lw: 4 }, { d: circ(x, y + 3, 4) + circ(x - 6, y - 4, 2.2) + circ(x, y - 7, 2.2) + circ(x + 6, y - 4, 2.2), fill: '#FFB3C7' }]; };
     if (pose === 'sit' || pose === 'wave') {
       back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: fill, lw: 6 });
-      var bodyE = ell(0, 64, 38, 26);
+      var fluffy = build === 'fluffy';
+      var bodyE = fluffy ? tuftPath(0, 64, 38, 26, [[-0.12, 0.08, 3, 8, 1], [0.42, 0.62, 3, 8, -1]]) : ell(0, 64, 38, 26);
       back.push({ d: bodyE, fill: fill });
+      // a fluffy cat's chest ruff: a paler tuft of fur under the chin
+      if (fluffy && markings !== 'tuxedo') back.push({ d: 'M-18 40L-12 57L-6 49L0 61L6 49L12 57L18 40Z', fill: 'rgba(255,255,255,.4)', clipTo: bodyE });
       // the body carries the same markings as the head: a tuxedo's white shirt front, calico patches, tabby stripes
       if (markings === 'tuxedo') back.push({ d: ell(0, 72, 17, 24), fill: '#FFFFFF', clipTo: bodyE });
       if (markings === 'calico') back.push({ d: ell(-26, 54, 16, 13), fill: '#FFA94D', clipTo: bodyE }, { d: ell(28, 70, 14, 12), fill: '#4A4458', clipTo: bodyE });
@@ -176,7 +193,8 @@
     if (pose === 'lie') {
       // asleep: body and curled tail on the left, head resting on the right
       var f = c.fill;
-      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }, { d: ell(-20, 22, 46, 22), fill: f }, { d: ell(-20, 22, 46, 22) + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: ell(-20, 22, 46, 22) }, { d: ell(-20, 22, 46, 22), stroke: INK, lw: 5 }];
+      var lb = c.build === 'fluffy' ? tuftPath(-20, 22, 46, 22, [[0.6, 0.9, 7, 6, -0.75]]) : ell(-20, 22, 46, 22);   // fluffy: tufts along the back
+      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }, { d: lb, fill: f }, { d: lb + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: lb }, { d: lb, stroke: INK, lw: 5 }];
       // little paws: two tucked under the chin and a back one peeking out, each with pink beans
       [[12, 43], [34, 42], [-52, 41]].forEach(function (q) {
         body.push({ d: ell(q[0], q[1], 10, 7), fill: f, stroke: INK, lw: 4 }, { d: circ(q[0] - 4, q[1] + 1, 1.8) + circ(q[0], q[1] + 2, 1.8) + circ(q[0] + 4, q[1] + 1, 1.8), fill: '#FFB3C7' });
@@ -185,7 +203,7 @@
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
     if (pose === 'walk') return walkShapes(o, c);
-    var p = poseShapes(pose, c.fill, o.markings);
+    var p = poseShapes(pose, c.fill, o.markings, c.build);
     if (o.rays) {
       var r = '', minSin = o.rays === 'down' ? 0.2 : -0.55;
       for (var i = 0; i < 12; i++) { var a = (i / 12) * Math.PI * 2 + 0.26; if (Math.sin(a) < minSin) continue; r += 'M' + n(Math.cos(a) * 54) + ' ' + n(6 + Math.sin(a) * 46) + 'L' + n(Math.cos(a) * 66) + ' ' + n(6 + Math.sin(a) * 58); }
@@ -210,7 +228,7 @@
       var x = l[0] + run * 7 * l[1], y = 59 - Math.max(0, run * l[1]) * 6;
       list.push({ d: ell(X(x), n(y), 10, 8.5), fill: f, stroke: INK, lw: 3.5 });
     });
-    var body = ell(X(-31), 31, 49, 29);
+    var body = c.build === 'fluffy' ? tuftPath(X(-31), 31, 49, 29, [[0.1, 0.4, 5, 8, 0], [0.62, 0.88, 5, 7, (o.dir || 1) < 0 ? 0.6 : -0.6]]) : ell(X(-31), 31, 49, 29);   // fluffy: a tufted belly and back
     list.push({ d: body, fill: f }, { d: body + ell(X(-31) - 5 * d, 24, 49, 29), fill: shadeFor(f), rule: 'evenodd', clipTo: body }, { d: body, stroke: INK, lw: 5 });
     var bob = walkBob(o);
     var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [0, n(bob), 0, 1]; if (s.tf) t.tf2 = s.tf; return t; });
