@@ -646,7 +646,7 @@
     var key = u + ':' + (it.kind === 'plant' ? it.data.pot + '-' + it.data.col : it.kind === 'picture' ? (it.data.at || 0) + '-' + (it.data.fr || 0) : '');
     if (!thumbCache[key]) thumbCache[key] = itemThumb(it);
     var name = it.def.name;
-    return '<div class="item' + (extra || '') + '" data-u="' + u + '" role="button" tabindex="0" aria-label="' + name + '"><img alt="" src="' + thumbCache[key] + '"><span>' + name + '</span></div>';
+    return '<div class="item' + (extra || '') + '" data-u="' + u + '" role="button" tabindex="0" aria-label="' + name + '"><img alt="" draggable="false" src="' + thumbCache[key] + '"><span>' + name + '</span></div>';
   }
   function renderDrawer() {
     document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
@@ -694,6 +694,7 @@
     if (lock) { var t = findDef(THINGS, lock.dataset.lock); Sound.init(); Sound.mrrp(); say(t.need.text + ' to get this!', 2); return; }
     var tile = e.target.closest('.item[data-u]');
     if (!tile || drag) return;
+    if (performance.now() - lastSwipe < 350) return;          // the end of a sideways swipe, not a tap
     if (TODDLER) { tapPlace(tile.dataset.u); return; }
     if (!tile.classList.contains('placed')) say('Drag it up into your room!', 1.6);
   });
@@ -718,29 +719,55 @@
     save(); renderDrawer();
   }
 
-  /* ---------- dragging from the drawer: an upward drag lifts the item out (sideways scrolls the drawer) ---------- */
-  var press = null;
-  $('items').addEventListener('pointerdown', function (e) {
+  /* ---------- dragging from the drawer ----------
+     Touches on a tile are ours (touch-action: none), so the browser can't grab the gesture half-way: once the finger
+     has moved 8px we decide. Mostly up: the item lifts out into the room. Mostly sideways: we scroll the drawer
+     ourselves, with a little glide after letting go. A mouse lifts the item with any drag (the drawer has a scrollbar). */
+  var press = null, glide = 0, lastSwipe = 0;
+  var itemsEl = $('items');
+  itemsEl.addEventListener('pointerdown', function (e) {
     var tile = e.target.closest('.item[data-u]');
-    if (!tile || tile.classList.contains('placed') || mode !== 'room') return;
+    if (!tile || mode !== 'room') return;
     Sound.init();
-    press = { id: e.pointerId, u: tile.dataset.u, x: e.clientX, y: e.clientY, tile: tile };
+    glide = 0;
+    press = { id: e.pointerId, u: tile.dataset.u, x: e.clientX, y: e.clientY, tile: tile, placed: tile.classList.contains('placed'),
+      sl: itemsEl.scrollLeft, dir: null, lx: e.clientX, lt: performance.now(), v: 0, mouse: e.pointerType === 'mouse' };
+    try { tile.setPointerCapture(e.pointerId); } catch (err) {}
   });
+  function liftOut(e) {
+    var it = resolve(press.u);
+    if (it) { drag = { u: press.u, it: it, x: e.clientX, y: e.clientY, from: 'drawer', pid: e.pointerId }; Sound.pick(); buzz(8); }
+  }
   window.addEventListener('pointermove', function (e) {
     if (press && press.id === e.pointerId && !drag) {
       var dx = e.clientX - press.x, dy = e.clientY - press.y;
-      var mouse = e.pointerType === 'mouse';
-      if (mouse ? Math.hypot(dx, dy) > 8 : (dy < -10 && Math.abs(dy) > Math.abs(dx) * 0.5)) {
-        var it = resolve(press.u);
-        if (it) { drag = { u: press.u, it: it, x: e.clientX, y: e.clientY, from: 'drawer', pid: e.pointerId }; Sound.pick(); buzz(8); }
-        press = null;
+      if (!press.dir) {
+        if (press.mouse) { if (Math.hypot(dx, dy) > 8) press.dir = press.placed ? 'none' : 'up'; }
+        else if (Math.hypot(dx, dy) > 8) press.dir = (dy < 0 && -dy > Math.abs(dx) * 0.7) ? (press.placed ? 'none' : 'up') : (Math.abs(dx) >= Math.abs(dy) ? 'x' : 'none');
+        if (press.dir === 'up') { liftOut(e); press = null; return; }
       }
+      if (press.dir === 'x') {
+        itemsEl.scrollLeft = press.sl - dx;
+        var now = performance.now(), dtm = Math.max(1, now - press.lt);
+        press.v = press.v * 0.6 + ((e.clientX - press.lx) / dtm) * 0.4; press.lx = e.clientX; press.lt = now;
+        // changed their mind half-way and pushed up instead: lift it out after all
+        if (!press.placed && dy < -45 && -dy > Math.abs(dx) * 0.9) { liftOut(e); press = null; }
+      }
+      e.preventDefault();
       return;
     }
     if (drag && drag.pid === e.pointerId) { drag.x = e.clientX; drag.y = e.clientY; e.preventDefault(); }
   }, { passive: false });
+  function glideStep() {
+    if (Math.abs(glide) < 0.05) { glide = 0; return; }
+    itemsEl.scrollLeft -= glide * 16; glide *= 0.92;
+    requestAnimationFrame(glideStep);
+  }
   function endDrag(e) {
-    if (press && press.id === e.pointerId) press = null;
+    if (press && press.id === e.pointerId) {
+      if (press.dir === 'x') { lastSwipe = performance.now(); glide = press.v; if (Math.abs(glide) > 0.1) requestAnimationFrame(glideStep); }
+      press = null;
+    }
     if (!drag || drag.pid !== e.pointerId) return;
     var d = drag; drag = null;
     var overDrawer = e.clientY > drawer.getBoundingClientRect().top - 4;

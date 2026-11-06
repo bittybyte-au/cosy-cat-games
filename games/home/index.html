@@ -45,9 +45,13 @@ body { background: #F7E2C6; }
 .item {
   flex: none; width: 84px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; padding: 4px; cursor: grab;
   display: flex; flex-direction: column; align-items: center; gap: 2px; font: 800 .72rem/1.1 var(--body); text-align: center;
-  touch-action: pan-x; position: relative; box-shadow: 0 3px 0 var(--ink), var(--soft);
+  /* the game handles touches on a tile itself (up lifts it out, sideways scrolls the drawer), so the browser
+     can't take the gesture over half-way, and iPad's own drag-an-image doesn't start */
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; position: relative; box-shadow: 0 3px 0 var(--ink), var(--soft);
 }
-.item img { width: 66px; height: 66px; display: block; pointer-events: none; }
+/* (body.game .item beats the shared body.game * { touch-action: pan-x pan-y } rule, which let the browser pan) */
+body.game .item, body.game .item * { touch-action: none; }
+.item img { width: 66px; height: 66px; display: block; pointer-events: none; -webkit-user-drag: none; user-drag: none; }
 .item.placed { opacity: .45; box-shadow: none; }
 .item.placed::after { content: "in room"; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 6px; font-size: .62rem; }
 .item.locked { background: #EEE8F3; cursor: default; box-shadow: none; border-style: dashed; color: var(--muted); }
