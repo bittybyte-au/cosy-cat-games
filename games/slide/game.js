@@ -2,7 +2,7 @@
    row or column and it slides (with any squares between) into the gap. Put the picture back together.
    Two sizes (3×3, 4×4) and two levels, all open. Shuffles are made by sliding from the finished picture, so every
    puzzle can be solved. Hard: 80 (3×3) or 220 (4×4) random slides, never straight back, until at least 60% of the
-   squares are out of place, which is as mixed up as a random board. Easy: a short walk of 10 (3×3) or 16 (4×4)
+   squares are out of place, which is as mixed up as a random board. Easy: a short walk of 5 (3×3) or 8 (4×4)
    slides that never returns to an earlier arrangement, so it is at most that many slides from done. A peek button shows the picture; a 123 button numbers the squares.
    No timer, no move counter. Pictures are drawn from the shared cat, food and drawing kit.
    Saves GG.setProgress('slide', { solved: { picId: [3, 4] }, n3, n4, pic, size, diff, nums }). */
@@ -245,7 +245,7 @@
   }
   // easy: a short walk that never comes back to an arrangement it has already made
   function easyShuffle() {
-    var steps = n === 3 ? 10 : 16, minOut = n === 3 ? 5 : 8;
+    var steps = n === 3 ? 5 : 8, minOut = n === 3 ? 3 : 4;
     for (var tries = 0; tries < 60; tries++) {
       cells = []; for (var i = 0; i < n * n - 1; i++) cells.push(i); cells.push(-1); gap = n * n - 1;
       var seen = {}; seen[cells.join(',')] = 1;
