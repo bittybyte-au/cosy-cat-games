@@ -184,8 +184,25 @@
     else if (step === 'colour') FLOWER.forEach(function (col, i) { html += '<button class="choice swatch" type="button" data-col="' + i + '" style="background:' + col + '" aria-label="Colour ' + (i + 1) + '"></button>'; });
     box.innerHTML = html;
     box.hidden = !html;
+    $('backBtn').hidden = !BACK[step];
     layout();
   }
+  /* back one step, undoing it: changed your mind about the pot, the seed, the colour ... */
+  var BACK = { seed: 'pot', soil: 'seed', plant: 'soil', water: 'plant', colour: 'water', sun: 'colour' };
+  function goBack() {
+    if (!grow || !BACK[grow.step]) return;
+    var to = BACK[grow.step];
+    if (to === 'colour' && !(findDef(PLANTS, grow.t) || {}).colour) to = 'water';   // this plant had no colour to pick
+    if (to === 'pot') { grow.pot = -1; grow.t = null; }
+    if (to === 'seed') { grow.t = null; grow.soil = 0; grow.scoops = []; }
+    if (to === 'soil') { grow.soil = 0; grow.scoops = []; grow.seed = false; }
+    if (to === 'plant') { grow.seed = false; grow.water = 0; grow.can = null; grow.canHeld = false; grow.drops = []; }
+    if (to === 'water') { grow.water = 0; grow.can = null; grow.canHeld = false; grow.drops = []; }
+    grow.anim = 0;
+    Sound.init(); Sound.pop(); buzz(6);
+    setStep(to);
+  }
+  $('backBtn').addEventListener('click', goBack);
   function potThumb(i) { var k = 'pot' + i; if (!thumbCache[k]) thumbCache[k] = thumb(function (c) { drawPot(c, i, 92); }, 104, 60); return thumbCache[k]; }
   function seedThumb(id) {
     var k = 'seed' + id;
@@ -209,7 +226,7 @@
       if (TODDLER) {
         // straight to a fully grown plant, in a colour of its own
         grow.soil = 3; grow.seed = true; grow.water = 1; grow.col = Math.floor(Math.random() * FLOWER.length);
-        grow.step = 'growing'; grow.g = 0.62; $('stepLabel').textContent = ''; setStepChoicesOff();
+        grow.step = 'growing'; grow.g = 0.62; $('stepLabel').textContent = ''; $('backBtn').hidden = true; setStepChoicesOff();
         var B0 = bench(); sparkle(B0.pot.x, B0.pot.y - 100, '#7CC4FF', 10, 0.9);
         return;
       }
@@ -233,7 +250,7 @@
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
       Sound.pick();
     } else if (grow.step === 'sun' && Math.hypot(r.x - B.sun.x, r.y - B.sun.y) < 90) {
-      grow.step = 'growing'; grow.anim = 0; $('stepLabel').textContent = 'Growing…'; Sound.pop();
+      grow.step = 'growing'; grow.anim = 0; $('stepLabel').textContent = 'Growing…'; $('backBtn').hidden = true; Sound.pop();
       sparkle(B.sun.x, B.sun.y, '#FFE14D', 12, 1.2);
     }
   }
