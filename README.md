@@ -14,7 +14,7 @@ Calm little browser games for kids. No ads, no tracking, nothing loaded from oth
 - `about/`, `faq/`, `feedback/` – information pages; the feedback form sends through Web3Forms (access key at the top of the script in `feedback/index.html`)
 - `fonts/` – Baloo 2 and Nunito, served from this site (SIL Open Font License)
 - `manifest.webmanifest`, `icons/` – home screen app support
-- `sw.js` – offline support. Bump `VERSION` in it whenever files change.
+- `sw.js` – offline support. Before committing changes to site files, run `node tools/update-sw.mjs`: it rewrites the file list in `sw.js` with a hash of each file, so devices download only the files that changed. New files are found automatically; there's no VERSION to bump.
 
 Toddler mode (toddler games only; a grown-up's sum to turn it off) appears on the games home once there are 3 live games marked `toddler: true` in `shared/games.js`.
 
