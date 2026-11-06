@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-93bc8bfd86';
+const VERSION = 'ccg-7dafa04d2c';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -23,7 +23,7 @@ const FILES = {
   "./shared/dishes.js": "214258eda0",
   "./shared/draw.js": "6af1578083",
   "./shared/game.css": "c916f187bf",
-  "./shared/games.js": "c6f65477b2",
+  "./shared/games.js": "0d407fbf69",
   "./shared/install.js": "1c67ffafad",
   "./shared/site.css": "be553f2b0e",
   "./shared/store.js": "e38fa9fa84",
@@ -77,6 +77,9 @@ const FILES = {
   "./games/kitty-pop/": "2d5e6afe11",
   "./games/kitty-pop/index.html": "2d5e6afe11",
   "./games/kitty-pop/specials.js": "b0ff751532",
+  "./games/laser/game.js": "9c1687faf1",
+  "./games/laser/": "85b9b06d37",
+  "./games/laser/index.html": "85b9b06d37",
   "./games/mouse-pop/game.js": "f945ded58b",
   "./games/mouse-pop/": "5d7b278af9",
   "./games/mouse-pop/index.html": "5d7b278af9",
@@ -86,6 +89,9 @@ const FILES = {
   "./games/puzzle/game.js": "1d10ebda95",
   "./games/puzzle/": "b9d7c84155",
   "./games/puzzle/index.html": "b9d7c84155",
+  "./games/rooftop/game.js": "b5e362a4ee",
+  "./games/rooftop/": "d7b6e10f5b",
+  "./games/rooftop/index.html": "d7b6e10f5b",
   "./games/seek/game.js": "e3217528f5",
   "./games/seek/": "eea616cf33",
   "./games/seek/index.html": "eea616cf33",

@@ -265,7 +265,26 @@
         return sh(R(c[0] - 4.5, c[2], 9, 76 - c[2], 3), c[1], { lw: 3, k: 0 }) + sh(P(c[0], c[2] - 20, 'q8 10 0 15q-8 -5 0 -15z'), '#FFC93C', { lw: 2.5, k: 0 });
       }).join('') +
       sh(E(124, 110, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) + sh(E(176, 112, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) +
-      sh(P(150, 120, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 }))
+      sh(P(150, 120, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 })),
+
+    laser: svg(
+      sh(R(8, 8, 224, 134, 16), '#6B4F57', { lw: 4, k: 0, in: ln('M8 52h224M8 96h224M60 8v44M150 52v44M100 96v46M200 8v44', 2, 'rgba(42,35,64,.3)') }) +
+      ln('M48 112H150V56', 10, 'rgba(255,60,90,.35)') + ln('M48 112H150V56', 4, '#FFC2CC') +
+      sh(R(18, 104, 34, 16, 6), '#B9C0D6', { lw: 3, k: 3 }) + sh(R(48, 106, 8, 12, 3), '#FF5A6E', { lw: 2.5, k: 0 }) +
+      sh(P(138, 124, 'l26 -26l7 7l-26 26z'), '#F2C27B', { lw: 3, k: 2, in: ln('M144 120l18 -18', 3, '#CDEEFF') }) +
+      cat({ preset: 'ginger', pose: 'lie', face: 'happy', x: 158, y: 44, size: 64 }) +
+      el(150, 60, 9, 9, 'rgba(255,80,110,.5)') + el(150, 60, 3.5, 3.5, '#FFE3E8') +
+      sh(P(196, 120, 'h22l-4 18h-14z'), '#E58B5E', { lw: 3, k: 2 }) + sh(E(201, 112, 5, 11), '#5DBB72', { lw: 2.5, k: 0 }) + sh(E(212, 112, 5, 11), '#5DBB72', { lw: 2.5, k: 0 })),
+
+    rooftop: svg(
+      sh(R(0, 0, 240, 150, 0), '#2E2A55', { lw: 0, k: 0 }) +
+      el(196, 30, 15, 15, '#FFF1C9') + '<circle cx="196" cy="30" r="15" fill="none"' + stroke(2.5) + '/>' +
+      el(30, 20, 1.6, 1.6, '#FFF6D8') + el(70, 40, 1.4, 1.4, '#FFF6D8') + el(120, 16, 1.8, 1.8, '#FFF6D8') + el(150, 50, 1.3, 1.3, '#FFF6D8') + el(225, 70, 1.5, 1.5, '#FFF6D8') +
+      sh(R(-6, 100, 104, 60, 2), '#7A5C8E', { lw: 3.5, k: 0, in: '<rect x="12" y="114" width="16" height="20" rx="3" fill="#FFD98A"/><rect x="44" y="114" width="16" height="20" rx="3" fill="#4A3F6B"/><rect x="76" y="114" width="16" height="20" rx="3" fill="#FFD98A"/>' }) +
+      sh(R(138, 88, 110, 70, 2), '#5E6B9E', { lw: 3.5, k: 0, in: '<rect x="152" y="104" width="16" height="20" rx="3" fill="#4A3F6B"/><rect x="186" y="104" width="16" height="20" rx="3" fill="#FFD98A"/><rect x="220" y="104" width="16" height="20" rx="3" fill="#FFD98A"/>' }) +
+      sh(R(196, 62, 22, 26, 2), '#B65A4B', { lw: 3, k: 3 }) +
+      [[100, 52], [120, 42], [140, 46]].map(function (q) { return sh(P(q[0] - 10, q[1], 'q6 -7 12 -3l6 -4v12l-6 -4q-6 4 -12 -1z'), '#7CC4FF', { lw: 2.5, k: 0 }); }).join('') +
+      cat({ preset: 'ginger', pose: 'walk', face: 'happy', x: 80, y: 56, size: 50, step: 1, moving: true, dir: 1, t: 'rotate(-12 70 70)' }))
   };
 
   var GAMES = [
@@ -373,6 +392,16 @@
       id: 'kitten-kitchen', save: 'kittenkitchen', name: 'Kitten Kitchen', blurb: 'Decorate pizza, pancakes and cake',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE2C7',
       art: ART.kittenkitchen
+    },
+    {
+      id: 'laser', save: 'laser', name: 'Laser Bounce', blurb: 'Bounce the laser to every cat',
+      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#D9CCF2',
+      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.laser
+    },
+    {
+      id: 'rooftop', save: 'rooftop', name: 'Rooftop Run', blurb: 'Leap across the city at night',
+      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C9CBEF',
+      badge: function (p) { return p && p.best ? 'Best ' + p.best + ' m' : ''; }, art: ART.rooftop
     }
   ];
 
