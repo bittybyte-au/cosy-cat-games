@@ -43,12 +43,13 @@
 
   var G = null;        // the current run
   var state = 'card';  // 'card' | 'run' | 'over'
-  function newRun() {
-    G = { x: 0, y: 400, vy: 0, speed: SPEED0, ground: true, jumps: 0, coyote: 0, buffer: 0, holdT: 0, held: false,
+  function newRun(x0) {
+    x0 = x0 || 0;
+    G = { x: x0, y: 400, clouds: [], vy: 0, speed: SPEED0, ground: true, jumps: 0, coyote: 0, buffer: 0, holdT: 0, held: false,
       bldgs: [], fishes: [], parts: [], pops: [], got: 0, dist: 0, dead: null, deadT: 0, step: 0, tilt: 0, nextMark: 100, landT: 0 };
     // a long first roof to get going
-    G.bldgs.push(makeBldg(-400, 1100, 420, 0));
-    while (lastEdge() < 2600) addBldg();
+    G.bldgs.push(makeBldg(x0 - 400, 1100, 420, 0));
+    while (lastEdge() < x0 + 2600) addBldg();
     G.y = 420;
     renderHud();
   }
@@ -69,6 +70,20 @@
     if (gap > sp * 0.62) rise = Math.min(rise, 20);                                            // big gaps don't also go up much
     var top = clamp(prev.top - rise, 300, 510);
     var w = rand(lerp(520, 300, hard), lerp(1100, 700, hard));
+    // from 300 m: sometimes a staircase of clouds over a wide gap, up to a taller building
+    var steps = dist >= 300 && prev.top > 330 && Math.random() < 0.22 + hard * 0.18;
+    if (steps) {
+      var cx = prev.x + prev.w, ctop = prev.top, nC = Math.random() < 0.5 ? 2 : 3;
+      for (var ci = 0; ci < nC; ci++) {
+        var cwid = rand(130, 170);
+        cx += rand(0.28, 0.42) * sp; ctop -= rand(70, 92);
+        G.clouds.push({ x: cx, w: cwid, top: ctop, seed: Math.random() });
+        for (var cf = 0; cf < 2; cf++) G.fishes.push({ x: cx + cwid * (0.35 + cf * 0.3), y: ctop - 40, gold: ci === nC - 1 && cf === 1 && Math.random() < 0.4, got: false });
+        cx += cwid;
+      }
+      gap = cx + rand(0.28, 0.42) * sp - (prev.x + prev.w);
+      top = clamp(ctop - rand(-30, 50), 200, 510);
+    }
     var b = makeBldg(prev.x + prev.w + gap, w, top, prev.n + 1);
     // things on the roof: chimneys and air-con boxes (hop over them or onto them)
     var x = b.x + rand(140, 220);
@@ -88,7 +103,7 @@
     }
     // fish along the jump over the gap; sometimes a gold one at the top
     var gx = prev.x + prev.w, gy = Math.min(prev.top, b.top);
-    if (Math.random() < 0.7) for (var k = 0; k < 4; k++) {
+    if (!steps && Math.random() < 0.7) for (var k = 0; k < 4; k++) {
       var t = (k + 0.5) / 4;
       G.fishes.push({ x: gx - 40 + (gap + 80) * t, y: gy - 60 - Math.sin(t * Math.PI) * (70 + Math.min(gap, 300) * 0.25), gold: k === 1 && Math.random() < 0.18, got: false });
     }
@@ -129,6 +144,10 @@
   function groundAt(x, prevFeet, feet) {
     // the highest surface under the cat (between its back and front paws) that it was above last frame
     var best = null;
+    G.clouds.forEach(function (o) {
+      if (x + CAT_W * 0.3 < o.x || x - CAT_W * 0.45 > o.x + o.w) return;
+      if (prevFeet <= o.top + 2 && feet >= o.top && (best === null || o.top < best)) best = o.top;
+    });
     G.bldgs.forEach(function (b) {
       if (x + CAT_W * 0.3 < b.x || x - CAT_W * 0.45 > b.x + b.w) return;
       if (prevFeet <= b.top + 2 && feet >= b.top && (best === null || b.top < best)) best = b.top;
@@ -142,6 +161,7 @@
   function supportAt(x, feet) {
     // is the cat standing on something right now?
     var on = false;
+    G.clouds.forEach(function (o) { if (x + CAT_W * 0.3 >= o.x && x - CAT_W * 0.45 <= o.x + o.w && Math.abs(feet - o.top) < 1.5) on = true; });
     G.bldgs.forEach(function (b) {
       if (x + CAT_W * 0.3 >= b.x && x - CAT_W * 0.45 <= b.x + b.w && Math.abs(feet - b.top) < 1.5) on = true;
       b.obs.forEach(function (o) { if (x + CAT_W * 0.3 >= o.x && x - CAT_W * 0.45 <= o.x + o.w && Math.abs(feet - o.top) < 1.5) on = true; });
@@ -161,6 +181,7 @@
   }
   function update(dt) {
     if (!G) return;
+    followCam(dt);
     if (state === 'over') {
       G.deadT += dt;
       if (G.dead === 'bump') { G.vy += GRAV * dt; G.y += G.vy * dt; G.x -= 60 * dt; G.tilt -= dt * 6; }
@@ -209,6 +230,7 @@
     // build ahead, tidy behind
     while (lastEdge() < G.x + 2400) addBldg();
     while (G.bldgs.length && G.bldgs[0].x + G.bldgs[0].w < G.x - 900) G.bldgs.shift();
+    G.clouds = G.clouds.filter(function (o) { return o.x + o.w > G.x - 900; });
     G.fishes = G.fishes.filter(function (f) { return f.x > G.x - 600; });
     updateParts(dt);
     if (G.dist !== lastHud) renderHud();
@@ -247,7 +269,15 @@
 
   /* ================= drawing ================= */
   var ctx = canvas.getContext('2d');
-  var cw = 0, ch = 0, dpr = 1, K = 1, VW = 760, VH = 560, camX = 0, camY = 0;
+  var cw = 0, ch = 0, dpr = 1, K = 1, VW = 760, VH = 560, camX = 0, camY = 0, camBase = 0, topGap = 70;
+  // the view rises when the cat climbs or jumps high, so it never leaves the top of the screen, and settles back
+  function followCam(dt) {
+    if (!G) return;
+    // keep the cat's head clear of the top bar, with a little air above it
+    var margin = (topGap + 24) / K, catTop = G.y - 115, target = Math.min(camBase, catTop - margin);
+    if (catTop - margin < camY) camY = Math.min(camY, catTop - margin + 30);      // never let it get past the edge
+    camY += (target - camY) * Math.min(1, dt * (target < camY ? 14 : 3));
+  }
   var stars = [], far = [], mid = [];
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -255,10 +285,12 @@
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
     // wide screens see 760 units across; phones held upright see a bit less (600) so the cat isn't tiny
-    K = Math.min(ch / 560, cw / (cw < ch ? 600 : 760));
+    // at least 700 units of height (room above the roofs for big jumps, e.g. on an iPad held sideways)
+    K = Math.min(ch / 700, cw / (cw < ch ? 600 : 820));
     VW = cw / K; VH = ch / K;
     // the street level (world y 640) sits at the bottom of the screen
-    camY = 640 - VH;
+    camBase = 660 - VH; camY = camBase;
+    topGap = document.getElementById('topbar').getBoundingClientRect().bottom || 70;
     if (!stars.length) for (var i = 0; i < 90; i++) stars.push({ x: Math.random(), y: Math.random(), r: rand(0.8, 2.2), tw: rand(0, TAU) });
     if (!far.length) { var x = 0; while (x < 4000) { var w = rand(60, 160); far.push({ x: x, w: w, h: rand(80, 220), win: Math.random() }); x += w + rand(0, 20); } }
     if (!mid.length) { var x2 = 0; while (x2 < 5000) { var w2 = rand(90, 220); mid.push({ x: x2, w: w2, h: rand(120, 300), tank: Math.random() < 0.2, seed: Math.random() * 1e6 | 0 }); x2 += w2 + rand(10, 50); } }
@@ -359,6 +391,22 @@
       c.restore();
     });
   }
+  function drawCloud(c, o) {
+    // a soft cloud to stand on: flat-ish on top (where the paws go), puffy below
+    var x = wx(o.x), y = wy(o.top);
+    if (x > cw + 20 || x + o.w * K < -20) return;
+    c.save(); c.translate(x, y); c.scale(K, K);
+    var w = o.w, bob = reduceMotion ? 0 : Math.sin(time * 2 + o.seed * 9) * 1.5;
+    c.translate(0, bob);
+    D.shape(c, function (p) {
+      p.moveTo(10, 4);
+      p.quadraticCurveTo(w * 0.25, -6, w * 0.5, 2); p.quadraticCurveTo(w * 0.75, -6, w - 10, 4);
+      p.quadraticCurveTo(w + 8, 14, w - 6, 26); p.quadraticCurveTo(w * 0.8, 46, w * 0.6, 34);
+      p.quadraticCurveTo(w * 0.45, 50, w * 0.3, 36); p.quadraticCurveTo(w * 0.12, 44, 6, 28); p.quadraticCurveTo(-10, 16, 10, 4); p.closePath();
+    }, '#F3EEFF', { lw: D.LW.mid, depth: 7 });
+    c.beginPath(); c.ellipse(w * 0.3, 10, w * 0.12, 4, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.9)'; c.fill();
+    c.restore();
+  }
   function drawFish(c, f) {
     if (f.got) return;
     var x = wx(f.x), y = wy(f.y + Math.sin(time * 4 + f.x * 0.01) * 4);
@@ -392,6 +440,7 @@
     skyline(c, far, 0.15, 640, '#2D2752', 'rgba(255,217,138,.35)', false);
     skyline(c, mid, 0.4, 680, '#3C3366', 'rgba(255,217,138,.55)', true);
     G.bldgs.forEach(function (b) { drawBldg(c, b); });
+    G.clouds.forEach(function (o) { drawCloud(c, o); });
     G.fishes.forEach(function (f) { drawFish(c, f); });
     drawCat(c);
     G.parts.forEach(function (p) {
@@ -495,18 +544,22 @@
   window.__roof = {
     state: function () { return { state: state, x: G.x, y: G.y, vy: G.vy, ground: G.ground, jumps: G.jumps, dist: G.dist, got: G.got, speed: G.speed, dead: G.dead, best: P.best }; },
     start: start,
+    startAt: function (m) { $('cardWrap').hidden = true; newRun(m * 40); state = 'run'; },
+    clouds: function () { return G.clouds.length; },
+    screenY: function () { return { head: (G.y - 115 - camY) * K, feet: (G.y - camY) * K, h: ch, onCloud: G.clouds.some(function (o) { return G.ground && Math.abs(G.y - o.top) < 2 && G.x >= o.x - 30 && G.x <= o.x + o.w + 20; }) }; },
     // a simple autopilot for testing that runs are possible: jumps at edges and before obstacles
     auto: function () {
       if (state !== 'run') return;
       var ahead = null, edge = null;
-      G.bldgs.forEach(function (b) {
+      G.bldgs.concat(G.clouds).forEach(function (b) {
         if (b.x + b.w > G.x && b.x + b.w < G.x + G.speed * 0.35 && G.ground && Math.abs(G.y - b.top) < 2) edge = b;
+        if (!b.obs) return;
         b.obs.forEach(function (o) { if (o.x > G.x && o.x - G.x < G.speed * 0.28) ahead = o; });
       });
       if ((edge || ahead) && G.ground) { press(); setTimeout(release, 200); }
       else if (!G.ground && G.vy > 120 && G.jumps < 2) {
         // falling with nothing under us: use the second jump
-        var under = false; G.bldgs.forEach(function (b) { if (G.x >= b.x - 20 && G.x <= b.x + b.w && b.top >= G.y) under = true; });
+        var under = false; G.bldgs.concat(G.clouds).forEach(function (b) { if (G.x >= b.x - 20 && G.x <= b.x + b.w && b.top >= G.y) under = true; });
         if (!under) { press(); setTimeout(release, 200); }
       }
     }
