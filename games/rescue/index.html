@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cat Rescue</title>
+<meta name="theme-color" content="#FFF0DC">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Cat Rescue: the rescue scene and the board share one canvas; the goal and moves sit in a bar between them
+   (beside the board, under the scene, on wide screens). game.js places the bar. Single bright look by design. */
+:root { --wall: #FFF0DC; --wall2: #FFE3C4; }
+body { background: var(--wall) radial-gradient(circle at 14px 14px, var(--wall2) 5px, transparent 6px) 0 0 / 44px 44px; }
+.topbar .middle { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.level { font-size: 1.05rem; }
+.hud {
+  position: fixed; z-index: 5; display: flex; align-items: stretch; gap: 8px; left: 12px; top: 0; width: 300px;
+}
+.goals {
+  flex: 1; min-width: 0; display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 4px 0 var(--ink), var(--soft); padding: 4px 8px;
+}
+.goal { display: flex; align-items: center; gap: 3px; font: 800 1.15rem/1 var(--display); white-space: nowrap; border-radius: 12px; padding: 2px 6px 2px 2px; }
+.goal img { width: 34px; height: 34px; display: block; }
+.goal small { font-size: .85rem; color: var(--muted); }
+.goal.done { background: var(--grass); }
+.goal.done small { color: var(--ink); }
+.goal.bump { animation: bump .3s ease; }
+.moves {
+  flex: none; min-width: 74px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 4px 0 var(--ink), var(--soft); padding: 2px 8px;
+}
+.moves b { font: 800 1.7rem/1 var(--display); }
+.moves span { font: 800 .72rem/1 var(--body); color: var(--muted); }
+.moves.low { background: #FFE0A8; }
+.moves.plus { background: var(--grass); }
+.say {
+  position: fixed; z-index: 6; left: 50%; top: 0; transform: translate(-50%, 0); width: max-content; max-width: min(92vw, 420px);
+  font-size: clamp(1rem, 4vw, 1.2rem); border-radius: 22px; padding: 8px 16px; pointer-events: none; transition: opacity .3s ease;
+}
+.say small { display: block; font: 700 .92rem/1.3 var(--body); color: var(--muted); margin-top: 3px; }
+.say.hide { opacity: 0; }
+.card .row { width: 100%; }
+#win, #fail { background: none; }
+#win .card, #fail .card { gap: 12px; padding: 18px 16px; }
+.card .sub { font-size: 1rem; }
+.big.plain { background: #fff; }
+/* the list of rescues */
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.lv {
+  position: relative; aspect-ratio: 1; border-radius: 18px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 4px 0 var(--ink), var(--soft);
+  font: 800 1.35rem/1 var(--display); color: var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+}
+.lv:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.lv.done { background: var(--grass); }
+.lv.next { background: var(--sun); animation: hop .7s ease-in-out infinite alternate; }
+.lv:disabled { opacity: .5; cursor: default; box-shadow: 0 4px 0 rgba(42,35,64,.5); }
+.lv .tick, .lv .lock { position: absolute; right: -6px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2.5px solid var(--ink); display: grid; place-items: center; }
+.lv .lock { background: var(--cream); }
+.lv svg { width: 16px; height: 16px; }
+#listWrap .panel { max-height: 100%; overflow-y: auto; }
+#listWrap .note { margin-top: -6px; }
+@media (max-width: 400px) { .levels { gap: 8px; } .lv { font-size: 1.15rem; border-radius: 14px; } .goal img { width: 28px; height: 28px; } .goal { font-size: 1rem; } .moves b { font-size: 1.45rem; } }
+@media (prefers-reduced-motion: reduce) { .lv.next, .goal.bump { animation: none; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" tabindex="0" aria-label="The rescue board. Swap two neighbouring pieces to make a line of three or more. Arrow keys move, space or enter picks a piece, then an arrow swaps it."></canvas>
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle">
+    <div class="level" id="levelLabel">Rescue 1</div>
+    <button class="round" id="listBtn" type="button" aria-label="All rescues"><svg viewBox="0 0 32 32"><path d="M7 9.5 L9 11.5 L12.5 7.5" fill="none" stroke="#4FB868" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.5 L9 19.5 L12.5 15.5" fill="none" stroke="#4FB868" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="25" r="2.6" fill="#FFC93C" stroke="#2A2340" stroke-width="2"/><path d="M16 9.5 H26 M16 17.5 H26 M16 25 H26" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/></svg></button>
+  </div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="hud" id="hud" hidden>
+  <div class="goals" id="goals" aria-live="polite"></div>
+  <div class="moves" id="moves" aria-live="polite"><b id="movesN">0</b><span id="movesL">moves left</span></div>
+</div>
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="win" id="win" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <h2 id="winTitle">Rescued!</h2>
+    <p id="winNote"></p>
+    <div class="row">
+      <button class="big" id="nextBtn" type="button"><span id="nextLabel">Next rescue</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <button class="big plain" id="winListBtn" type="button">All rescues</button>
+  </div>
+</div>
+
+<div class="win" id="fail" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="failTitle">
+    <h2 id="failTitle">Splash!</h2>
+    <p id="failNote"></p>
+    <div class="row">
+      <button class="big again" id="retryBtn" type="button">Try again</button>
+      <button class="big" id="plusBtn" type="button">5 more moves</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="listWrap" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="listTitle">
+    <h2 id="listTitle">Cat Rescue</h2>
+    <p class="note" id="listNote">Pick a rescue. Each one saves a cat from a little bit of trouble.</p>
+    <div class="levels" id="levels"></div>
+    <button class="big plain" id="listClose" type="button" hidden>Back to the rescue</button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="levels.js"></script>
+<script src="engine.js"></script>
+<script src="scenes.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
