@@ -256,6 +256,20 @@
         ln('M228 114H198', 3.5) + ln('M206 106L198 114L206 122', 3.5));
     })(),
 
+    rescue: svg(
+      // a cardboard box burst open, a kitten popping out, scampering over to the cosy basket where a cat is already safe
+      shadow(66, 136, 46, 4) +
+      sh(P(34, 68, 'l6 -16h52l6 16z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(24, 78, 'l10 -10h64l10 10z'), '#9C6A3A', { lw: 3, k: 0 }) +
+      sh(P(24, 78, 'l10 -10l-20 -12l-12 10z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(108, 78, 'l-10 -10l20 -12l12 10z'), '#D9A066', { lw: 3, k: 0 }) +
+      cat({ preset: 'white', pose: 'peek', face: 'happy', x: 66, y: 52, size: 54 }) +
+      sh(R(24, 78, 84, 58, 4), '#E2A866', { k: 4, in: '<rect x="24" y="78" width="84" height="12" fill="#F3C88E"/><rect x="58" y="78" width="14" height="58" fill="#C98B5B"/>' }) +
+      sh(R(-6, -4, 12, 8, 2), '#E2A866', { lw: 2.5, k: 0, t: 'translate(14 46) rotate(-30)' }) + sh(R(-5, -4, 10, 8, 2), '#E2A866', { lw: 2.5, k: 0, t: 'translate(120 40) rotate(25)' }) +
+      ln('M100 30Q138 4 168 38', 3, 0, ' stroke-dasharray="6 6"') + ln('M160 34L169 40L170 29', 3) +
+      shadow(188, 138, 40, 4) +
+      sh(E(188, 104, 36, 9), '#9C6A3A', { lw: 3, k: 0, in: el(188, 107, 28, 6, '#FF9EC4') }) +
+      cat({ preset: 'ginger', pose: 'peek', face: 'happy', x: 188, y: 76, size: 46 }) +
+      sh(P(152, 102, 'h72l-8 32q-28 6 -56 0z'), '#E6B477', { k: 4, in: ln('M164 102l4 36M178 102l2 38M194 102l-1 38M208 102l-4 36M152 118q36 6 72 0', 2.5, '#C98B5B') }) +
+      sh(P(224, 24, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 }) + sh(P(212, 50, 'c-7 -6 -4 -11 0 -8c4 -3 7 2 0 8z'), '#FF8FAB', { lw: 2.5, k: 0 })),
     kittenkitchen: svg(
       cat({ preset: 'ginger', face: 'happy', x: 50, y: 70, size: 60 }) +
       shadow(150, 136, 80, 7) + sh(E(150, 128, 76, 13), '#fff', { k: 3 }) +
@@ -347,6 +361,12 @@
       id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
       art: ART.slide
+    },
+    {
+      id: 'rescue', save: 'rescue', name: 'Cat Rescue', blurb: 'Match to free kittens from boxes',
+      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
+      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' cat rescued' : ' cats rescued') : ''; },
+      art: ART.rescue
     },
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
