@@ -3,7 +3,8 @@
    Finish the picture and it bounces and sparkles, then the next one comes. Picture buttons at the top choose 2, 4 or 6
    pieces (remembered).
    A piece dropped in the wrong place just stays there. A piece wiggles as a hint after a quiet while.
-   Saves a count to GG.setProgress('puzzle', { done }). */
+   Saves GG.setProgress('puzzle', { done: puzzles finished, pics: [picture numbers finished at least once], size }).
+   The games list counts pics out of the 6 pictures (shared/games.js). */
 (function () {
   'use strict';
 
@@ -173,7 +174,7 @@
   function toScene(x, y) { return { x: (x - OX) / K, y: (y - OY) / K }; }
 
   /* ================= a puzzle ================= */
-  var P = (function () { var p = {}; try { p = GG.getProgress('puzzle') || {}; } catch (e) {} if (typeof p.done !== 'number') p.done = 0; if ([2, 4, 6].indexOf(p.size) < 0) p.size = 2; return p; })();
+  var P = (function () { var p = {}; try { p = GG.getProgress('puzzle') || {}; } catch (e) {} if (typeof p.done !== 'number') p.done = 0; if (!Array.isArray(p.pics)) p.pics = []; if ([2, 4, 6].indexOf(p.size) < 0) p.size = 2; return p; })();
   function save() { try { GG.setProgress('puzzle', P); } catch (e) {} }
   var pieces = [], pic = 0, lastPic = -1, time = 0, parts = [], drag = null, idleT = 0, done = 0, round = 0;
   /* A piece is the whole picture clipped to its shape, drawn around its middle (px, py). While it waits in the
@@ -201,7 +202,10 @@
   });
   function newPuzzle() {
     var n = GRIDS[P.size] ? P.size : 2;
-    do { pic = Math.floor(Math.random() * PICTURES.length); } while (pic === lastPic);
+    // pictures not finished yet come first, so every picture gets its turn
+    var fresh = []; for (var i = 0; i < PICTURES.length; i++) if (P.pics.indexOf(i) < 0 && i !== lastPic) fresh.push(i);
+    if (fresh.length) pic = fresh[Math.floor(Math.random() * fresh.length)];
+    else do { pic = Math.floor(Math.random() * PICTURES.length); } while (pic === lastPic && PICTURES.length > 1);
     lastPic = pic;
     if (window.GG && GG.track) GG.track('Start puzzle', { game: 'puzzle', picture: PICTURES[pic].name || String(pic), pieces: n });
     pieces = cut(n);
@@ -249,7 +253,7 @@
       p.placed = true; p.t = 0; p.fx = p.px; p.fy = p.py;
       Sound.snap(); buzz(15);
       sparkle(BOARD.x + p.cx * BOARD.s, BOARD.y + p.cy * BOARD.s, '#FFD23F', 8, 0.8);
-      if (pieces.every(function (q) { return q.placed; })) { done = 0.01; round++; P.done++; save(); if (GG.stat) GG.stat('puzzle', 'done', 1); }
+      if (pieces.every(function (q) { return q.placed; })) { done = 0.01; round++; P.done++; if (P.pics.indexOf(pic) < 0) P.pics.push(pic); save(); if (GG.stat) GG.stat('puzzle', 'done', 1); }
     } else {
       Sound.drop();
       // dropped somewhere else: it shrinks back down where it is (kept on screen)

@@ -103,6 +103,11 @@ body.toddler #undoBtn span.lab { display: inline; }
   .tool span.lab { display: none; }
   .sw { width: 42px; height: 42px; }
 }
+/* coloured pages: a tick in the corner, and a count under the heading */
+.pg { position: relative; }
+.pg .tick { position: absolute; top: -8px; right: -8px; width: 30px; height: 30px; border-radius: 50%; background: var(--grass); border: 3px solid var(--ink); display: grid; place-items: center; }
+.pg .tick svg { width: 18px; height: 18px; }
+.picker .count { margin: -6px 0 4px; font: 800 1rem var(--body); color: var(--muted); }
 </style>
 </head>
 <body class="game">
@@ -122,6 +127,7 @@ body.toddler #undoBtn span.lab { display: inline; }
 <section class="picker" id="picker" aria-labelledby="pickTitle">
   <div class="inner">
     <h2 id="pickTitle">What shall we colour?</h2>
+    <p class="count" id="pagesCount"></p>
     <div class="pages" id="pages"></div>
     <h2>My pictures</h2>
     <div class="gallery" id="gallery"></div>
