@@ -510,7 +510,9 @@
     {
       id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
       ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
-      levels: 12, done: function (p) { var s = p && p.solved, n = 0; if (s && typeof s === 'object') Object.keys(s).forEach(function (k) { if (Array.isArray(s[k])) n += (s[k].indexOf(3) >= 0) + (s[k].indexOf(4) >= 0); }); return n; }, art: ART.slide
+      // a total, not levels: every picture is open at any size
+      badge: function (p) { var n = p ? (p.n3 | 0) + (p.n4 | 0) : 0; return n ? n + ' solved' : ''; },
+      art: ART.slide
     },
     {
       id: 'rescue', save: 'rescue', name: 'Cat Rescue', blurb: 'Match to free kittens from boxes',
