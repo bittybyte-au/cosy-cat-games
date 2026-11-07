@@ -158,6 +158,12 @@
     // the cat: reverse straight away, otherwise turn at the next middle of a cell
     var c = G.cat;
     if ((c.want[0] || c.want[1]) && c.want[0] === -c.dir[0] && c.want[1] === -c.dir[1]) { var ox = c.tx, oy = c.ty; c.tx = ox - c.dir[0]; c.ty = oy - c.dir[1]; c.dir = c.want.slice(); }
+    // a turn pressed a moment too late: if the cat has only just gone past an opening that way, it pops back
+    // to that corner and takes the turn, so you don't have to press at exactly the right moment
+    if ((c.want[0] || c.want[1]) && (c.dir[0] || c.dir[1]) && c.want[0] * c.dir[0] + c.want[1] * c.dir[1] === 0) {
+      var bx = c.tx - c.dir[0], by = c.ty - c.dir[1], past = Math.abs(c.x - bx) + Math.abs(c.y - by);
+      if (past > 0 && past < 0.55 && open(bx + c.want[0], by + c.want[1])) { c.x = bx; c.y = by; c.dir = c.want.slice(); c.tx = bx + c.dir[0]; c.ty = by + c.dir[1]; }
+    }
     step(c, CAT_SPEED, dt, catChoose);
     if (c.dir[0]) c.face = c.dir[0];
     G.munch = c.dir[0] || c.dir[1] ? G.munch + dt : 0;
