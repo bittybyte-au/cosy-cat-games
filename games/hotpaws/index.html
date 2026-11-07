@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Hot Paws</title>
+<meta name="theme-color" content="#231C3D">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Hot Paws: a light-up floor in a cosy dark games room. One canvas for the room, the floor and the cat; the
+   diamond count sits under the top bar and short instructions under the floor (game.js places them).
+   Single night look by design, so the lights glow. */
+body { background: #231C3D; }
+.topbar .middle { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.hud {
+  position: fixed; z-index: 5; left: 0; right: 0; margin: 0 auto; width: max-content; top: 0; display: flex; align-items: center; gap: 10px;
+  background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink), var(--soft);
+  padding: 4px 14px 4px 6px; font: 800 1.25rem/1 var(--display); white-space: nowrap;
+}
+.hud svg { width: 34px; height: 34px; display: block; flex: none; }
+.hud small { font-size: .95rem; color: var(--muted); }
+.hud .bar { width: clamp(70px, 22vw, 150px); height: 14px; border-radius: 999px; border: 2.5px solid var(--ink); background: #E9E2F5; overflow: hidden; }
+.hud .bar i { display: block; height: 100%; width: 0; background: #5DB6F5; border-right: 2.5px solid var(--ink); transition: width .35s ease; box-shadow: inset 0 3px 0 rgba(255,255,255,.45); }
+.hud .bar i.full { border-right: 0; }
+.hud.bump { animation: bump .3s ease; }
+.hud.ouch b { color: #D9322B; }
+.say {
+  position: fixed; z-index: 6; left: 50%; top: 0; transform: translate(-50%, 0); width: max-content; max-width: min(92vw, 440px);
+  font-size: clamp(1rem, 4vw, 1.2rem); border-radius: 22px; padding: 8px 16px; pointer-events: none; transition: opacity .3s ease;
+}
+.say small { display: block; font: 700 .92rem/1.3 var(--body); color: var(--muted); margin-top: 3px; }
+.say.hide { opacity: 0; }
+#win { background: rgba(35, 28, 61, .25); }
+#win .card { gap: 12px; padding: 18px 16px; }
+.card .row { width: 100%; }
+.big.plain { background: #fff; }
+/* the list of rounds */
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.lv {
+  position: relative; aspect-ratio: 1; border-radius: 18px; border: 3px solid var(--ink); background: #fff; box-shadow: 0 4px 0 var(--ink), var(--soft);
+  font: 800 1.35rem/1 var(--display); color: var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+}
+.lv:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.lv.done { background: var(--grass); }
+.lv.next { background: #8FD0FF; animation: hop .7s ease-in-out infinite alternate; }
+.lv:disabled { opacity: .5; cursor: default; box-shadow: 0 4px 0 rgba(42,35,64,.5); }
+.lv .tick, .lv .lock { position: absolute; right: -6px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2.5px solid var(--ink); display: grid; place-items: center; }
+.lv .lock { background: var(--cream); }
+.lv svg { width: 16px; height: 16px; }
+#listWrap { background: rgba(26, 20, 46, .6); }
+#listWrap .panel { max-height: 100%; overflow-y: auto; }
+#listWrap .note { margin-top: -6px; }
+.panel .how { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; font: 800 .9rem/1.2 var(--body); color: var(--muted); }
+.panel .how span { display: flex; align-items: center; gap: 5px; }
+.panel .how svg { width: 24px; height: 24px; flex: none; }
+@media (max-width: 400px) { .levels { gap: 8px; } .lv { font-size: 1.15rem; border-radius: 14px; } .hud { font-size: 1.1rem; } .hud svg { width: 28px; height: 28px; } }
+@media (prefers-reduced-motion: reduce) { .lv.next, .hud.bump { animation: none; } .hud .bar i { transition: none; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" tabindex="0" aria-label="The light-up floor. Swipe, tap a tile next to the cat, or use the arrow keys or W A S D to move one tile. Step on blue diamond tiles to collect them. Orange tiles are about to turn to lava; red tiles are lava."></canvas>
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle">
+    <div class="level" id="levelLabel">Round 1</div>
+    <button class="round" id="listBtn" type="button" aria-label="All rounds"><svg viewBox="0 0 32 32"><path d="M7 9.5 L9 11.5 L12.5 7.5" fill="none" stroke="#4FB868" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17.5 L9 19.5 L12.5 15.5" fill="none" stroke="#4FB868" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="25" r="2.6" fill="#5DB6F5" stroke="#2A2340" stroke-width="2"/><path d="M16 9.5 H26 M16 17.5 H26 M16 25 H26" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/></svg></button>
+  </div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="hud" id="hud" hidden aria-live="polite">
+  <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="3" width="34" height="34" rx="8" fill="#5DB6F5" stroke="#2A2340" stroke-width="3"/><path d="M14.5 11.5H25.5L30 16.5L20 30L10 16.5Z" fill="#E8F6FF" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><path d="M10 16.5H30M17 16.5L20 30L23 16.5M14.5 11.5L17 16.5M25.5 11.5L23 16.5" fill="none" stroke="#2A2340" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  <span><b id="gotN">0</b><small id="goalN"> / 6</small></span>
+  <span class="bar"><i id="barFill"></i></span>
+</div>
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="win" id="win" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <h2 id="winTitle">Round done!</h2>
+    <p id="winNote"></p>
+    <div class="row">
+      <button class="big" id="nextBtn" type="button"><span id="nextLabel">Next round</span><svg viewBox="0 0 32 32"><path d="M12 6 L22 16 L12 26" fill="none" stroke="#2A2340" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <button class="big plain" id="winListBtn" type="button">All rounds</button>
+  </div>
+</div>
+
+<div class="overlay" id="listWrap" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="listTitle">
+    <h2 id="listTitle">Hot Paws</h2>
+    <p class="note" id="listNote">Step on the blue diamonds. Keep your paws off the red lava!</p>
+    <div class="how" aria-hidden="true">
+      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5DB6F5" stroke="#2A2340" stroke-width="2.2"/><path d="M9 7.5H15L17.5 10.5L12 18L6.5 10.5Z" fill="#E8F6FF" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/></svg>collect</span>
+      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#FFB547" stroke="#2A2340" stroke-width="2.2"/><path d="M12 6.5L18 17H6Z" fill="#FFF6D8" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10.5V13" stroke="#2A2340" stroke-width="2" stroke-linecap="round"/></svg>lava soon</span>
+      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#FF5B3A" stroke="#2A2340" stroke-width="2.2"/><path d="M3 11Q7.5 7 12 11T21 11M3 16Q7.5 12 12 16T21 16" fill="none" stroke="#FFB14A" stroke-width="2.2" stroke-linecap="round"/></svg>lava</span>
+      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5FE08B" stroke="#2A2340" stroke-width="2.2"/></svg><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#3A3262" stroke="#2A2340" stroke-width="2.2"/></svg>safe</span>
+    </div>
+    <div class="levels" id="levels"></div>
+    <button class="big plain" id="listClose" type="button" hidden>Back to the round</button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/avatar.js"></script>
+<script src="levels.js"></script>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
