@@ -237,8 +237,10 @@
       a.add(C(290, 222, 26), 'doorWindow');
       a.add(C(326, 292, 7), 'handle');
       a.add('M0 384 H400 V400 H0 Z', 'path');
-      a.add(R(356, 332, 36, 52, 6), 'pot');
-      a.add(C(374, 308, 28), 'bush');
+      // a potted bush by the door (same two areas as before, so saved colours still land in the right places)
+      var pot = a.add('M356 334 H390 L385 384 H361 Z', 'pot');
+      a.detail(pot, 'M357 344 H389');
+      a.add('M373 332 Q362 340 359 326 Q345 323 353 312 Q345 301 359 298 Q362 284 373 292 Q384 284 387 298 Q401 301 393 312 Q401 323 387 326 Q384 340 373 332 Z', 'bush');
       a.line('M150 49 Q145 45 150 41 M160 49 Q165 45 160 41');
       a.add(R(140, 52, 30, 22, 6), 'signCup');
     })
