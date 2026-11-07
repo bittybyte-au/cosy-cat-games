@@ -278,7 +278,7 @@
     if (catTop - margin < camY) camY = Math.min(camY, catTop - margin + 30);      // never let it get past the edge
     camY += (target - camY) * Math.min(1, dt * (target < camY ? 14 : 3));
   }
-  var stars = [], far = [], mid = [];
+  var far = [], mid = [];
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     cw = window.innerWidth; ch = window.innerHeight;
@@ -291,22 +291,20 @@
     // the street level (world y 640) sits at the bottom of the screen
     camBase = 660 - VH; camY = camBase;
     topGap = document.getElementById('topbar').getBoundingClientRect().bottom || 70;
-    if (!stars.length) for (var i = 0; i < 90; i++) stars.push({ x: Math.random(), y: Math.random(), r: rand(0.8, 2.2), tw: rand(0, TAU) });
     if (!far.length) { var x = 0; while (x < 4000) { var w = rand(60, 160); far.push({ x: x, w: w, h: rand(80, 220), win: Math.random() }); x += w + rand(0, 20); } }
     if (!mid.length) { var x2 = 0; while (x2 < 5000) { var w2 = rand(90, 220); mid.push({ x: x2, w: w2, h: rand(120, 300), tank: Math.random() < 0.2, seed: Math.random() * 1e6 | 0 }); x2 += w2 + rand(10, 50); } }
   }
+  /* the night sky, its stars and the moon come from the shared scenery kit (shared/scene.js); the stars twinkle in
+     three groups, each fading in and out on its own beat */
   function sky(c) {
-    var g = c.createLinearGradient(0, 0, 0, ch);
-    g.addColorStop(0, '#1F1B3D'); g.addColorStop(0.6, '#3A2F66'); g.addColorStop(1, '#6A4C7E');
-    c.fillStyle = g; c.fillRect(0, 0, cw, ch);
-    stars.forEach(function (s) { var a = 0.4 + 0.6 * Math.abs(Math.sin(time * 1.3 + s.tw)); c.globalAlpha = a; c.fillStyle = '#FFF6D8'; c.beginPath(); c.arc(s.x * cw, s.y * ch * 0.6, s.r, 0, TAU); c.fill(); });
+    GGScene.sky(c, 0, 0, cw, ch, { kind: 'city' });
+    for (var i = 0; i < 3; i++) {
+      c.globalAlpha = reduceMotion ? 0.8 : 0.4 + 0.6 * Math.abs(Math.sin(time * 1.3 + i * 2.1));
+      GGScene.stars(c, 0, 0, cw, ch * 0.6, { n: 30, kind: 'dot', col: '#FFF6D8', size: 3.4, seed: 11 + i });
+    }
     c.globalAlpha = 1;
-    // the moon
-    var mx = cw * 0.78, my = Math.min(ch * 0.2, 140), mr = Math.max(26, Math.min(cw, ch) * 0.06);
-    var mg = c.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 3); mg.addColorStop(0, 'rgba(255,240,200,.35)'); mg.addColorStop(1, 'rgba(255,240,200,0)');
-    c.fillStyle = mg; c.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
-    c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fillStyle = '#FFF1C9'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
-    c.fillStyle = 'rgba(214,196,150,.5)'; [[-0.3, -0.2, 0.18], [0.25, 0.15, 0.13], [-0.05, 0.35, 0.1]].forEach(function (q) { c.beginPath(); c.arc(mx + q[0] * mr, my + q[1] * mr, q[2] * mr, 0, TAU); c.fill(); });
+    var mr = Math.max(26, Math.min(cw, ch) * 0.06);
+    GGScene.moon(c, cw * 0.78, Math.min(ch * 0.2, 140), { kind: 'full', size: mr * 2, col: '#FFF1C9', glow: true });
   }
   function skyline(c, list, par, base, col, winCol, outline) {
     // parallax buildings: they slide past slower than the rooftops
@@ -345,9 +343,9 @@
     var cols = Math.max(1, Math.floor((W - 40) / 70)), gapX = (W - cols * 40) / (cols + 1);
     for (var row = 0; 40 + row * 74 < H; row++) for (var col = 0; col < cols; col++) {
       var x = gapX + col * (40 + gapX), yy = 40 + row * 74, lit = R() < 0.45;
-      D.rr(c, x, yy, 40, 50, 6); c.fillStyle = lit ? '#FFD98A' : D.darker(b.col, 0.45); c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
-      c.beginPath(); c.moveTo(x + 20, yy); c.lineTo(x + 20, yy + 50); c.moveTo(x, yy + 25); c.lineTo(x + 40, yy + 25); c.lineWidth = 2.5; c.stroke();
-      if (lit && R() < 0.3) { c.fillStyle = '#FF8FAB'; c.fillRect(x + 3, yy + 3, 15, 20); }   // a curtain
+      var curtain = lit && R() < 0.3;
+      GGScene.window(c, x, yy, 40, 50, { view: 'sky', sky: lit ? '#FFD98A' : D.darker(b.col, 0.45), cloud: false, sill: false, bars: 'cross', barCol: D.lighter(b.col, 0.25), r: 6,
+        inside: curtain ? function (c) { c.fillStyle = '#FF8FAB'; c.fillRect(x, yy, 20, 25); } : null });   // a curtain drawn across one pane
     }
     // the ledge
     c.fillStyle = D.lighter(b.col, 0.25); c.fillRect(-2, 0, W + 4, 14);
@@ -396,15 +394,8 @@
     var x = wx(o.x), y = wy(o.top);
     if (x > cw + 20 || x + o.w * K < -20) return;
     c.save(); c.translate(x, y); c.scale(K, K);
-    var w = o.w, bob = reduceMotion ? 0 : Math.sin(time * 2 + o.seed * 9) * 1.5;
-    c.translate(0, bob);
-    D.shape(c, function (p) {
-      p.moveTo(10, 4);
-      p.quadraticCurveTo(w * 0.25, -6, w * 0.5, 2); p.quadraticCurveTo(w * 0.75, -6, w - 10, 4);
-      p.quadraticCurveTo(w + 8, 14, w - 6, 26); p.quadraticCurveTo(w * 0.8, 46, w * 0.6, 34);
-      p.quadraticCurveTo(w * 0.45, 50, w * 0.3, 36); p.quadraticCurveTo(w * 0.12, 44, 6, 28); p.quadraticCurveTo(-10, 16, 10, 4); p.closePath();
-    }, '#F3EEFF', { lw: D.LW.mid, depth: 7 });
-    c.beginPath(); c.ellipse(w * 0.3, 10, w * 0.12, 4, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.9)'; c.fill();
+    var bob = reduceMotion ? 0 : Math.sin(time * 2 + o.seed * 9) * 1.5;
+    GGScene.cloud(c, o.w / 2, bob, { kind: 'flat', size: o.w, col: '#F3EEFF', ls: K });
     c.restore();
   }
   function drawFish(c, f) {

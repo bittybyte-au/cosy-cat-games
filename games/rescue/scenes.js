@@ -120,64 +120,29 @@
       drop(c, x + Math.cos(ang) * sp * u * 2, y + Math.sin(ang) * sp * u * 2 + 120 * u * u, 3.2, 1 - u * 2);
     }
   }
-  function sky(c, top, bottom) {
-    c.fillStyle = D.tone(c, top, 0, bottom); c.fillRect(0, 0, W, bottom);
-  }
-  function cloudPath(x, y, s) {
-    var p = new Path2D();
-    p.moveTo(x - 40 * s, y + 16 * s);
-    p.bezierCurveTo(x - 62 * s, y + 16 * s, x - 60 * s, y - 10 * s, x - 38 * s, y - 8 * s);
-    p.bezierCurveTo(x - 34 * s, y - 30 * s, x - 6 * s, y - 34 * s, x + 4 * s, y - 18 * s);
-    p.bezierCurveTo(x + 18 * s, y - 34 * s, x + 50 * s, y - 26 * s, x + 44 * s, y - 4 * s);
-    p.bezierCurveTo(x + 64 * s, y - 2 * s, x + 62 * s, y + 16 * s, x + 42 * s, y + 16 * s);
-    p.closePath();
-    return p;
-  }
-  function puffyCloud(c, x, y, s, col, face) {
-    // cat ears first, so the cloud's outline sits over their base (like the clouds on the games home)
-    [-1, 1].forEach(function (side) {
-      c.save(); c.translate(x + side * 4 * s, y - 12 * s); c.scale(0.62 * s, 0.62 * s);
-      var ear = new Path2D(GGCat.earPath(side));
-      D.shape(c, ear, col, { lw: 3.5 / (0.62 * s), depth: 0, inside: function (c) { c.fillStyle = '#FFB3C7'; c.fill(new Path2D(GGCat.earInner(side))); } });
-      c.restore();
-    });
-    D.shape(c, cloudPath(x, y, s), D.tone(c, col, y - 34 * s, y + 16 * s), { lw: 3.5, depth: 6 * s });
-    if (face) {
-      c.fillStyle = INK;
-      if (face === 'sleep') { c.beginPath(); c.moveTo(x - 14 * s, y); c.quadraticCurveTo(x - 10 * s, y + 3 * s, x - 6 * s, y); c.moveTo(x + 6 * s, y); c.quadraticCurveTo(x + 10 * s, y + 3 * s, x + 14 * s, y); D.ink(c, 2.5); }
-      else { c.beginPath(); c.arc(x - 10 * s, y - 1 * s, 2.6 * s, 0, TAU); c.arc(x + 10 * s, y - 1 * s, 2.6 * s, 0, TAU); c.fill(); }
-      c.beginPath(); c.moveTo(x - 4 * s, y + 6 * s); c.quadraticCurveTo(x - 2 * s, y + 8 * s, x, y + 6 * s); c.quadraticCurveTo(x + 2 * s, y + 8 * s, x + 4 * s, y + 6 * s); D.ink(c, 2.2);
-    }
-  }
-  function floor(c, y, col, lines) {
-    c.fillStyle = D.tone(c, col, y, H); c.fillRect(0, y, W, H - y);
-    if (lines) { c.strokeStyle = D.darker(col, 0.12); c.lineWidth = 2; for (var x = 30; x < W; x += 64) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 18, H); c.stroke(); } }
-    c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); D.ink(c, 3);
-  }
+  /* ---------- scenery: all of it comes from the shared kit (shared/scene.js) ----------
+     LS is the scene's scale on screen (set by draw), so the kit's outlines come out at the house weights */
+  var G = window.GGScene, LS = 1;
+  function sky(c, col, bottom) { G.sky(c, 0, 0, W, bottom, { col: col }); }
+  /* the cat-eared cloud, by the middle of its puff; s = 1 is about 126 wide */
+  function cloud(c, x, y, s, col, face) { G.cloud(c, x, y, { kind: 'cat', size: 126 * s, col: col, face: face, ls: LS }); }
+  /* the cat sun, by the middle of its face */
+  function sun(c, x, y, size) { G.sun(c, x, y, { kind: 'cat', size: size, ls: LS }); }
+  /* grass from y to the bottom, with little tufts in it */
   function grass(c, y, col) {
-    var p = new Path2D(); p.moveTo(0, y + 4); p.quadraticCurveTo(100, y - 6, 200, y + 2); p.quadraticCurveTo(300, y + 8, 400, y - 2); p.lineTo(400, H + 10); p.lineTo(0, H + 10); p.closePath();
-    D.shape(c, p, D.tone(c, col, y, H), { lw: 3, depth: 0, inside: function (c) {
-      var r = rng(3); c.strokeStyle = D.darker(col, 0.18); c.lineWidth = 2;
-      for (var i = 0; i < 26; i++) { var gx = r() * W, gy = y + 14 + r() * (H - y - 16); c.beginPath(); c.moveTo(gx - 4, gy); c.lineTo(gx - 2, gy - 7); c.moveTo(gx + 2, gy); c.lineTo(gx + 4, gy - 8); c.stroke(); }
-    } });
+    G.ground(c, 0, y, W, H - y, { kind: 'grass', col: col, edge: 'wave', tufts: 0, ls: LS });
+    var r = rng(3);
+    for (var i = 0; i < 18; i++) G.tuft(c, r() * W, y + 18 + r() * (H - y - 20), { size: 9, col: D.darker(col, 0.18), ls: LS });
   }
-  function flower(c, x, y, col, s) {
-    c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - 16 * s); c.strokeStyle = INK; c.lineWidth = 5; c.stroke(); c.strokeStyle = '#4FB868'; c.lineWidth = 2.4; c.stroke();
-    var p = new Path2D(); for (var i = 0; i < 5; i++) { var a = i * TAU / 5 - Math.PI / 2, px = x + Math.cos(a) * 5 * s, py = y - 18 * s + Math.sin(a) * 5 * s; p.moveTo(px + 4 * s, py); p.arc(px, py, 4 * s, 0, TAU); }
-    c.strokeStyle = INK; c.lineWidth = 5; c.stroke(p); c.fillStyle = col; c.fill(p);
-    D.shape(c, D.ellPath(x, y - 18 * s, 3 * s, 3 * s), '#FFD23F', { lw: 2, depth: 0 });
-  }
+  function flower(c, x, y, col, s) { G.flower(c, x, y, { kind: 'daisy', size: 26 * s, col: col, ls: LS }); }
 
   /* ================= bath: the water rises towards a cat on a stool in the tub ================= */
   function bath(c, S) {
     var p = S.p, mt = S.mt, size = 50;
-    c.fillStyle = '#D4EEFF'; c.fillRect(0, 0, W, H);
-    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 2.5;
-    for (var y = 22; y < 198; y += 26) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
-    for (var x = 18; x < W; x += 26) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 198); c.stroke(); }
-    floor(c, 198, '#FFE3C2');
+    G.wall(c, 0, 0, W, 198, { pattern: 'tiles', col: '#D4EEFF', col2: 'rgba(255,255,255,.75)', size: 26, ls: LS });
+    G.floor(c, 0, 198, W, H - 198, { kind: 'tiles', col: '#FFE3C2', size: 40, ls: LS });
     // a little window and a towel on a rail
-    D.shape(c, D.rrPath(286, 30, 64, 54, 8), '#BFE6FF', { lw: 3.5, depth: 0, inside: function (c) { c.fillStyle = '#fff'; c.beginPath(); c.arc(304, 50, 7, 0, TAU); c.arc(314, 46, 8, 0, TAU); c.arc(324, 52, 6, 0, TAU); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(318, 30); c.lineTo(318, 84); c.stroke(); } });
+    G.window(c, 286, 30, 64, 54, { view: 'sky', bars: 'mid', sill: false, cloud: 0, r: 8, ls: LS });
     D.shape(c, D.rrPath(370, 96, 22, 50, 6), '#B48CFF', { lw: 3.5, depth: 4, inside: function (c) { c.fillStyle = '#DCC8FF'; c.fillRect(370, 132, 22, 5); } });
     D.shape(c, D.rrPath(362, 92, 36, 7, 3.5), '#C9C2D6', { lw: 3, depth: 0 });
     // tub, cut away so the water shows
@@ -246,9 +211,8 @@
   function tree(c, S) {
     var p = S.p, mt = S.mt, size = 40;
     sky(c, '#BFE6FF', 200);
-    puffyCloud(c, 300, 48, 0.55, '#FFFFFF');
-    var hills = new Path2D(); hills.moveTo(0, 170); hills.quadraticCurveTo(90, 120, 190, 162); hills.quadraticCurveTo(290, 126, 400, 160); hills.lineTo(400, 210); hills.lineTo(0, 210); hills.closePath();
-    D.shape(c, hills, '#B8E6A8', { lw: 3, depth: 0 });
+    cloud(c, 300, 43, 0.55, '#FFFFFF');
+    G.hills(c, 0, 128, W, 82, { kind: 'bumpy', col: '#B8E6A8', ls: LS });
     grass(c, 196, '#9BDC8C');
     // the leaf pile under the branch's end
     var pile = function (puff) {
@@ -277,13 +241,10 @@
       var u = (lo + hi) / 2; return (1 - u) * (1 - u) * 92 + 2 * (1 - u) * u * qy + u * u * ey;
     };
     var br = new Path2D(); br.moveTo(80, 92); br.quadraticCurveTo(170, qy, ex, ey);
-    // trunk and its leafy top
-    D.shape(c, (function () { var q = new Path2D(); q.moveTo(50, 206); q.quadraticCurveTo(62, 140, 58, 20); q.lineTo(94, 20); q.quadraticCurveTo(90, 140, 104, 206); q.closePath(); return q; })(), D.tone(c, '#B07A4A', 0, 0, 50, 104), { lw: 4, depth: 6, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(70, 190); c.quadraticCurveTo(74, 160, 70, 130); c.moveTo(84, 110); c.quadraticCurveTo(80, 90, 84, 70); c.stroke(); } });
+    // the branch (it bends with the game, so it's drawn here), then the shared tree over its root
     c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 15; c.stroke(br); c.strokeStyle = '#B07A4A'; c.lineWidth = 9; c.stroke(br);
     [[150, -1], [196, 1], [236, -1]].forEach(function (l) { var lx = l[0], ly = by(lx); c.save(); c.translate(lx, ly); c.rotate(l[1] * 0.6); D.shape(c, D.ellPath(0, l[1] * 9, 5, 9), '#7BD389', { lw: 2.5, depth: 0 }); c.restore(); });
-    var top = new Path2D(); [[46, 34, 34], [90, 22, 32], [126, 42, 26], [30, 66, 24], [76, 60, 30]].forEach(function (b) { top.moveTo(b[0] + b[2], b[1]); top.arc(b[0], b[1], b[2], 0, TAU); });
-    c.strokeStyle = INK; c.lineWidth = 8; c.stroke(top); c.fillStyle = D.tone(c, '#7BD389', -10, 90); c.fill(top);
-    c.save(); c.clip(top); D.crescent(c, top, 6); D.shine(c, 60, 18, 16, 8, -0.3, 0.35); c.restore();
+    G.tree(c, 86, 208, { kind: 'round', size: 206, leaf: '#7BD389', trunk: '#B07A4A', ls: LS });
     // the kitten near the end of the branch
     var kx = 238, slope = Math.atan2(by(kx + 4) - by(kx - 4), 8);
     var kittenOnBranch = function (face, slide) { var x = Math.min(ex - 2, kx + slide * 22), y = by(x) - 5; catAt(c, x, y, { preset: S.cat.preset, pose: 'sit', size: size, face: face }, slope * 0.8); };
@@ -310,15 +271,14 @@
   function rain(c, S) {
     var p = S.p, mt = S.mt, size = 56;
     sky(c, '#C6E6FF', 196);
-    if (S.mode === 'win') { var sun = eout(span(mt, 0.6, 1.6)); catAt(c, 60, lerp(110, 62, sun), { preset: 'sun', rays: true, size: 40, face: 'happy' }); }
+    if (S.mode === 'win') sun(c, 60, lerp(110, 62, eout(span(mt, 0.6, 1.6))) - 19, 40);
     // fence and garden
-    for (var x = 4; x < W; x += 34) { var f = new Path2D(); f.moveTo(x, 196); f.lineTo(x, 132); f.lineTo(x + 12, 120); f.lineTo(x + 24, 132); f.lineTo(x + 24, 196); f.closePath(); D.shape(c, f, '#FFF1DC', { lw: 3, depth: 3 }); }
-    D.shape(c, D.rrPath(-10, 146, 420, 10, 4), '#FFF1DC', { lw: 3, depth: 2 });
+    G.fence(c, -2, W, 196, { kind: 'picket', h: 76, ls: LS });
     grass(c, 192, '#8FD48A');
     flower(c, 30, 222, '#FF8FAB', 1.1); flower(c, 104, 230, '#B48CFF', 1); flower(c, 262, 226, '#FFFFFF', 1);
     // a little garden mat for the nap
     D.shadow(c, 160, 214, 70, 6);
-    D.shape(c, D.ellPath(160, 210, 66, 11), '#FF9EC4', { lw: 3.5, depth: 3, inside: function (c) { c.strokeStyle = '#FFD3E4'; c.lineWidth = 3; c.beginPath(); c.ellipse(160, 210, 50, 7, 0, 0, TAU); c.stroke(); } });
+    G.rug(c, 160, 210, 66, 11, { kind: 'stitch', col: '#FF9EC4', col2: '#FFD3E4', ls: LS });
     // the cloud drifts in from the left; drizzle below it
     var cx = lerp(20, 160, p), cy = 54;
     if (S.mode === 'win') { cx = lerp(cx, 470, ease(span(mt, 0.2, 1.6))); cy -= span(mt, 0.2, 1.6) * 20; }
@@ -344,7 +304,7 @@
         if (mt > 1.9) { D.shape(c, D.ellPath(150, 214, 20, 4), '#8FD3FF', { lw: 2.5, depth: 0 }); drop(c, 182, 160 + ((mt - 1.9) * 26) % 12, 2.4, 0.9); }
       }
     }
-    puffyCloud(c, cx, cy, 0.9, S.mode === 'win' ? '#FFFFFF' : '#E3E7F2', S.mode === 'fail' ? 'open' : 'sleep');
+    cloud(c, cx, cy - 8, 0.9, S.mode === 'win' ? '#FFFFFF' : '#E3E7F2', S.mode === 'fail' ? 'open' : 'sleep');
     basketBack(c);
     if (S.mode === 'win') rescue(c, S, [176, 212], size * 0.82, { pose: 'lie' }); else basketFront(c);
   }
@@ -353,17 +313,14 @@
   function tide(c, S) {
     var p = S.p, mt = S.mt, size = 36;
     sky(c, '#BFE6FF', 120);
-    catAt(c, 352, 58, { preset: 'sun', rays: true, size: 34, face: 'happy' });
+    sun(c, 352, 41, 34);
     // the far sea and a little sailing boat
-    c.fillStyle = D.tone(c, '#7CC4FF', 104, 150); c.fillRect(0, 104, W, 60);
-    c.beginPath(); c.moveTo(0, 104); c.lineTo(W, 104); D.ink(c, 3);
+    G.water(c, 0, 104, W, 60, { kind: 'sea', col: '#7CC4FF', t: S.reduce ? 0 : S.t, ls: LS });
     var bx = 90 + Math.sin(S.t * 0.4) * (S.reduce ? 0 : 6);
     D.shape(c, (function () { var q = new Path2D(); q.moveTo(bx - 16, 104); q.lineTo(bx + 16, 104); q.lineTo(bx + 10, 112); q.lineTo(bx - 10, 112); q.closePath(); return q; })(), '#FF6B57', { lw: 2.5, depth: 0 });
     D.shape(c, (function () { var q = new Path2D(); q.moveTo(bx, 102); q.lineTo(bx, 80); q.lineTo(bx + 13, 100); q.closePath(); return q; })(), '#fff', { lw: 2.5, depth: 0 });
-    // the beach slopes up to the right
-    var sand = function (x) { return 222 - x * 0.09; };
-    var beach = new Path2D(); beach.moveTo(-10, 158); beach.quadraticCurveTo(120, 150, 410, 140); beach.lineTo(410, 250); beach.lineTo(-10, 250); beach.closePath();
-    D.shape(c, beach, D.tone(c, '#FFE3A3', 140, 240), { lw: 3, depth: 0, inside: function (c) { var r = rng(8); c.fillStyle = 'rgba(201,139,91,.35)'; for (var i = 0; i < 30; i++) { c.beginPath(); c.arc(r() * W, 160 + r() * 80, 1.6, 0, TAU); c.fill(); } } });
+    // the beach
+    G.ground(c, 0, 148, W, H - 148, { kind: 'sand', col: '#FFE3A3', tufts: 30, seed: 8, ls: LS });
     // shells
     D.shape(c, (function () { var q = new Path2D(); q.moveTo(276, 226); q.quadraticCurveTo(284, 210, 292, 226); q.closePath(); return q; })(), '#FF9EC4', { lw: 2.5, depth: 0 });
     // the sandcastle; slumps a little after a big wave
@@ -408,12 +365,10 @@
   var CLOTHES = ['#7CC4FF', '#FF9EC4', '#FFD23F', '#7BD389', '#B48CFF', '#FFFFFF', '#FF8A5B'];
   function laundry(c, S) {
     var p = S.p, mt = S.mt, size = 46;
-    c.fillStyle = '#FFE6F0'; c.fillRect(0, 0, W, H);
-    c.fillStyle = 'rgba(255,255,255,.75)';
-    for (var y = 14, r = 0; y < 196; y += 26, r++) for (var x = 14 + (r % 2) * 13; x < W; x += 26) { c.beginPath(); c.arc(x, y, 3.5, 0, TAU); c.fill(); }
-    floor(c, 196, '#E6B98A', true);
+    G.wall(c, 0, 0, W, 196, { pattern: 'dots', col: '#FFE6F0', col2: 'rgba(255,255,255,.75)', size: 30, ls: LS });
+    G.floor(c, 0, 196, W, H - 196, { kind: 'planks', col: '#E6B98A', size: 22, ls: LS });
     // a rug for the nap
-    D.shape(c, D.ellPath(196, 214, 72, 12), '#B48CFF', { lw: 3.5, depth: 3, inside: function (c) { c.strokeStyle = '#DCC8FF'; c.lineWidth = 4; c.beginPath(); c.ellipse(196, 214, 54, 7, 0, 0, TAU); c.stroke(); } });
+    G.rug(c, 196, 214, 72, 12, { kind: 'stitch', col: '#B48CFF', col2: '#DCC8FF', ls: LS });
     // the laundry basket with the tower on top; it leans and wobbles more with the peril
     var lean = p * 0.1 + (S.reduce ? 0 : Math.sin(S.t * 2.3) * (0.015 + p * 0.06));
     if (S.mode === 'win') lean = lerp(lean, 0, eout(span(mt, 0, 0.8)));
@@ -469,7 +424,7 @@
     c.save();
     D.shadow(c, x + w / 2, y + h + 4, w * 0.48, 8);
     var frame = D.rrPath(x, y, w, h, 18);
-    c.save(); c.clip(frame); c.translate(x, y); c.scale(k, k);
+    c.save(); c.clip(frame); c.translate(x, y); c.scale(k, k); LS = k;
     c.lineJoin = 'round'; c.lineCap = 'round';
     (SCENES[name] || bath)(c, S);
     kittens(c, S);

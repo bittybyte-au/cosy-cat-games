@@ -18,20 +18,8 @@
   function cat(c, x, y, o) { c.save(); c.translate(x, y); GGCat.draw(c, o); c.restore(); }
 
   /* ================= the pictures (drawn once, 600 square) ================= */
-  var PS = 600;
-  function wallpaper(c, col, dot) {
-    c.fillStyle = D.tone(c, col, 0, PS); c.fillRect(0, 0, PS, PS);
-    c.fillStyle = dot;
-    for (var y = 20, r = 0; y < PS; y += 44, r++) for (var x = 20 + (r % 2) * 22; x < PS; x += 44) { c.beginPath(); c.arc(x, y, 5, 0, TAU); c.fill(); }
-  }
-  function flower(c, x, y, col, k) {
-    c.save(); c.translate(x, y); c.scale(k, k);
-    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(4, 24, 0, 46); c.strokeStyle = INK; c.lineWidth = 8; c.lineCap = 'round'; c.stroke(); c.strokeStyle = '#4FB868'; c.lineWidth = 4; c.stroke();
-    var petals = new Path2D(); for (var i = 0; i < 5; i++) { var a = i * TAU / 5 - Math.PI / 2; petals.moveTo(Math.cos(a) * 13 + 10, Math.sin(a) * 13); petals.arc(Math.cos(a) * 13, Math.sin(a) * 13, 10, 0, TAU); }
-    D.shape(c, petals, col, { lw: 3.5, depth: 3 });
-    D.shape(c, D.ellPath(0, 0, 8, 8), '#FFD23F', { lw: 3, depth: 2 });
-    c.restore();
-  }
+  /* all the scenery (walls, floors, sky, hills, flowers, windows, lamps...) comes from the shared kit, shared/scene.js */
+  var PS = 600, G = window.GGScene;
   function yarnBall(c, x, y, r, col) {
     D.shape(c, D.ellPath(x, y, r, r), col, { lw: 4.5, depth: r * 0.18, shine: [x - r * 0.35, y - r * 0.4, r * 0.25, r * 0.13, -0.6], inside: function (c) {
       c.strokeStyle = 'rgba(42,35,64,.28)'; c.lineWidth = 3;
@@ -40,17 +28,14 @@
   }
   var PICTURES = [
     { id: 'teacup', name: 'Cat in a teacup', draw: function (c) {
-      wallpaper(c, '#FFE6F0', 'rgba(255,255,255,.8)');
+      G.wall(c, 0, 0, PS, 420, { pattern: 'dots', col: '#FFE6F0', col2: 'rgba(255,255,255,.8)', size: 44 });
       // a shelf of little jars behind
-      D.shape(c, D.rrPath(40, 120, 520, 18, 6), '#E6B98A', { lw: 4, depth: 4 });
       [['#7CC4FF', 70], ['#FFC93C', 160], ['#B48CFF', 420], ['#7BD389', 500]].forEach(function (j) {
-        D.shape(c, D.rrPath(j[1], 62, 54, 58, 12), j[0], { lw: 4, depth: 5, shine: [j[1] + 16, 76, 6, 10, 0] });
+        D.shape(c, D.rrPath(j[1], 62, 54, 62, 12), j[0], { lw: 4, depth: 5, shine: [j[1] + 16, 76, 6, 10, 0] });
         D.shape(c, D.rrPath(j[1] - 4, 54, 62, 14, 6), '#FFFFFF', { lw: 3.5, depth: 2 });
       });
-      // table
-      c.fillStyle = D.tone(c, '#E6B98A', 420, PS); c.fillRect(0, 420, PS, PS - 420);
-      c.strokeStyle = '#C98B5B'; c.lineWidth = 3; [470, 530, 580].forEach(function (y) { c.beginPath(); c.moveTo(0, y); c.lineTo(PS, y); c.stroke(); });
-      c.beginPath(); c.moveTo(0, 420); c.lineTo(PS, 420); D.ink(c, 4);
+      G.shelf(c, 40, 560, 120, { kind: 'plain', col: '#E6B98A', thick: 18 });
+      G.table(c, 0, PS, 420, PS, { kind: 'top', col: '#E6B98A', grain: '#D9A877', size: 60 });
       // saucer, then the handle (behind the cup), the tea, the cat, and the cup's front
       D.shadow(c, 300, 500, 230, 30);
       D.shape(c, D.ellPath(300, 478, 220, 40), '#FFFFFF', { lw: 5, depth: 6 });
@@ -73,21 +58,13 @@
       });
     } },
     { id: 'garden', name: 'Garden', draw: function (c) {
-      c.fillStyle = D.tone(c, '#9EDCFF', 0, 380); c.fillRect(0, 0, PS, 380);
-      [[110, 90], [330, 60]].forEach(function (q) { var p = new Path2D(); p.arc(q[0], q[1], 28, 0, TAU); p.moveTo(q[0] + 64, q[1]); p.arc(q[0] + 34, q[1] - 10, 32, 0, TAU); p.moveTo(q[0] + 92, q[1]); p.arc(q[0] + 66, q[1], 26, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(p); });
-      cat(c, 500, 100, { preset: 'sun', rays: true, size: 120 });
-      // hills
-      var back = new Path2D(); back.moveTo(0, 330); back.quadraticCurveTo(160, 230, 330, 320); back.quadraticCurveTo(470, 260, 600, 300); back.lineTo(600, 600); back.lineTo(0, 600); back.closePath();
-      D.shape(c, back, D.tone(c, '#9BDC8C', 250, 600), { lw: 4, depth: 0 });
-      // fence
-      c.fillStyle = '#FFF1DC';
-      for (var x = 6; x < PS; x += 46) { var f = new Path2D(); f.moveTo(x, 420); f.lineTo(x, 340); f.lineTo(x + 16, 324); f.lineTo(x + 32, 340); f.lineTo(x + 32, 420); f.closePath(); D.shape(c, f, '#FFF1DC', { lw: 3, depth: 3 }); }
-      D.shape(c, D.rrPath(-10, 360, 620, 14, 4), '#FFF1DC', { lw: 3, depth: 2 });
-      var front2 = new Path2D(); front2.moveTo(0, 420); front2.quadraticCurveTo(300, 380, 600, 430); front2.lineTo(600, 600); front2.lineTo(0, 600); front2.closePath();
-      D.shape(c, front2, D.tone(c, '#7BD389', 400, 600), { lw: 4, depth: 0 });
-      var r = D.seeded(4); c.strokeStyle = '#5CBF6E'; c.lineWidth = 3;
-      for (var i = 0; i < 26; i++) { var tx = r() * PS, ty = 440 + r() * 150; c.beginPath(); c.moveTo(tx - 6, ty); c.lineTo(tx - 3, ty - 10); c.moveTo(tx, ty); c.lineTo(tx, ty - 13); c.moveTo(tx + 6, ty); c.lineTo(tx + 3, ty - 10); c.stroke(); }
-      flower(c, 80, 470, '#FF8FAB', 1.3); flower(c, 150, 520, '#B48CFF', 1.1); flower(c, 470, 490, '#FFFFFF', 1.25); flower(c, 540, 540, '#FF6B57', 1.1);
+      G.sky(c, 0, 0, PS, 380, { col: '#9EDCFF' });
+      G.cloud(c, 140, 96, { size: 124 }); G.cloud(c, 330, 66, { size: 124 });
+      G.sun(c, 496, 108, { kind: 'cat', size: 96 });
+      G.hills(c, 0, 262, PS, 338, { kind: 'one', col: '#9BDC8C' });
+      G.fence(c, 0, PS, 420, { kind: 'picket', h: 96 });
+      G.ground(c, 0, 410, PS, 190, { kind: 'grass', col: '#7BD389', edge: 'wave', tufts: 26, seed: 4 });
+      [[80, 530, '#FF8FAB', 110], [150, 570, '#B48CFF', 96], [470, 548, '#FFFFFF', 106], [540, 590, '#FF6B57', 96]].forEach(function (f) { G.flower(c, f[0], f[1], { kind: 'daisy', size: f[3], col: f[2] }); });
       // a cat sitting in the grass, and a butterfly
       cat(c, 300, 330, { preset: 'pink', pose: 'sit', size: 150 });
       c.save(); c.translate(140, 300); c.rotate(-0.3);
@@ -96,28 +73,21 @@
       c.restore();
     } },
     { id: 'night', name: 'Sleepy night', draw: function (c) {
-      c.fillStyle = D.tone(c, '#3B3F8C', 0, 420); c.fillRect(0, 0, PS, 420);
-      var r = D.seeded(9);
-      for (var i = 0; i < 40; i++) { var sx = r() * PS, sy = r() * 380, s = 2 + r() * 4; c.fillStyle = r() < 0.3 ? '#FFE680' : '#FFFFFF'; c.beginPath(); for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4, rr = k % 2 ? s * 0.4 : s; c.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr); } c.fill(); }
-      var moon = new Path2D(); moon.arc(470, 120, 62, 0, TAU);
-      D.shape(c, moon, '#FFE680', { lw: 4.5, depth: 10, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.1)'; [[450, 100, 12], [490, 140, 9], [470, 160, 6]].forEach(function (q) { c.beginPath(); c.arc(q[0], q[1], q[2], 0, TAU); c.fill(); }); } });
-      // window frame round the sky
-      c.fillStyle = D.tone(c, '#C7B3E8', 420, PS); c.fillRect(0, 420, PS, PS - 420);
-      c.beginPath(); c.moveTo(0, 420); c.lineTo(PS, 420); D.ink(c, 5);
-      D.shape(c, D.rrPath(-10, 404, 620, 26, 8), '#E6B98A', { lw: 4.5, depth: 5 });
-      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 3; for (var y = 460; y < PS; y += 36) { c.beginPath(); c.moveTo(0, y); c.lineTo(PS, y); c.stroke(); }
+      G.sky(c, 0, 0, PS, 420, { col: '#3B3F8C' });
+      G.stars(c, 0, 0, PS, 380, { n: 40, kind: 'twinkle', size: 5, seed: 9 });
+      G.moon(c, 470, 120, { kind: 'full', size: 124 });
+      // the window sill, and the wall under it
+      G.wall(c, 0, 420, PS, PS - 420, { pattern: 'stripes', col: '#C7B3E8', col2: 'rgba(255,255,255,.18)', size: 60, edge: 'top' });
+      G.shelf(c, -10, 610, 404, { kind: 'sill', col: '#E6B98A', thick: 26 });
       // a cushion and a sleeping cat
       D.shadow(c, 300, 560, 230, 24);
       D.shape(c, D.ellPath(300, 520, 230, 52), '#FF8FAB', { lw: 5, depth: 12, inside: function (c) { c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 4; c.beginPath(); c.ellipse(300, 516, 190, 36, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); } });
       cat(c, 320, 420, { preset: 'white', pose: 'lie', face: 'sleep', zzz: true, size: 240 });
       // a hanging star
-      c.beginPath(); c.moveTo(120, 0); c.lineTo(120, 160); D.ink(c, 3);
-      var st = new Path2D(); for (var j = 0; j < 10; j++) { var b = j * Math.PI / 5 - Math.PI / 2, q = j % 2 ? 16 : 36; st.lineTo(120 + Math.cos(b) * q, 196 + Math.sin(b) * q); } st.closePath();
-      D.shape(c, st, '#FFD23F', { lw: 4, depth: 5 });
+      G.star(c, 120, 196, { r: 36, string: 160 });
     } },
     { id: 'pizza', name: 'Pizza party', draw: function (c) {
-      c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, PS, PS);
-      c.fillStyle = 'rgba(255,107,87,.55)'; for (var x = 0; x < PS; x += 60) c.fillRect(x, 0, 30, PS); for (var y = 0; y < PS; y += 60) c.fillRect(0, y, PS, 30);
+      G.table(c, 0, PS, 0, PS, { kind: 'top', pattern: 'gingham', col: '#FFFFFF', col2: 'rgba(255,107,87,.55)', size: 60, edge: false });
       c.save(); c.translate(300, 350);
       GGDish.draw(c, { id: 'pizza', data: { pz: [
         { k: 'pepperoni', x: -120, y: -40, r: 0 }, { k: 'pepperoni', x: 40, y: -110, r: 0 }, { k: 'pepperoni', x: 130, y: 40, r: 0 }, { k: 'pepperoni', x: -40, y: 110, r: 0 },
@@ -130,30 +100,22 @@
       cat(c, 490, 90, { preset: 'black', pose: 'peek', size: 120 });
     } },
     { id: 'yarn', name: 'Yarn play', draw: function (c) {
-      c.fillStyle = D.tone(c, '#FFF1B8', 0, 300); c.fillRect(0, 0, PS, 300);
-      c.strokeStyle = 'rgba(255,201,60,.5)'; c.lineWidth = 14; for (var x = 30; x < PS; x += 60) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 300); c.stroke(); }
-      // window with a plant
-      D.shape(c, D.rrPath(380, 40, 170, 150, 14), '#9EDCFF', { lw: 5, depth: 0, inside: function (c) { c.strokeStyle = '#FFFFFF'; c.lineWidth = 8; c.beginPath(); c.moveTo(465, 40); c.lineTo(465, 190); c.moveTo(380, 115); c.lineTo(550, 115); c.stroke(); } });
-      D.shape(c, D.rrPath(366, 186, 198, 18, 6), '#E6B98A', { lw: 4, depth: 3 });
-      // wooden floor
-      c.fillStyle = D.tone(c, '#E6B98A', 300, PS); c.fillRect(0, 300, PS, PS - 300);
-      c.strokeStyle = '#D9A877'; c.lineWidth = 3; for (var y = 340; y < PS; y += 50) { c.beginPath(); c.moveTo(0, y); c.lineTo(PS, y); c.stroke(); }
-      c.beginPath(); c.moveTo(0, 300); c.lineTo(PS, 300); D.ink(c, 5);
+      G.wall(c, 0, 0, PS, 300, { pattern: 'stripes', col: '#FFF1B8', col2: 'rgba(255,201,60,.3)', size: 60 });
+      // a window
+      G.window(c, 380, 40, 170, 150, { view: 'sky', sky: '#9EDCFF', bars: 'cross', cloud: 0.03, sill: '#E6B98A', r: 14 });
+      G.floor(c, 0, 300, PS, PS - 300, { kind: 'planks', col: '#E6B98A', col2: '#D9A877', size: 50 });
       // round striped rug
-      D.shape(c, D.ellPath(300, 470, 270, 92), '#B48CFF', { lw: 5, depth: 10, inside: function (c) { c.strokeStyle = '#DCC8FF'; c.lineWidth = 12; [210, 150, 90].forEach(function (rx) { c.beginPath(); c.ellipse(300, 470, rx, rx * 0.34, 0, 0, TAU); c.stroke(); }); } });
+      G.rug(c, 300, 470, 270, 92, { kind: 'rings', col: '#B48CFF', col2: '#DCC8FF' });
       // a loose strand from the red ball to the cat's paw
       c.beginPath(); c.moveTo(150, 470); c.bezierCurveTo(220, 540, 300, 380, 360, 300); c.strokeStyle = INK; c.lineWidth = 8; c.lineCap = 'round'; c.stroke(); c.strokeStyle = '#FF5A7A'; c.lineWidth = 4; c.stroke();
       cat(c, 300, 230, { preset: 'blue', pose: 'wave', size: 150 });
       yarnBall(c, 120, 470, 46, '#FF5A7A'); yarnBall(c, 470, 500, 40, '#FFC93C'); yarnBall(c, 520, 420, 30, '#7BD389');
     } },
     { id: 'sofa', name: 'Sofa cats', draw: function (c) {
-      wallpaper(c, '#E6F2FF', 'rgba(124,196,255,.35)');
+      G.wall(c, 0, 0, PS, 470, { pattern: 'dots', col: '#E6F2FF', col2: 'rgba(124,196,255,.35)', size: 44 });
       // picture on the wall
-      D.shape(c, D.rrPath(210, 40, 180, 120, 10), '#FFC93C', { lw: 5, depth: 5 });
-      D.shape(c, D.rrPath(226, 56, 148, 88, 6), '#9EDCFF', { lw: 3.5, depth: 0, inside: function (c) { c.fillStyle = '#7BD389'; c.beginPath(); c.moveTo(226, 144); c.quadraticCurveTo(280, 100, 374, 130); c.lineTo(374, 144); c.fill(); c.fillStyle = '#FFE14D'; c.beginPath(); c.arc(340, 84, 14, 0, TAU); c.fill(); } });
-      // floor
-      c.fillStyle = D.tone(c, '#E6B98A', 470, PS); c.fillRect(0, 470, PS, PS - 470);
-      c.beginPath(); c.moveTo(0, 470); c.lineTo(PS, 470); D.ink(c, 5);
+      G.picture(c, 210, 40, 180, 120, { view: 'hills', frame: '#FFC93C', string: false });
+      G.floor(c, 0, 470, PS, PS - 470, { kind: 'planks', col: '#E6B98A', size: 50 });
       D.shadow(c, 300, 556, 270, 22);
       // sofa: back, three cats sitting on it, then arms and seat cushions in front
       D.shape(c, D.rrPath(70, 250, 460, 190, 40), '#FF8FAB', { lw: 5, depth: 12 });
@@ -164,9 +126,7 @@
       [[100, 506], [500, 506]].forEach(function (q) { D.shape(c, D.rrPath(q[0] - 10, q[1], 20, 34, 6), '#C98B5B', { lw: 4, depth: 3 }); });
       // a cushion and a lamp
       c.save(); c.translate(80, 322); c.rotate(-0.3); D.shape(c, D.rrPath(-30, -26, 60, 52, 16), '#FFD23F', { lw: 4.5, depth: 7 }); c.restore();
-      D.shape(c, D.rrPath(562, 220, 10, 250, 5), '#8E7FA8', { lw: 3.5, depth: 0 });
-      var shade = new Path2D(); shade.moveTo(530, 230); shade.lineTo(600, 230); shade.lineTo(585, 170); shade.lineTo(545, 170); shade.closePath();
-      D.shape(c, shade, '#7BD389', { lw: 4.5, depth: 6 });
+      G.lamp(c, 562, 474, { kind: 'floor', size: 300, shade: '#7BD389', stand: '#8E7FA8' });
     } }
   ];
   function picById(id) { for (var i = 0; i < PICTURES.length; i++) if (PICTURES[i].id === id) return PICTURES[i]; return PICTURES[0]; }

@@ -716,6 +716,13 @@
   table = function (c, x0, x1, y, fy, o) { return o && o.kind === 'counter' ? counterTable(c, x0, x1, y, fy, o) : tableBase(c, x0, x1, y, fy, o); };
   /* ================= end of batch C additions ================= */
 
+  /* ================= added in phase 2, batch A (outdoors: rescue, slide, rooftop, puzzle, crossing) =================
+     Only new variants here; the looks above are unchanged.
+       sky   { kind: 'city' }    a town at night: deep indigo at the top to a soft purple glow at the horizon
+     (batch A's options for table 'top' are in their own block at the very end, after the variant they extend) */
+  SKIES.city = ['#1F1B3D', '#6A4C7E']; VARIANTS.sky.push('city');
+  /* ================= end of batch A additions ================= */
+
   window.GGScene = {
     VARIANTS: VARIANTS,
     sky: sky, sun: sun, moon: moon, stars: stars, star: star, cloud: cloud, hills: hills, ground: ground, tuft: tuft,
@@ -771,6 +778,27 @@
         sh(c, D.rrPath(bx - 7 * k, y - 64 * k, 14 * k, 18 * k, 4 * k), '#FFFFFF', o, LW.fine, { depth: 0 });
         sh(c, D.rrPath(bx - 13 * k, y - 52 * k, 26 * k, 52 * k, 8 * k), D.tone(c, col, y - 52 * k, y), o, LW.fine, { depth: 5 * k, shine: [bx - 6 * k, y - 40 * k, 3 * k, 8 * k, 0, 0.5] });
       });
+    };
+  })(window.GGScene);
+
+  /* ================= batch A: more looks for table 'top' =================
+     GGScene.table(c, x0, x1, y, floorY, { kind: 'top', pattern: 'gingham' | 'plain', col, col2 (stripe colour), size, edge })
+         'gingham': a checked cloth over the whole top (stripes both ways, darker where they cross); 'plain': just the
+         toned colour. edge: false leaves the front edge uninked (a top that fills the whole picture or screen).
+     Without a pattern (and without edge: false) the 'top' above is drawn, unchanged. */
+  (function (G) {
+    var tableWas = G.table;
+    G.table = function (c, x0, x1, y, fy, o) {
+      if (!o || o.kind !== 'top' || (!o.pattern && o.edge !== false)) return tableWas.apply(this, arguments);
+      var col = o.col || WOOD, w = x1 - x0, h = fy - y;
+      if (o.pattern === 'gingham') {
+        var cs = o.size || 60; c.fillStyle = col; c.fillRect(x0, y, w, h); c.fillStyle = o.col2 || 'rgba(255,107,87,.55)';
+        c.save(); c.beginPath(); c.rect(x0, y, w, h); c.clip();
+        for (var cx = x0; cx < x1; cx += cs) c.fillRect(cx, y, cs / 2, h);
+        for (var cy = y; cy < fy; cy += cs) c.fillRect(x0, cy, w, cs / 2);
+        c.restore();
+      } else { c.fillStyle = D.tone(c, col, y, fy); c.fillRect(x0, y, w, h); }
+      if (o.edge !== false) { c.beginPath(); c.moveTo(x0 - 5, y); c.lineTo(x1 + 5, y); D.ink(c, W(o, LW.big)); }
     };
   })(window.GGScene);
 })();

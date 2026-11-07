@@ -196,14 +196,14 @@
 
   /* ================= drawing ================= */
   function drawWorld(c) {
-    // park at the top, grass at the bottom
-    c.fillStyle = '#A8DF95'; c.fillRect(0, 0, W, R.top - 30);
-    c.fillStyle = '#9BD486'; c.fillRect(0, R.bot + 30, W, H - R.bot - 30);
+    // park at the top with its trees, grass at the bottom (the shared scenery kit, shared/scene.js); the pavements
+    // cover the grass's far edges
+    GGScene.ground(c, 0, -20, W, R.top - 30 + 30, { kind: 'grass', col: '#A8DF95', tufts: Math.round(W / 60), seed: 2 });
+    GGScene.ground(c, 0, R.bot + 30, W, H - R.bot - 30, { kind: 'grass', col: '#9BD486', tufts: Math.round(W / 50), seed: 5 });
     [[0.12, 0.12], [0.85, 0.08], [0.3, 0.2], [0.72, 0.22]].forEach(function (q) {
-      var x = W * q[0], y = (R.top - 30) * (0.3 + q[1]);
-      D.shadow(c, x, y + 40, 22, 6);
-      c.beginPath(); c.moveTo(x - 6, y + 40); c.lineTo(x + 6, y + 40); c.lineTo(x + 5, y); c.lineTo(x - 5, y); c.closePath(); fillInk(c, '#A86B3C', D.LW.fine);
-      D.shape(c, D.ellPath(x, y - 10, 34, 34), '#5CCB75', { lw: D.LW.mid, depth: 8, shine: [x - 12, y - 26, 10, 6, -0.5, 0.35] });
+      var x = W * q[0], y = (R.top - 30) * (0.3 + q[1]) + 40;
+      D.shadow(c, x, y, 28, 6);
+      GGScene.tree(c, x, y, { kind: 'round', size: 96 });
     });
     // pavements
     c.fillStyle = '#E3DDEB'; c.fillRect(0, R.top - 30, W, 30); c.fillRect(0, R.bot, W, 30);

@@ -26,15 +26,14 @@
   function path(f) { var p = new Path2D(); f(p); return p; }
   function tube(c, p, col, w) { c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = w + 8; c.stroke(p); c.strokeStyle = col; c.lineWidth = w; c.stroke(p); }
   function cat(c, x, y, o) { c.save(); c.translate(x, y); try { GGCat.draw(c, o); } catch (e) {} c.restore(); }
-  function stars(c, n, col) { c.fillStyle = col; for (var i = 0; i < n; i++) { var x = (i * 97) % 400, y = (i * 53) % 260; c.beginPath(); for (var k = 0; k < 10; k++) { var a = k * Math.PI / 5, r = k % 2 ? 2.5 : 6; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.fill(); } }
+  var G = window.GGScene;   // all the scenery (skies, moons, stars, walls, floors, the table) comes from shared/scene.js
 
   /* ================= pictures (each 400 x 400) ================= */
   /* Each is drawn once (cached) in the house style: things that join start inside what they join and go first,
      details and shading sit inside each shape, outlines last. */
   var PICTURES = [
     function teacup(c) {
-      c.fillStyle = D.tone(c, '#FFE0EC', 0, 400); c.fillRect(0, 0, 400, 400);
-      c.fillStyle = '#FFC2DA'; for (var i = 0; i < 400; i += 50) for (var j = 0; j < 400; j += 50) { circle(c, i + 25, j + 25, 6); c.fill(); }
+      G.wall(c, 0, 0, 400, 400, { pattern: 'dots', col: '#FFE0EC', col2: '#FFC2DA', size: 50 });
       D.shadow(c, 200, 362, 172, 18);
       D.shape(c, D.ellPath(200, 352, 170, 30), '#FFFFFF', { lw: 5, depth: 8, inside: function (c) { ell(c, 200, 346, 120, 16); c.fillStyle = '#EEF6FF'; c.fill(); } });
       cat(c, 200, 186, { preset: 'ginger', size: 190, face: 'happy' });
@@ -46,8 +45,9 @@
       } });
     },
     function rocket(c) {
-      c.fillStyle = D.tone(c, '#2E2A5E', 0, 400); c.fillRect(0, 0, 400, 400); stars(c, 22, '#FFE14D');
-      D.shape(c, D.ellPath(330, 70, 36, 36), '#FFD9A8', { lw: 4, depth: 7, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.1)'; circle(c, 318, 60, 8); c.fill(); circle(c, 342, 84, 6); c.fill(); } });
+      G.sky(c, 0, 0, 400, 400, { kind: 'night', stars: 0 });
+      G.stars(c, 0, 0, 400, 300, { n: 22, kind: 'twinkle', col: '#FFE14D', size: 6, seed: 4 });
+      G.moon(c, 330, 70, { kind: 'full', size: 72, col: '#FFD9A8' });
       c.save(); c.translate(200, 210); c.rotate(0.5);
       // flame and fins start inside the body and go first; the body covers their joins
       D.shape(c, path(function (p) { p.moveTo(-34, 80); p.quadraticCurveTo(0, 170, 34, 80); p.closePath(); }), '#FFD23F', { lw: 4, depth: 6, inside: function (c) { ell(c, 0, 108, 12, 22); c.fillStyle = '#FF9F43'; c.fill(); } });
@@ -59,10 +59,9 @@
       c.restore();
     },
     function boat(c) {
-      c.fillStyle = D.tone(c, '#BFE6FF', 0, 300); c.fillRect(0, 0, 400, 400);
-      D.shape(c, D.ellPath(70, 70, 34, 34), '#FFE14D', { lw: 4, depth: 6 });
-      c.fillStyle = D.tone(c, '#4DB6E8', 300, 400); c.fillRect(0, 300, 400, 100);
-      c.beginPath(); c.moveTo(0, 300); for (var x = 0; x <= 400; x += 25) c.lineTo(x, 300 + Math.sin(x / 25 * Math.PI) * 6); ink(c, 4);
+      G.sky(c, 0, 0, 400, 300, { col: '#BFE6FF' });
+      G.sun(c, 70, 70, { kind: 'plain', size: 68, col: '#FFE14D', rays: false });
+      G.water(c, 0, 300, 400, 100, { kind: 'sea', col: '#4DB6E8' });
       // mast starts inside the hull; the sails hang from it, touching it
       c.beginPath(); c.moveTo(205, 70); c.lineTo(205, 270); ink(c, 7);
       D.shape(c, path(function (p) { p.moveTo(209, 82); p.lineTo(320, 232); p.lineTo(209, 232); p.closePath(); }), '#FFFFFF', { lw: 4.5, depth: 7 });
@@ -72,8 +71,8 @@
       D.shape(c, hull, '#FF9F43', { lw: 5, depth: 10, inside: function (c) { c.fillStyle = '#fff'; c.fillRect(40, 272, 320, 8); } });
     },
     function balloon(c) {
-      c.fillStyle = D.tone(c, '#C7EBD2', 0, 330); c.fillRect(0, 0, 400, 400);
-      c.fillStyle = '#9FD8B2'; c.fillRect(0, 330, 400, 70); c.beginPath(); c.moveTo(0, 330); c.lineTo(400, 330); ink(c, 4);
+      G.sky(c, 0, 0, 400, 330, { col: '#C7EBD2' });
+      G.ground(c, 0, 330, 400, 70, { kind: 'grass', col: '#9FD8B2', tufts: 6, seed: 6 });
       D.shadow(c, 170, 372, 80, 10);
       // string from the cat's raised paw to the knot; knot starts inside the balloon and goes first
       c.beginPath(); c.moveTo(255, 262); c.quadraticCurveTo(292, 200, 278, 158); ink(c, 3);
@@ -82,8 +81,8 @@
       cat(c, 170, 200, { preset: 'blue', size: 160, face: 'happy', pose: 'wave' });
     },
     function box(c) {
-      c.fillStyle = D.tone(c, '#FFF1DC', 0, 320); c.fillRect(0, 0, 400, 400);
-      c.fillStyle = D.tone(c, '#E6B98A', 320, 400); c.fillRect(0, 320, 400, 80); c.beginPath(); c.moveTo(0, 320); c.lineTo(400, 320); ink(c, 4);
+      G.wall(c, 0, 0, 400, 320, { pattern: 'plain', col: '#FFF1DC' });
+      G.floor(c, 0, 320, 400, 80, { kind: 'planks', col: '#E6B98A', size: 40 });
       D.shadow(c, 200, 362, 140, 12);
       // the box's open flaps fold out from its top corners, behind the cat
       D.shape(c, path(function (p) { p.moveTo(76, 212); p.lineTo(30, 170); p.lineTo(84, 150); p.lineTo(110, 212); p.closePath(); }), '#D9A066', { lw: 4.5, depth: 6 });
@@ -97,9 +96,9 @@
       } });
     },
     function moon(c) {
-      c.fillStyle = D.tone(c, '#3A3470', 0, 400); c.fillRect(0, 0, 400, 400); stars(c, 26, '#FFF3B0');
-      var moon = path(function (p) { p.arc(200, 230, 140, 0.4, Math.PI * 2 - 0.4); p.arc(250, 190, 120, Math.PI * 2 - 0.62, 0.62, true); p.closePath(); });
-      D.shape(c, moon, '#FFE14D', { lw: 5, depth: 14, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.08)'; circle(c, 110, 200, 14); c.fill(); circle(c, 140, 300, 10); c.fill(); circle(c, 92, 258, 7); c.fill(); } });
+      G.sky(c, 0, 0, 400, 400, { col: '#3A3470' });
+      G.stars(c, 0, 0, 400, 300, { n: 26, kind: 'twinkle', col: '#FFF3B0', size: 6, seed: 7 });
+      G.moon(c, 200, 230, { kind: 'crescent', size: 280, col: '#FFE14D' });
       cat(c, 150, 248, { preset: 'pink', size: 120, face: 'sleep', pose: 'lie' });
       c.font = '800 34px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#FFF3B0'; c.textAlign = 'center'; c.fillText('z', 250, 120); c.font = '800 24px "Baloo 2", system-ui, sans-serif'; c.fillText('z', 274, 92);
     }
@@ -295,8 +294,8 @@
   }
   function drawBoard(c) {
     var s = BOARD.s, B = 400 * s;
-    // table
-    c.fillStyle = '#F2DDC0'; c.fillRect(0, 0, W, H);
+    // the table everything sits on
+    G.table(c, 0, W, 0, H, { kind: 'top', pattern: 'plain', col: '#F2DDC0', edge: false });
     rr(c, TRAY.x - 10, TRAY.y - 10, TRAY.w + 20, TRAY.h + 20, 28); c.fillStyle = 'rgba(255,255,255,.45)'; c.fill();
     // the board with a faint copy of the picture
     var bounce = done ? 1 + Math.sin(Math.min(done, 1) * Math.PI * 3) * 0.03 * (1 - Math.min(done, 1)) : 1;

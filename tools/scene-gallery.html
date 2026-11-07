@@ -116,6 +116,12 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
     { name: "shelf {kind:'pegs', on} + bottles", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'tiles', col: '#DDF3FF', col2: '#BFE3F5', size: 64 }); S.shelf(c, 30, 210, 70, { kind: 'pegs', on: function (c) { GGDraw.shadow(c, 120, 71, 30, 3.5); } }); S.shelf(c, 45, 195, 160, { kind: 'plain', thick: 14 }); S.bottles(c, 120, 160, {}); } },
     { name: "table {kind:'top'}", draw: function (c) { S.wall(c, 0, 0, CW, 90, { pattern: 'dots', col: '#FFF1DC', col2: '#FFE4C4', size: 70 }); S.table(c, 0, CW, 90, CH, { kind: 'top', grain: '#DDAE7C' }); } }
   ]);
+  /* ---------- added in phase 2, batch A (outdoors) ---------- */
+  section('Added: batch A', [
+    { name: "sky {kind:'city'} + moon glow", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'city' }); S.stars(c, 0, 0, CW, CH * 0.6, { n: 30, kind: 'dot', col: '#FFF6D8', size: 3.4 }); S.moon(c, 170, 60, { size: 50, col: '#FFF1C9', glow: true }); S.cloud(c, 90, 150, { kind: 'flat', size: 130, col: '#F3EEFF' }); } },
+    { name: "table {kind:'top', pattern:'plain'}", draw: function (c) { S.wall(c, 0, 0, CW, 90, { pattern: 'dots', col: '#FFE6F0' }); S.table(c, 0, CW, 90, CH, { kind: 'top', pattern: 'plain', col: '#F2DDC0' }); } },
+    { name: "table {kind:'top', pattern:'gingham'}", draw: function (c) { S.table(c, 0, CW, 0, CH, { kind: 'top', pattern: 'gingham', col: '#FFFFFF', col2: 'rgba(255,107,87,.55)', size: 40, edge: false }); } }
+  ]);
   section('SVG twins', [
     { name: "svg.cloud cat + svg.hills two", draw: function (c) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200"><rect width="240" height="200" fill="#BFE6FF"/>' + S.svg.hills({ w: 240, h: 200, kind: 'two', top: 0.5, col: '#7BD389', back: '#4FB868' }) + S.svg.cloud({ x: 120, y: 70, size: 150, kind: 'cat', face: 'open' }) + '</svg>';
