@@ -5,12 +5,12 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-856fccbfe1';
+const VERSION = 'ccg-29444285b1';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
-  "./play/": "2cb16b88da",
-  "./play/index.html": "2cb16b88da",
+  "./play/": "285737f6ed",
+  "./play/index.html": "285737f6ed",
   "./about/": "57a9f2a762",
   "./about/index.html": "57a9f2a762",
   "./faq/": "a3dc412a35",

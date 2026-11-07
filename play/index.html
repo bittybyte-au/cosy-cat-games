@@ -101,6 +101,10 @@ h1 a { color: inherit; text-decoration: none; }
 }
 .tile .age-tag svg { width: 22px; height: 22px; }
 .tile .age-tag.tween { background: #D9CCF2; }
+.tile .age-tag[hidden] { display: none; }
+.tile .badge svg { width: 18px; height: 18px; vertical-align: -3px; margin: 0 4px 0 -4px; }
+.tile .badge.tween { background: #D9CCF2; }
+body.toddler .tile .badge svg { display: none; }
 body.toddler .tile .age-tag { display: none; }
 
 /* avatar builder (layout from Lily's sketch) */
@@ -251,6 +255,9 @@ body.toddler .tile .age-tag { display: none; }
       if (!b || !g.badge) return;
       var txt = g.badge(GG.getProgress(g.save));
       b.hidden = !txt; b.textContent = txt;
+      // a game with progress carries its age icon inside the progress badge, so the two never overlap
+      var tag = b.parentNode.querySelector('.age-tag');
+      if (tag) { tag.hidden = !!txt; if (txt) b.insertAdjacentHTML('afterbegin', tag.querySelector('svg').outerHTML); b.classList.toggle('tween', !!txt && tag.classList.contains('tween')); }
     });
   }
 
