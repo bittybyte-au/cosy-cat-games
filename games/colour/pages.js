@@ -314,7 +314,8 @@
   var TODDLER_COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF', '#FF8FC8', '#A9714B'];
   var SPECIALS = [
     { id: 'rainbow', name: 'Rainbow' }, { id: 'glitter', name: 'Gold glitter' }, { id: 'pinkglitter', name: 'Pink glitter' },
-    { id: 'dots', name: 'Dots' }, { id: 'stripes', name: 'Stripes' }, { id: 'stars', name: 'Stars' }, { id: 'hearts', name: 'Hearts' }
+    { id: 'dots', name: 'Dots' }, { id: 'stripes', name: 'Stripes' }, { id: 'stars', name: 'Stars' }, { id: 'hearts', name: 'Hearts' },
+    { id: 'bricks', name: 'Bricks' }
   ];
   var tiles = {};
   function tile(id) {
@@ -333,6 +334,14 @@
     else if (id === 'stripes') { base('#7CC4FF'); c.fillStyle = '#fff'; for (var k = -2; k < 3; k++) { c.beginPath(); c.moveTo(k * 20, 40); c.lineTo(k * 20 + 10, 40); c.lineTo(k * 20 + 50, 0); c.lineTo(k * 20 + 40, 0); c.closePath(); c.fill(); } }
     else if (id === 'stars') { base('#2E2860'); c.fillStyle = '#FFE14D'; [[10, 12, 5], [30, 28, 4], [32, 8, 2.5], [12, 32, 2.5]].forEach(function (p) { c.beginPath(); for (var j = 0; j < 10; j++) { var a = j * Math.PI / 5 - Math.PI / 2, r = j % 2 ? p[2] * 0.45 : p[2]; c.lineTo(p[0] + Math.cos(a) * r, p[1] + Math.sin(a) * r); } c.closePath(); c.fill(); }); }
     else if (id === 'hearts') { base('#FFD3E4'); c.fillStyle = '#FF5A7A'; [[10, 12], [30, 30]].forEach(function (p) { c.beginPath(); c.moveTo(p[0], p[1] + 5); c.bezierCurveTo(p[0] - 8, p[1] - 1, p[0] - 4, p[1] - 7, p[0], p[1] - 2); c.bezierCurveTo(p[0] + 4, p[1] - 7, p[0] + 8, p[1] - 1, p[0], p[1] + 5); c.fill(); }); }
+    else if (id === 'bricks') {
+      // two rows of bricks, the second offset by half a brick, so the tile repeats without a seam
+      base('#F4E1CF');
+      [[0, 0, 40, '#D9674E'], [-20, 20, 40, '#CC5F48'], [20, 20, 40, '#CC5F48']].forEach(function (b) {
+        c.fillStyle = b[3]; c.beginPath(); c.roundRect ? c.roundRect(b[0] + 1.5, b[1] + 1.5, b[2] - 3, 17, 3) : c.rect(b[0] + 1.5, b[1] + 1.5, b[2] - 3, 17); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(b[0] + 4, b[1] + 3.5, b[2] - 10, 3);
+      });
+    }
     tiles[id] = cv;
     return cv;
   }

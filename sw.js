@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-32056d7fa1';
+const VERSION = 'ccg-a67e644c45';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -47,7 +47,7 @@ const FILES = {
   "./games/colour/game.js": "b4adbce2ee",
   "./games/colour/": "0ebe0713f6",
   "./games/colour/index.html": "0ebe0713f6",
-  "./games/colour/pages.js": "3aaf4d6d8a",
+  "./games/colour/pages.js": "f7ede1b9b9",
   "./games/cooking/game.js": "2eaf83f37d",
   "./games/cooking/": "806f497544",
   "./games/cooking/index.html": "806f497544",
