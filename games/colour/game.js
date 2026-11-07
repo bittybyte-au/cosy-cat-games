@@ -21,8 +21,9 @@
     try { p = GG.getProgress('colour') || {}; } catch (e) {}
     if (!Array.isArray(p.pics)) p.pics = [];
     if (typeof p.next !== 'number') p.next = p.pics.reduce(function (m, x) { return Math.max(m, x.id || 0); }, 0) + 1;
-    // the pages coloured and hung at least once (kept even when an old picture is deleted); the games list counts these
+    // the pages coloured and hung at least once (kept even when an old picture is deleted): a tick on the page picker
     if (!Array.isArray(p.pages)) p.pages = [];
+    if (typeof p.hung !== 'number') p.hung = p.pics.filter(function (x) { return x && x.done; }).length;   // pictures finished, the games list's total
     p.pics.forEach(function (x) { if (x && x.done && p.pages.indexOf(x.page) < 0) p.pages.push(x.page); });
     return p;
   })();
@@ -149,13 +150,13 @@
     return cv.toDataURL('image/png');
   }
   function renderPicker() {
-    var mine = myPages(), hung = mine.filter(function (p) { return S.pages.indexOf(p.id) >= 0; }).length;
+    var mine = myPages();
     $('pages').innerHTML = mine.map(function (p) {
       var done = S.pages.indexOf(p.id) >= 0;
       return '<button class="pg" type="button" data-page="' + p.id + '"><img alt="" src="' + pageThumb(p.id) + '">' + esc(p.name) +
         (done ? '<span class="tick" aria-label="coloured"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5 L8.5 14 L15 6.5" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') + '</button>';
     }).join('');
-    $('pagesCount').textContent = hung >= mine.length ? 'You\u2019ve coloured every picture! Colour them again any time.' : hung + ' of ' + mine.length + ' pictures coloured';
+
     var list = S.pics.slice().reverse();
     $('gallery').innerHTML = list.length ? list.map(function (p) {
       var pg = CP.get(p.page);
@@ -421,6 +422,7 @@
     var first = !pic.done;
     pic.fr = frameSel; pic.done = true;
     if (S.pages.indexOf(pic.page) < 0) S.pages.push(pic.page);
+    if (first) S.hung++;
     commit();
     if (first && GG.stat) GG.stat('colour', 'pictures', 1);
     $('frameWrap').hidden = true;

@@ -5,7 +5,7 @@
    id        folder name under /games/ (also used by the pass and allow/block lists)
    save      the key the game uses with GG.getProgress / GG.setProgress
    ages      one or more of 'under5', '5-10', '10+' (suggestions only, used by filters)
-   toddler   true = shown on the toddler home (and tagged as a toddler game); toddler games usually have no badge (Cat Puzzles counts its pictures)
+   toddler   true = shown on the toddler home (and tagged as a toddler game); toddler games usually have no badge (Cat Puzzles shows a total)
    toddlerToo true = a regular game with its own toddler version: shown on both homes, not tagged
    free      what guests and expired passes can play: 'all', a list of parts, or a number of levels
    status    'live' playable, 'soon' greyed "Coming soon" tile while testing, 'dev' hidden on the live site
@@ -472,13 +472,11 @@
     {
       id: 'colour', save: 'colour', name: 'Colour Me', blurb: 'Colour pictures to hang at home',
       ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#FFE7A8',
-      // pictures coloured and hung at least once, out of the pages for this mode (6 for kids, 5 toddler pages whose ids
-      // start 't-'; keep in step with games/colour/pages.js). Older saves without p.pages count their finished pictures.
+      // a total, not an "out of": colouring doesn't get harder. Pictures finished (hung) so far; older saves count
+      // the finished pictures they still hold.
       badge: function (p) {
-        var tod = false; try { tod = !!GG.getSetting('toddler', false); } catch (e) {}
-        var ids = p && Array.isArray(p.pages) ? p.pages : (p && Array.isArray(p.pics) ? p.pics.filter(function (x) { return x && x.done; }).map(function (x) { return x.page; }) : []);
-        var seen = {}; ids.forEach(function (id) { if (typeof id === 'string' && (id.indexOf('t-') === 0) === tod) seen[id] = 1; });
-        return levelsBadge(Object.keys(seen).length, tod ? 5 : 6);
+        var n = p && typeof p.hung === 'number' ? p.hung : (p && Array.isArray(p.pics) ? p.pics.filter(function (x) { return x && x.done; }).length : 0);
+        return n ? n + (n === 1 ? ' picture' : ' pictures') : '';
       },
       art: ART.colour
     },
@@ -542,7 +540,7 @@
     {
       id: 'puzzle', save: 'puzzle', name: 'Cat Puzzles', blurb: 'Put the picture back together',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE3C2',
-      levels: 6, done: function (p) { return p && Array.isArray(p.pics) ? p.pics.length : 0; },   // 6 pictures (games/puzzle/game.js)
+      badge: function (p) { var n = (p && p.done) | 0; return n ? n + (n === 1 ? ' puzzle' : ' puzzles') : ''; },   // a total: puzzles don't get harder
       art: ART.puzzle
     },
     {

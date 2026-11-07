@@ -4,7 +4,7 @@
    pieces (remembered).
    A piece dropped in the wrong place just stays there. A piece wiggles as a hint after a quiet while.
    Saves GG.setProgress('puzzle', { done: puzzles finished, pics: [picture numbers finished at least once], size }).
-   The games list counts pics out of the 6 pictures (shared/games.js). */
+   The games list shows the total done; pics makes sure every picture gets a turn. */
 (function () {
   'use strict';
 
