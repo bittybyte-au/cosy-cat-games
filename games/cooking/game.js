@@ -1,4 +1,4 @@
-/* Cosy Kitchen: sushi hand roll, pancakes, burger and pizza.
+/* Cosy Kitchen: sushi hand roll, pancakes, burger, pizza and cat-shaped waffles.
    Everything is drawn in code on one canvas. Sounds are made with Web Audio (no files).
    The play area is a 640 x 640 square (logical units) scaled to fit between the top bar and tool tray. */
 (function () {
@@ -1731,7 +1731,130 @@
 
 
 
-  /* ---- Step: decorate the stack ---- */
+  /* ---- Step: cook a cat-shaped waffle ----
+     Hold to pour batter into the cat-shaped iron, tap to close the lid, wait for the light to turn green, tap to open.
+     Open it too soon and it's pale, too late and it's a bit burnt. The waffle then goes on the plate. */
+  function WaffleIronScene() {
+    var IX = 300, IY = 380, S = 0.8, HINGE = IY - 190 * S;            // the base plate's cat outline, and the lid's hinge
+    var T_OK = 3.6, T_BURN = 7.4, T_MAX = 10;
+    var OPEN = 2.0, phase = 'pour', fill = 0, holding = false, jugT = 0, lid = 2.0, lidTo = 2.0, t = 0, said = 0, tone = 'perfect', lift = 0, steam = 0;
+    var pourLoop = Sound.loop('pour'), sizzle = Sound.loop('sizzle');
+    var REST = { x: 560, y: 170 };
+    function jugPos() { var k = easeOut(jugT); return { x: lerp(REST.x, IX + 120, k), y: lerp(REST.y, IY - 150, k), a: lerp(0, -1.7, k) }; }
+    function base(c) {
+      // the iron: a chunky pink body with the cat-shaped plate in the middle
+      shape(c, D.rrPath(IX - 200, IY - 175, 400, 330, 70), '#FF8FB1', { lw: 5, depth: 10 });
+      var mould = DISH.catWafflePath(new DOMMatrix().translate(IX, IY).scale(S * 1.06, S * 1.06));
+      shape(c, mould, '#4A4458', { lw: 4, depth: 0 });
+      c.save(); c.clip(DISH.catWafflePath(new DOMMatrix().translate(IX, IY).scale(S, S)));
+      c.translate(IX, IY); c.scale(S, S); DISH.waffleGrid(c, '#5D566E', '#423C51', '#3A3448'); c.restore();
+      // batter spreading out from the middle as it's poured, then cooking
+      if (fill > 0 && phase !== 'lifted') {
+        c.save(); c.clip(DISH.catWafflePath(new DOMMatrix().translate(IX, IY).scale(S, S)));
+        var cook = phase === 'cook' || phase === 'open' || phase === 'done' ? clamp(t / T_OK, 0, 1) : 0;
+        if (phase === 'open' || phase === 'done') { c.restore(); DISH.drawWaffleFlat(c, IX, IY - lift * 120, S * (1 + lift * 0.08), tone, 1); }
+        else {
+          var r = 40 + 230 * Math.sqrt(fill);
+          c.beginPath(); for (var i = 0; i <= 24; i++) { var a = i / 24 * TAU, w = 1 + 0.05 * Math.sin(a * 5 + fill * 9); c.lineTo(IX + Math.cos(a) * r * w, IY + Math.sin(a) * r * w * 0.85); }
+          c.fillStyle = D.mix(BATTER, '#EDB15E', cook * 0.6); c.fill();
+          c.restore();
+        }
+      }
+      // the little light: red while cooking, green when it's ready, flashing red when it's burning
+      // (off until the lid is shut)
+      var lightCol = phase === 'cook' ? (t < T_OK ? '#FF6B57' : t <= T_BURN ? '#7BD389' : (Math.floor(performance.now() / 180) % 2 ? '#FF6B57' : '#FFC2B8')) : phase === 'pour' || phase === 'close' || phase === 'closing' ? '#C9C2D6' : '#7BD389';
+      c.beginPath(); c.arc(IX + 160, IY + 120, 13, 0, TAU); c.fillStyle = lightCol; c.fill(); ink(c, 3.5);
+      if (lightCol === '#7BD389' && phase === 'cook') { c.beginPath(); c.arc(IX + 160, IY + 120, 22, 0, TAU); c.strokeStyle = 'rgba(123,211,137,.5)'; c.lineWidth = 6; c.stroke(); }
+    }
+    function drawLid(c) {
+      // the lid swings on its hinge: lid = 0 is shut, OPEN (2 radians) is open, seen from inside
+      var sy = Math.cos(lid);
+      if (Math.abs(sy) < 0.03) sy = sy < 0 ? -0.03 : 0.03;
+      c.save(); c.translate(IX, HINGE); c.scale(1, sy); c.translate(0, IY - HINGE);
+      if (sy > 0) {
+        shape(c, D.rrPath(-205, -180, 410, 340, 72), '#FF8FB1', { lw: 5 / sy, depth: 0, inside: function (c) {
+          c.beginPath(); c.ellipse(-40, -110, 120, 28, -0.1, 0, TAU); c.fillStyle = 'rgba(255,255,255,.35)'; c.fill();
+        } });
+        // a cat face on the lid, and the handle at the front
+        var face = DISH.catWafflePath(new DOMMatrix().scale(0.45, 0.45));
+        c.save(); c.lineWidth = 4 / sy; c.fillStyle = '#FFC2D6'; c.fill(face); c.strokeStyle = INK; c.stroke(face); c.restore();
+        rr(c, -70, 140, 140, 34, 16); c.fillStyle = '#FFFFFF'; c.fill(); c.lineWidth = 4 / sy; c.strokeStyle = INK; c.stroke();
+      } else {
+        // the inside of the lid: the other cat-shaped plate
+        rr(c, -205, -180, 410, 340, 72); c.fillStyle = '#E8789B'; c.fill(); c.lineWidth = 5 / -sy; c.strokeStyle = INK; c.stroke();
+        var m = DISH.catWafflePath(new DOMMatrix().scale(S * 1.06, S * 1.06));
+        c.fillStyle = '#4A4458'; c.fill(m); c.lineWidth = 4 / -sy; c.stroke(m);
+      }
+      c.restore();
+      // the hinge
+      rr(c, IX - 90, HINGE - 10, 180, 20, 9); c.fillStyle = '#C9C2D6'; c.fill(); ink(c, 3.5);
+    }
+    return {
+      enter: function () { say('Hold to pour the batter in'); },
+      leave: function () { pourLoop.stop(); sizzle.stop(); },
+      hint: function (tt) {
+        if (phase === 'pour') return { x: IX, y: IY, press: (tt % 1.6) < 1.1 };
+        if (phase === 'close') return { x: IX, y: HINGE - 80, press: (tt % 1.2) < 0.5 };
+        if (phase === 'cook' && t >= T_OK) return { x: IX, y: IY + 150, press: (tt % 1.2) < 0.5 };
+        return null;
+      },
+      down: function () {
+        if (phase === 'pour') holding = true;
+        else if (phase === 'close') { phase = 'closing'; lidTo = 0; Sound.whoosh(); }
+        else if (phase === 'cook' && t > 0.5) {
+          tone = t < T_OK ? 'pale' : t <= T_BURN ? 'perfect' : 'burnt';
+          phase = 'opening'; lidTo = OPEN; Sound.whoosh(); buzz(12);
+        }
+      },
+      move: function () {},
+      up: function () { holding = false; if (phase === 'pour' && fill > 0.25 && fill < 1) say('Keep going, fill it right up!'); },
+      update: function (dt) {
+        jugT += ((holding && phase === 'pour' ? 1 : 0) - jugT) * Math.min(1, dt * 7);
+        var pouring = holding && jugT > 0.75 && phase === 'pour';
+        if (pouring) fill = Math.min(1, fill + dt * 0.42);
+        pourLoop.set(pouring ? 0.7 : 0);
+        if (phase === 'pour' && fill >= 1) { phase = 'close'; holding = false; Sound.pop(); say('Full! Tap the lid to close it'); }
+        // the lid swings smoothly
+        var dl = lidTo - lid; lid += clamp(dl, -dt * 7, dt * 7);
+        if (phase === 'closing' && Math.abs(lid) < 0.01) { phase = 'cook'; t = 0; said = 0; Sound.plop(); buzz(10); say('Wait for the green light...'); }
+        if (phase === 'cook') {
+          t = Math.min(T_MAX + 3, t + dt);
+          steam += dt;
+          if (Math.random() < dt * (t > T_BURN ? 8 : 4)) burst(IX + (Math.random() - 0.5) * 300, HINGE + 10, 1, { colors: [t > T_BURN ? 'rgba(120,110,125,.55)' : 'rgba(255,255,255,.8)'], shape: 'dot', size: 24, speed: 30, gravity: -110, life: 1.3 });
+          if (t >= T_OK && said < 1) { said = 1; Sound.chime(); say('Green light! Tap to open it'); }
+          if (t >= T_BURN && said < 2) { said = 2; say('Quick, it’s burning!'); }
+        }
+        sizzle.set(phase === 'cook' ? (t > T_BURN ? 1.4 : 0.8) : 0);
+        if (phase === 'opening' && Math.abs(lid - OPEN) < 0.01) {
+          phase = 'open'; lift = 0;
+          if (tone === 'perfect') { Cat.show(pick(['Purr-fect waffle!', 'So golden!'])); say('A golden cat waffle!'); burst(IX, IY, 18, { colors: ['#FFC93C', '#FFFFFF'], speed: 220, life: 0.8 }); }
+          else if (tone === 'pale') say('Too early! A bit pale.');
+          else say('Oops, a bit burnt!');
+        }
+        if (phase === 'open') {
+          lift = Math.min(1, lift + dt * 1.4);
+          if (lift >= 1) { phase = 'done'; dish.waffle = tone; Sound.plop(); showNext('Next', nextStep); }
+        }
+      },
+      draw: function (c) {
+        if (phase === 'cook') drawGauge(c, IX, t, T_OK, T_BURN, T_MAX, ['#F7E4AE', '#7E4826']);
+        var lidOpen = Math.cos(lid) < 0;
+        if (lidOpen) { drawLid(c); base(c); } else { base(c); drawLid(c); }
+        if (phase === 'pour' || jugT > 0.02) {
+          var j = jugPos();
+          if (holding && jugT > 0.75 && phase === 'pour') {
+            var m = jugMouth(j.x, j.y, j.a);
+            c.beginPath(); c.moveTo(m.x, m.y); c.quadraticCurveTo(m.x - 10, (m.y + IY) / 2, IX, IY);
+            c.strokeStyle = BATTER; c.lineWidth = 12; c.lineCap = 'round'; c.stroke();
+          }
+          drawJug(c, j.x, j.y, j.a, BATTER, 1 - fill * 0.85);
+        }
+        if (phase === 'pour' && fill > 0) drawRing(c, 86, 300, fill, Math.round(fill * 100) + '');
+      }
+    };
+  }
+
+  /* ---- Step: decorate the stack (or the waffle) ---- */
   var PAN_TOOL_ICONS = {
     plate: TOOL_ICONS.plate,
     syrup: '<svg viewBox="0 0 40 40"><path d="M14 4 H26 V10 Q34 14 33 24 V34 Q33 37 30 37 H10 Q7 37 7 34 V24 Q6 14 14 10 Z" fill="#C8721F" stroke="#2A2340" stroke-width="3"/><rect x="12" y="2" width="16" height="6" rx="2" fill="#FF7EB6" stroke="#2A2340" stroke-width="2.5"/><path d="M13 22 Q20 17 27 22 Q20 30 13 22 Z" fill="#FFE29A"/></svg>',
@@ -1743,6 +1866,11 @@
   var PAN_TOOL_SAY = { syrup: 'Drag to pour syrup', butter: 'Tap to add butter', strawberry: 'Tap to add strawberries', banana: 'Tap to add banana', sugar: 'Drag to dust icing sugar' };
 
   function DecorateScene() {
+    // the same decorating works for the pancake stack and the cat waffle: only the shape on the plate differs
+    var WAF = recipe.id === 'waffles', hitCtx = document.createElement('canvas').getContext('2d');
+    var topOf = WAF ? DISH.waffleTop : function () { return stackTop(); };
+    function onTop(p, pad) { if (!WAF) return onStackTop(p, pad); hitCtx.setTransform(1, 0, 0, 1, 0, 0); return hitCtx.isPointInPath(DISH.waffleTopPath(pad || 0), p.x, p.y); }
+    var drawScene = WAF ? DISH.drawWaffleScene : drawStackScene;
     var tool = 'syrup', down = false, pointer = null, emit = 0, actions = 0, praised = false, lastSyrup = null, falling = [];
     var pourLoop = Sound.loop('pour');
     var hist = History(['plate', 'syrup', 'drips', 'tops', 'sugar']), changed = false;
@@ -1755,9 +1883,12 @@
     }
     function countAction() { actions++; if (!praised && actions >= 6) { praised = true; later(0.3, function () { Cat.show(pick(['Looks yummy!', 'So pretty!'])); }); } }
     function onPlate(p) { var nx = (p.x - PLATE2.x) / (PLATE2.rx - 24), ny = (p.y - PLATE2.y) / (PLATE2.ry - 10); return nx * nx + ny * ny < 1; }
-    function overStackSide(p) { var st = stackOf(dish), w = Math.max.apply(null, st.map(function (q) { return q.rx; })); return Math.abs(p.x - SX) < w && p.y > SY0 - st.length * STH && p.y < SY0 + SRY; }
+    function overStackSide(p) {
+      if (WAF) return Math.abs(p.x - DISH.WX) < DISH.WRX && p.y > DISH.WY && p.y < DISH.WY + DISH.WRY * DISH.WSQ + DISH.WTH;
+      var st = stackOf(dish), w = Math.max.apply(null, st.map(function (q) { return q.rx; })); return Math.abs(p.x - SX) < w && p.y > SY0 - st.length * STH && p.y < SY0 + SRY;
+    }
     function place(kind, p, max) {
-      var top = onStackTop(p, 16);
+      var top = onTop(p, 16);
       if (!top && (!onPlate(p) || overStackSide(p))) return false;
       var list = dish.tops.filter(function (t) { return t.kind === kind; });
       hist.now();
@@ -1766,13 +1897,13 @@
       return true;
     }
     function addSyrup(p) {
-      if (!onStackTop(p, 10)) { lastSyrup = null; return; }
+      if (!onTop(p, 10)) { lastSyrup = null; return; }
       if (!lastSyrup) { lastSyrup = []; dish.syrup.push(lastSyrup); }
       var last = lastSyrup[lastSyrup.length - 1];
       if (last && dist(last, p) < 6) return;
       if (dish.syrup.reduce(function (n, s) { return n + s.length; }, 0) > 500) return;
       lastSyrup.push({ x: p.x, y: p.y }); changed = true;
-      var t = stackTop(), nx = (p.x - t.x) / t.rx, ny = (p.y - t.y) / t.ry;
+      var t = topOf(), nx = (p.x - t.x) / t.rx, ny = (p.y - t.y) / t.ry;
       if (ny > 0.1 && nx * nx + ny * ny > 0.5 && dish.drips.length < 16 && Math.random() < 0.25) {
         var ex = t.x + nx / Math.hypot(nx, ny) * t.rx * 0.98, ey = t.y + ny / Math.hypot(nx, ny) * t.ry * 0.98;
         dish.drips.push({ x: ex, y: ey, len: 0, max: 25 + Math.random() * 45 });
@@ -1792,14 +1923,14 @@
           });
         });
         setTool('syrup');
-        say('Decorate your pancakes!');
+        say(WAF ? 'Decorate your waffle!' : 'Decorate your pancakes!');
         showNext('Done', finishDish);
         setUndo({ canUndo: hist.canUndo, undo: function () { if (hist.undo()) { falling.length = 0; lastSyrup = null; say('Undone'); } } });
       },
       leave: function () { pourLoop.stop(); toolsEl.innerHTML = ''; },
       hint: function (t) {
         if (actions > 0 || dish.syrup.length) return null;
-        var k = (t % 2) / 2, top = stackTop();
+        var k = (t % 2) / 2, top = topOf();
         return { x: top.x - 110 + k * 220, y: top.y + Math.sin(k * TAU) * 22, press: true };
       },
       down: function (p) {
@@ -1827,11 +1958,11 @@
         }
         for (var j = falling.length - 1; j >= 0; j--) {
           var s = falling[j]; s.vy += 500 * dt; s.y += s.vy * dt;
-          if (s.y >= s.land) { falling.splice(j, 1); if (onStackTop(s, 0) || onPlate(s)) { dish.sugar.push({ x: s.x, y: s.y, r: s.r }); if (dish.sugar.length % 60 === 0) countAction(); } }
+          if (s.y >= s.land) { falling.splice(j, 1); if (onTop(s, 0) || onPlate(s)) { dish.sugar.push({ x: s.x, y: s.y, r: s.r }); if (dish.sugar.length % 60 === 0) countAction(); } }
         }
       },
       draw: function (c) {
-        drawStackScene(c, dish);
+        drawScene(c, dish);
         c.fillStyle = 'rgba(255,255,255,.95)';
         falling.forEach(function (s) { c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); });
         if (down && pointer && tool === 'sugar') {
@@ -2866,6 +2997,18 @@
     ],
     draw: function (c, d) { drawPizzaScene(c, d); }, frame: { x: 320, y: 440, span: 560 }
   };
+  ICONS.waffle = '<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="16" rx="5" fill="#FF8FB1" stroke="#2A2340" stroke-width="1.8"/><path d="M6.5 11 L6 6.5 L9 8.6 Q12 7.8 15 8.6 L18 6.5 L17.5 11 Q18.5 17 12 17.5 Q5.5 17 6.5 11 Z" fill="#EDB15E" stroke="#2A2340" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 10 V16 M12 9 V17 M15 10 V16 M7 12.5 H17 M7.5 15 H16.5" stroke="#C8823A" stroke-width="1.1"/><circle cx="19" cy="18.5" r="1.3" fill="#7BD389"/></svg>';
+  ICONS.waffleDeco = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="19" rx="10" ry="3.5" fill="#fff" stroke="#2A2340" stroke-width="1.6"/><path d="M5 12 L4.5 5 L8.5 8 Q12 7 15.5 8 L19.5 5 L19 12 Q20 18 12 18 Q4 18 5 12 Z" fill="#EDB15E" stroke="#2A2340" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 11 Q12 14 16 11" stroke="#A85814" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="12" cy="8.5" r="2.2" fill="#FF5A6A" stroke="#2A2340" stroke-width="1.2"/></svg>';
+  RECIPE_DEFS.waffles = {
+    id: 'waffles', name: 'Cat Waffles', title: 'Cat waffle!',
+    steps: [
+      { name: 'Mix', icon: ICONS.mix, make: function () { return BatterScene(); } },
+      { name: 'Cook', icon: ICONS.waffle, make: function () { return WaffleIronScene(); } },
+      { name: 'Chop', icon: ICONS.chop, make: function () { return ChopScene(['banana', 'strawberry'], nextStep); } },
+      { name: 'Decorate', icon: ICONS.waffleDeco, make: function () { return DecorateScene(); } }
+    ],
+    draw: function (c, d) { DISH.drawWaffleScene(c, d); }, frame: { x: 320, y: 420, span: 556 }
+  };
   var recipe = RECIPE_DEFS.handroll;
   var scene = null, stepIdx = -1, hintT = 0, idle = 0, pointerId = null;
 
@@ -2913,7 +3056,8 @@
     { id: 'handroll', name: 'Sushi Handroll', ready: true },
     { id: 'pancakes', name: 'Pancakes', ready: true },
     { id: 'burger', name: 'Burger', ready: true },
-    { id: 'pizza', name: 'Pizza', ready: true }
+    { id: 'pizza', name: 'Pizza', ready: true },
+    { id: 'waffles', name: 'Cat Waffles', ready: true }
   ];
   var RECIPE_ART = {
     handroll: '<svg viewBox="10 8 220 147"><ellipse cx="120" cy="122" rx="100" ry="22" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="120" cy="119" rx="74" ry="12" fill="#FFE3EC"/><g transform="rotate(-14 120 90)"><path d="M168 62 H70 A17 28 0 0 0 70 118 H168 Z" fill="#2E4A3A" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><rect x="62" y="69" width="100" height="8" rx="4" fill="#3D6450"/><ellipse cx="168" cy="90" rx="17.5" ry="28" fill="#2E4A3A" stroke="#2A2340" stroke-width="4"/><ellipse cx="168" cy="90" rx="14.5" ry="23.5" fill="#fff"/><rect x="160" y="77" width="11" height="9" rx="2" fill="#FF8A5B" stroke="#2A2340" stroke-width="2"/><rect x="168" y="88" width="7" height="8" rx="1.5" fill="#4FAE5E" stroke="#2A2340" stroke-width="2"/><ellipse cx="164" cy="98" rx="6" ry="4" fill="#C8E26F" stroke="#2A2340" stroke-width="2"/></g><ellipse cx="178" cy="125" rx="18" ry="7" fill="#fff" stroke="#2A2340" stroke-width="3"/><ellipse cx="178" cy="124.5" rx="11.5" ry="4" fill="#5A2A12"/></svg>',
@@ -2921,6 +3065,7 @@
     omurice: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M30 90 Q30 36 90 34 Q150 36 150 90 Z" fill="#FFD84D" stroke="#2A2340" stroke-width="4"/><path d="M60 60 Q75 50 90 62 Q105 50 120 60" fill="none" stroke="#FF4D3D" stroke-width="6" stroke-linecap="round"/></svg>',
     burger: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="104" rx="80" ry="13" fill="#fff" stroke="#2A2340" stroke-width="4"/><path d="M40 86 H140 Q144 98 128 100 H52 Q36 98 40 86 Z" fill="#E3A057" stroke="#2A2340" stroke-width="3.5"/><path d="M38 80 L142 80 Q150 90 138 88 L42 88 Q30 90 38 80 Z" fill="#6A3A1E" stroke="#2A2340" stroke-width="3.5"/><path d="M36 76 H144 V80 H136 L132 90 L128 80 H52 L47 92 L42 80 H36 Z" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><rect x="44" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><rect x="102" y="68" width="34" height="8" rx="4" fill="#FF4D3D" stroke="#2A2340" stroke-width="2.5"/><path d="M34 66 Q40 60 46 66 Q52 60 58 66 Q64 60 70 66 Q76 60 82 66 Q88 60 94 66 Q100 60 106 66 Q112 60 118 66 Q124 60 130 66 Q136 60 146 66 L146 70 L34 70 Z" fill="#7BD389" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M36 62 Q34 22 90 20 Q146 22 144 62 Z" fill="#EBA65A" stroke="#2A2340" stroke-width="4"/><g fill="#FFF4D6"><ellipse cx="70" cy="36" rx="3" ry="2"/><ellipse cx="92" cy="30" rx="3" ry="2"/><ellipse cx="112" cy="38" rx="3" ry="2"/><ellipse cx="80" cy="48" rx="3" ry="2"/><ellipse cx="104" cy="50" rx="3" ry="2"/></g></svg>',
     pizza: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="98" rx="80" ry="18" fill="#fff" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="80" rx="72" ry="28" fill="#C98A3E" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="74" rx="72" ry="28" fill="#E3A050" stroke="#2A2340" stroke-width="4"/><ellipse cx="90" cy="73" rx="60" ry="21" fill="#E8362B"/><path d="M36 72 Q42 56 62 56 Q80 50 98 55 Q122 52 138 62 Q148 74 136 84 Q112 94 88 92 Q58 94 42 84 Z" fill="#FFD86A"/><g stroke="#2A2340" stroke-width="2.5"><ellipse cx="66" cy="68" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="106" cy="64" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="92" cy="82" rx="10" ry="6" fill="#D83A3A"/><ellipse cx="124" cy="76" rx="9" ry="5" fill="#4FB868"/><ellipse cx="56" cy="80" rx="9" ry="5" fill="#4FB868"/></g></svg>',
+    waffles: '<svg viewBox="0 0 180 120"><defs><clipPath id="wfc"><path d="M32 78 Q33 56 42 38 Q46 34 51 38 L65 55 Q90 49 115 55 L129 38 Q134 34 138 38 Q147 56 148 78 A58 23 0 0 1 32 78 Z"/></clipPath></defs><ellipse cx="90" cy="102" rx="80" ry="15" fill="#fff" stroke="#2A2340" stroke-width="4"/><path transform="translate(0 10)" d="M32 78 Q33 56 42 38 Q46 34 51 38 L65 55 Q90 49 115 55 L129 38 Q134 34 138 38 Q147 56 148 78 A58 23 0 0 1 32 78 Z" fill="#C47F37" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M32 78 Q33 56 42 38 Q46 34 51 38 L65 55 Q90 49 115 55 L129 38 Q134 34 138 38 Q147 56 148 78 A58 23 0 0 1 32 78 Z" fill="#EDB15E"/><g clip-path="url(#wfc)" fill="#C8823A"><rect x="30" y="36" width="9" height="6" rx="2"/><rect x="43" y="36" width="9" height="6" rx="2"/><rect x="56" y="36" width="9" height="6" rx="2"/><rect x="69" y="36" width="9" height="6" rx="2"/><rect x="82" y="36" width="9" height="6" rx="2"/><rect x="95" y="36" width="9" height="6" rx="2"/><rect x="108" y="36" width="9" height="6" rx="2"/><rect x="121" y="36" width="9" height="6" rx="2"/><rect x="134" y="36" width="9" height="6" rx="2"/><rect x="147" y="36" width="9" height="6" rx="2"/><rect x="30" y="46" width="9" height="6" rx="2"/><rect x="43" y="46" width="9" height="6" rx="2"/><rect x="56" y="46" width="9" height="6" rx="2"/><rect x="69" y="46" width="9" height="6" rx="2"/><rect x="82" y="46" width="9" height="6" rx="2"/><rect x="95" y="46" width="9" height="6" rx="2"/><rect x="108" y="46" width="9" height="6" rx="2"/><rect x="121" y="46" width="9" height="6" rx="2"/><rect x="134" y="46" width="9" height="6" rx="2"/><rect x="147" y="46" width="9" height="6" rx="2"/><rect x="30" y="56" width="9" height="6" rx="2"/><rect x="43" y="56" width="9" height="6" rx="2"/><rect x="56" y="56" width="9" height="6" rx="2"/><rect x="69" y="56" width="9" height="6" rx="2"/><rect x="82" y="56" width="9" height="6" rx="2"/><rect x="95" y="56" width="9" height="6" rx="2"/><rect x="108" y="56" width="9" height="6" rx="2"/><rect x="121" y="56" width="9" height="6" rx="2"/><rect x="134" y="56" width="9" height="6" rx="2"/><rect x="147" y="56" width="9" height="6" rx="2"/><rect x="30" y="66" width="9" height="6" rx="2"/><rect x="43" y="66" width="9" height="6" rx="2"/><rect x="56" y="66" width="9" height="6" rx="2"/><rect x="69" y="66" width="9" height="6" rx="2"/><rect x="82" y="66" width="9" height="6" rx="2"/><rect x="95" y="66" width="9" height="6" rx="2"/><rect x="108" y="66" width="9" height="6" rx="2"/><rect x="121" y="66" width="9" height="6" rx="2"/><rect x="134" y="66" width="9" height="6" rx="2"/><rect x="147" y="66" width="9" height="6" rx="2"/><rect x="30" y="76" width="9" height="6" rx="2"/><rect x="43" y="76" width="9" height="6" rx="2"/><rect x="56" y="76" width="9" height="6" rx="2"/><rect x="69" y="76" width="9" height="6" rx="2"/><rect x="82" y="76" width="9" height="6" rx="2"/><rect x="95" y="76" width="9" height="6" rx="2"/><rect x="108" y="76" width="9" height="6" rx="2"/><rect x="121" y="76" width="9" height="6" rx="2"/><rect x="134" y="76" width="9" height="6" rx="2"/><rect x="147" y="76" width="9" height="6" rx="2"/><rect x="30" y="86" width="9" height="6" rx="2"/><rect x="43" y="86" width="9" height="6" rx="2"/><rect x="56" y="86" width="9" height="6" rx="2"/><rect x="69" y="86" width="9" height="6" rx="2"/><rect x="82" y="86" width="9" height="6" rx="2"/><rect x="95" y="86" width="9" height="6" rx="2"/><rect x="108" y="86" width="9" height="6" rx="2"/><rect x="121" y="86" width="9" height="6" rx="2"/><rect x="134" y="86" width="9" height="6" rx="2"/><rect x="147" y="86" width="9" height="6" rx="2"/><rect x="30" y="96" width="9" height="6" rx="2"/><rect x="43" y="96" width="9" height="6" rx="2"/><rect x="56" y="96" width="9" height="6" rx="2"/><rect x="69" y="96" width="9" height="6" rx="2"/><rect x="82" y="96" width="9" height="6" rx="2"/><rect x="95" y="96" width="9" height="6" rx="2"/><rect x="108" y="96" width="9" height="6" rx="2"/><rect x="121" y="96" width="9" height="6" rx="2"/><rect x="134" y="96" width="9" height="6" rx="2"/><rect x="147" y="96" width="9" height="6" rx="2"/></g><g fill="#A9662A"><ellipse cx="72" cy="70" rx="6" ry="5"/><ellipse cx="108" cy="70" rx="6" ry="5"/><path d="M85 80 H95 L90 85 Z"/></g><path d="M32 78 Q33 56 42 38 Q46 34 51 38 L65 55 Q90 49 115 55 L129 38 Q134 34 138 38 Q147 56 148 78 A58 23 0 0 1 32 78 Z" fill="none" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M52 64 Q66 76 82 66 Q98 58 112 70 Q122 78 132 68" fill="none" stroke="#A85814" stroke-width="6" stroke-linecap="round"/><path d="M120 80 V92" stroke="#A85814" stroke-width="5" stroke-linecap="round"/><path d="M90 64 Q82 58 86 54 Q90 52 94 54 Q98 58 90 64 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="2"/><circle cx="60" cy="84" r="6.5" fill="#FFF4C2" stroke="#2A2340" stroke-width="2"/><circle cx="124" cy="60" r="6" fill="#FFF4C2" stroke="#2A2340" stroke-width="2"/></svg>',
     brigadeiros: '<svg viewBox="0 0 180 120"><ellipse cx="90" cy="100" rx="78" ry="16" fill="#fff" stroke="#2A2340" stroke-width="4"/><g stroke="#2A2340" stroke-width="4"><circle cx="60" cy="74" r="22" fill="#6B3A22"/><circle cx="120" cy="74" r="22" fill="#6B3A22"/><circle cx="90" cy="56" r="22" fill="#7A4428"/></g></svg>'
   };
 
@@ -3105,5 +3250,5 @@
   requestAnimationFrame(frame);
 
   /* test hook for automated checks */
-  window.__kitchen = { goStep: function (i, id) { if (id) recipe = RECIPE_DEFS[id]; if (!dish || id) dish = newDish(); showScreen('play'); goStep(i); }, finish: function () { finishDish(); } };
+  window.__kitchen = { toScreen: function (x, y) { return { x: OX + x * S, y: OY + y * S }; }, dish: function () { return dish; }, goStep: function (i, id) { if (id) recipe = RECIPE_DEFS[id]; if (!dish || id) dish = newDish(); showScreen('play'); goStep(i); }, finish: function () { finishDish(); } };
 })();

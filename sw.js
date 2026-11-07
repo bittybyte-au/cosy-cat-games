@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-a67e644c45';
+const VERSION = 'ccg-22f48b4bc0';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -20,7 +20,7 @@ const FILES = {
   "./manifest.webmanifest": "4ae50003e2",
   "./shared/avatar.js": "800d1be63f",
   "./shared/cat.js": "31eaf8e051",
-  "./shared/dishes.js": "214258eda0",
+  "./shared/dishes.js": "a544e7aaca",
   "./shared/draw.js": "6af1578083",
   "./shared/game.css": "c916f187bf",
   "./shared/games.js": "f247c597b8",
@@ -47,8 +47,8 @@ const FILES = {
   "./games/colour/game.js": "b4adbce2ee",
   "./games/colour/": "0ebe0713f6",
   "./games/colour/index.html": "0ebe0713f6",
-  "./games/colour/pages.js": "f7ede1b9b9",
-  "./games/cooking/game.js": "2eaf83f37d",
+  "./games/colour/pages.js": "3aaf4d6d8a",
+  "./games/cooking/game.js": "9627574714",
   "./games/cooking/": "806f497544",
   "./games/cooking/index.html": "806f497544",
   "./games/crossing/game.js": "9d636258ee",

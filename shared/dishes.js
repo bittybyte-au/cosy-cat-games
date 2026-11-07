@@ -2,7 +2,7 @@
    Cosy Kitchen uses these while you cook; other games (Cosy Home) draw the dishes you made from
    the small description saved in the collection:
      GGDish.pack(dish)              the bits needed to redraw a dish (small JSON, no pictures)
-     GGDish.draw(ctx, item, size)   draws { id: 'handroll' | 'pancakes' | 'burger' | 'pizza', data } on its plate,
+     GGDish.draw(ctx, item, size)   draws { id: 'handroll' | 'pancakes' | 'burger' | 'pizza' | 'waffles', data } on its plate,
                                     centred on the canvas origin, about `size` wide */
 (function () {
   'use strict';
@@ -243,7 +243,7 @@
 
   /* syrup: one outlined puddle on top (inside the top's outline) with drips running over the edge */
   var SYRUP = '#AE611C';
-  function drawSyrup(c, d, top) {
+  function drawSyrup(c, d, top, clipPath) {
     if (!d.drips.length && !d.syrup.length) return;
     c.lineCap = 'round'; c.lineJoin = 'round';
     [[INK, 6], [SYRUP, 0]].forEach(function (pass) {
@@ -252,7 +252,7 @@
         c.beginPath(); c.moveTo(dr.x, dr.y - 3); c.lineTo(dr.x, dr.y + dr.len); c.lineWidth = 12 + pass[1]; c.stroke();
         c.beginPath(); c.arc(dr.x, dr.y + dr.len + 2, 8 + pass[1] / 2, 0, TAU); c.fill();
       });
-      c.save(); c.beginPath(); c.ellipse(top.x, top.y, top.rx - 2, top.ry - 2, 0, 0, TAU); c.clip();
+      c.save(); if (clipPath) c.clip(clipPath); else { c.beginPath(); c.ellipse(top.x, top.y, top.rx - 2, top.ry - 2, 0, 0, TAU); c.clip(); }
       d.syrup.forEach(function (stroke) {
         if (stroke.length < 1) return;
         c.beginPath(); c.moveTo(stroke[0].x, stroke[0].y); stroke.forEach(function (q) { c.lineTo(q.x, q.y); });
@@ -273,6 +273,79 @@
     drawSyrup(c, d, stackTop(d));
     d.tops.filter(function (t) { return t.onTop; }).sort(function (a, b) { return a.y - b.y; }).forEach(function (t) { drawTopping(c, t); });
     d.tops.filter(function (t) { return !t.onTop && t.y >= SY0; }).forEach(function (t) { drawTopping(c, t); });
+    c.fillStyle = 'rgba(255,255,255,.95)';
+    d.sugar.forEach(function (s) { c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); });
+  }
+
+  /* ---- the cat-shaped waffle ----
+     The outline in its own space: a round head 180 x 140 (half sizes) with two pointy ears. The waffle iron draws it
+     from straight above; on the plate it's tipped back (squashed to WSQ) and has a thick edge. */
+  var WRX = 180, WRY = 140, WSQ = 0.6, WX = 320, WY = 420, WTH = 22;
+  function catWafflePath(m) {
+    var p = new Path2D(), d2r = Math.PI / 180;
+    function P(a) { return [Math.cos(a * d2r) * WRX, Math.sin(a * d2r) * WRY]; }
+    var a1 = P(205), a2 = P(244), b1 = P(296), b2 = P(335);
+    p.moveTo(a1[0], a1[1]);
+    p.quadraticCurveTo(-150, -150, -128, -192); p.quadraticCurveTo(-118, -198, -108, -190); p.quadraticCurveTo(-92, -160, a2[0], a2[1]);
+    p.ellipse(0, 0, WRX, WRY, 0, 244 * d2r, 296 * d2r);
+    p.quadraticCurveTo(92, -160, 108, -190); p.quadraticCurveTo(118, -198, 128, -192); p.quadraticCurveTo(150, -150, b2[0], b2[1]);
+    p.ellipse(0, 0, WRX, WRY, 0, 335 * d2r, 565 * d2r);
+    p.closePath();
+    if (!m) return p;
+    var q = new Path2D(); q.addPath(p, m); return q;
+  }
+  var WAFFLE_LOCAL = catWafflePath();
+  /* the waffle's pockets and its pressed-in cat face, in the outline's own space (call inside a clip) */
+  function waffleGrid(c, ridge, pocket, face) {
+    c.fillStyle = ridge; c.fillRect(-WRX - 10, -210, WRX * 2 + 20, 360);
+    c.fillStyle = pocket;
+    for (var y = -205; y < 150; y += 34) for (var x = -WRX - 4; x < WRX; x += 34) { rr(c, x + 5, y + 5, 24, 24, 5); c.fill(); }
+    // the face pressed into the waffle: eyes, nose and a little mouth
+    c.fillStyle = face;
+    c.beginPath(); c.ellipse(-62, -12, 17, 22, 0, 0, TAU); c.ellipse(62, -12, 17, 22, 0, 0, TAU); c.fill();
+    c.beginPath(); c.moveTo(-14, 28); c.lineTo(14, 28); c.lineTo(0, 42); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(0, 42); c.quadraticCurveTo(-6, 60, -26, 54); c.moveTo(0, 42); c.quadraticCurveTo(6, 60, 26, 54);
+    c.strokeStyle = face; c.lineWidth = 9; c.lineCap = 'round'; c.stroke();
+  }
+  var WAFFLE_TONES = {
+    pale: { ridge: '#F8DFA2', pocket: '#EECB82', face: '#E2B66A', side: '#E6C27C' },
+    perfect: { ridge: '#EDB15E', pocket: '#C8823A', face: '#A9662A', side: '#C47F37' },
+    burnt: { ridge: '#7E4826', pocket: '#55301A', face: '#3C2112', side: '#4E2A12' }
+  };
+  /* a cooked waffle seen from straight above at (x, y), s times its size (used in the waffle iron) */
+  function drawWaffleFlat(c, x, y, s, tone, cook) {
+    var T = WAFFLE_TONES[tone || 'perfect'], k = cook === undefined ? 1 : cook;
+    var path = catWafflePath(M(x, y, 0, s, s));
+    shape(c, path, D.mix('#F7DFA0', T.ridge, k), { lw: 4, depth: 0, inside: function (c) {
+      c.save(); c.translate(x, y); c.scale(s, s);
+      waffleGrid(c, D.mix('#F7DFA0', T.ridge, k), D.mix('#EFD18A', T.pocket, k), D.mix('#E9C77E', T.face, k));
+      c.restore();
+    } });
+  }
+  /* the top of the waffle on the plate (for syrup and toppings); pad shrinks it a little */
+  function waffleTopPath(pad) { var k = 1 - (pad || 0) / WRX; return catWafflePath(M(WX, WY, 0, k, k * WSQ)); }
+  function waffleTop() { return { x: WX, y: WY, rx: WRX, ry: WRY * WSQ }; }
+  function drawWaffle(c, tone) {
+    var T = WAFFLE_TONES[tone || 'perfect'];
+    // the thick edge: the outline drawn again lower down, joined to the top
+    var side = catWafflePath(M(WX, WY + WTH, 0, 1, WSQ));
+    shape(c, side, T.side, { lw: 5, depth: 6 });
+    c.fillStyle = T.side; c.fillRect(WX - WRX + 1, WY - 4, WRX * 2 - 2, WTH + 4);
+    c.beginPath(); c.moveTo(WX - WRX, WY); c.lineTo(WX - WRX, WY + WTH); c.moveTo(WX + WRX, WY); c.lineTo(WX + WRX, WY + WTH); ink(c, 5);
+    var top = catWafflePath(M(WX, WY, 0, 1, WSQ));
+    shape(c, top, T.ridge, { lw: 5, depth: 0, inside: function (c) {
+      c.save(); c.translate(WX, WY); c.scale(1, WSQ); waffleGrid(c, T.ridge, T.pocket, T.face); c.restore();
+      if (tone === 'burnt') { c.fillStyle = 'rgba(20,10,5,.35)'; var sr = seeded(9); for (var i = 0; i < 8; i++) { c.beginPath(); c.arc(WX + (sr() - 0.5) * WRX * 1.6, WY + (sr() - 0.5) * WRY * WSQ * 1.4, 5 + sr() * 6, 0, TAU); c.fill(); } }
+    } });
+  }
+  function drawWaffleScene(c, d) {
+    var pl = PLATES[d.plate];
+    drawPlate(c, pl, PLATE2.x, PLATE2.y, PLATE2.rx, PLATE2.ry, 14, [4, PLATE2.rx - 40, PLATE2.ry - 18], 28, PLATE2.rx - 20, PLATE2.ry - 8, 4);
+    d.tops.filter(function (t) { return !t.onTop && t.y < WY; }).forEach(function (t) { drawTopping(c, t); });
+    drawWaffle(c, d.waffle || 'perfect');
+    drawSyrup(c, d, waffleTop(), waffleTopPath(2));
+    d.tops.filter(function (t) { return t.onTop; }).sort(function (a, b) { return a.y - b.y; }).forEach(function (t) { drawTopping(c, t); });
+    d.tops.filter(function (t) { return !t.onTop && t.y >= WY; }).forEach(function (t) { drawTopping(c, t); });
     c.fillStyle = 'rgba(255,255,255,.95)';
     d.sugar.forEach(function (s) { c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); });
   }
@@ -473,9 +546,10 @@
     handroll: { draw: drawPlateScene, x: PCX, y: PCY, span: PR * 2 + 24 },
     pancakes: { draw: drawStackScene, x: 320, y: 420, span: 556 },
     burger: { draw: drawBurgerScene, x: 320, y: 410, span: 540 },
-    pizza: { draw: drawPizzaScene, x: 320, y: 440, span: 560 }
+    pizza: { draw: drawPizzaScene, x: 320, y: 440, span: 560 },
+    waffles: { draw: drawWaffleScene, x: 320, y: 420, span: 556 }
   };
-  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false, chips: '', sauce: 1, cheese: 1, bake: 1, pz: [], cut: 0 };
+  var EMPTY = { plate: 0, leaves: [], ginger: [], wasabi: [], seeds: [], soy: 0, syrup: [], drips: [], tops: [], sugar: [], cakes: [], layers: [], patty: 'perfect', topBun: false, chips: '', sauce: 1, cheese: 1, bake: 1, pz: [], cut: 0, waffle: '' };
   var round = function (v) { return typeof v === 'number' ? Math.round(v * 10) / 10 : v; };
   // positions to whole pixels, everything else to one decimal place
   function tidy(o, key) {
@@ -514,6 +588,8 @@
       drawLeaf: drawLeaf, gingerSlice: gingerSlice, drawGinger: drawGinger, drawWasabi: drawWasabi, cakeInfo: cakeInfo, drawStackCake: drawStackCake,
       stackOf: stackOf, stackTop: stackTop, drawButter: drawButter, drawTopping: drawTopping, drawStackScene: drawStackScene,
       drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene, CHIP_COLOURS: CHIP_COLOURS,
+      WX: WX, WY: WY, WRX: WRX, WRY: WRY, WSQ: WSQ, WTH: WTH, WAFFLE_TONES: WAFFLE_TONES, catWafflePath: catWafflePath, waffleGrid: waffleGrid,
+      drawWaffleFlat: drawWaffleFlat, drawWaffle: drawWaffle, drawWaffleScene: drawWaffleScene, waffleTopPath: waffleTopPath, waffleTop: waffleTop,
       ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, PIZZA_TOPS: PIZZA_TOPS, PIZZA_CUTS: PIZZA_CUTS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
     }
   };
