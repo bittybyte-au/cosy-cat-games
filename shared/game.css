@@ -25,6 +25,11 @@ canvas#stage { position: fixed; inset: 0; touch-action: none; display: block; }
   font: 800 clamp(1.1rem, 4.4vw, 1.45rem)/1.15 var(--body); text-align: center; max-width: calc(100% - 32px);
 }
 
+/* While a card, "level done" box or level list is open, the top bar stays above it so you can always get home
+   (and turn the sound off); the bar's other buttons rest until the card is closed. */
+body.game:has(> .card-wrap:not([hidden]), > .win:not([hidden]), > .overlay:not([hidden])) .topbar { z-index: 61; }
+body.game:has(> .card-wrap:not([hidden]), > .win:not([hidden]), > .overlay:not([hidden])) .topbar > :not(#homeBtn):not(#soundBtn) { pointer-events: none; opacity: .4; }
+
 /* the "level done" card */
 .win, .card-wrap {
   position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; background: rgba(42, 35, 64, .35);
