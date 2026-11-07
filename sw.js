@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-bceba679b7';
+const VERSION = 'ccg-209c608d0d';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -24,15 +24,15 @@ const FILES = {
   "./shared/draw.js": "6af1578083",
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "c668d6e801",
-  "./shared/games.js": "9bcbaa16e6",
-  "./shared/help.js": "b2e6270d38",
+  "./shared/games.js": "50c75295c2",
+  "./shared/help.js": "ac7eec2f62",
   "./shared/install.js": "1c67ffafad",
   "./shared/levels.js": "c388bd525e",
   "./shared/pots.js": "068f16575f",
-  "./shared/scene.js": "fa19214ef0",
+  "./shared/scene.js": "86572caaa2",
   "./shared/site.css": "7f9619cffc",
   "./shared/store.js": "12a8ec5516",
-  "./shared/things.js": "5672cc6b84",
+  "./shared/things.js": "dead140370",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
   "./fonts/baloo-2-latin-800-normal.woff2": "694f2e10bb",
   "./fonts/fonts.css": "e52febfe7d",
@@ -60,9 +60,9 @@ const FILES = {
   "./games/crossing/game.js": "ad61ef75a4",
   "./games/crossing/": "f41714ffaa",
   "./games/crossing/index.html": "f41714ffaa",
-  "./games/cubbies/game.js": "e0e8ec89ae",
-  "./games/cubbies/": "b244807b37",
-  "./games/cubbies/index.html": "b244807b37",
+  "./games/cubbies/game.js": "c3192cdb22",
+  "./games/cubbies/": "055c3c111e",
+  "./games/cubbies/index.html": "055c3c111e",
   "./games/fashion/game.js": "654078923b",
   "./games/fashion/": "4e06ec5295",
   "./games/fashion/index.html": "4e06ec5295",
@@ -106,6 +106,9 @@ const FILES = {
   "./games/peekaboo/game.js": "161702425c",
   "./games/peekaboo/": "b6fde1f7df",
   "./games/peekaboo/index.html": "b6fde1f7df",
+  "./games/petshop/game.js": "1a8407481a",
+  "./games/petshop/": "878f2bc7aa",
+  "./games/petshop/index.html": "878f2bc7aa",
   "./games/pottery/game.js": "25a83f5d05",
   "./games/pottery/": "7b3e4a8fb0",
   "./games/pottery/index.html": "7b3e4a8fb0",

@@ -48,25 +48,16 @@
   }
 
 
-  /* A cat asleep in a round bed, centred on (0,0), about `s` wide: the shared lying cat (shared/cat.js),
-     between the back of the bed and its front rim. Lines use the cat's own weights, so bed and cat match. */
+  /* A cat asleep in a round bed, centred on (0,0), about `s` wide: the shared cat bed (GGThings.catBed) with the
+     shared lying cat (shared/cat.js) in its hollow. Lines use the cat's own weights, so bed and cat match. */
   function drawBedCat(c, kind, face, s) {
     var size = s * 0.76, u = size / 88;
-    // back of the bed, with its hollow
-    D.shape(c, D.ellPath(0, s * 0.3, s * 0.56, s * 0.24), D.tone(c, '#F2DCC3', s * 0.06, s * 0.54), { lw: LW.big * u, depth: 0, inside: function (c) {
-      c.beginPath(); c.ellipse(0, s * 0.32, s * 0.44, s * 0.15, 0, 0, TAU); c.fillStyle = '#E2C2A2'; c.fill();
+    GGThings.catBed(c, 0, s * 0.54, { w: s * 1.12, ls: 1 / u, shadow: false, cat: function (c) {
+      // the cat, curled up with its paws under its chin, tail over the side
+      c.save(); c.translate(11 * u, s * 0.33 - 43 * u);
+      GGCat.draw(c, { preset: GGCat.GAME_ORDER[kind] || 'ginger', face: face, pose: 'lie', size: size });
+      c.restore();
     } });
-    // the cat, curled up with its paws under its chin, tail over the side
-    c.save(); c.translate(11 * u, s * 0.33 - 43 * u);
-    GGCat.draw(c, { preset: GGCat.GAME_ORDER[kind] || 'ginger', face: face, pose: 'lie', size: size });
-    c.restore();
-    // front rim of the bed, tucked over the cat's tummy
-    D.shape(c, function (p) {
-      p.moveTo(-s * 0.56, s * 0.3);
-      p.bezierCurveTo(-s * 0.5, s * 0.62, s * 0.5, s * 0.62, s * 0.56, s * 0.3);
-      p.bezierCurveTo(s * 0.4, s * 0.44, -s * 0.4, s * 0.44, -s * 0.56, s * 0.3);
-      p.closePath();
-    }, D.tone(c, '#F7E6D2', s * 0.3, s * 0.54), { lw: LW.big * u, depth: s * 0.05, shine: [-s * 0.3, s * 0.42, s * 0.1, s * 0.025, 0.25, 0.6] });
   }
 
   /* Cached sprites keep things smooth on older tablets. */

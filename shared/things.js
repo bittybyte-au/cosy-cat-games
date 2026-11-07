@@ -28,7 +28,8 @@
      GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left
     GGThings.umbrella(c, x, y, { size (1 = about 60 across, 70 tall), col, open (0 furled .. 1 open), a (tilt), ls })
         (x, y) is the hook of the handle, where a paw holds it
-   More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy. */
+   More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy;
+   and the pet shop's things (a tin of cat food, a bag of dry food, kitty litter, a cat bed, a collar, a paw print). */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -340,6 +341,143 @@
     c.restore();
     c.save(); c.translate(x, y); c.strokeStyle = 'rgba(255,246,216,' + (0.3 + sq * 0.6) + ')'; c.lineWidth = W(o, 3); c.lineCap = 'round';
     [-1, 0, 1].forEach(function (i) { var r0 = 20 + sq * 8, an = -Math.PI / 2 + i * 0.55; c.beginPath(); c.moveTo(Math.cos(an) * r0, Math.sin(an) * r0); c.lineTo(Math.cos(an) * (r0 + 8), Math.sin(an) * (r0 + 8)); c.stroke(); });
+    c.restore();
+  };
+})(window.GGThings);
+
+/* ================= added for Pet Shop: things a pet shop sells, each seen from the front =================
+   (its own block; the looks above are unchanged). Each stands on (x, y), the middle of its base, and draws its own
+   soft shadow (shadow: false leaves it off). size scales the whole thing; outlines stay the house weights.
+     GGThings.tin(c, x, y, { size (1 = about 60 wide, 68 tall), col (the label), fish (the fish's colour), shadow, ls })
+         a tin of cat food with a fish on its label
+     GGThings.foodBag(c, x, y, { size (1 = about 58 wide, 82 tall), col, shadow, ls })
+         a bag of dry cat food, folded over at the top, with a bowl of kibble on the front
+     GGThings.litter(c, x, y, { size (1 = about 64 wide, 78 tall), col, shadow, ls })
+         a box of kitty litter with a carry handle, a paw print and a band of grains on the front
+     GGThings.catBed(c, x, y, { w (about w * 0.43 tall), tall (stretches it upward, default 1), col, hollow, rim,
+                     cat: fn(c) (drawn in the hollow, between the back of the bed and its front rim), shadow, ls })
+         a round cat bed; with no colours it is Cosy Cubbies' cream bed. Without a cat it has a plump cushion in it
+         (cushion: a colour, or false for an empty hollow)
+     GGThings.collar(c, x, y, { size (1 = about 58 wide, 84 tall), col, bell (a colour, or false), shadow, ls })
+         a cat collar stood up on its edge, the buckle at the top and a little bell at the bottom
+     GGThings.paw(c, x, y, { r (about the print's half width), col })   a flat paw print (a pad and four toes), centred */
+(function (T) {
+  'use strict';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
+  function W(o, w, k) { return w / (((o && o.ls) || 1) * (k || 1)); }
+  T.VARIANTS.tin = ['front']; T.VARIANTS.foodBag = ['front']; T.VARIANTS.litter = ['front']; T.VARIANTS.catBed = ['front']; T.VARIANTS.collar = ['front']; T.VARIANTS.paw = ['print'];
+  function begin(c, x, y, o) { var s = o.size || 1; c.save(); c.translate(x, y); c.scale(s, s); return s; }
+
+  T.paw = function (c, x, y, o) {
+    o = o || {}; var r = o.r || 10;
+    c.save(); c.fillStyle = o.col || INK;
+    c.beginPath(); c.ellipse(x, y + r * 0.32, r * 0.58, r * 0.46, 0, 0, TAU); c.fill();
+    [[-0.78, -0.18], [-0.3, -0.62], [0.3, -0.62], [0.78, -0.18]].forEach(function (t) { c.beginPath(); c.ellipse(x + t[0] * r, y + t[1] * r, r * 0.24, r * 0.29, t[0] * 0.5, 0, TAU); c.fill(); });
+    c.restore();
+  };
+
+  T.tin = function (c, x, y, o) {
+    o = o || {};
+    var s = begin(c, x, y, o), col = o.col || '#FF6B8B', lm = W(o, LW.mid, s), lf = W(o, LW.fine, s), metal = '#DCD6E8';
+    if (o.shadow !== false) D.shadow(c, 3, -1, 36, 7);
+    var body = new Path2D(); body.moveTo(-30, -58); body.lineTo(-30, -7); body.ellipse(0, -7, 30, 7, 0, Math.PI, 0, true); body.lineTo(30, -58); body.ellipse(0, -58, 30, 8, 0, 0, Math.PI, false); body.closePath();
+    D.shape(c, body, D.tone(c, metal, -66, 0), { lw: lm, depth: 0, inside: function (c) {
+      var lab = new Path2D(); lab.moveTo(-31, -49); lab.ellipse(0, -49, 31, 7, 0, Math.PI, 0, true); lab.lineTo(31, -15); lab.ellipse(0, -15, 31, 7, 0, 0, Math.PI, false); lab.closePath();
+      c.fillStyle = D.tone(c, col, -56, -8); c.fill(lab);
+      c.strokeStyle = D.darker(col, 0.2); c.lineWidth = lf * 0.7; c.stroke(lab);
+      c.beginPath(); c.ellipse(0, -31, 19, 11, 0, 0, TAU); c.fillStyle = 'rgba(255,255,255,.85)'; c.fill();
+      T.fish(c, 0, -31, { size: 0.95, col: o.fish || '#FFA94D', ls: (o.ls || 1) * s });
+      c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = lf * 0.7;
+      c.beginPath(); c.ellipse(0, -10, 30, 7, 0, 0.2, Math.PI - 0.2); c.stroke();
+      D.crescent(c, body, 6);
+      D.shine(c, -21, -33, 3.5, 16, 0, 0.5);
+    } });
+    D.shape(c, D.ellPath(0, -58, 30, 8), D.lighter(metal, 0.3), { lw: lm, depth: 0, inside: function (c) {
+      c.beginPath(); c.ellipse(0, -58, 23, 5.4, 0, 0, TAU); c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = lf * 0.8; c.stroke();
+      c.beginPath(); c.ellipse(9, -59, 6, 2.2, 0, 0, TAU); c.stroke();
+    } });
+    c.restore();
+  };
+
+  T.foodBag = function (c, x, y, o) {
+    o = o || {};
+    var s = begin(c, x, y, o), col = o.col || '#FF9A4D', lm = W(o, LW.mid, s), lf = W(o, LW.fine, s);
+    if (o.shadow !== false) D.shadow(c, 3, -1, 34, 6);
+    var body = new Path2D(); body.moveTo(-25, -70); body.lineTo(25, -70); body.lineTo(29, -6); body.quadraticCurveTo(29, 0, 23, 0); body.lineTo(-23, 0); body.quadraticCurveTo(-29, 0, -29, -6); body.closePath();
+    D.shape(c, body, D.tone(c, col, -70, 0), { lw: lm, depth: 7, inside: function (c) {
+      c.fillStyle = 'rgba(42,35,64,.08)'; c.beginPath(); c.moveTo(17, -70); c.lineTo(25, -70); c.lineTo(29, 0); c.lineTo(20, 0); c.closePath(); c.fill();
+      D.shape(c, D.rrPath(-19, -57, 38, 40, 12), D.lighter(col, 0.78), { lw: lf, depth: 0 });
+      T.bowl(c, 0, -37, { r: 14, col: '#7CC4FF', food: 'kibble', ls: (o.ls || 1) * s * 1.4 });
+      D.shine(c, -18, -62, 6, 3, -0.3, 0.45);
+    } });
+    var top = new Path2D(); top.moveTo(-25, -69); top.lineTo(-25, -78);
+    for (var i = 0; i < 6; i++) { top.lineTo(-25 + i * 50 / 6 + 25 / 6, -82); top.lineTo(-25 + (i + 1) * 50 / 6, -78); }
+    top.lineTo(25, -69); top.closePath();
+    D.shape(c, top, D.darker(col, 0.14), { lw: lf, depth: 0, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-26, -75, 52, 2.5); } });
+    c.restore();
+  };
+
+  T.litter = function (c, x, y, o) {
+    o = o || {};
+    var s = begin(c, x, y, o), col = o.col || '#4FC3B8', lm = W(o, LW.mid, s), lf = W(o, LW.fine, s), sand = '#F3E2BE';
+    if (o.shadow !== false) D.shadow(c, 3, -1, 38, 6);
+    // the handle starts inside the box, which covers its base
+    var tab = new Path2D(); tab.moveTo(-17, -58); tab.lineTo(-13, -75); tab.quadraticCurveTo(0, -80, 13, -75); tab.lineTo(17, -58); tab.closePath();
+    D.shape(c, tab, D.darker(col, 0.12), { lw: lf, depth: 0, inside: function (c) { D.rr(c, -8, -73, 16, 6, 3); c.fillStyle = 'rgba(42,35,64,.55)'; c.fill(); } });
+    var box = D.rrPath(-32, -62, 64, 62, 7);
+    D.shape(c, box, D.tone(c, col, -62, 0), { lw: lm, depth: 0, inside: function (c) {
+      c.fillStyle = sand; c.fillRect(-33, -16, 66, 17);
+      c.strokeStyle = D.darker(sand, 0.2); c.lineWidth = lf * 0.8; c.beginPath(); c.moveTo(-33, -16); c.lineTo(33, -16); c.stroke();
+      var r = D.seeded(7); c.fillStyle = D.darker(sand, 0.22);
+      for (var i = 0; i < 16; i++) { c.beginPath(); c.arc(-28 + r() * 56, -12 + r() * 9, 1.5 + r() * 1.2, 0, TAU); c.fill(); }
+      c.beginPath(); c.arc(0, -38, 17, 0, TAU); c.fillStyle = 'rgba(255,255,255,.88)'; c.fill();
+      T.paw(c, 0, -37, { r: 12, col: D.darker(col, 0.25) });
+      D.crescent(c, box, 6);
+      D.shine(c, -22, -52, 6, 3, -0.4, 0.45);
+    } });
+    c.restore();
+  };
+
+  T.catBed = function (c, x, y, o) {
+    o = o || {};
+    // v is the vertical unit: `tall` stretches the bed up from its base (a deeper bed that reads well when small)
+    var w = o.w || 100, s = w / 1.12, v = s * (o.tall || 1), cy = y - v * 0.54, lw = W(o, LW.big);
+    var col = o.col || '#F2DCC3', hollow = o.hollow || (o.col ? D.darker(col, 0.16) : '#E2C2A2'), rim = o.rim || (o.col ? D.lighter(col, 0.32) : '#F7E6D2');
+    if (o.shadow !== false) D.shadow(c, x + 3, y - s * 0.01, s * 0.6, s * 0.07);
+    // the back of the bed, with its hollow
+    D.shape(c, D.ellPath(x, cy + v * 0.3, s * 0.56, v * 0.24), D.tone(c, col, cy + v * 0.06, cy + v * 0.54), { lw: lw, depth: 0, inside: function (c) {
+      c.beginPath(); c.ellipse(x, cy + v * 0.32, s * 0.44, v * 0.15, 0, 0, TAU); c.fillStyle = hollow; c.fill();
+    } });
+    if (o.cat) o.cat(c);
+    else if (o.cushion !== false) {
+      // an empty bed has a plump cushion in its hollow, with a paw print on it
+      var cu = o.cushion || D.lighter(col, 0.55);
+      D.shape(c, D.ellPath(x, cy + v * 0.22, s * 0.42, v * 0.15), D.tone(c, cu, cy + v * 0.07, cy + v * 0.37), { lw: W(o, LW.fine), depth: v * 0.04, inside: function (c) {
+        T.paw(c, x + s * 0.02, cy + v * 0.18, { r: Math.min(s, v) * 0.09, col: D.darker(cu, 0.2) });
+      }, shine: [x - s * 0.2, cy + v * 0.13, s * 0.1, v * 0.03, -0.2, 0.6] });
+    }
+    // the front rim, tucked over whatever lies in it
+    D.shape(c, function (p) {
+      p.moveTo(x - s * 0.56, cy + v * 0.3);
+      p.bezierCurveTo(x - s * 0.5, cy + v * 0.62, x + s * 0.5, cy + v * 0.62, x + s * 0.56, cy + v * 0.3);
+      p.bezierCurveTo(x + s * 0.4, cy + v * 0.44, x - s * 0.4, cy + v * 0.44, x - s * 0.56, cy + v * 0.3);
+      p.closePath();
+    }, D.tone(c, rim, cy + v * 0.3, cy + v * 0.54), { lw: lw, depth: v * 0.05, shine: [x - s * 0.3, cy + v * 0.42, s * 0.1, v * 0.025, 0.25, 0.6] });
+  };
+
+  T.collar = function (c, x, y, o) {
+    o = o || {};
+    var s = begin(c, x, y, o), col = o.col || '#FF5C8A', lm = W(o, LW.mid, s), lf = W(o, LW.fine, s), bell = o.bell === false ? null : (o.bell || '#FFC93C');
+    if (o.shadow !== false) D.shadow(c, 3, -1, 26, 5);
+    var band = new Path2D(); band.arc(0, -48, 28, 0, TAU); band.moveTo(19, -48); band.arc(0, -48, 19, 0, TAU, true);
+    D.shape(c, band, D.tone(c, col, -76, -20), { lw: lm, depth: 4, inside: function (c) {
+      c.beginPath(); c.arc(0, -48, 23.5, 0, TAU); c.setLineDash([3.5, 4.5]); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = lf * 0.7; c.stroke(); c.setLineDash([]);
+    }, shine: [-17, -66, 6, 3, -0.7, 0.5] });
+    D.shape(c, D.rrPath(-10, -84, 20, 15, 4), D.tone(c, '#FFD23F', -84, -69), { lw: lf, depth: 0, inside: function (c) { D.rr(c, -5, -80, 10, 7, 2); c.fillStyle = D.darker(col, 0.1); c.fill(); } });
+    if (bell) D.shape(c, D.ellPath(0, -11, 11, 11), D.tone(c, bell, -22, 0), { lw: lf, depth: 3, inside: function (c) {
+      c.beginPath(); c.moveTo(-7, -8); c.lineTo(7, -8); c.strokeStyle = INK; c.lineWidth = lf * 0.8; c.stroke();
+      c.beginPath(); c.arc(0, -4, 2, 0, TAU); c.fillStyle = INK; c.fill();
+    }, shine: [-4, -16, 3.5, 2, -0.5, 0.6] });
     c.restore();
   };
 })(window.GGThings);

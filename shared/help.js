@@ -26,6 +26,10 @@
       'Pick a pizza, pancakes or a cake.',
       'Pick a topping, then tap the food to put it on.',
       'Ring the bell to give it to your cat.'] },
+    petshop: { name: 'Pet Shop', lines: [
+      'Put each thing on the shelf with its picture.',
+      'Drag it there, or tap it and then tap the shelf.',
+      'Anything on the wrong shelf wiggles at the end: move it, or tap it to put it back on the floor.'] },
     puzzle: { name: 'Cat Puzzles', lines: [
       'Drag each piece to its place in the picture.',
       'It clicks in when it fits.'] },

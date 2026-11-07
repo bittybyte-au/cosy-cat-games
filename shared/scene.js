@@ -58,7 +58,8 @@
      GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h
    More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file.
    More furniture in front and top views (bookcase, dining tables long and round, a floor lamp from above, inside
-     walls from above): see batch F at the very end of this file. */
+     walls from above): see batch F near the end of this file.
+   Shop fittings (a shelving unit of cubbies, a picture sign for the wall): see batch H at the very end. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -1375,6 +1376,65 @@
       sh(c, pth(function (p) { p.moveTo(-50, -48); p.lineTo(0, -86); p.lineTo(50, -48); p.quadraticCurveTo(52, -42, 46, -42); p.lineTo(-46, -42); p.quadraticCurveTo(-52, -42, -50, -48); p.closePath(); }), roof, ow, LW.big, { depth: 6 });
       sh(c, D.ellPath(0, -60, 7, 7), '#FFF1C9', ow, LW.fine, { depth: 0 });
       c.restore();
+    };
+  })(window.GGScene);
+  /* ================= batch H: shop fittings (Pet Shop) =================
+     GGScene.shelving(c, x0, x1, top, bottom, { sections (side by side, default 3), rows (shelves in each, default 2),
+                      col (the wood), backs: [colours] (each section's back; or one colour for all), foot (plinth height) })
+         a shop's shelving unit standing on the floor at `bottom`, with an open cubby for each row of each section, and
+         a cornice board along its top. Returns the layout, which GGScene.shelving.layout(x0, x1, top, bottom, o) also
+         works out without drawing: { sections: [{ x0, x1, cx, rows: [{ top, y }] }] }, y the shelf things stand on
+     GGScene.sign(c, x, y, { w, h, col, panel (the picture's background), hang (the y of the nail it hangs from, or
+                  leave out for none), inside: fn(c) (the picture, drawn clipped to the panel) })
+         a picture plaque for a wall: a coloured board round a light panel; (x, y) is its middle */
+  (function (G) {
+    var V = G.VARIANTS;
+    V.shelving = ['cubbies']; V.sign = ['plaque'];
+    function layout(x0, x1, top, bottom, o) {
+      o = opt(o);
+      var n = o.sections || 3, rows = o.rows || 2, ft = 14, um = 12, bt = 12, foot = pick(o.foot, 22);
+      var sw = (x1 - x0 - ft * 2 - um * (n - 1)) / n, y0 = top + ft, rh = (bottom - foot - y0 - bt * (rows - 1)) / rows, out = [];
+      for (var i = 0; i < n; i++) {
+        var sx = x0 + ft + i * (sw + um), list = [];
+        for (var r = 0; r < rows; r++) { var ty = y0 + r * (rh + bt); list.push({ top: ty, y: ty + rh }); }
+        out.push({ x0: sx, x1: sx + sw, cx: sx + sw / 2, rows: list });
+      }
+      return { sections: out, foot: foot };
+    }
+    G.shelving = function (c, x0, x1, top, bottom, o) {
+      o = opt(o);
+      var L = layout(x0, x1, top, bottom, o), col = o.col || '#D9A066', backs = o.backs || '#FFF1DC';
+      D.shadow(c, (x0 + x1) / 2 + 6, bottom, (x1 - x0) / 2 + 6, 9);
+      sh(c, D.rrPath(x0, top, x1 - x0, bottom - top, 8), D.tone(c, col, top, bottom), o, LW.big, { depth: 0, inside: function (c) {
+        c.fillStyle = D.darker(col, 0.14); c.fillRect(x0, bottom - L.foot, x1 - x0, L.foot);
+        c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(x0, bottom - L.foot, x1 - x0, W(o, 3));
+        L.sections.forEach(function (s, i) {
+          var back = Array.isArray(backs) ? backs[i % backs.length] : backs;
+          s.rows.forEach(function (r) {
+            var p = D.rrPath(s.x0, r.top, s.x1 - s.x0, r.y - r.top, 5);
+            c.fillStyle = back; c.fill(p);
+            // the recess: shade under the shelf above and down the left side, where the light can't reach
+            c.save(); c.clip(p); c.fillStyle = 'rgba(42,35,64,.13)'; c.fillRect(s.x0, r.top, s.x1 - s.x0, 12); c.fillStyle = 'rgba(42,35,64,.07)'; c.fillRect(s.x0, r.top, 9, r.y - r.top); c.restore();
+            c.save(); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = W(o, LW.fine); c.stroke(p); c.restore();
+            // a soft highlight along the front edge of the shelf it stands on
+            c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(s.x0 + 4, r.y + W(o, 3), s.x1 - s.x0 - 8, W(o, 2.5));
+          });
+        });
+      } });
+      sh(c, D.rrPath(x0 - 10, top - 12, x1 - x0 + 20, 20, 7), D.tone(c, D.darker(col, 0.06), top - 12, top + 8), o, LW.mid, { depth: 3, shine: [x0 + 40, top - 6, 26, 2.5, 0, 0.4] });
+      return L;
+    };
+    G.shelving.layout = layout;
+    G.sign = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 120, h = o.h || 90, col = o.col || '#FF8FAB', bw = Math.max(8, Math.min(w, h) * 0.1), r = Math.min(18, h * 0.2);
+      if (o.hang !== undefined && o.hang !== false) {
+        // two strings up to one nail, starting behind the board
+        c.beginPath(); c.moveTo(x - w * 0.3, y - h / 2 + 8); c.lineTo(x, o.hang); c.lineTo(x + w * 0.3, y - h / 2 + 8); D.ink(c, W(o, LW.fine));
+        sh(c, circ(x, o.hang, 5), '#C9C2D6', o, LW.fine, { depth: 0 });
+      }
+      sh(c, D.rrPath(x - w / 2, y - h / 2, w, h, r), D.tone(c, col, y - h / 2, y + h / 2), o, LW.mid, { depth: 5, shine: [x - w * 0.32, y - h / 2 + bw * 0.5, w * 0.12, bw * 0.22, 0, 0.45] });
+      sh(c, D.rrPath(x - w / 2 + bw, y - h / 2 + bw, w - bw * 2, h - bw * 2, Math.max(4, r - bw * 0.6)), o.panel || '#FFFBF3', o, LW.fine, { depth: 4, inside: o.inside });
     };
   })(window.GGScene);
 })();

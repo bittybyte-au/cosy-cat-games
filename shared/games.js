@@ -259,6 +259,21 @@
       sh(R(89, 80, 62, 54, 4), '#E2A866', { k: 4 }) +
       ln('M60 28Q120 2 180 28', 3, 0, ' stroke-dasharray="6 6"') + ln('M172 20L182 29L170 34', 3)),
 
+    petshop: svg(
+      // a shop shelf with a tin of cat food and a bag of dry food on it, and the shop cat sitting beside it
+      sh(P(36, 100, 'l10 0l-10 22z'), '#C98B5B', { lw: 3, k: 0 }) + sh(P(140, 100, 'l-10 0l10 22z'), '#C98B5B', { lw: 3, k: 0 }) +
+      shadow(58, 92, 26, 3) +
+      sh(P(34, 50, 'v38a24 6 0 0 0 48 0v-38z'), '#DCD6E8', { k: 3, in:
+        '<rect x="30" y="58" width="56" height="24" fill="#FF6B8B"/>' + el(58, 70, 15, 8, '#fff', 0.9) +
+        sh(P(48, 70, 'q8 -8 15 -3l6 -4v14l-6 -4q-7 5 -15 -3z'), '#FFA94D', { lw: 2.2, k: 0 }) + el(53, 69, 1.4, 1.4, INK) + shine(39, 70, 2.5, 10) }) +
+      sh(E(58, 50, 24, 6), '#EEEAF4', { lw: 3, k: 0, in: el(58, 50, 17, 3.6, 'rgba(42,35,64,.14)') }) +
+      shadow(116, 92, 22, 3) +
+      sh(P(97, 92, 'l3 -46h32l3 46z'), '#7CC4FF', { k: 4, in: sh(R(104, 56, 24, 24, 8), '#E8F5FF', { lw: 2.5, k: 0, in: el(116, 68, 9, 7, '#3B8FD6') + el(113, 66, 2.4, 2, '#B5793F') + el(119, 67, 2.4, 2, '#B5793F') + el(116, 70, 2.4, 2, '#B5793F') }) }) +
+      sh(P(100, 47, 'v-8l4 -4l4 4l4 -4l4 4l4 -4l4 4l4 -4l4 4v8z'), '#4FA3E0', { lw: 2.5, k: 0 }) +
+      sh(R(22, 92, 132, 12, 6), '#D9A066', { k: 3, in: shine(46, 95, 14, 1.6) }) +
+      shadow(196, 140, 34, 4) + cat({ preset: 'white', pose: 'sit', face: 'happy', x: 196, y: 70, size: 64 }) +
+      wool(162, 130, 11, '#7BD389', '#3FA35A')),
+
     crossing: svg(sh(R(6, 8, 228, 136, 16), '#A9DC8F', { k: 0, in:
       '<rect x="0" y="40" width="240" height="76" fill="#5E5675"/>' + ln('M0 40H240M0 116H240', 3) +
       [46, 60, 74, 88, 102].map(function (y) { return '<rect x="92" y="' + y + '" width="56" height="8" rx="2" fill="#fff"/>'; }).join('') +
@@ -571,6 +586,11 @@
       id: 'kitten-kitchen', save: 'kittenkitchen', name: 'Topping Time', blurb: 'Decorate pizza, pancakes and cake',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE2C7',
       art: ART.kittenkitchen
+    },
+    {
+      id: 'petshop', save: 'petshop', name: 'Pet Shop', blurb: 'Put the shop things on the shelves',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#CBEDE5',
+      art: ART.petshop
     },
     {
       id: 'laser', save: 'laser', name: 'Laser Bounce', blurb: 'Bounce the laser to every cat',
