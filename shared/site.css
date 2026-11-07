@@ -150,7 +150,10 @@ a.tile:active { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink), inse
 .tile .badge {
   position: absolute; top: -14px; right: 16px; z-index: 1;
   background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px; font: 800 .95rem var(--body);
+  white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis;
 }
+@media (max-width: 560px) { .tile .badge { right: 10px; padding: 3px 9px; font-size: .82rem; } }
+@media (max-width: 360px) { .tile .badge { right: 6px; padding: 2px 7px; font-size: .74rem; max-width: calc(100% - 12px); } }
 .tile.coming { filter: saturate(.35); opacity: .8; box-shadow: 0 8px 0 rgba(42, 35, 64, .5); }
 .tile.coming .badge { background: #fff; }
 .tile.more {

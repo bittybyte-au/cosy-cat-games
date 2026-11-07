@@ -460,7 +460,7 @@
     {
       id: 'rescue', save: 'rescue', name: 'Cat Rescue', blurb: 'Match to free kittens from boxes',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
-      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' cat rescued' : ' cats rescued') : ''; },
+      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + ' rescued' : ''; },
       art: ART.rescue
     },
     {

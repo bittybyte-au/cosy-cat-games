@@ -5,12 +5,12 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-63028fa7ad';
+const VERSION = 'ccg-2830eaaa03';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
-  "./play/": "123cd35fc7",
-  "./play/index.html": "123cd35fc7",
+  "./play/": "1766df4293",
+  "./play/index.html": "1766df4293",
   "./about/": "57a9f2a762",
   "./about/index.html": "57a9f2a762",
   "./faq/": "a3dc412a35",
@@ -24,12 +24,12 @@ const FILES = {
   "./shared/draw.js": "6af1578083",
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "196bc4e3d1",
-  "./shared/games.js": "ec1b2a6a46",
+  "./shared/games.js": "c736f852de",
   "./shared/help.js": "b5874d5ebd",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
   "./shared/scene.js": "0535e6f9b6",
-  "./shared/site.css": "be553f2b0e",
+  "./shared/site.css": "7f9619cffc",
   "./shared/store.js": "12a8ec5516",
   "./shared/things.js": "817e7964cb",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
