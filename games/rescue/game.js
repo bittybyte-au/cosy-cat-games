@@ -262,11 +262,18 @@
       placeHud(SX, SY + SH + 14, SW);
     } else {
       var availW = W - 24;
-      T = Math.floor(Math.min(availW / C, (bottom - top - hudH - 22) / (R + C * 0.6), 74));
-      var bw = T * C;
-      SW = Math.min(availW, Math.max(bw, Math.min(availW, 520)));
-      if (SW > bw * 1.12) SW = bw * 1.12;
-      SH = SW * 0.6;
+      // the scene is a little wider than the board, so work out the whole stack and shrink until it fits the screen
+      var bw;
+      var stackH = function () {
+        bw = T * C;
+        SW = Math.min(availW, Math.max(bw, Math.min(availW, 520)));
+        if (SW > bw * 1.12) SW = bw * 1.12;
+        SH = SW * 0.6;
+        return SH + 10 + hudH + 10 + T * R;
+      };
+      T = Math.floor(Math.min(availW / C, 74));
+      while (T > 16 && stackH() > bottom - top) T--;
+      stackH();
       var used = SH + 10 + hudH + 10 + T * R, y0 = top + Math.max(0, (bottom - top - used) / 2);
       SX = Math.round((W - SW) / 2); SY = Math.round(y0);
       placeHud(Math.round((W - Math.max(bw, Math.min(SW, 420))) / 2), SY + SH + 10, Math.max(bw, Math.min(SW, 420)));
