@@ -84,8 +84,11 @@
   var DISH_NAMES = { handroll: 'Hand roll', pancakes: 'Pancakes', burger: 'Burger' };
   function dishesReady() { return !!(window.GG && typeof GG.collection === 'function' && window.GGDish && typeof GGDish.draw === 'function'); }
   function dishList() { if (!dishesReady()) return []; try { return GG.collection({ type: 'dish' }) || []; } catch (e) { return []; } }
+  /* photos from Cat Fashion Studio (shared collection, drawn by shared/fashion.js) */
+  function photoList() { if (!window.GGFashion || !window.GG || typeof GG.collection !== 'function') return []; try { return GG.collection({ type: 'photo' }) || []; } catch (e) { return []; } }
 
-  /* Every item in the room or drawer has a uid: 'p<n>' a plant, 't-<id>' a thing, 'd-<uid>' a dish. */
+  /* Every item in the room or drawer has a uid: 'p<n>' a plant, 't-<id>' a thing, 'd-<uid>' a dish, 'c-<id>' a
+     Colour Me picture, 'f-<uid>' a photo from Cat Fashion Studio. */
   function resolve(u) {
     if (!u) return null;
     if (u.charAt(0) === 'p') {
@@ -100,6 +103,11 @@
     if (u.indexOf('c-') === 0) {
       var pics = colourPics();
       for (var k = 0; k < pics.length; k++) if ('c-' + pics[k].id === u) return { u: u, kind: 'picture', def: { name: PAGE_NAME(pics[k].page), wall: true }, data: pics[k], w: 120, h: 138 };
+      return null;
+    }
+    if (u.indexOf('f-') === 0) {
+      var ph = photoList();
+      for (var q = 0; q < ph.length; q++) if ('f-' + ph[q].uid === u) return { u: u, kind: 'photo', def: { name: 'Photo', wall: true }, data: ph[q], w: 120, h: 150 };
       return null;
     }
     if (u.indexOf('d-') === 0) {
@@ -344,6 +352,7 @@
     else if (it.kind === 'thing') drawThing(c, it.def.id, t);
     else if (it.kind === 'dish') drawDish(c, it.data, 100);
     else if (it.kind === 'picture') { try { ColourPages.drawFramed(c, it.data, 120); } catch (e) {} }
+    else if (it.kind === 'photo') { try { GGFashion.drawPhoto(c, it.data.data, 120); } catch (e) {} }
   }
   function itemWidth(it) { return it.kind === 'plant' ? 110 : it.w; }
 
@@ -660,6 +669,7 @@
         html += tileHTML(u, it, (isPlaced(u) ? ' placed' : '') + (u === newPlantU ? ' new' : ''));
       });
     } else if (tab === 'things') {
+      photoList().slice().reverse().forEach(function (pf) { var u = 'f-' + pf.uid, it = resolve(u); if (it) html += tileHTML(u, it, isPlaced(u) ? ' placed' : ''); });
       colourPics().slice().reverse().forEach(function (pc) { var u = 'c-' + pc.id, it = resolve(u); if (it) html += tileHTML(u, it, isPlaced(u) ? ' placed' : ''); });
       THINGS.forEach(function (t) {
         var u = 't-' + t.id;

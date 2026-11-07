@@ -365,7 +365,22 @@
       shadow(84, 76, 20, 4) + sh(E(84, 74, 18, 6), '#FFD23F', { lw: 2.5, k: 0 }) +
       cat({ preset: 'ginger', pose: 'wave', face: 'happy', x: 84, y: 40, size: 36 }) +
       shadow(160, 132, 20, 4) + sh(E(160, 130, 18, 6), '#B48CFF', { lw: 2.5, k: 0 }) +
-      cat({ color: '#F1E3CB', build: 'fluffy', pose: 'lie', face: 'sleep', x: 160, y: 118, size: 34 }))
+      cat({ color: '#F1E3CB', build: 'fluffy', pose: 'lie', face: 'sleep', x: 160, y: 118, size: 34 })),
+    fashion: svg(
+      sh(R(0, 0, 240, 150, 0), '#FFD3E4', { lw: 0, k: 0 }) +
+      el(120, 70, 80, 66, '#FFFFFF', 0.5) + el(120, 138, 84, 10, '#FFFFFF', 0.45) +
+      sh(R(170, 22, 52, 62, 4), '#FFFDF8', { lw: 3, k: 0, in: '<path d="M175 27h42v42h-42z" fill="#7CC4FF"/><path d="M175 60q10 -10 21 0t21 -2v11h-42z" fill="#F6D9A0"/>' }) +
+      sh(R(186, 16, 20, 8, 1), 'rgba(255,143,171,.8)', { lw: 0, k: 0 }) +
+      sh(R(18, 34, 46, 34, 7), '#FF8FAB', { lw: 3, k: 3, in: '<circle cx="41" cy="52" r="9" fill="#BFE6FF"/>' }) + sh(P(31, 34, 'l3 -7h14l3 7z'), '#FF8FAB', { lw: 3, k: 0 }) +
+      '<circle cx="41" cy="52" r="9" fill="none"' + stroke(3) + '/>' +
+      ln('M26 22l-5 -6M41 18v-8M56 22l5 -6', 3) +
+      shadow(120, 136, 34, 6) +
+      cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 120, y: 70, size: 60 }) +
+      sh(P(106, 50, 'l-2 -18l9 8l7 -13l7 13l9 -8l-2 18z'), '#FFD23F', { lw: 3, k: 3 }) +
+      el(120, 27, 2.6, 2.6, '#FF5C8A') +
+      '<path d="M120 103l-12 -7v14zM120 103l12 -7v14z" fill="#5B6BD6"' + stroke(2.5) + '/>' + el(120, 103, 3.5, 4, '#3E4BB0') +
+      [109, 131].map(function (x) { return '<path d="M' + x + ' 77c-8 -7 -10 -12 -5 -15q4 -2 5 3q1 -5 5 -3c5 3 3 8 -5 15z" fill="rgba(255,92,138,.75)"' + stroke(2.6) + '/>'; }).join('') +
+      ln('M114 70h12', 2.6))
   };
 
   var GAMES = [
@@ -511,6 +526,11 @@
       id: 'yarn-defence', save: 'yarndefence', name: 'Yarn Defence', blurb: 'Send the mice home, save the yarn',
       ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.yarndefence
+    },
+    {
+      id: 'fashion', save: 'fashion', name: 'Cat Fashion Studio', blurb: 'Dress up your cat, then strike a pose',
+      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFC4DA',
+      badge: function (p) { return p && p.shots ? p.shots + (p.shots === 1 ? ' photo' : ' photos') : ''; }, art: ART.fashion
     }
   ];
 

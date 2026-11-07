@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cat Fashion Studio</title>
+<meta name="theme-color" content="#FFE3EE">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Dress your cat up, then do a photoshoot. The canvas is the studio (backdrop and your cat); the panel at the
+   bottom has tabs for hats, glasses, neckwear, tops and the photoshoot. Each piece has a colour and (most) a
+   pattern. Photos can be hung in Cosy Home or saved. Nothing to win or lose. Single bright look by design. */
+body { background: #FFE3EE; }
+#stage { touch-action: manipulation; }
+.middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.title { font: 800 1.2rem/1 var(--display); background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 8px 16px 6px; box-shadow: 0 3px 0 var(--ink), var(--soft); white-space: nowrap; }
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 0 max(8px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+.tabs { display: flex; gap: 6px; justify-content: center; padding: 8px 0 6px; overflow-x: auto; }
+.tab { flex: none; border: 3px solid var(--ink); border-radius: 999px; background: #fff; padding: 6px 12px 4px; font: 800 .95rem/1 var(--body); color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.tab svg { width: 20px; height: 20px; }
+.tab[aria-selected="true"] { background: var(--sun); box-shadow: 0 3px 0 var(--ink); transform: translateY(-2px); }
+.strip { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; justify-content: safe center; align-items: center; }
+.strip::-webkit-scrollbar { display: none; }
+.pick { flex: none; width: 70px; height: 70px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.pick img { width: 62px; height: 62px; pointer-events: none; }
+.pick[aria-pressed="true"] { background: #FFE58A; transform: translateY(-2px); box-shadow: 0 5px 0 var(--ink); }
+.pick.none { font: 800 .8rem/1.1 var(--body); color: var(--muted); text-align: center; }
+.sw { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--cream), 0 0 0 6px var(--ink); }
+.pat { flex: none; width: 44px; height: 36px; border-radius: 10px; border: 3px solid var(--ink); background: #fff; cursor: pointer; padding: 0; display: grid; place-items: center; }
+.pat img { width: 36px; height: 28px; border-radius: 5px; pointer-events: none; }
+.pat[aria-pressed="true"] { background: #FFE58A; box-shadow: 0 3px 0 var(--ink); }
+.sep { flex: none; width: 3px; height: 30px; border-radius: 2px; background: rgba(42,35,64,.2); }
+.chip { flex: none; border: 3px solid var(--ink); border-radius: 999px; background: #fff; padding: 7px 13px 5px; font: 800 .9rem/1 var(--body); color: var(--ink); cursor: pointer; }
+.chip[aria-pressed="true"] { background: #FFE58A; box-shadow: 0 3px 0 var(--ink); }
+.snap { flex: none; display: flex; align-items: center; gap: 8px; border: 4px solid var(--ink); border-radius: 999px; background: #FF8FAB; padding: 10px 20px 8px; font: 800 1.15rem/1 var(--display); color: var(--ink); cursor: pointer; box-shadow: 0 4px 0 var(--ink), var(--soft); }
+.snap svg { width: 28px; height: 28px; }
+.snap:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.flash { position: fixed; inset: 0; background: #fff; z-index: 20; pointer-events: none; opacity: 0; }
+.flash.go { animation: flash .5s ease-out; }
+@keyframes flash { 0% { opacity: .95; } 100% { opacity: 0; } }
+.card canvas.photo { width: min(240px, 62vw); height: auto; display: block; transform: rotate(-2deg); animation: present .6s cubic-bezier(.3, 1.6, .5, 1); }
+.card .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.card .big.light { background: #fff; }
+.say { position: fixed; left: 50%; z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(8px); }
+@media (max-width: 400px) { .tab { padding: 5px 9px 3px; font-size: .85rem; } .tab svg { display: none; } .pick { width: 62px; height: 62px; } .pick img { width: 54px; height: 54px; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="Your cat in the studio, dressed up"></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle"><div class="title">Fashion Studio</div></div>
+  <button class="round" id="shuffleBtn" type="button" aria-label="Surprise me: a random outfit">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="22" rx="6" fill="#FFFFFF" stroke="#2A2340" stroke-width="3"/><circle cx="11" cy="11" r="2.4" fill="#2A2340"/><circle cx="21" cy="21" r="2.4" fill="#2A2340"/><circle cx="16" cy="16" r="2.4" fill="#2A2340"/><circle cx="21" cy="11" r="2.4" fill="#2A2340"/><circle cx="11" cy="21" r="2.4" fill="#2A2340"/></svg>
+  </button>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="dock" id="panel">
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" type="button" role="tab" data-tab="hat" aria-selected="true">Hats</button>
+    <button class="tab" type="button" role="tab" data-tab="glasses" aria-selected="false">Glasses</button>
+    <button class="tab" type="button" role="tab" data-tab="neck" aria-selected="false">Neck</button>
+    <button class="tab" type="button" role="tab" data-tab="top" aria-selected="false">Tops</button>
+    <button class="tab" type="button" role="tab" data-tab="photo" aria-selected="false"><svg viewBox="0 0 32 32"><rect x="3" y="9" width="26" height="18" rx="5" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><path d="M11 9 L13 5 H19 L21 9" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><circle cx="16" cy="18" r="5.5" fill="#BFE6FF" stroke="#2A2340" stroke-width="2.6"/></svg>Photo</button>
+  </div>
+  <div class="strip" id="row1"></div>
+  <div class="strip" id="row2"></div>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+<div class="flash" id="flash"></div>
+
+<div class="card-wrap" id="cardWrap" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <canvas class="photo" id="photoPic" width="480" height="580" aria-label="Your photo"></canvas>
+    <h2 id="cardTitle">Gorgeous!</h2>
+    <p id="cardNote">Hang it on a wall in your Cosy Home, or save it.</p>
+    <div class="btns">
+      <button class="big" id="hangBtn" type="button">Hang it in Cosy Home</button>
+      <button class="big light" id="saveBtn" type="button">Save picture</button>
+      <button class="big light" id="backBtn" type="button">Back to the studio</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/avatar.js"></script>
+<script src="../../shared/fashion.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
