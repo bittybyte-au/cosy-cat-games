@@ -159,33 +159,9 @@
     D.shadow(c, W / 2 + 4, H / 2 + 8, rx, ry);
     GGScene.rug(c, W / 2, H / 2, rx, ry, { kind: 'stitch', col: '#FFE7F0', col2: '#FFC2DA' });
   }
-  var MOUSE_BODY = new Path2D('M-32 0Q-30 -22 0 -21Q30 -18 38 0Q30 18 0 21Q-30 22 -32 0Z');
+  /* a mouse seen from above: the shared one (shared/things.js) */
   function drawMouse(c, m, spin) {
-    var run = m.pause > 0 ? 0 : Math.sin(time * 26 + m.x * 0.05);
-    var a = m.a + (spin || 0), s = m.size;
-    // the shadow stays under the mouse whichever way it's facing
-    if (!spin) { c.save(); c.translate(m.x + 3, m.y + 6); c.rotate(a); c.scale(s, s); c.fillStyle = 'rgba(42,35,64,.16)'; c.beginPath(); c.ellipse(2, 0, 38, 24, 0, 0, TAU); c.fill(); c.restore(); }
-    c.save(); c.translate(m.x, m.y); c.rotate(a); c.scale(s, s);
-    // outlines are given in screen units, so they stay even however big the mouse is
-    var lw = D.LW.mid / s, lf = D.LW.fine / s;
-    // the crescent of shade sits to the lower right on screen, whichever way the mouse faces
-    var cs = Math.cos(-a), sn = Math.sin(-a), ox = -5 / s, oy = -7 / s;
-    // tail (starts under the body), outlined like the cat's
-    c.beginPath(); c.moveTo(-26, 0); c.quadraticCurveTo(-54, -8 + Math.sin(time * 9 + m.y) * 10, -70, 4);
-    c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 5 + lf * 2; c.stroke(); c.strokeStyle = '#FF8FAB'; c.lineWidth = 5; c.stroke();
-    // little paws peeking out from under the body
-    [[-14, -20, 1], [14, -19, -1], [-14, 20, -1], [14, 19, 1]].forEach(function (f) { c.beginPath(); c.ellipse(f[0] + run * 4 * f[2], f[1], 7, 5, 0, 0, TAU); c.fillStyle = '#FFB3C7'; c.fill(); D.ink(c, lf); });
-    // body
-    D.shape(c, MOUSE_BODY, m.col, { lw: lw, depth: 1, dx: ox * cs - oy * sn, dy: ox * sn + oy * cs, shade: 'rgba(42,35,64,.14)' });
-    // ears
-    [-20, 20].forEach(function (y) {
-      D.shape(c, D.ellPath(10, y, 11, 11), m.col, { lw: lf, depth: 0, inside: function (c) { c.beginPath(); c.arc(10, y, 6, 0, TAU); c.fillStyle = '#FFB3C7'; c.fill(); } });
-    });
-    // face: eyes inside; whiskers and nose out at the tip, so nothing crosses the outline
-    c.fillStyle = INK; c.beginPath(); c.arc(26, -7, 3.6, 0, TAU); c.fill(); c.beginPath(); c.arc(26, 7, 3.6, 0, TAU); c.fill();
-    c.beginPath(); c.moveTo(42, -4); c.lineTo(52, -11); c.moveTo(42, 4); c.lineTo(52, 11); c.strokeStyle = 'rgba(42,35,64,.5)'; c.lineWidth = 2 / s; c.stroke();
-    c.beginPath(); c.arc(39, 0, 5, 0, TAU); c.fillStyle = '#FF7FA6'; c.fill(); D.ink(c, lf);
-    c.restore();
+    GGThings.mouse(c, m.x, m.y, { view: 'top', size: m.size, col: m.col, a: m.a + (spin || 0), run: m.pause > 0 ? 0 : time * 26 + m.x * 0.05, tail: time * 9 + m.y, shadow: !spin });
   }
   /* a cat strolling across: the shared walking cat (the same walk in every game) */
   var CAT_SIZE = 104;

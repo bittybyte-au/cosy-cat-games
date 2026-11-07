@@ -360,10 +360,7 @@
       sh(c, RR(-68, -120, 136, 16, 8), p.col, 4.5, null, 3);
     }, cols: ['#E6B98A', '#D9B68A'] },
     armchair: { peek: [[0, -1.0], [-0.5, -0.4], [0.5, -0.4]], w: 190, h: 170, draw: function (c, p) {
-      sh(c, RR(-78, -170, 156, 110, 30), D.tone(c, p.col, -170, -60), 5, null, 8);
-      sh(c, RR(-95, -96, 44, 96, 18), p.col, 5, null, 6); sh(c, RR(51, -96, 44, 96, 18), p.col, 5, null, 6);
-      sh(c, RR(-60, -76, 120, 52, 16), p.col, 5, null, 6);
-      sh(c, RR(-64, -28, 128, 28, 8), '#C98B5B', 4, null, 4);
+      GGScene.sofa(c, 0, 0, { kind: 'armchair', w: 190, col: p.col, ls: LS });   // shared/scene.js
     }, cols: ['#B48CFF', '#FF8FAB', '#7BD389', '#FF9F43'] },
     plant: { peek: [[-0.46, -0.25], [0.46, -0.25], [0, -0.42]], w: 110, h: 180, draw: function (c, p) {
       GGScene.plant(c, 0, 0, { kind: 'leafy', size: 180, pot: p.col, ls: LS });

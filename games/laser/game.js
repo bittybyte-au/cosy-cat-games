@@ -430,14 +430,12 @@
     D.shadow(c, 0, s * 0.3, s * 0.36, s * 0.1);
     if (k === 0) { // a house plant (shared scenery kit)
       GGScene.plant(c, 0, s * 0.3, { kind: 'sprout', size: s * 0.64, pot: '#E58B5E', leaf: '#5DBB72' });
-    } else if (k === 1) { // a pile of books
-      ['#7CC4FF', '#FF8FAB', '#FFD23F'].forEach(function (col, i) { D.shape(c, D.rrPath(-s * 0.3 + i * 3, s * 0.16 - i * s * 0.15, s * 0.58 - i * 6, s * 0.15, 4), col, { lw: D.LW.fine, depth: 2 }); });
+    } else if (k === 1) { // a pile of books (shared scenery kit)
+      GGScene.books(c, 0, s * 0.31, { w: s * 0.6 });
     } else if (k === 2) { // a yarn basket
-      D.shape(c, D.rrPath(-s * 0.3, -s * 0.04, s * 0.6, s * 0.34, 8), '#D9A05B', { lw: D.LW.mid, depth: 4, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = 2; for (var i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * s * 0.12, -s * 0.04); c.lineTo(i * s * 0.12, s * 0.3); c.stroke(); } } });
-      D.shape(c, D.ellPath(-s * 0.1, -s * 0.08, s * 0.14, s * 0.14), '#B48CFF', { lw: D.LW.fine, depth: 2 });
-      D.shape(c, D.ellPath(s * 0.12, -s * 0.06, s * 0.12, s * 0.12), '#7BD389', { lw: D.LW.fine, depth: 2 });
+      GGScene.basket(c, 0, s * 0.3, { w: s * 0.62, balls: ['#B48CFF', '#7BD389', '#FF8FAB'] });
     } else { // a cushion
-      D.shape(c, D.rrPath(-s * 0.32, -s * 0.24, s * 0.64, s * 0.52, s * 0.18), '#FFB3C7', { lw: D.LW.mid, depth: 5, inside: function (c) { c.beginPath(); c.arc(0, s * 0.02, s * 0.04, 0, TAU); c.fillStyle = 'rgba(42,35,64,.3)'; c.fill(); } });
+      GGScene.cushion(c, 0, s * 0.3, { w: s * 0.64, col: '#FFB3C7' });
     }
   }
   function beamLine(c, segs, k) {

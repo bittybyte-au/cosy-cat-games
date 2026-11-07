@@ -336,20 +336,7 @@
     GGScene.rug(c, W / 2, H / 2, rx, ry, { kind: 'stitch', col: '#C7EBD2', col2: '#9FD8B2' });
     GGScene.skirting(c, 0, 0, W, H, { kind: 'around', size: EDGE, col: '#FFF1DC', r: 10 });
   }
-  function drawYarnBall(c, x, y, r, col, gold, spin) {
-    c.save(); c.translate(x, y);
-    D.shadow(c, 3, r * 0.9, r * 0.9, r * 0.3);
-    c.rotate(spin || 0);
-    // a loose end, starting under the ball so the ball covers the join
-    c.beginPath(); c.moveTo(r * 0.45, r * 0.5); c.quadraticCurveTo(r * 1.3, r * 0.9, r * 1.1, r * 1.3); c.lineCap = 'round';
-    c.strokeStyle = INK; c.lineWidth = 3 + lw(D.LW.fine) * 2; c.stroke(); c.strokeStyle = gold ? '#FFC21A' : col; c.lineWidth = 3; c.stroke();
-    D.shape(c, D.ellPath(0, 0, r, r), D.tone(c, gold ? '#FFD23F' : col, -r, r), { lw: lw(D.LW.fine), depth: r * 0.2, shade: 'rgba(42,35,64,.15)', inside: function (c) {
-      c.strokeStyle = gold ? '#C98A00' : 'rgba(42,35,64,.35)'; c.lineWidth = 2.5;
-      for (var i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-r, i * r * 0.32 - r * 0.3); c.quadraticCurveTo(0, i * r * 0.32 + r * 0.3, r, i * r * 0.32 - r * 0.3); c.stroke(); }
-      c.beginPath(); c.moveTo(-r * 0.2, -r); c.quadraticCurveTo(r * 0.5, 0, -r * 0.2, r); c.stroke();
-    }, shine: gold ? [-r * 0.4, -r * 0.45, r * 0.32, r * 0.18, -0.6, 0.6] : null });
-    c.restore();
-  }
+  function drawYarnBall(c, x, y, r, col, gold, spin) { GGThings.yarnBall(c, x, y, { r: r, col: col, gold: gold, spin: spin, end: true, shadow: true, ls: LS }); }   // shared/things.js
   var CUKE = D.rrPath(-46, -17, 92, 34, 17);
   function drawCucumber(c, x, y, a, jig) {
     a += jig > 0 ? Math.sin(jig * 40) * 0.15 : 0;
@@ -420,32 +407,10 @@
     }, shine: [-12, -14, 10, 6, -0.6, 0.35] });
     c.restore();
   }
-  var DOG_BED = D.ellPath(0, 10, 92, 70), DOG_BED_IN = D.ellPath(0, 10, 72, 52), DOG_BODY = D.ellPath(6, 18, 56, 38), DOG_HEAD = D.ellPath(0, 0, 34, 28);
+  /* the dog asleep in its bed and the wind-up toy mouse, both seen from above: the shared ones (shared/things.js) */
   function drawDog(c) {
-    var D0 = G.dog;
-    c.save(); c.translate(D0.x, D0.y);
-    // bed
-    D.shadow(c, 4, 22, 92, 64);
-    D.shape(c, DOG_BED, D.tone(c, '#B48CFF', -60, 80), { lw: lw(D.LW.mid), depth: 10 });
-    D.shape(c, DOG_BED_IN, '#E2D3FF', { lw: lw(D.LW.fine), depth: 0, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.1)'; c.beginPath(); c.ellipse(8, 20, 72, 52, 0, 0, TAU); c.rect(-200, -200, 400, 400); c.fill('evenodd'); } });
-    var up = D0.state === 'awake' ? 1 : D0.state === 'stir' ? 0.4 : 0;
-    // tail first, starting inside the body, so the body covers the join
-    c.beginPath(); c.moveTo(50, 20); c.quadraticCurveTo(78, 8 + Math.sin(time * (up ? 14 : 2)) * 6, 70, -6); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 6 + lw(D.LW.mid) * 2; c.stroke(); c.strokeStyle = '#C98B5B'; c.lineWidth = 6; c.stroke();
-    // body curled
-    D.shape(c, DOG_BODY, D.tone(c, '#C98B5B', -20, 56), { lw: lw(D.LW.mid), depth: 8, inside: function (c) { c.beginPath(); c.ellipse(18, 30, 26, 12, 0.3, 0, TAU); c.fillStyle = '#E6B98A'; c.fill(); } });
-    // head (lifts when awake)
-    c.save(); c.translate(-30, 10 - up * 26);
-    D.shape(c, DOG_HEAD, D.tone(c, '#C98B5B', -28, 28), { lw: lw(D.LW.mid), depth: 6, inside: function (c) {
-      c.beginPath(); c.ellipse(0, 12, 16, 12, 0, 0, TAU); c.fillStyle = '#E6B98A'; c.fill();
-    } });
-    var flop = up ? Math.sin(time * 10) * 0.15 : 0;
-    [[-28, 0.4 + flop], [28, -0.4 - flop]].forEach(function (e) { D.shape(c, D.ellPath(e[0], 4, 12, 22, e[1]), '#7A4E2D', { lw: lw(D.LW.fine), depth: 3 }); });
-    c.beginPath(); c.ellipse(0, 6, 6, 4.5, 0, 0, TAU); c.fillStyle = INK; c.fill();
-    if (D0.state === 'sleep') { c.beginPath(); c.moveTo(-16, -6); c.quadraticCurveTo(-10, -1, -4, -6); c.moveTo(4, -6); c.quadraticCurveTo(10, -1, 16, -6); ink(c, D.LW.fine); }
-    else if (D0.state === 'stir') { c.beginPath(); c.moveTo(-16, -6); c.quadraticCurveTo(-10, -1, -4, -6); ink(c, D.LW.fine); c.beginPath(); c.arc(10, -6, 4.5, 0, TAU); c.fillStyle = INK; c.fill(); }
-    else { c.fillStyle = INK; c.beginPath(); c.arc(-10, -6, 5, 0, TAU); c.fill(); c.beginPath(); c.arc(10, -6, 5, 0, TAU); c.fill(); c.beginPath(); c.ellipse(0, 20, 7, 6, 0, 0, TAU); c.fillStyle = '#FF7FA6'; c.fill(); ink(c, D.LW.fine); }
-    c.restore();
-    c.restore();
+    var D0 = G.dog, up = D0.state === 'awake' ? 1 : D0.state === 'stir' ? 0.4 : 0;
+    GGThings.dog(c, D0.x, D0.y, { view: 'top', lift: up, eyes: D0.state === 'sleep' ? 'closed' : D0.state === 'stir' ? 'peek' : 'open', open: D0.state === 'awake', wag: time * (up ? 14 : 2), flop: up ? Math.sin(time * 10) * 0.15 : 0, ls: LS });
     if (D0.state === 'sleep') {
       c.font = '800 30px "Baloo 2", system-ui, sans-serif'; c.fillStyle = '#7A6F8E'; c.textAlign = 'center';
       var zt = (time * 0.5) % 1; c.globalAlpha = 1 - zt; c.fillText('z', D0.x + 30 + zt * 20, D0.y - 50 - zt * 40); c.globalAlpha = 1;
@@ -458,25 +423,8 @@
     }
     if (D0.state === 'awake' && D0.bark <= 0) { circle(c, D0.x, D0.y, 120); c.setLineDash([10, 10]); c.strokeStyle = 'rgba(255,107,87,.5)'; c.lineWidth = 4; c.stroke(); c.setLineDash([]); }
   }
-  var TOY_MOUSE = new Path2D('M-26 0Q-24 -18 4 -16Q28 -12 30 0Q28 12 4 16Q-24 18 -26 0Z');
   function drawMouse(c, M) {
-    var a = M.a + M.wob;
-    turnedShadow(c, M.x + 2, M.y + 6, 30, 18, a);
-    c.save(); c.translate(M.x, M.y); c.rotate(a);
-    var cs = Math.cos(-a), sn = Math.sin(-a);
-    // tail, starting under the body
-    c.beginPath(); c.moveTo(-20, 0); c.quadraticCurveTo(-46, -4 + Math.sin(time * 20) * 6, -56, 6); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 4 + lw(D.LW.fine) * 2; c.stroke(); c.strokeStyle = '#FF8FAB'; c.lineWidth = 4; c.stroke();
-    D.shape(c, TOY_MOUSE, '#C9C2D6', { lw: lw(D.LW.mid), depth: 1, dx: -4 * cs + 6 * sn, dy: -4 * sn - 6 * cs, shade: 'rgba(42,35,64,.14)', inside: function (c) {
-      c.fillStyle = INK; c.beginPath(); c.arc(20, -6, 2.6, 0, TAU); c.fill(); c.beginPath(); c.arc(20, 6, 2.6, 0, TAU); c.fill();
-    } });
-    [-16, 16].forEach(function (y) { D.shape(c, D.ellPath(8, y, 8, 8), '#FFB3C7', { lw: lw(D.LW.fine), depth: 0 }); });
-    c.beginPath(); c.arc(30, 0, 3.5, 0, TAU); c.fillStyle = '#FF7FA6'; c.fill(); ink(c, D.LW.fine);
-    // the wind-up key on its back
-    c.save(); c.translate(-8, 0); c.rotate(time * 10);
-    c.beginPath(); c.moveTo(-10, 0); c.lineTo(10, 0); c.strokeStyle = INK; c.lineWidth = 4 + lw(D.LW.fine) * 2; c.stroke(); c.strokeStyle = '#E0A100'; c.lineWidth = 4; c.stroke();
-    [-12, 12].forEach(function (x) { D.shape(c, D.ellPath(x, 0, 5, 5), '#FFD23F', { lw: lw(D.LW.fine), depth: 0 }); });
-    c.restore();
-    c.restore();
+    GGThings.mouse(c, M.x, M.y, { view: 'top', a: M.a + M.wob, toy: time * 10, tail: time * 20, ls: LS });
   }
   /* your cat: the shared walking cat (the same walk in every game), in your avatar's colours, facing where it runs.
      When it isn't startled, your avatar's own head (with any hat or glasses) sits on top, bobbing with the walk. */

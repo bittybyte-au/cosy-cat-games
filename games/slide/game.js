@@ -20,12 +20,7 @@
   /* ================= the pictures (drawn once, 600 square) ================= */
   /* all the scenery (walls, floors, sky, hills, flowers, windows, lamps...) comes from the shared kit, shared/scene.js */
   var PS = 600, G = window.GGScene;
-  function yarnBall(c, x, y, r, col) {
-    D.shape(c, D.ellPath(x, y, r, r), col, { lw: 4.5, depth: r * 0.18, shine: [x - r * 0.35, y - r * 0.4, r * 0.25, r * 0.13, -0.6], inside: function (c) {
-      c.strokeStyle = 'rgba(42,35,64,.28)'; c.lineWidth = 3;
-      for (var i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(x - r, y + i * r * 0.32 - r * 0.25); c.quadraticCurveTo(x, y + i * r * 0.32 + r * 0.3, x + r, y + i * r * 0.32 - r * 0.25); c.stroke(); }
-    } });
-  }
+  function yarnBall(c, x, y, r, col) { GGThings.yarnBall(c, x, y, { r: r, col: col }); }   // shared/things.js
   var PICTURES = [
     { id: 'teacup', name: 'Cat in a teacup', draw: function (c) {
       G.wall(c, 0, 0, PS, 420, { pattern: 'dots', col: '#FFE6F0', col2: 'rgba(255,255,255,.8)', size: 44 });
@@ -116,16 +111,10 @@
       // picture on the wall
       G.picture(c, 210, 40, 180, 120, { view: 'hills', frame: '#FFC93C', string: false });
       G.floor(c, 0, 470, PS, PS - 470, { kind: 'planks', col: '#E6B98A', size: 50 });
-      D.shadow(c, 300, 556, 270, 22);
-      // sofa: back, three cats sitting on it, then arms and seat cushions in front
-      D.shape(c, D.rrPath(70, 250, 460, 190, 40), '#FF8FAB', { lw: 5, depth: 12 });
-      [[170, 300, 'white'], [300, 286, 'ginger'], [430, 300, 'black']].forEach(function (k) { cat(c, k[0], k[1], { preset: k[2], pose: 'sit', size: 104, face: k[2] === 'ginger' ? 'happy' : undefined }); });
-      D.shape(c, D.rrPath(80, 410, 440, 80, 22), '#FF9EC4', { lw: 5, depth: 10, inside: function (c) { c.beginPath(); c.moveTo(300, 414); c.lineTo(300, 488); c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 4; c.stroke(); } });
-      D.shape(c, D.rrPath(40, 340, 80, 170, 34), '#FF8FAB', { lw: 5, depth: 10 });
-      D.shape(c, D.rrPath(480, 340, 80, 170, 34), '#FF8FAB', { lw: 5, depth: 10 });
-      [[100, 506], [500, 506]].forEach(function (q) { D.shape(c, D.rrPath(q[0] - 10, q[1], 20, 34, 6), '#C98B5B', { lw: 4, depth: 3 }); });
-      // a cushion and a lamp
-      c.save(); c.translate(80, 322); c.rotate(-0.3); D.shape(c, D.rrPath(-30, -26, 60, 52, 16), '#FFD23F', { lw: 4.5, depth: 7 }); c.restore();
+      // the shared sofa (front view), with three cats sitting on it and a cushion
+      G.sofa(c, 300, 540, { w: 520, col: '#FF8FAB', col2: '#FF9EC4', pillow: '#FFD23F', seat: function (c) {
+        [[170, 300, 'white'], [300, 286, 'ginger'], [430, 300, 'black']].forEach(function (k) { cat(c, k[0], k[1], { preset: k[2], pose: 'sit', size: 104, face: k[2] === 'ginger' ? 'happy' : undefined }); });
+      } });
       G.lamp(c, 562, 474, { kind: 'floor', size: 300, shade: '#7BD389', stand: '#8E7FA8' });
     } }
   ];

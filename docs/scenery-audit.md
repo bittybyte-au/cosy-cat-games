@@ -233,3 +233,15 @@ existing variants, and rebase carefully.
 
 Not in any batch (nothing to convert): games/kitty-pop, games/yarn, games/peekaboo and games/kitten-box (they use
 boxes.js, batch C), games/hotpaws tiles, games/colour (see "Not for GGScene"), games/grow and games/seek (done).
+
+## Phase 3: furniture, top-down views and the things kit
+
+From now on a new graphic goes into a shared kit before a game uses it (see "Drawing: always from the shared
+kits" in the README). Batch E added to `shared/scene.js`: `sofa` (sofa and armchair), `basket`, `cushion`, `books`,
+`box`, `runner`, `mousehole` and a top view for `plant`, each in `view: 'front'` and `view: 'top'`. The new
+`shared/things.js` (GGThings) holds the creatures and little things: `mouse` (top, side), `dog` (side, top),
+`yarnBall`, `fish`. Converted: Slide Puzzle (sofa, yarn balls), Hide and Seek (armchair), Sneaky Cat (dog, fish,
+armchair, box, plant), Rooftop Run (fish), Mouse Pop (mouse), Yarn Dash (toy mouse, dog in its bed, yarn balls),
+Yarn Defence (floor, rug path, mouse hole, basket, cushions, mice, yarn balls), Laser Bounce (books, basket,
+cushion). The single-use list above is no longer a reason to draw locally.
+

@@ -22,11 +22,12 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
 </head>
 <body>
 <h1>Scenery gallery</h1>
-<p>Every kind in <code>shared/scene.js</code> (GGScene), each variant drawn once. Games call these; they never draw scenery themselves.</p>
+<p>Every kind in <code>shared/scene.js</code> (GGScene) and <code>shared/things.js</code> (GGThings), each variant drawn once. Games call these; they never draw scenery, furniture or creatures themselves. Furniture comes in a front view and a top-down view.</p>
 <div id="out"></div>
 <script src="../shared/draw.js"></script>
 <script src="../shared/cat.js"></script>
 <script src="../shared/scene.js"></script>
+<script src="../shared/things.js"></script>
 <script>
 (function () {
   var S = GGScene, CW = 240, CH = 200, DPR = 2;
@@ -130,6 +131,26 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
     { name: "skirting {kind:'around'} + planks + rug stitch", draw: function (c) { S.floor(c, 20, 20, CW - 40, CH - 40, { kind: 'planks', col: '#E8C9A0', col2: '#D9B68A', size: 36 }); S.rug(c, 120, 100, 70, 46, { kind: 'stitch', col: '#C7EBD2', col2: '#9FD8B2' }); S.skirting(c, 0, 0, CW, CH, { kind: 'around', size: 20, col: '#FFF1DC', r: 10 }); } },
     { name: "rug {kind:'mat'} / plant {kind:'sprout'}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'stripes', col: '#E4F1FF', col2: '#D3E7FC', size: 40 }); S.rug(c, 120, 60, 100, 26, { kind: 'mat', col: '#D8F0D5' }); S.rug(c, 120, 120, 70, 20, { kind: 'mat', col: '#FFD2C8' }); S.plant(c, 60, 196, { kind: 'sprout', size: 50 }); S.plant(c, 180, 196, { kind: 'sprout', size: 40, pot: '#7CC4FF' }); } },
     { name: "lights {kind:'fairy'} + wall {pattern:'dots', top}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'dots', col: '#1D1734', top: '#2C2350', col2: 'rgba(255,255,255,.035)', size: 30 }); S.lights(c, 40, 10, 40, 190, {}); S.lights(c, 200, 10, 200, 190, { wave: -6, first: 1 }); S.lights(c, 60, 40, 180, 60, { gap: 30 }); } }
+  ]);
+  /* ---------- batch E: furniture in a front view and a top-down view ---------- */
+  var T = GGThings;
+  function room(c) { S.wall(c, 0, 0, CW, 130, { pattern: 'dots', col: '#E6F2FF' }); S.floor(c, 0, 130, CW, 70, { kind: 'planks' }); }
+  function above(c) { S.floor(c, 0, 0, CW, CH, { kind: 'planks', col: '#E8C9A0', col2: '#D9B68A', size: 36, skirting: false }); }
+  section('Added: batch E (furniture, front and top)', [
+    { name: "sofa {view:'front', seat, pillow}", draw: function (c) { room(c); S.sofa(c, 120, 180, { w: 200, pillow: '#FFD23F', seat: function (c) { GGCat.draw && (c.save(), c.translate(120, 82), GGCat.draw(c, { preset: 'ginger', pose: 'sit', size: 56, face: 'happy' }), c.restore()); } }); } },
+    { name: "sofa {view:'top'}", draw: function (c) { above(c); S.sofa(c, 120, 100, { view: 'top', w: 200, pillow: '#FFD23F' }); } },
+    { name: "sofa {kind:'armchair'} front / top", draw: function (c) { room(c); S.sofa(c, 70, 186, { kind: 'armchair', w: 110, col: '#B48CFF' }); S.sofa(c, 180, 90, { kind: 'armchair', view: 'top', w: 90, col: '#B48CFF' }); } },
+    { name: "basket front / top, with yarn", draw: function (c) { room(c); S.basket(c, 70, 186, { w: 100, balls: ['#FF8FAB', '#7CC4FF', '#FFD23F', '#7BD389', '#B48CFF'] }); S.basket(c, 180, 80, { view: 'top', w: 90, balls: ['#FF8FAB', '#7CC4FF', '#FFD23F'] }); } },
+    { name: "cushion square / round, front / top", draw: function (c) { above(c); S.cushion(c, 50, 90, { w: 60 }); S.cushion(c, 120, 80, { kind: 'round', w: 70, col: '#FFD23F' }); S.cushion(c, 60, 160, { view: 'top', w: 54, col: '#7CC4FF' }); S.cushion(c, 170, 150, { kind: 'round', view: 'top', w: 64, col: '#7BD389' }); } },
+    { name: "books front / top · plant top", draw: function (c) { above(c); S.books(c, 60, 90, { w: 70 }); S.books(c, 60, 150, { view: 'top', w: 56 }); S.plant(c, 170, 110, { view: 'top', size: 110 }); } },
+    { name: "runner (a rug along a path) + mousehole", draw: function (c) { above(c); S.runner(c, [{ x: -10, y: 60 }, { x: 120, y: 60 }, { x: 120, y: 150 }, { x: 250, y: 150 }], { w: 44 }); S.mousehole(c, 0, 60, { size: 50, a: 0 }); } }
+  ]);
+  section('Things (shared/things.js): creatures and little things', [
+    { name: "mouse {view:'top'} / {toy}", draw: function (c) { above(c); T.mouse(c, 70, 100, { a: -0.4, col: '#C9C2D6', run: 1 }); T.mouse(c, 170, 100, { a: 2.6, toy: 0.5, size: 0.9 }); } },
+    { name: "mouse {view:'side'} / crown, sleepy", draw: function (c) { room(c); T.mouse(c, 60, 176, { view: 'side', size: 1.1 }); T.mouse(c, 170, 172, { view: 'side', size: 1.4, crown: true, sleepy: true, dir: -1, col: '#8A85A0' }); } },
+    { name: "dog {view:'side'} asleep / awake", draw: function (c) { room(c); c.save(); c.translate(120, 182); c.scale(0.9, 0.9); T.dog(c, 0, 0, { eyes: 'open', lift: 1, perk: 1, dir: -1, ls: 0.9 }); c.restore(); } },
+    { name: "dog {view:'top'} curled in its bed", draw: function (c) { above(c); c.save(); c.translate(120, 100); c.scale(0.9, 0.9); T.dog(c, 0, 0, { view: 'top', ls: 0.9 }); c.restore(); } },
+    { name: "yarnBall {end, shadow} / gold · fish", draw: function (c) { above(c); T.yarnBall(c, 60, 90, { r: 34, col: '#FF8FAB', end: true, shadow: true }); T.yarnBall(c, 150, 70, { r: 24, gold: true, spin: 1 }); T.fish(c, 170, 150, { size: 1.6 }); T.fish(c, 90, 160, { size: 1.2, gold: true }); } }
   ]);
   section('SVG twins', [
     { name: "svg.cloud cat + svg.hills two", draw: function (c) {

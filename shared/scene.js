@@ -10,6 +10,9 @@
              are divided by it so outlines stay the house weights (5 main, 4 parts, 3 details) on screen
      seed    for anything scattered (stars, tufts, blossom), so it never jumps between frames
    Things that stand on the ground are placed by the middle of their base: (x, y) is where they touch the ground.
+   Furniture comes in view: 'front' and view: 'top' (seen from above, placed by its middle): see batch E at the end.
+   Creatures and little things (mice, dogs, yarn balls, fish) are in shared/things.js (GGThings).
+   A new game that needs a new graphic adds it here (or to things.js) first, with a cell in the gallery.
 
    Outdoors
      GGScene.sky(c, x, y, w, h, { kind: 'day' | 'dusk' | 'night', col, stars (night: how many) })
@@ -934,5 +937,172 @@
       }
     };
     function rgba(hex, a) { var v = parseInt(String(hex).slice(1), 16); return 'rgba(' + ((v >> 16) & 255) + ',' + ((v >> 8) & 255) + ',' + (v & 255) + ',' + a + ')'; }
+  })(window.GGScene);
+
+  /* ================= batch E: furniture and things in rooms, each in a front view and a top-down view =================
+     Every piece of furniture comes in view: 'front' (stood on the floor, (x, y) the middle of its base) and
+     view: 'top' (seen from straight above, (x, y) its middle), drawn from the same proportions and colours, so a
+     top-down game and a side-on game show the same sofa. Rotate the canvas for a top view facing another way.
+     GGScene.sofa(c, x, y, { kind: 'sofa' | 'armchair', view: 'front' | 'top', w, col, col2 (cushions), legs (colour),
+                   seats (how many cushions: sofa 2, armchair 1), pillow (a throw cushion's colour, or false),
+                   seat: fn(c) (front: drawn after the back and before the cushions, for cats sitting on it) })
+         front: about w * 0.56 tall (a sofa) or w * 0.88 (an armchair); top: w wide, about w * 0.5 (sofa) or w * 0.9 deep
+     GGScene.basket(c, x, y, { view, w, col, balls: [colours] (yarn balls in it; needs shared/things.js) })
+     GGScene.cushion(c, x, y, { kind: 'square' | 'round', view, w, col, button (a colour, or false) })
+         front: a square cushion standing up, or a round pet cushion seen low on the floor; top: from above
+     GGScene.books(c, x, y, { view, w, cols: [colours] })   a little pile of books
+     GGScene.plant(c, x, y, { view: 'top', size (across), pot, leaf })   a pot plant seen from above (the front view is
+         the plant kinds above, unchanged)
+     GGScene.runner(c, pts, { w, col, col2, prints })   a long rug laid along a path of points [{ x, y }], with paw prints
+     GGScene.mousehole(c, x, y, { size, a (the way into the room, radians), col (the skirting) })
+     GGScene.box(c, x, y, { view, w, h, col, flaps (open flaps, default true) })   an open cardboard box */
+  (function (G) {
+    var V = G.VARIANTS;
+    V.sofa = ['sofa', 'armchair']; V.sofaView = ['front', 'top']; V.basket = ['front', 'top']; V.cushion = ['square', 'round'];
+    V.books = ['front', 'top']; V.plantView = ['front', 'top']; V.runner = ['plain']; V.mousehole = ['skirting']; V.box = ['front', 'top'];
+    var WOODC = '#C98B5B';
+    function seatsOf(o) { return o.seats || (o.kind === 'armchair' ? 1 : 2); }
+
+    G.sofa = function (c, x, y, o) {
+      o = opt(o);
+      var arm = o.kind === 'armchair', w = o.w || (arm ? 190 : 460), col = o.col || '#FF8FAB', col2 = o.col2 || D.lighter(col, 0.12), legs = o.legs || WOODC, n = seatsOf(o);
+      if (o.view === 'top') {
+        var d = w * (arm ? 0.9 : 0.5), aw = w * (arm ? 0.2 : 0.13), bk = d * 0.3, x0 = x - w / 2, y0 = y - d / 2;
+        D.shadow(c, x + 4, y + d * 0.08, w * 0.52, d * 0.56);
+        sh(c, D.rrPath(x0, y0, w, d, w * 0.07), D.tone(c, D.darker(col, 0.08), y0, y0 + d), o, LW.mid, { depth: 6 });
+        sh(c, D.rrPath(x0 + aw * 0.4, y0, w - aw * 0.8, bk, bk * 0.45), col, o, LW.mid, { depth: 4 });
+        [x0, x0 + w - aw].forEach(function (ax) { sh(c, D.rrPath(ax, y0, aw, d, aw * 0.5), col, o, LW.mid, { depth: 4 }); });
+        var sx = x0 + aw, sw = (w - aw * 2) / n;
+        for (var i = 0; i < n; i++) sh(c, D.rrPath(sx + i * sw + 2, y0 + bk - 2, sw - 4, d - bk - 6, Math.min(sw, d) * 0.18), D.tone(c, col2, y0 + bk, y0 + d), o, LW.fine, { depth: 4 });
+        if (o.pillow) { c.save(); c.translate(x0 + aw + sw * 0.32, y0 + bk + d * 0.12); c.rotate(-0.3); sh(c, D.rrPath(-w * 0.06, -w * 0.05, w * 0.12, w * 0.1, w * 0.03), o.pillow, o, LW.fine, { depth: 3 }); c.restore(); }
+        return;
+      }
+      var h = w * (arm ? 0.88 : 0.56), awf = arm ? 0.23 : 0.155, aw2 = w * awf, X = x - w / 2, Y = y - h;
+      D.shadow(c, x, y - 2, w * 0.52, h * 0.06);
+      // the back, then whatever sits on it, then the seat cushions, the arms and the legs in front
+      sh(c, D.rrPath(X + aw2 * 0.4, Y, w - aw2 * 0.8, h * 0.66, w * (arm ? 0.16 : 0.08)), D.tone(c, col, Y, Y + h * 0.66), o, LW.big, { depth: 10 });
+      if (o.seat) o.seat(c);
+      var sx2 = X + aw2 * 0.6, sw2 = (w - aw2 * 1.2) / n;
+      for (var j = 0; j < n; j++) sh(c, D.rrPath(sx2 + j * sw2, Y + h * 0.55, sw2 + (j < n - 1 ? 2 : 0), h * 0.28, h * 0.08), D.tone(c, col2, Y + h * 0.55, Y + h * 0.83), o, LW.big, { depth: 8 });
+      [X, X + w - aw2].forEach(function (ax) { sh(c, D.rrPath(ax, Y + h * 0.31, aw2, h * 0.59, aw2 * 0.42), D.tone(c, col, Y + h * 0.31, Y + h * 0.9), o, LW.big, { depth: 8 }); });
+      [X + aw2 * 0.6, X + w - aw2 * 0.6].forEach(function (lx) { sh(c, D.rrPath(lx - w * 0.02, Y + h * 0.88, w * 0.04, h * 0.12, w * 0.012), legs, o, LW.mid, { depth: 2 }); });
+      if (o.pillow) { c.save(); c.translate(X + aw2 * 0.9, Y + h * 0.4); c.rotate(-0.3); sh(c, D.rrPath(-w * 0.065, -w * 0.055, w * 0.13, w * 0.11, w * 0.035), o.pillow, o, LW.mid, { depth: 6 }); c.restore(); }
+    };
+
+    G.basket = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 64, col = o.col || '#C9935E', balls = o.balls || [], T = window.GGThings;
+      if (o.view === 'top') {
+        var r = w / 2;
+        D.shadow(c, x + 3, y + 4, r * 1.02, r * 0.98);
+        sh(c, D.ellPath(x, y, r, r), D.tone(c, col, y - r, y + r), o, LW.mid, { depth: 5, inside: function (c) {
+          c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = W(o, 2); for (var i = 0; i < 16; i++) { var a = i / 16 * TAU; c.beginPath(); c.moveTo(x + Math.cos(a) * r * 0.78, y + Math.sin(a) * r * 0.78); c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); c.stroke(); }
+        } });
+        sh(c, D.ellPath(x, y, r * 0.76, r * 0.76), D.darker(col, 0.25), o, LW.fine, { depth: 0 });
+        var spots = [[-0.3, -0.2], [0.3, -0.15], [0, 0.3], [-0.05, -0.45], [0.42, 0.28], [-0.4, 0.26]];
+        balls.slice(0, spots.length).forEach(function (bc, i) { if (T) T.yarnBall(c, x + spots[i][0] * r, y + spots[i][1] * r, { r: r * 0.3, col: bc, ls: o.ls }); });
+        return;
+      }
+      var s = w / 64, slots = [[-16, -6], [0, -9], [16, -6], [-8, -16], [8, -16], [0, -24], [-20, -14], [20, -14], [-12, -26], [12, -26]];
+      D.shadow(c, x, y, 34 * s, 7 * s);
+      balls.slice(0, slots.length).forEach(function (bc, i) { if (T) T.yarnBall(c, x + slots[i][0] * s, y - 24 * s + slots[i][1] * s, { r: 11 * s, col: bc, ls: o.ls }); });
+      sh(c, pth(function (p) { p.moveTo(x - 32 * s, y - 24 * s); p.lineTo(x + 32 * s, y - 24 * s); p.lineTo(x + 26 * s, y); p.lineTo(x - 26 * s, y); p.closePath(); }), D.tone(c, col, y - 24 * s, y), o, LW.mid, { depth: 5, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.28)'; c.lineWidth = W(o, 2.5);
+        for (var bx = -26; bx < 30; bx += 9) { c.beginPath(); c.moveTo(x + bx * s, y - 24 * s); c.lineTo(x + (bx + 3) * s, y); c.stroke(); }
+        c.beginPath(); c.moveTo(x - 30 * s, y - 14 * s); c.lineTo(x + 30 * s, y - 14 * s); c.stroke();
+      } });
+      sh(c, D.rrPath(x - 35 * s, y - 28 * s, 70 * s, 8 * s, 4 * s), D.darker(col, 0.1), o, LW.fine, { depth: 0 });
+    };
+
+    G.cushion = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 60, col = o.col || '#FFB3C7', btn = o.button === false ? null : (o.button || 'rgba(42,35,64,.3)');
+      function button(bx, by) { if (btn) { c.beginPath(); c.arc(bx, by, w * 0.06, 0, TAU); c.fillStyle = btn; c.fill(); } }
+      if (o.kind === 'round') {
+        if (o.view === 'top') { D.shadow(c, x + 3, y + 4, w * 0.5, w * 0.48); sh(c, D.ellPath(x, y, w / 2, w / 2), D.tone(c, col, y - w / 2, y + w / 2), o, LW.mid, { depth: 6, inside: function () { button(x, y); } }); return; }
+        D.shadow(c, x, y + w * 0.04, w * 0.5, w * 0.14);
+        sh(c, D.ellPath(x, y - w * 0.13, w * 0.42, w * 0.15), col, o, LW.fine, { depth: 3 });
+        sh(c, D.ellPath(x, y - w * 0.18, w * 0.3, w * 0.07), D.lighter(col, 0.15), o, 0, { depth: 0 });
+        return;
+      }
+      if (o.view === 'top') { D.shadow(c, x + 3, y + 4, w * 0.5, w * 0.5); sh(c, D.rrPath(x - w / 2, y - w / 2, w, w, w * 0.26), D.tone(c, col, y - w / 2, y + w / 2), o, LW.mid, { depth: 6, inside: function () { button(x, y); } }); return; }
+      D.shadow(c, x, y, w * 0.5, w * 0.1);
+      sh(c, D.rrPath(x - w / 2, y - w * 0.84, w, w * 0.82, w * 0.28), D.tone(c, col, y - w * 0.84, y), o, LW.mid, { depth: 6, inside: function () { button(x, y - w * 0.42); } });
+    };
+
+    G.books = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 60, cols = o.cols || ['#7CC4FF', '#FF8FAB', '#FFD23F'];
+      if (o.view === 'top') {
+        D.shadow(c, x + 3, y + 4, w * 0.52, w * 0.4);
+        cols.forEach(function (bc, i) { var k = cols.length - 1 - i; c.save(); c.translate(x, y); c.rotate((k - 1) * 0.08); sh(c, D.rrPath(-w / 2 + i * 2, -w * 0.36 + i * 2, w - i * 4, w * 0.72 - i * 4, 4), bc, o, LW.fine, { depth: 2, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(-w / 2, -w * 0.36, w * 0.12, w * 0.72); } }); c.restore(); });
+        return;
+      }
+      D.shadow(c, x, y, w * 0.52, w * 0.1);
+      cols.forEach(function (bc, i) { var bw = w - i * w * 0.1, bh = w * 0.25; sh(c, D.rrPath(x - bw / 2 + i * 3, y - bh * (i + 1), bw, bh, 4), bc, o, LW.fine, { depth: 2, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(x - bw / 2 + i * 3, y - bh * (i + 1) + bh * 0.25, bw, bh * 0.18); } }); });
+    };
+
+    var plantFront = G.plant;
+    G.plant = function (c, x, y, o) {
+      o = opt(o);
+      if (o.view !== 'top') return plantFront(c, x, y, o);
+      var size = o.size || 80, r = size / 2, pot = o.pot || '#E58B5E', leaf = o.leaf || '#5DBB72';
+      D.shadow(c, x + 3, y + 5, r * 0.8, r * 0.76);
+      sh(c, D.ellPath(x, y, r * 0.62, r * 0.62), D.tone(c, pot, y - r, y + r), o, LW.mid, { depth: 4 });
+      sh(c, D.ellPath(x, y, r * 0.5, r * 0.5), '#8A5A3C', o, LW.fine, { depth: 0 });
+      for (var i = 0; i < 7; i++) {
+        var a = i / 7 * TAU + 0.3;
+        c.save(); c.translate(x, y); c.rotate(a);
+        sh(c, pth(function (p) { p.moveTo(0, 0); p.quadraticCurveTo(r * 0.35, -r * 0.3, r, 0); p.quadraticCurveTo(r * 0.35, r * 0.3, 0, 0); p.closePath(); }), i % 2 ? leaf : D.lighter(leaf, 0.15), o, LW.fine, { depth: 0, inside: function (c) { c.beginPath(); c.moveTo(r * 0.1, 0); c.lineTo(r * 0.85, 0); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = W(o, 2); c.stroke(); } });
+        c.restore();
+      }
+    };
+
+    G.runner = function (c, pts, o) {
+      o = opt(o);
+      var w = o.w || 50, col = o.col || '#E9837A', col2 = o.col2 || '#F2A08E';
+      function line() { c.beginPath(); pts.forEach(function (p, i) { if (i) c.lineTo(p.x, p.y); else c.moveTo(p.x, p.y); }); }
+      c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+      line(); c.strokeStyle = INK; c.lineWidth = w + W(o, LW.mid) * 2; c.stroke();
+      line(); c.strokeStyle = col; c.lineWidth = w; c.stroke();
+      line(); c.strokeStyle = col2; c.lineWidth = w * 0.68; c.stroke();
+      if (o.prints !== false) { c.setLineDash([2, w * 0.4]); line(); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = w * 0.1; c.stroke(); c.setLineDash([]); }
+      c.restore();
+    };
+
+    G.box = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 116, col = o.col || '#DDA86F', flapC = D.darker(col, 0.08);
+      if (o.view === 'top') {
+        var hw = w / 2;
+        D.shadow(c, x + 4, y + 6, hw * 1.05, hw * 1.05);
+        if (o.flaps !== false) [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(function (f) {
+          sh(c, pth(function (p) { if (f[1]) { p.moveTo(x - hw, y + f[1] * hw); p.lineTo(x - hw * 0.8, y + f[1] * hw * 1.45); p.lineTo(x + hw * 0.8, y + f[1] * hw * 1.45); p.lineTo(x + hw, y + f[1] * hw); } else { p.moveTo(x + f[0] * hw, y - hw); p.lineTo(x + f[0] * hw * 1.45, y - hw * 0.8); p.lineTo(x + f[0] * hw * 1.45, y + hw * 0.8); p.lineTo(x + f[0] * hw, y + hw); } p.closePath(); }), flapC, o, LW.fine, { depth: 0 });
+        });
+        sh(c, D.rrPath(x - hw, y - hw, w, w, 4), col, o, LW.mid, { depth: 0 });
+        sh(c, D.rrPath(x - hw * 0.86, y - hw * 0.86, w * 0.86, w * 0.86, 3), D.darker(col, 0.3), o, LW.fine, { depth: 0 });
+        return;
+      }
+      var h = o.h || w * 0.76, top = y - h;
+      D.shadow(c, x, y + 4, w * 0.52, 8);
+      if (o.flaps !== false) {
+        sh(c, pth(function (p) { p.moveTo(x - w / 2, top + 2); p.lineTo(x - w / 2 - 22, top - 18); p.lineTo(x - w / 2 + 8, top - 12); p.lineTo(x - w / 2 + 16, top + 2); p.closePath(); }), flapC, o, LW.fine, { depth: 0 });
+        sh(c, pth(function (p) { p.moveTo(x + w / 2, top + 2); p.lineTo(x + w / 2 + 22, top - 18); p.lineTo(x + w / 2 - 8, top - 12); p.lineTo(x + w / 2 - 16, top + 2); p.closePath(); }), flapC, o, LW.fine, { depth: 0 });
+      }
+      sh(c, D.rrPath(x - w / 2, top, w, h + 2, 4), col, o, LW.mid, { depth: 6, inside: function (c) {
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x - 14, top, 28, h + 2);
+        c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = W(o, 2); c.beginPath(); c.moveTo(x - w / 2 + 14, y - 30); c.lineTo(x - w / 2 + 34, y - 30); c.moveTo(x - w / 2 + 14, y - 22); c.lineTo(x - w / 2 + 28, y - 22); c.stroke();
+      } });
+    };
+
+    G.mousehole = function (c, x, y, o) {
+      o = opt(o);
+      var s = (o.size || 60) / 60;
+      c.save(); c.translate(x, y); c.rotate((o.a || 0) - Math.PI / 2); c.scale(s, s);
+      var ow = Object.create(o); ow.ls = (o.ls || 1) * s;
+      sh(c, D.rrPath(-40, -16, 80, 22, 6), o.col || '#E9DCC8', ow, LW.mid, { depth: 0 });
+      sh(c, pth(function (p) { p.moveTo(-18, 6); p.lineTo(-18, -6); p.arc(0, -6, 18, Math.PI, 0); p.lineTo(18, 6); p.closePath(); }), INK, ow, LW.mid, { depth: 0 });
+      c.restore();
+    };
   })(window.GGScene);
 })();

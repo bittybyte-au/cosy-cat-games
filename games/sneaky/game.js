@@ -428,58 +428,17 @@
     c.fillStyle = g; c.fillRect(x0, y0, x1 - x0, y1 - y0);
     if (a > 0.08) { c.setLineDash([8, 8]); c.strokeStyle = 'rgba(255,226,140,' + Math.min(0.9, a * 2.6) + ')'; c.lineWidth = 2.5; c.strokeRect(x0, y0, x1 - x0, y1 - y0); c.setLineDash([]); }
   }
+  /* a dog lying on its bed, from the shared things (shared/things.js); its state sets the head, ear, eyes and mouth */
   function drawDog(c, d) {
     if (!onScreen(d.x)) return;
-    var col = d.col, st = d.st, awake = st === 'look' || st === 'bark';
-    var lift = st === 'look' || st === 'bark' ? 1 : st === 'stir' ? clamp(d.t / Math.max(0.2, d.dur), 0, 1) * 0.35 : st === 'settle' ? 1 - clamp(d.t / d.dur, 0, 1) : 0;
-    var breathe = st === 'sleep' ? Math.sin(time * 2 + d.seed * 10) * 0.03 : 0;
-    at(c, d.x, DOG_Y);
-    c.scale(-d.face, 1);   // drawn facing left (head at -x) when face is -1
-    c.scale(1, 1);
-    // its bed
-    D.shape(c, D.ellPath(0, -4, 104, 22), '#B05F7C', { lw: D.LW.mid, depth: 0 });
-    D.shape(c, D.ellPath(0, -10, 88, 14), '#D27C9A', { lw: 0, depth: 0 });
-    // tail (wags a bit when awake)
-    var wag = awake ? Math.sin(time * 12) * 0.4 : 0;
-    c.save(); c.translate(58, -36); c.rotate(0.5 + wag);
-    D.shape(c, function (p) { p.moveTo(0, -6); p.quadraticCurveTo(26, -20, 40, -6); p.quadraticCurveTo(28, -8, 2, 6); p.closePath(); }, col.body, { lw: D.LW.fine, depth: 0 });
-    c.restore();
-    // body
-    c.save(); c.translate(0, -34); c.scale(1, 1 + breathe);
-    D.shape(c, D.ellPath(0, 0, 70, 30), col.body, { lw: D.LW.mid, depth: 6, inside: col.spots ? function (c) { c.fillStyle = '#4A4262'; [[10, -14, 16, 11], [-28, 6, 12, 9], [40, 4, 10, 8]].forEach(function (s) { c.beginPath(); c.ellipse(s[0], s[1], s[2], s[3], 0.3, 0, TAU); c.fill(); }); } : null });
-    c.restore();
-    // back leg
-    D.shape(c, D.ellPath(38, -24, 24, 20), col.body, { lw: D.LW.mid, depth: 4 });
-    D.shape(c, D.rrPath(34, -12, 36, 14, 7), col.body, { lw: D.LW.fine, depth: 0 });
-    // front paws stretched out in front
-    D.shape(c, D.rrPath(-104, -16, 56, 16, 8), col.body, { lw: D.LW.fine, depth: 0 });
-    D.shape(c, D.rrPath(-96, -10, 50, 14, 7), col.dark, { lw: D.LW.fine, depth: 0 });
-    // head: resting on the paws when asleep, up when awake
-    var hx = -74 - lift * 6, hy = -34 - lift * 38;
-    c.save(); c.translate(hx, hy); c.rotate(lerp(0.12, -0.05, lift));
-    D.shape(c, D.ellPath(0, 0, 30, 25), col.body, { lw: D.LW.mid, depth: 4 });
-    // snout and nose
-    var open = st === 'bark' ? Math.abs(Math.sin(d.t * 18)) : 0;
-    D.shape(c, D.ellPath(-28, 6 + open * 2, 18, 12 + open * 3), col.body, { lw: D.LW.fine, depth: 0 });
-    if (open > 0.2) { c.beginPath(); c.ellipse(-30, 14 + open * 4, 10, 4 + open * 5, 0, 0, TAU); c.fillStyle = '#A3405C'; c.fill(); D.ink(c, 2.5); }
-    c.beginPath(); c.ellipse(-44, 2, 6, 5, 0, 0, TAU); c.fillStyle = INK; c.fill();
-    // eye: closed, peeking, or wide open
-    if (st === 'sleep' || (st === 'settle' && d.t > d.dur * 0.5)) {
-      c.beginPath(); c.moveTo(-14, -6); c.quadraticCurveTo(-8, -1, -2, -6); D.ink(c, 3);
-    } else if (st === 'stir') {
-      c.beginPath(); c.moveTo(-15, -6); c.lineTo(-1, -6); D.ink(c, 3);
-      c.beginPath(); c.arc(-8, -4, 3, 0, Math.PI); c.fillStyle = INK; c.fill();
-    } else {
-      c.beginPath(); c.arc(-8, -6, 6.5, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); D.ink(c, 2.5);
-      c.beginPath(); c.arc(-10, -6, 3.4, 0, TAU); c.fillStyle = INK; c.fill();
-      c.beginPath(); c.moveTo(-17, -16); c.lineTo(-2, -15); D.ink(c, 3);
-    }
-    // the floppy ear: hangs down asleep, perks up when it stirs
+    var st = d.st, awake = st === 'look' || st === 'bark';
+    var lift = awake ? 1 : st === 'stir' ? clamp(d.t / Math.max(0.2, d.dur), 0, 1) * 0.35 : st === 'settle' ? 1 - clamp(d.t / d.dur, 0, 1) : 0;
     var perk = st === 'stir' || awake ? 1 : st === 'settle' ? 1 - clamp(d.t / d.dur, 0, 1) : 0;
-    c.save(); c.translate(10, -16); c.rotate(lerp(0.2, -0.9, perk) + (st === 'stir' ? Math.sin(time * 30) * 0.08 : 0));
-    D.shape(c, function (p) { p.moveTo(-6, 0); p.quadraticCurveTo(14, -6, 16, 14); p.quadraticCurveTo(16, 34, 6, 36); p.quadraticCurveTo(-4, 30, -6, 0); p.closePath(); }, col.ear, { lw: D.LW.fine, depth: 0 });
-    c.restore();
-    c.restore();
+    var eyes = st === 'sleep' || (st === 'settle' && d.t > d.dur * 0.5) ? 'closed' : st === 'stir' ? 'peek' : 'open';
+    at(c, d.x, DOG_Y);
+    GGThings.dog(c, 0, 0, { view: 'side', dir: d.face, col: d.col, lift: lift, perk: perk, eyes: eyes,
+      open: st === 'bark' ? Math.abs(Math.sin(d.t * 18)) : 0, wag: awake ? time * 12 : 0, twitch: st === 'stir' ? Math.sin(time * 30) * 0.08 : 0,
+      breathe: st === 'sleep' ? Math.sin(time * 2 + d.seed * 10) * 0.03 : 0 });
     c.restore();
   }
   // what a dog is doing, over its head (drawn on top of everything, the right way round)
@@ -514,42 +473,17 @@
     c.scale(1.1, 1.1);
     var w = o.w;
     c.save(); c.fillStyle = 'rgba(12,8,28,.42)'; c.beginPath(); c.ellipse(0, 2, w * 0.62, 15, 0, 0, TAU); c.fill(); c.restore();
-    if (o.kind === 'box') {
-      D.shadow(c, 0, 4, w * 0.52, 8);
-      D.shape(c, function (p) { p.moveTo(-w / 2, -84); p.lineTo(-w / 2 - 22, -104); p.lineTo(-w / 2 + 8, -98); p.lineTo(-w / 2 + 16, -84); p.closePath(); }, '#C9935E', { lw: D.LW.fine, depth: 0 });
-      D.shape(c, function (p) { p.moveTo(w / 2, -84); p.lineTo(w / 2 + 22, -104); p.lineTo(w / 2 - 8, -98); p.lineTo(w / 2 - 16, -84); p.closePath(); }, '#C9935E', { lw: D.LW.fine, depth: 0 });
-      D.shape(c, D.rrPath(-w / 2, -86, w, 88, 4), '#DDA86F', { lw: D.LW.mid, depth: 6, inside: function (c) {
-        c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-14, -86, 28, 88);
-        c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-w / 2 + 14, -30); c.lineTo(-w / 2 + 34, -30); c.moveTo(-w / 2 + 14, -22); c.lineTo(-w / 2 + 28, -22); c.stroke();
-      } });
-    } else if (o.kind === 'plant') {
-      D.shadow(c, 0, 4, 46, 8);
-      var leaves = [[-0.9, 120], [-0.45, 140], [0, 150], [0.45, 140], [0.9, 120], [-0.65, 100], [0.65, 100]];
-      leaves.forEach(function (lf, i) {
-        c.save(); c.translate(0, -60); c.rotate(lf[0] * 0.75 + Math.sin(time * 1.3 + i) * 0.015);
-        D.shape(c, function (p) { p.moveTo(0, 0); p.quadraticCurveTo(-30, -lf[1] * 0.5, 0, -lf[1]); p.quadraticCurveTo(30, -lf[1] * 0.5, 0, 0); p.closePath(); }, i % 2 ? '#4FB868' : '#3E9C58', { lw: D.LW.fine, depth: 0, inside: function (c) { c.beginPath(); c.moveTo(0, -6); c.lineTo(0, -lf[1] + 14); c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = 2.5; c.stroke(); } });
-        c.restore();
-      });
-      D.shape(c, function (p) { p.moveTo(-46, -66); p.lineTo(46, -66); p.lineTo(36, 0); p.lineTo(-36, 0); p.closePath(); }, '#E07A5F', { lw: D.LW.mid, depth: 6 });
-      D.shape(c, D.rrPath(-52, -74, 104, 16, 5), '#C8654B', { lw: D.LW.mid, depth: 0 });
-    } else {
-      // an armchair, seen from the side a little
-      D.shadow(c, 0, 4, w * 0.5, 9);
-      D.shape(c, D.rrPath(-w / 2 + 10, -150, w - 20, 110, 26), '#7C8FD6', { lw: D.LW.mid, depth: 6 });
-      D.shape(c, D.rrPath(-w / 2 + 8, -66, w - 16, 44, 12), '#94A6EA', { lw: D.LW.mid, depth: 4 });
-      D.shape(c, D.rrPath(-w / 2 - 6, -100, 34, 90, 14), '#6A7CC4', { lw: D.LW.mid, depth: 4 });
-      D.shape(c, D.rrPath(w / 2 - 28, -100, 34, 90, 14), '#6A7CC4', { lw: D.LW.mid, depth: 4 });
-      D.shape(c, D.rrPath(-w / 2 + 6, -12, 12, 14, 3), '#5A4A60', { lw: D.LW.fine, depth: 0 });
-      D.shape(c, D.rrPath(w / 2 - 18, -12, 12, 14, 3), '#5A4A60', { lw: D.LW.fine, depth: 0 });
-    }
+    // the hiding places come from the shared kit (shared/scene.js)
+    if (o.kind === 'box') GGScene.box(c, 0, 0, { w: w, h: 86 });
+    else if (o.kind === 'plant') GGScene.plant(c, 0, 0, { kind: 'leafy', size: 210, pot: '#E07A5F', leaf: '#4FB868' });
+    else GGScene.sofa(c, 0, 0, { kind: 'armchair', w: w, col: '#7C8FD6', col2: '#94A6EA', legs: '#5A4A60' });
     c.restore();
   }
   function drawFish(c, f) {
     if (f.got || !onScreen(f.x)) return;
     at(c, f.x, CAT_Y - 26 + Math.sin(time * 4 + f.x) * 4);
     c.globalAlpha = 0.3 + 0.15 * Math.sin(time * 5); c.beginPath(); c.arc(0, 0, 24, 0, TAU); c.fillStyle = '#BFE6FF'; c.fill(); c.globalAlpha = 1;
-    D.shape(c, function (p) { p.moveTo(-16, 0); p.quadraticCurveTo(-4, -12, 8, -5); p.lineTo(17, -11); p.lineTo(17, 11); p.lineTo(8, 5); p.quadraticCurveTo(-4, 12, -16, 0); p.closePath(); }, '#7CC4FF', { lw: D.LW.fine, depth: 3 });
-    c.beginPath(); c.arc(-8, -1.5, 2, 0, TAU); c.fillStyle = INK; c.fill();
+    GGThings.fish(c, 0, 0, {});
     c.restore();
   }
   function drawGoal(c) {

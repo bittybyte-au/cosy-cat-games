@@ -405,8 +405,7 @@
     c.save(); c.translate(x, y); c.scale(K, K);
     var col = f.gold ? '#FFD23F' : '#7CC4FF';
     if (f.gold) { c.globalAlpha = 0.35 + 0.2 * Math.sin(time * 6); c.beginPath(); c.arc(0, 0, 22, 0, TAU); c.fillStyle = '#FFE58A'; c.fill(); c.globalAlpha = 1; }
-    D.shape(c, function (p) { p.moveTo(-16, 0); p.quadraticCurveTo(-4, -12, 8, -5); p.lineTo(17, -11); p.lineTo(17, 11); p.lineTo(8, 5); p.quadraticCurveTo(-4, 12, -16, 0); p.closePath(); }, col, { lw: D.LW.fine, depth: 3 });
-    c.beginPath(); c.arc(-8, -1.5, 2, 0, TAU); c.fillStyle = INK; c.fill();
+    GGThings.fish(c, 0, 0, { col: col });   // shared/things.js (the glow above is this game's)
     c.restore();
   }
   function drawCat(c) {

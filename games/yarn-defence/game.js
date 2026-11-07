@@ -452,16 +452,8 @@
     c.fillStyle = '#F3D9B8'; c.fillRect(0, 0, cw, ch);
     // the floor: warm boards
     c.save(); D.rr(c, BX - 6, BY - 6, CS * COLS + 12, CS * ROWS + 12, 18); c.clip();
-    c.fillStyle = '#D9A574'; c.fillRect(BX - 6, BY - 6, CS * COLS + 12, CS * ROWS + 12);
-    var bh = CS * 0.5, R = D.seeded(7);
-    for (var r = 0; r * bh < CS * ROWS + 12; r++) {
-      var y = BY - 6 + r * bh;
-      c.fillStyle = r % 2 ? '#D49E6C' : '#DCAA7A'; c.fillRect(BX - 6, y, CS * COLS + 12, bh);
-      c.strokeStyle = 'rgba(42,35,64,.16)'; c.lineWidth = 1.5;
-      c.beginPath(); c.moveTo(BX - 6, y); c.lineTo(BX + CS * COLS + 6, y); c.stroke();
-      for (var x = BX - 6 + R() * CS * 2; x < BX + CS * COLS; x += CS * (2.2 + R())) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + bh); c.stroke(); }
-    }
-    // a round rug or two (just for looks)
+    // the floor seen from above: the shared boards (shared/scene.js)
+    GGScene.floor(c, BX - 6, BY - 6, CS * COLS + 12, CS * ROWS + 12, { kind: 'boards', col: '#D9A574', size: CS * 0.5, len: CS * 2.6, seed: 7, edge: false });
     c.restore();
     D.rr(c, BX - 6, BY - 6, CS * COLS + 12, CS * ROWS + 12, 18); D.ink(c, 4);
     // spots you can use, while a cat is picked
@@ -472,39 +464,17 @@
   }
   function drawPath(c) {
     var pl = L.path.poly;
-    function line() { c.beginPath(); pl.forEach(function (p, i) { if (i) c.lineTo(sx(p.x), sy(p.y)); else c.moveTo(sx(p.x), sy(p.y)); }); }
     c.save(); D.rr(c, BX - 6, BY - 6, CS * COLS + 12, CS * ROWS + 12, 18); c.clip();
-    c.lineJoin = 'round'; c.lineCap = 'round';
-    line(); c.strokeStyle = INK; c.lineWidth = CS * 0.82 + 8; c.stroke();
-    line(); c.strokeStyle = '#E9837A'; c.lineWidth = CS * 0.82; c.stroke();
-    line(); c.strokeStyle = '#F2A08E'; c.lineWidth = CS * 0.56; c.stroke();
-    // little paw prints along the middle
-    c.setLineDash([2, CS * 0.32]); line(); c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = CS * 0.08; c.stroke(); c.setLineDash([]);
+    GGScene.runner(c, pl.map(function (p) { return { x: sx(p.x), y: sy(p.y) }; }), { w: CS * 0.82 });
     c.restore();
     // the mouse hole, in a bit of skirting at the edge
     var h = L.path.hole;
-    c.save(); c.translate(sx(h.x), sy(h.y)); c.rotate(Math.atan2(h.dy, h.dx) - Math.PI / 2); c.scale(CS / 60, CS / 60);
-    D.shape(c, D.rrPath(-40, -16, 80, 22, 6), '#E9DCC8', { lw: D.LW.mid, depth: 0 });
-    D.shape(c, function (p) { p.moveTo(-18, 6); p.lineTo(-18, -6); p.arc(0, -6, 18, Math.PI, 0); p.lineTo(18, 6); p.closePath(); }, '#2A2340', { lw: D.LW.mid, depth: 0 });
-    c.restore();
+    GGScene.mousehole(c, sx(h.x), sy(h.y), { size: CS, a: Math.atan2(h.dy, h.dx) });
   }
   function drawBasket(c) {
-    var b = L.path.basket, s = CS / 60;
-    c.save(); c.translate(sx(b.x), sy(b.y) + 6 * s); c.scale(s, s);
-    D.shadow(c, 0, 18, 34, 7);
-    var n = Math.min(G.yarn, 10), cols = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#7BD389', '#B48CFF'];
-    var spots = [[-16, -6], [0, -9], [16, -6], [-8, -16], [8, -16], [0, -24], [-20, -14], [20, -14], [-12, -26], [12, -26]];
-    for (var i = 0; i < n; i++) {
-      var q = spots[i];
-      D.shape(c, D.ellPath(q[0], q[1], 11, 11), cols[i % cols.length], { lw: D.LW.fine, depth: 3, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(q[0] - 9, q[1] - 3); c.quadraticCurveTo(q[0], q[1] - 8, q[0] + 9, q[1] - 2); c.moveTo(q[0] - 9, q[1] + 3); c.quadraticCurveTo(q[0], q[1] - 2, q[0] + 9, q[1] + 4); c.stroke(); } });
-    }
-    D.shape(c, function (p) { p.moveTo(-32, -6); p.lineTo(32, -6); p.lineTo(26, 18); p.lineTo(-26, 18); p.closePath(); }, '#C9935E', { lw: D.LW.mid, depth: 5, inside: function (c) {
-      c.strokeStyle = 'rgba(42,35,64,.28)'; c.lineWidth = 2.5;
-      for (var x = -26; x < 30; x += 9) { c.beginPath(); c.moveTo(x, -6); c.lineTo(x + 3, 18); c.stroke(); }
-      c.beginPath(); c.moveTo(-30, 4); c.lineTo(30, 4); c.stroke();
-    } });
-    D.shape(c, D.rrPath(-35, -10, 70, 8, 4), '#B07C4C', { lw: D.LW.fine, depth: 0 });
-    c.restore();
+    var b = L.path.basket, s = CS / 60, cols = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#7BD389', '#B48CFF'], balls = [];
+    for (var i = 0; i < Math.min(G.yarn, 10); i++) balls.push(cols[i % cols.length]);
+    GGScene.basket(c, sx(b.x), sy(b.y) + 24 * s, { w: 64 * s, balls: balls });
   }
   function drawMouse(c, m, x, y, dirx, diry, alpha, spin) {
     var M = MICE[m.type], s = CS / 60 * M.size;
@@ -517,16 +487,8 @@
     c.save(); if (flip) c.scale(-1, 1);
     var tilt = flip ? -Math.atan2(diry, -dirx) : Math.atan2(diry, dirx);
     c.rotate(clamp(tilt, -0.5, 0.5) * 0.5);
-    // tail
-    c.beginPath(); c.moveTo(-14, 2); c.quadraticCurveTo(-26, -2 + Math.sin((m.step || 0) * 0.7) * 5, -30, 6); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(); c.strokeStyle = '#FFB4C6'; c.lineWidth = 1.8; c.stroke();
-    // body
-    D.shape(c, function (p) { p.moveTo(-16, 4 + bob); p.quadraticCurveTo(-16, -12 + bob, 2, -12 + bob); p.quadraticCurveTo(16, -12 + bob, 20, 2 + bob); p.quadraticCurveTo(18, 8 + bob, 4, 8 + bob); p.lineTo(-12, 8 + bob); p.quadraticCurveTo(-16, 8 + bob, -16, 4 + bob); p.closePath(); }, M.col, { lw: 3, depth: 3 });
-    // ear, eye and nose
-    D.shape(c, D.ellPath(6, -12 + bob, 6, 6), '#FFB4C6', { lw: 2.5, depth: 0 });
-    c.beginPath(); c.arc(21, 2 + bob, 2.4, 0, TAU); c.fillStyle = '#FF8FAB'; c.fill();
-    if (m.sleepy) { c.beginPath(); c.moveTo(10, -3 + bob); c.lineTo(15, -3 + bob); c.strokeStyle = INK; c.lineWidth = 2; c.stroke(); }
-    else { c.beginPath(); c.arc(13, -3 + bob, 2, 0, TAU); c.fillStyle = INK; c.fill(); }
-    if (m.type === 'big') { D.shape(c, function (p) { p.moveTo(-4, -12 + bob); p.lineTo(10, -12 + bob); p.lineTo(8, -20 + bob); p.lineTo(3, -15 + bob); p.lineTo(-2, -20 + bob); p.closePath(); }, '#FFD23F', { lw: 2.2, depth: 0 }); }
+    // the mouse itself: the shared side-on one (shared/things.js), half size here because this space is 2x smaller
+    GGThings.mouse(c, 0, 0, { view: 'side', size: 0.5, col: M.col, run: m.step || 0, tail: (m.step || 0) * 0.7, sleepy: m.sleepy, crown: m.type === 'big', shadow: false, ls: s });
     c.restore();
     // dizzy stars when batted
     if (m.hitT > 0 || spin) {
@@ -547,7 +509,7 @@
     var cx = sx(cat.x + 0.5), cy = sy(cat.y + 0.5);
     // its cushion, with a dot for each time it's been made better
     c.save(); c.translate(cx, cy + CS * 0.26); c.scale(s, s);
-    D.shape(c, D.ellPath(0, 0, 25, 9), T.cushion, { lw: 3, depth: 3 });
+    GGScene.cushion(c, 0, 9, { kind: 'round', w: 60, col: T.cushion, ls: s });
     for (var i = 0; i <= cat.lvl; i++) { c.save(); c.translate((i - cat.lvl / 2) * 11, 1); starPath(c, 4.5); c.fillStyle = '#FFF6D8'; c.fill(); D.ink(c, 1.4); c.restore(); }
     c.restore();
     // the cat
@@ -573,11 +535,7 @@
     if (cat.type === 'toss') { c.save(); c.translate(cx + CS * 0.26, cy + CS * 0.18); c.scale(s, s); yarnBall(c, 8, '#FF8FAB', 0); c.restore(); }
     if (cat.type === 'nap') { c.save(); c.translate(cx + CS * 0.18, cy - CS * 0.2 - (time * 8 % 8) * s); c.globalAlpha = 0.85; c.font = '800 ' + Math.round(14 * s) + 'px ' + displayFont; c.lineWidth = 4 * s; c.strokeStyle = INK; c.strokeText('z', 0, 0); c.fillStyle = '#D8C8FF'; c.fillText('z', 0, 0); c.restore(); }
   }
-  function yarnBall(c, r, col, spin) {
-    c.save(); c.rotate(spin || 0);
-    D.shape(c, D.ellPath(0, 0, r, r), col, { lw: 2.5, depth: 2, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-r, -r * 0.3); c.quadraticCurveTo(0, -r * 0.9, r, -r * 0.2); c.moveTo(-r, r * 0.35); c.quadraticCurveTo(0, -r * 0.2, r, r * 0.45); c.stroke(); } });
-    c.restore();
-  }
+  function yarnBall(c, r, col, spin) { GGThings.yarnBall(c, 0, 0, { r: r, col: col, spin: spin, ls: CS / 60 }); }   // shared/things.js
   function drawNapAuras(c) {
     for (var k in G.cats) {
       var cat = G.cats[k]; if (cat.type !== 'nap') continue;
