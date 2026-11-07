@@ -46,7 +46,7 @@
      the cat walks along CAT_Y, hiding places stand in front (SPOT_Y). */
   var FLOOR = 470, DOG_Y = FLOOR + 26, CAT_Y = FLOOR + 50, SPOT_Y = FLOOR + 70;
   var SIZE = 66, K0 = SIZE / 88;
-  var SPEED = 170, BACK = 560, HOP_D = 118, HOP_T = 0.46, HOP_COOL = 0.3, GRACE = 0.12;
+  var SPEED = 170, BACK = 560, HOP_D = 190, HOP_T = 0.58, HOP_COOL = 0.3, GRACE = 0.12;
   var SPOT_W = { box: 116, plant: 118, chair: 168 };
   var DOG_COLS = [
     { body: '#C98B5B', dark: '#9A6440', ear: '#7E4E30' },
@@ -574,7 +574,7 @@
   }
   function starPath(c, r) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, q = i % 2 ? r * 0.45 : r; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); }
   function drawCat(c) {
-    var hopY = G.hop ? -Math.sin(Math.min(1, G.hop.t / HOP_T) * Math.PI) * 54 : 0;
+    var hopY = G.hop ? -Math.sin(Math.min(1, G.hop.t / HOP_T) * Math.PI) * 78 : 0;
     var x = G.x, eating = state === 'won';
     at(c, x, CAT_Y);
     if (!G.hop) D.shadow(c, -8, 2, 30, 6); else D.shadow(c, -8, 2, 24, 5);
