@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-de1ca1cdb4';
+const VERSION = 'ccg-7d9177cfed';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -23,8 +23,9 @@ const FILES = {
   "./shared/dishes.js": "1f04f839e4",
   "./shared/draw.js": "6af1578083",
   "./shared/game.css": "c916f187bf",
-  "./shared/games.js": "d1381c1db0",
+  "./shared/games.js": "074e6dac6b",
   "./shared/install.js": "1c67ffafad",
+  "./shared/pots.js": "068f16575f",
   "./shared/site.css": "be553f2b0e",
   "./shared/store.js": "e38fa9fa84",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
@@ -91,6 +92,9 @@ const FILES = {
   "./games/peekaboo/game.js": "161702425c",
   "./games/peekaboo/": "394f4dafff",
   "./games/peekaboo/index.html": "394f4dafff",
+  "./games/pottery/game.js": "3500f19ad3",
+  "./games/pottery/": "1aa6ca4de1",
+  "./games/pottery/index.html": "1aa6ca4de1",
   "./games/puzzle/game.js": "1d10ebda95",
   "./games/puzzle/": "b9d7c84155",
   "./games/puzzle/index.html": "b9d7c84155",

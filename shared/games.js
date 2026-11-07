@@ -144,6 +144,22 @@
       sh(R(166, 94, 40, 30, 9), '#7CC4FF', { k: 4 }) +
       cat({ preset: 'sun', face: 'happy', x: 200, y: 34, size: 40 })),
 
+    pottery: svg(
+      // a potter's wheel with wet clay spinning on it, a fired vase on the shelf, and the cat potter watching
+      sh(R(8, 124, 56, 8, 3), '#E6B98A', { lw: 3, k: 2, in: shadow(37, 125, 16, 3) }) +
+      sh(P(26, 124, 'q-9 -16 1 -30q4 -6 2 -12h14q-2 6 2 12q10 14 1 30z'), '#4B9BE8', { k: 3, in: el(30, 104, 2, 7, '#fff', 0.5) + el(36, 112, 2.4, 2.4, '#fff') + el(28, 110, 2, 2, '#fff') + el(44, 110, 2, 2, '#fff') + '<rect x="16" y="88" width="40" height="5" fill="#FF8FB8"/>' }) +
+      sh(E(36, 82, 7, 2.2), '#6FB2F0', { lw: 3, k: 0, in: el(36, 82.6, 4.6, 1.4, '#2E5E99') }) +
+      shadow(110, 141, 56, 4) +
+      sh(P(76, 116, 'l-8 25h84l-8 -25z'), '#7CC4FF', { k: 4, in: '<rect x="80" y="116" width="8" height="26" fill="#fff" opacity=".35"/>' }) +
+      sh(E(110, 116, 52, 11), '#DDE7F2', { k: 3, in: el(110, 114, 44, 8, 'rgba(42,35,64,.14)') }) +
+      sh(P(70, 110, 'v5a40 8 0 0 0 80 0v-5z'), '#9AA3B5', { lw: 3, k: 0, in: ln('M84 112v8M100 113v10M120 113v10M136 112v8', 2.5, 'rgba(255,255,255,.5)') }) +
+      sh(E(110, 110, 40, 8), '#C3CAD8', { lw: 3, k: 0, in: el(111, 110, 20, 4, 'rgba(80,45,30,.25)') }) +
+      sh(P(92, 111, 'q-13 -22 1 -40q6 -8 4 -18h26q-2 10 4 18q14 18 1 40z'), '#B97753', { k: 4,
+        in: ln('M84 98q26 6 52 0M86 84q24 5 48 0M95 64q15 3 30 0', 2.5, 'rgba(80,40,20,.3)') + el(100, 84, 3, 12, '#fff', 0.3) + ln('M118 60q4 24 0 48', 3, 'rgba(255,235,220,.35)') }) +
+      sh(E(110, 53, 13, 3.6), '#C98B6B', { lw: 3, k: 0, in: el(110, 53.6, 9.6, 2.4, '#6E4128') }) +
+      ln('M70 62q-7 10 0 20M150 62q7 10 0 20', 3) + ln('M66 77l4 5l5 -3M154 77l-4 5l-5 -3', 3) +
+      cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 200, y: 82, size: 52 })),
+
     cafe: svg(
       [16, 34, 52, 70, 88, 106, 124].map(function (x, i) { return sh(P(x, 9, 'h12l-6 14z'), i % 2 ? '#FFD23F' : '#FF8FAB', { lw: 2.5, k: 0 }); }).join('') + ln('M8 9H144', 2.5) +
       sh(R(12, 116, 216, 28, 10), '#C98B5B', { k: 4 }) + sh(R(6, 110, 228, 14, 6), '#E6B98A', { k: 3 }) +
@@ -363,6 +379,12 @@
       ages: ['under5', '5-10'], toddler: false, toddlerToo: true, free: 'all', status: 'live', season: null, colour: '#D4F0C4',
       badge: function (p) { var n = p && typeof p.grown === 'number' ? p.grown : 0; return n ? n + (n === 1 ? ' plant grown' : ' plants grown') : ''; },
       art: ART.grow
+    },
+    {
+      id: 'pottery', save: 'pottery', name: 'Pottery', blurb: 'Shape, paint and fire a pot',
+      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DCC6',
+      badge: function (p) { var n = p && typeof p.made === 'number' ? p.made : 0; return n ? n + (n === 1 ? ' pot made' : ' pots made') : ''; },
+      art: ART.pottery
     },
     {
       id: 'cafe', save: 'cafe', name: 'Cat Caf\u00e9', blurb: 'Serve hungry cat customers',

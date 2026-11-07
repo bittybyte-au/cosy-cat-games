@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Pottery</title>
+<meta name="theme-color" content="#F6E4D2">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Pottery: the studio (canvas) fills the screen; the steps sit in the top bar and the tools in a strip along the bottom.
+   Single bright look by design. */
+:root { --wall: #F6E4D2; }
+body { background: var(--wall); }
+.middle { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.steps { display: flex; gap: 2px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px; box-shadow: 0 3px 0 var(--ink), var(--soft); }
+.steps span { padding: 5px 12px 3px; border-radius: 999px; font: 800 1rem/1.2 var(--display); white-space: nowrap; color: var(--muted); }
+.steps span.on { background: var(--sun); color: var(--ink); box-shadow: inset 0 0 0 3px var(--ink); }
+.steps span.done { color: var(--ink); }
+@media (max-width: 440px) { .steps span { padding: 4px 8px 2px; font-size: .9rem; } .steps { padding: 3px; } .topbar { gap: 6px; } }
+@media (max-width: 360px) { .steps span { padding: 4px 5px 2px; font-size: .8rem; } }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+.steprow { position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; width: min(100%, 720px); gap: 8px; }
+.steprow .step { flex: 1; font: 800 1.12rem/1.15 var(--display); text-align: center; text-wrap: balance; }
+.backbtn { width: 46px; height: 46px; }
+.backbtn svg { width: 26px; height: 26px; }
+.nextbtn { min-height: 48px; padding: 0 18px; font-size: 1.15rem; flex: none; }
+.nextbtn svg { width: 22px; height: 22px; }
+.steprow .spacer { width: 46px; flex: none; }
+.tools { display: flex; gap: 8px; overflow-x: auto; justify-content: safe center; padding: 2px 4px 6px; max-width: 100%; align-items: center; scrollbar-width: none; }
+.tools::-webkit-scrollbar { display: none; }
+.tool {
+  flex: none; width: 56px; height: 56px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; cursor: pointer; padding: 0;
+  display: grid; place-items: center; box-shadow: 0 3px 0 var(--ink), var(--soft); position: relative;
+}
+.tool img { width: 48px; height: 48px; pointer-events: none; }
+.tool svg { width: 32px; height: 32px; pointer-events: none; }
+.tool:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.tool[aria-pressed="true"] { background: var(--sun); }
+.tool:disabled { opacity: .4; cursor: default; }
+.tool.sw { width: 42px; height: 42px; border-radius: 50%; }
+.tool.sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--cream), 0 0 0 6px var(--ink); background-image: none; }
+.tool.sw.bare { background: #E2B48E radial-gradient(circle at 35% 35%, rgba(255,255,255,.5) 0 3px, transparent 4px); }
+.sep { flex: none; width: 3px; align-self: stretch; margin: 6px 2px; border-radius: 2px; background: #E8DCCB; }
+.tool .lbl { position: absolute; bottom: -1px; left: 0; right: 0; font: 800 .62rem/1 var(--body); }
+.donebtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 2px 0 6px; }
+.donebtns .big { min-height: 56px; font-size: 1.25rem; padding: 0 22px; }
+
+.say {
+  position: fixed; left: 50%; top: calc(var(--top-h, 80px) + 10px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content;
+  transition: opacity .3s ease, transform .3s ease;
+}
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+
+/* My pots */
+.potgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; max-height: min(46vh, 420px); overflow-y: auto; padding: 4px; }
+.potbtn { aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 16px; background: #FFF3E4; cursor: pointer; padding: 2px; box-shadow: 0 3px 0 var(--ink), var(--soft); display: grid; place-items: center; }
+.potbtn img { width: 100%; height: 100%; pointer-events: none; }
+.potbtn[aria-pressed="true"] { background: var(--pale-sun); outline: 4px solid var(--sun); }
+.potbtn.new { animation: bump .6s ease-in-out 2; }
+.preview { display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.preview img { width: 150px; height: 150px; background: #FFF3E4; border: 3px solid var(--ink); border-radius: 20px; }
+.preview .acts { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.panel .note { text-align: center; color: var(--muted); }
+.panel .closebtn { position: absolute; top: 12px; right: 12px; width: 46px; height: 46px; }
+.panel .closebtn svg { width: 22px; height: 22px; }
+.panel { position: relative; }
+.delbtn { background: #FFD0C9 !important; }
+.small.big { min-height: 50px; font-size: 1.1rem; padding: 0 18px; }
+a.big { text-decoration: none; color: var(--ink); }
+/* phones: the tool rows wrap instead of running off the edge */
+@media (max-width: 560px) {
+  .tools { flex-wrap: wrap; gap: 6px; padding: 7px 4px 4px; }
+  .tool { width: 48px; height: 48px; border-radius: 14px; }
+  .tool img { width: 42px; height: 42px; }
+  .tool svg { width: 28px; height: 28px; }
+  .tool.sw { width: 36px; height: 36px; }
+  .sep { display: none; }
+  .bar { gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .potbtn.new { animation: none; } .say { transition: none; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="A pottery studio with a potter's wheel. Shape the spinning clay, glaze it, then fire it in the kiln."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle"><div class="steps" id="steps" aria-label="Steps">
+    <span data-s="shape">Shape</span><span data-s="paint">Paint</span><span data-s="kiln">Fire</span>
+  </div></div>
+  <button class="round" id="potsBtn" type="button" aria-label="My pots">
+    <svg viewBox="0 0 32 32"><path d="M3 24 H29" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><path d="M8 23 Q5 17 9 12 H13 Q17 17 14 23 Z" fill="#FF8FB8" stroke="#2A2340" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 23 Q16 19 17 15 Q22 13 27 15 Q28 19 26 23 Z" fill="#4B9BE8" stroke="#2A2340" stroke-width="2.4" stroke-linejoin="round"/><path d="M9 12 H13 M17 15 Q22 17 27 15" stroke="#2A2340" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+  </button>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="bar" id="bar">
+  <div class="steprow">
+    <button class="round backbtn" id="backBtn" type="button" aria-label="Go back a step" hidden><svg viewBox="0 0 32 32"><path d="M19 7 L10 16 L19 25" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="spacer" id="backSpacer"></span>
+    <div class="step" id="stepLabel">Shape your clay</div>
+    <button class="big nextbtn" id="nextBtn" type="button">Paint it</button>
+    <span class="spacer" id="nextSpacer" hidden></span>
+  </div>
+  <div class="tools" id="tools"></div>
+  <div class="tools" id="tools2" hidden></div>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="overlay" id="potsWrap" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="potsTitle">
+    <button class="round closebtn" id="potsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6 L18 18 M18 6 L6 18" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round"/></svg></button>
+    <h2 id="potsTitle">My pots</h2>
+    <div class="preview" id="preview" hidden>
+      <img id="previewImg" alt="">
+      <div class="acts" id="previewActs"></div>
+    </div>
+    <div class="potgrid" id="potGrid"></div>
+    <p class="note" id="potsNote"></p>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/pots.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
