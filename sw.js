@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-c639d4004b';
+const VERSION = 'ccg-9d786bb509';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -53,9 +53,9 @@ const FILES = {
   "./games/cooking/game.js": "b7bc39ea6b",
   "./games/cooking/": "806f497544",
   "./games/cooking/index.html": "806f497544",
-  "./games/crossing/game.js": "9d636258ee",
-  "./games/crossing/": "1ed98ec27b",
-  "./games/crossing/index.html": "1ed98ec27b",
+  "./games/crossing/game.js": "455d47749f",
+  "./games/crossing/": "cf93caacb0",
+  "./games/crossing/index.html": "cf93caacb0",
   "./games/cubbies/game.js": "f35983788b",
   "./games/cubbies/": "08d20de40c",
   "./games/cubbies/index.html": "08d20de40c",
@@ -103,7 +103,7 @@ const FILES = {
   "./games/puzzle/": "b9d7c84155",
   "./games/puzzle/index.html": "b9d7c84155",
   "./games/rescue/engine.js": "aad6439e74",
-  "./games/rescue/game.js": "1d5dba11f9",
+  "./games/rescue/game.js": "1c81e0abac",
   "./games/rescue/": "89b8ccc5dd",
   "./games/rescue/index.html": "89b8ccc5dd",
   "./games/rescue/levels.js": "b66c78ca0f",
