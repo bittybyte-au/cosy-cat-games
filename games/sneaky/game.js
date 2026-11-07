@@ -4,7 +4,7 @@
    shows how far it can see). Move inside that glow while it's looking and it woofs: your cat scurries back to the
    last safe spot (the last hiding place, or floor no dog can see) — not the start. Boxes, plant pots and armchairs
    are hiding places, safe even when a dog looks. Squeaky floorboards make the nearest dog check straight away, so hop
-   over them (the Hop button, or space / ↑). Fish to collect. Three stars: reach the snack, get every fish, never
+   over them (a quick tap, the Hop button, or space / ↑). Fish to collect. Three stars: reach the snack, get every fish, never
    get spotted. Levels get longer, with more dogs, shorter naps, dogs facing the other way, and dogs that share a
    room. Saves GG.setProgress('sneaky', { best, cur, stars: { level: n } }). */
 (function () {
@@ -172,8 +172,15 @@
   function holdOn() { Sound.init(); if (state === 'play') G.held = true; }
   function holdOff() { if (G) G.held = false; }
   var pointers = {};
-  canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); pointers[e.pointerId] = 1; try { canvas.setPointerCapture(e.pointerId); } catch (err) {} holdOn(); });
-  function pUp(e) { delete pointers[e.pointerId]; if (!Object.keys(pointers).length && !keys.walk) holdOff(); }
+  // hold to tiptoe; a quick tap hops (over squeaky boards)
+  var TAP_MS = 220, downAt = {};
+  canvas.addEventListener('pointerdown', function (e) { e.preventDefault(); pointers[e.pointerId] = 1; downAt[e.pointerId] = performance.now(); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} holdOn(); });
+  function pUp(e) {
+    var quick = e.type === 'pointerup' && downAt[e.pointerId] && performance.now() - downAt[e.pointerId] < TAP_MS;
+    delete pointers[e.pointerId]; delete downAt[e.pointerId];
+    if (!Object.keys(pointers).length && !keys.walk) holdOff();
+    if (quick) hop();
+  }
   canvas.addEventListener('pointerup', pUp);
   canvas.addEventListener('pointercancel', pUp);
   function hop() {
@@ -310,7 +317,7 @@
   function levelSay() {
     var pl = L.pl, prev = L.lv > 1 ? plan(L.lv - 1) : null;
     if (L.lv === 1) say('Hold to tiptoe. Let go to freeze.', 3);
-    else if (pl.boards && !(prev && prev.boards)) say('Squeaky floorboards! Hop over them.', 3);
+    else if (pl.boards && !(prev && prev.boards)) say('Squeaky floorboards! Tap quickly to hop over them.', 3.2);
     else if (pl.backwards && !(prev && prev.backwards)) say('Some dogs face the other way. Careful once you’re past!', 3.2);
     else if (pl.share && !(prev && prev.share)) say('Two dogs can watch the same spot now.', 3);
     else if (pl.dogs > (prev ? prev.dogs : 0)) say('Level ' + L.lv + ': ' + pl.dogs + ' dogs', 2);
@@ -348,7 +355,7 @@
     canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
     canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
     // a wide screen sees 900 units across, an upright phone 700 (enough to see the dog ahead); at least 560 tall
-    K = Math.min(ch / 560, cw / (cw < ch ? 700 : 900));
+    K = Math.min(ch / 560, cw / (cw < ch ? 520 : 900));
     VW = cw / K;
     topGap = $('topbar').getBoundingClientRect().bottom || 70;
     // where the back of the floor sits on screen: low enough for the wall, with the floor below
@@ -529,8 +536,12 @@
   var displayFont = 'sans-serif';
   function drawSpot(c, o, front) {
     if (!onScreen(o.x)) return;
-    at(c, o.x, SPOT_Y);
+    // hiding places stand forward on the floor, nearer than the cat: a touch bigger, with a dark pool of shadow under
+    // them and a rim of moonlight on top, so they read as in front of the kitten rather than on the wall
+    at(c, o.x, SPOT_Y + 14);
+    c.scale(1.1, 1.1);
     var w = o.w;
+    c.save(); c.fillStyle = 'rgba(12,8,28,.42)'; c.beginPath(); c.ellipse(0, 2, w * 0.62, 15, 0, 0, TAU); c.fill(); c.restore();
     if (o.kind === 'box') {
       D.shadow(c, 0, 4, w * 0.52, 8);
       D.shape(c, function (p) { p.moveTo(-w / 2, -84); p.lineTo(-w / 2 - 22, -104); p.lineTo(-w / 2 + 8, -98); p.lineTo(-w / 2 + 16, -84); p.closePath(); }, '#C9935E', { lw: D.LW.fine, depth: 0 });
@@ -631,7 +642,7 @@
   }
   function draw(c) {
     if (!L) return;
-    var target = clamp(G.x - VW * (VW < 800 ? 0.16 : 0.26), -40, Math.max(-40, L.end - VW));
+    var target = clamp(G.x - VW * (VW < 800 ? 0.24 : 0.26), -40, Math.max(-40, L.end - VW));
     camX += (target - camX) * (G.mode === 'run' ? 0.25 : 0.18);
     if (Math.abs(target - camX) > VW) camX = target;
     drawRoom(c);
