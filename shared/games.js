@@ -380,7 +380,7 @@
       shadow(196, 62, 30, 5) + sh(P(170, 38, 'h52l-5 22h-42z'), '#C9935E', { lw: 3, k: 3 }) +
       wool(184, 34, 10, '#FF8FAB', '#D9577C') + wool(204, 32, 10, '#7CC4FF', '#4F9BD9') + wool(194, 22, 9, '#FFD23F', '#E0A800') +
       shadow(84, 76, 20, 4) + sh(E(84, 74, 18, 6), '#FFD23F', { lw: 2.5, k: 0 }) +
-      cat({ preset: 'ginger', pose: 'wave', face: 'happy', x: 84, y: 40, size: 36 }) +
+      cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 84, y: 40, size: 36 }) +
       shadow(160, 132, 20, 4) + sh(E(160, 130, 18, 6), '#B48CFF', { lw: 2.5, k: 0 }) +
       cat({ color: '#F1E3CB', build: 'fluffy', pose: 'lie', face: 'sleep', x: 160, y: 118, size: 34 })),
     fashion: svg(
@@ -465,6 +465,7 @@
     {
       id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
       ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
+      badge: function (p) { var n = p ? (p.n3 || 0) + (p.n4 || 0) : 0; return n ? n + ' solved' : ''; },
       art: ART.slide
     },
     {
