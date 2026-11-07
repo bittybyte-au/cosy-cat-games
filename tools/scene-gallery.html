@@ -167,6 +167,14 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
     { name: "dog {view:'top', walk} / {still}", draw: function (c) { night(c); T.dog(c, 90, 70, { view: 'top', walk: 1, a: 0.3, wag: 1 }); T.dog(c, 150, 150, { view: 'top', walk: 0, still: true, a: Math.PI, eyes: 'closed', col: { body: '#EBD7B0', dark: '#CDB281', ear: '#B8925E', spots: true }, size: 0.8 }); } },
     { name: "bowl {food:'fish'} / kibble · toy bone", draw: function (c) { night(c); T.bowl(c, 60, 80, { r: 30 }); T.bowl(c, 160, 70, { r: 26, col: '#FF8FAB', food: 'kibble' }); T.toy(c, 70, 160, { a: 0.4 }); T.toy(c, 170, 160, { a: -0.3, squeeze: 1, col: '#7CC4FF' }); } }
   ]);
+  /* ---------- batch H (Cat Rescue): rescues built step by step, and the parts a board collects ---------- */
+  function yard(c) { S.sky(c, 0, 0, CW, 150, { col: '#BFE6FF' }); S.ground(c, 0, 150, CW, 50, { kind: 'grass', col: '#9BDC8C', edge: 'wave', tufts: 0 }); }
+  section('Added: batch H (rescues built step by step) + rescue parts', [
+    { name: "ladder {rungs:6, built:6} / {lean}", draw: function (c) { yard(c); S.ladder(c, 70, 172, { h: 140, rungs: 6 }); S.ladder(c, 170, 172, { h: 120, w: 30, rungs: 5, lean: -0.15, col: '#C98B5B', rung: '#E6B98A' }); } },
+    { name: "ladder {built:2} / {built:4, pop:0.5} (ghost)", draw: function (c) { yard(c); S.ladder(c, 70, 172, { h: 140, rungs: 6, built: 2 }); S.ladder(c, 170, 172, { h: 140, rungs: 6, built: 4, pop: 0.5 }); } },
+    { name: "part rung / plank (glow)", draw: function (c) { above(c); T.part(c, 70, 100, { kind: 'rung', size: 1.4 }); T.part(c, 170, 100, { kind: 'plank', size: 1.3, glow: 1 }); } },
+    { name: "part cushion / balloon (glow)", draw: function (c) { above(c); T.part(c, 70, 100, { kind: 'cushion', size: 1.3, glow: 1 }); T.part(c, 170, 90, { kind: 'balloon', size: 1.3 }); } }
+  ]);
   section('SVG twins', [
     { name: "svg.cloud cat + svg.hills two", draw: function (c) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200"><rect width="240" height="200" fill="#BFE6FF"/>' + S.svg.hills({ w: 240, h: 200, kind: 'two', top: 0.5, col: '#7BD389', back: '#4FB868' }) + S.svg.cloud({ x: 120, y: 70, size: 150, kind: 'cat', face: 'open' }) + '</svg>';

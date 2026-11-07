@@ -28,7 +28,8 @@
      GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left
     GGThings.umbrella(c, x, y, { size (1 = about 60 across, 70 tall), col, open (0 furled .. 1 open), a (tilt), ls })
         (x, y) is the hook of the handle, where a paw holds it
-   More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy. */
+   More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy,
+   and Cat Rescue's rescue parts (a ladder rung, a plank, a cushion, a balloon). */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -340,6 +341,71 @@
     c.restore();
     c.save(); c.translate(x, y); c.strokeStyle = 'rgba(255,246,216,' + (0.3 + sq * 0.6) + ')'; c.lineWidth = W(o, 3); c.lineCap = 'round';
     [-1, 0, 1].forEach(function (i) { var r0 = 20 + sq * 8, an = -Math.PI / 2 + i * 0.55; c.beginPath(); c.moveTo(Math.cos(an) * r0, Math.sin(an) * r0); c.lineTo(Math.cos(an) * (r0 + 8), Math.sin(an) * (r0 + 8)); c.stroke(); });
+    c.restore();
+  };
+})(window.GGThings);
+
+/* ================= added for Cat Rescue: the rescue parts =================
+   (its own block; the looks above are unchanged)
+     GGThings.part(c, x, y, { kind: 'rung' | 'plank' | 'cushion' | 'balloon', size (1 = about 70 across), a (turn),
+                   col, glow (0..1, a soft golden halo behind it, so it stands out among other pieces), ls })
+         a building part for a rescue, the kind of thing a match-3 board collects, centred:
+         rung     a little bit of wooden ladder (two rails, two rungs): one more rung for a ladder
+         plank    a wooden plank with two nails: one more plank for a bridge
+         cushion  a plump square cushion with a button and tassels: one more cushion for a soft landing pile
+         balloon  a round balloon on a curly string: one more balloon to float a cat down */
+(function (T) {
+  'use strict';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
+  function W(o, w, k) { return w / (((o && o.ls) || 1) * (k || 1)); }
+  T.VARIANTS.part = ['rung', 'plank', 'cushion', 'balloon'];
+  var WOOD = '#E9AE66', WOOD2 = '#F6CC8A';
+  function grain(c, x0, y0, x1, y1, col, lw) { c.strokeStyle = col; c.lineWidth = lw; c.lineCap = 'round'; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + 3, (y0 + y1) / 2 - 2, x1, y1); c.stroke(); }
+  T.part = function (c, x, y, o) {
+    o = o || {};
+    var kind = o.kind || 'rung', s = (o.size || 1) * 0.7, lm = W(o, LW.mid, s), lf = W(o, LW.fine, s);
+    c.save(); c.translate(x, y);
+    if (o.glow) {
+      c.save(); c.globalAlpha = Math.min(1, o.glow);
+      var g = c.createRadialGradient(0, 0, 8 * s, 0, 0, 52 * s); g.addColorStop(0, 'rgba(255,236,150,.95)'); g.addColorStop(0.6, 'rgba(255,226,120,.45)'); g.addColorStop(1, 'rgba(255,226,120,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, 52 * s, 0, TAU); c.fill(); c.restore();
+    }
+    c.rotate(o.a === undefined ? (kind === 'rung' ? -0.22 : kind === 'plank' ? -0.3 : 0) : o.a); c.scale(s, s);
+    if (kind === 'rung') {
+      // the rungs first, so the rails cover their ends
+      var col = o.col || WOOD;
+      [-16, 16].forEach(function (ry) {
+        D.shape(c, D.rrPath(-26, ry - 6, 52, 12, 5), D.tone(c, WOOD2, ry - 6, ry + 6), { lw: lf, depth: 3, inside: function (c) { grain(c, -18, ry, 16, ry - 1, 'rgba(156,106,58,.35)', lf * 0.6); } });
+      });
+      [-24, 24].forEach(function (rx) {
+        D.shape(c, D.rrPath(rx - 8, -46, 16, 92, 7), D.tone(c, col, -46, 46), { lw: lm, depth: 4, shine: [rx - 3, -32, 2.5, 9, 0, 0.5], inside: function (c) { grain(c, rx + 1, -36, rx - 1, 30, 'rgba(156,106,58,.4)', lf * 0.6); } });
+      });
+    } else if (kind === 'plank') {
+      var pc = o.col || '#D9A066';
+      D.shape(c, D.rrPath(-48, -15, 96, 30, 7), D.tone(c, pc, -15, 15), { lw: lm, depth: 5, shine: [-30, -8, 12, 3, 0, 0.45], inside: function (c) {
+        grain(c, -40, -4, 30, -6, 'rgba(120,76,40,.35)', lf * 0.7); grain(c, -26, 6, 40, 5, 'rgba(120,76,40,.3)', lf * 0.7);
+        c.fillStyle = 'rgba(120,76,40,.35)'; c.beginPath(); c.ellipse(8, 2, 5, 3, 0, 0, TAU); c.fill();
+      } });
+      [-36, 36].forEach(function (nx) { D.shape(c, D.ellPath(nx, 0, 4.5, 4.5), '#C9C2D6', { lw: lf * 0.8, depth: 0, shine: [nx - 1.5, -1.5, 1.5, 1, 0, 0.8] }); });
+    } else if (kind === 'cushion') {
+      var cc = o.col || '#FF8FAB';
+      [[-38, -30, -1, -1], [38, -30, 1, -1], [-38, 30, -1, 1], [38, 30, 1, 1]].forEach(function (t) {
+        D.shape(c, D.ellPath(t[0] + t[2] * 6, t[1] + t[3] * 6, 6, 6), '#FFD23F', { lw: lf * 0.8, depth: 0 });
+      });
+      var body = new Path2D('M-40 -30Q-44 -36 -36 -36Q0 -28 36 -36Q44 -36 40 -30Q32 0 40 30Q44 36 36 36Q0 28 -36 36Q-44 36 -40 30Q-32 0 -40 -30Z');
+      D.shape(c, body, D.tone(c, cc, -36, 36), { lw: lm, depth: 7, shine: [-20, -18, 12, 6, -0.4, 0.5], inside: function (c) {
+        c.strokeStyle = D.darker(cc, 0.18); c.lineWidth = lf * 0.7; c.setLineDash([lf * 1.4, lf * 1.6]);
+        c.beginPath(); c.moveTo(-30, -24); c.quadraticCurveTo(0, -18, 30, -24); c.quadraticCurveTo(24, 0, 30, 24); c.quadraticCurveTo(0, 18, -30, 24); c.quadraticCurveTo(-24, 0, -30, -24); c.stroke(); c.setLineDash([]);
+      } });
+      D.shape(c, D.ellPath(0, 0, 6, 6), D.darker(cc, 0.2), { lw: lf * 0.8, depth: 0 });
+    } else {
+      var bc = o.col || '#FF6B6B';
+      c.beginPath(); c.moveTo(0, 30); c.bezierCurveTo(-10, 40, 10, 46, 0, 56); c.bezierCurveTo(-8, 62, 4, 66, 2, 70);
+      c.strokeStyle = INK; c.lineWidth = 2.5 + lf * 2; c.lineCap = 'round'; c.stroke(); c.strokeStyle = '#FFFFFF'; c.lineWidth = 2.5; c.stroke();
+      D.shape(c, new Path2D('M-6 34L6 34L3 27L-3 27Z'), D.darker(bc, 0.1), { lw: lf * 0.8, depth: 0 });
+      var ball = new Path2D('M0 28C-24 26 -36 6 -36 -14C-36 -36 -20 -48 0 -48C20 -48 36 -36 36 -14C36 6 24 26 0 28Z');
+      D.shape(c, ball, D.tone(c, bc, -48, 28), { lw: lm, depth: 8, shine: [-16, -26, 8, 13, 0.5, 0.6] });
+    }
     c.restore();
   };
 })(window.GGThings);

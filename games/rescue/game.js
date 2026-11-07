@@ -1,11 +1,12 @@
 /* Cat Rescue (ages 10+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
    matches break the cardboard boxes next to them, and kittens hiding in boxes pop out and scamper up to safety.
-   Above the board a cat is in a little cosy peril: a heap (bubble foam, leaves, mud, sand, socks) builds up round
-   it as more falls in from the top of the scene each move. Some cells at the top of the board are cut out: clearing
-   the tiles under a hole digs it down as a channel (the board's border always hugs the holes, and they never fill
-   back in), and the heap tumbles down into it as loose bits; once a channel reaches the bottom, the heap pours out
-   through the drain there. Scene and board are one picture. Clear the heap and finish the goal in time and the cat leaps into a basket. Not
-   in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
+   Above the board (one picture with it) a cat is stuck somewhere, and the level's rescue is built step by step:
+   rescue parts (ladder rungs...) drop onto the board with the refills, a match made next to one collects it, and it
+   flies up into the scene and is added to the rescue (one more rung on the ladder) while the cat cheers. Build it
+   all (and finish any other goals) before the moves run out and the cat climbs down to the basket. Not in time is
+   a soft card, with Try again and (once per go) 5 more moves, both free.
+   PROTOTYPE: rescue 1 (the tree and the ladder) is the new kind; the other rescues still have the older scenes,
+   where a little peril creeps forward with each move.
    No stars, scores, lives, timers or rewards: the rescuing is the point.
    The rules live in engine.js (shared with the test bot), levels in levels.js, the scenes in scenes.js.
    Saves GG.setProgress('rescue', { done: [level numbers rescued], last }). */
@@ -83,8 +84,8 @@
       flump: function () { noise({ type: 'lowpass', freq: 320, q: 0.8, attack: 0.01, dur: 0.3, gain: 0.25 }); tone({ f: 240, to: 120, dur: 0.25, gain: 0.08, slide: 0.2, delay: 0.05 }); },
       rustle: function () { for (var i = 0; i < 6; i++) noise({ freq: 3000 + i * 200, q: 1.5, dur: 0.05, gain: 0.07, delay: i * 0.05 }); },
       boing: function (delay) { tone({ f: 300, to: 520, dur: 0.18, gain: 0.07, slide: 0.15, delay: delay }); },
-      pour: function () { noise({ type: 'lowpass', freq: 1400, to: 500, q: 0.7, attack: 0.02, dur: 0.22, gain: 0.06 }); },
-      gulp: function () { tone({ f: 520, to: 260, dur: 0.14, gain: 0.07, type: 'triangle', slide: 0.12 }); noise({ type: 'lowpass', freq: 900, to: 300, q: 0.8, dur: 0.12, gain: 0.07 }); }
+      whoosh: function (delay) { noise({ freq: 900, to: 2600, q: 1, attack: 0.04, dur: 0.22, gain: 0.06, delay: delay }); },
+      knock: function (n) { var f = SCALE[Math.min(7, n || 0)]; noise({ type: 'lowpass', freq: 600, q: 1.5, dur: 0.04, gain: 0.18 }); tone({ f: f * 0.5, to: f * 0.48, dur: 0.07, gain: 0.1, type: 'triangle' }); tone({ f: f, dur: 0.16, gain: 0.07, delay: 0.06 }); tone({ f: f * 1.5, dur: 0.2, gain: 0.05, delay: 0.12 }); }
     };
   })();
 
@@ -246,33 +247,37 @@
     else c.drawImage(cv, x - w / 2, y - w / 2, w, w);
   }
   function pieceSprite(v) {
+    if (v.sp === 'res') return partSprite();
     return sprite('p' + v.k + (v.sp || '') + (v.sp === 'cush' ? v.kit : ''), function (c) { if (v.sp === 'cush') drawCushion(c, v.kit); else drawPiece(c, v.k, v.sp); });
   }
+  /* a rescue part, from the shared kit (shared/things.js GGThings.part) */
+  function drawPart(c, kind) { GGThings.part(c, 0, 0, { kind: kind, size: 1.22, ls: 1 / LWK }); }
+  function partKind() { return (level && level.job && level.job.part) || 'rung'; }
+  function partSprite() { var k = partKind(); return sprite('part' + k, function (c) { drawPart(c, k); }); }
 
   /* ================= layout ================= */
   var canvas = $('stage'), ctx = canvas.getContext('2d'), dpr = 1, W = 0, H = 0;
   var T = 40, BX = 0, BY = 0, SX = 0, SY = 0, SW = 300, SH = 180, side = false;
   var R = 8, C = 8;
-  var GB = 10;   // the drain along the bottom of the board
+  var SV = 100;   // how much of the scene's height shows (on a short screen the sky is cut off its top)
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5); W = innerWidth; H = innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     var top = $('topbar').getBoundingClientRect().bottom + 4, bottom = H - Math.max(10, safeBottom());
     var hudH = Math.max(56, $('hud').getBoundingClientRect().height || 0);
     side = false;
-    // one picture, top to bottom: the scene, the board, the drain under it; the goals and moves below. The board is as wide
-    // as the screen allows; if it's tall, the scene loses some sky (down to a little over half its height).
+    // one picture, top to bottom: the scene, then the board; the goals and moves below. The board is as wide as the
+    // screen allows; if it's tall, the scene loses some sky (down to about four fifths of its height).
     T = Math.floor(Math.min((W - 12) / C, 78));
-    var fit = function () { GB = Math.round(T * 0.26); SW = T * C; SH = SW * 0.6; var room = bottom - top - (R * T + GB + 8 + hudH); SV = Math.min(SH, room); return SV >= SW * 0.42; };
+    var fit = function () { SW = T * C; SH = SW * 0.6; var room = bottom - top - (R * T + 8 + hudH); SV = Math.min(SH, room); return SV >= SW * 0.47; };
     while (T > 16 && !fit()) T--;
-    var bw = T * C, used = SV + R * T + GB + 8 + hudH, y0 = top + Math.max(0, (bottom - top - used) / 2);
+    var bw = T * C, used = SV + R * T + 8 + hudH, y0 = top + Math.max(0, (bottom - top - used) / 2);
     SX = Math.round((W - bw) / 2); SY = Math.round(y0 - (SH - SV));   // SY is the top of the whole scene (some may be cut)
     BX = SX; BY = Math.round(y0 + SV);
-    placeHud(BX, BY + R * T + GB + 8, bw);
+    placeHud(BX, BY + R * T + 8, bw);
     buildSprites(T * dpr, T);
     placeSay(); placeCards();
   }
-  var SV = 100;
   function safeBottom() { var d = document.createElement('div'); d.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px)'; document.body.appendChild(d); var h = d.getBoundingClientRect().height; d.remove(); return h; }
   function placeHud(x, y, w) { var h = $('hud'); h.style.left = x + 'px'; h.style.top = y + 'px'; h.style.width = w + 'px'; }
   /* the win and not-in-time cards sit over the board, so the scene above stays in view */
@@ -283,7 +288,7 @@
       else { w.style.paddingTop = Math.round(BY) + 'px'; w.style.paddingLeft = w.style.paddingRight = ''; w.style.paddingBottom = ''; }
     });
   }
-  function placeSay() { var s = $('say'); s.style.left = (SX + SW / 2) + 'px'; s.style.top = (SY + SH - SV + 8) + 'px'; s.style.maxWidth = Math.min(SW - 20, 440) + 'px'; }
+  function placeSay() { var s = $('say'); s.style.left = (SX + SW / 2) + 'px'; s.style.top = (BY + 10) + 'px'; s.style.maxWidth = Math.min(SW - 20, 440) + 'px'; }
   window.addEventListener('resize', layout);
   if (window.ResizeObserver) new ResizeObserver(function () { layout(); }).observe($('topbar'));
 
@@ -313,8 +318,9 @@
   var st = null, level = null, lvN = 1;
   var V = {}, boxes = {};                 // what's on screen: pieces by id, boxes by cell
   var parts = [], fx = [], actors = [];   // particles, specials' effects, kittens running to safety
-  var scn = { mode: 'play', mt: 0, t: 0, saved: [], reserved: 0 };
-  var shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 };
+  var flyers = [];                        // rescue parts flying up from the board to the rescue
+  var scn = { mode: 'play', mt: 0, t: 0, saved: [], reserved: 0, built: 0, added: -9 };
+  var shown = { job: 0, kittens: 0, boxes: 0, yarn: 0, down: 0 };
   var pDisp = 0, busy = false, phase = 'list', sel = null, cursor = null, idle = 0, hint = null, hintT = 0, plusUsed = false;
   var PG = (function () { var p = {}; try { p = GG.getProgress('rescue') || {}; } catch (e) {} if (!Array.isArray(p.done)) p.done = []; p.done = p.done.filter(function (n) { return n >= 1 && n <= LEVELS.length; }); return p; })();
   function save() { try { GG.setProgress('rescue', PG); } catch (e) {} }
@@ -322,7 +328,7 @@
   function nextLevel() { for (var i = 1; i <= LEVELS.length; i++) if (PG.done.indexOf(i) < 0) return Math.min(i, maxDone() + 1); return LEVELS.length; }
   function unlocked(n) { return n <= maxDone() + 1; }
 
-  function newV(id, k, sp, r, c) { return { id: id, k: k, sp: sp, tg: false, kit: 0, x: c, y: r, path: null, pt: 0, pop: null, out: null, land: 1, made: 1, rot: 0 }; }
+  function newV(id, k, sp, r, c) { return { id: id, k: k, sp: sp, tg: false, kit: 0, x: c, y: r, path: null, pt: 0, pop: null, land: 1, made: 1, rot: 0 }; }
   function syncView() {
     var seen = {};
     for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) {
@@ -337,38 +343,37 @@
       if (b) { var vb = boxes[key]; if (!vb || vb.id !== b.id) boxes[key] = { id: b.id, hp: b.hp, kit: b.kit, shake: 0 }; else vb.hp = b.hp; }
       else delete boxes[key];
     }
-    for (var id in V) if (!seen[id] && !V[id].pop && V[id].out === null) delete V[id];
+    for (var id in V) if (!seen[id] && !V[id].pop) delete V[id];
   }
 
   /* ================= starting a rescue ================= */
-  /* the heap, in words, for each peril: the goal (with the cat's name), what the goal counts, and how it works */
-  var HEAPTXT = {
-    bath: { goal: 'clear the bubbles off %', count: 'bubbles cleared', word: 'bubbles', verb: 'pour' },
-    tree: { goal: 'clear the leaves off %', count: 'leaves cleared', word: 'leaves', verb: 'pour' },
-    rain: { goal: 'clear the mud off %', count: 'bits of mud cleared', word: 'mud', verb: 'pours' },
-    tide: { goal: 'dig % out of the sand', count: 'bits of sand cleared', word: 'sand', verb: 'pours' },
-    laundry: { goal: 'clear the socks off %', count: 'socks cleared', word: 'socks', verb: 'pour' }
-  };
-
   function goalText(g) {
     var parts = [];
-    if (st && st.goal.pile) parts.push(HEAPTXT[level.peril].goal.replace('%', level.cat.name));
     if (g.boxes) parts.push('break ' + g.boxes + ' boxes');
     if (g.yarn) parts.push('untangle ' + g.yarn + ' yarn' + (g.yarn > 1 ? 's' : ''));
     if (g.kittens) parts.push(g.kittens === 1 ? 'free the kitten' : 'free ' + g.kittens + ' kittens');
     if (g.down) parts.push(g.down === 1 ? 'bring the cushion kitten down' : 'bring ' + g.down + ' cushion kittens down');
+    if (!parts.length) return '';
     var s = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-  function heapTip() { var h = HEAPTXT[level.peril]; return 'Clear the tiles under the ' + h.word + ' to dig a hole down through the board. Reach the bottom and the ' + h.word + ' ' + h.verb + ' out! More keeps falling in, so dig fast.'; }
+  var BEFORE = { bath: 'before the bath fills up', tree: 'before the branch bends down', rain: 'before the rain cloud arrives', tide: 'before the tide comes in', laundry: 'before the washing topples' };
+  /* each rescue job, in words: % is the cat's name, # how many parts */
+  var JOBS = {
+    tree: { part: 'ladder rung', parts: 'ladder rungs', goal: 'Build a ladder up to %!', where: 'up the tree',
+            tip: 'Make a match next to a ladder rung on the board to send it up the tree. # rungs and % can climb down!',
+            done: '% climbed down the ladder, safe and cosy' }
+  };
+  function job() { return level && level.job ? JOBS[level.job.scene] : null; }
+  function fill(t) { return t.replace(/%/g, level.cat.name).replace(/#/g, st.goal.job); }
   function start(n, quiet) {
     lvN = clamp(n | 0, 1, LEVELS.length); level = LEVELS[lvN - 1];
     st = E.make(level, Math.floor(Math.random() * 2147483647));
     R = st.R; C = st.C;
-    V = {}; boxes = {}; parts = []; fx = []; actors = []; tasks = [];
-    scn = { mode: 'play', mt: 0, t: scn.t || 0, saved: [], reserved: 0 };
-    shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 };
-    openShown = st.open.map(function (row) { return row.slice(); }); heapDisp = st.heap; mound.key = ''; pDisp = sceneShare(); busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
+    V = {}; boxes = {}; parts = []; fx = []; actors = []; tasks = []; flyers = [];
+    scn = { mode: 'play', mt: 0, t: scn.t || 0, saved: [], reserved: 0, built: 0, added: -9 };
+    shown = { job: 0, kittens: 0, boxes: 0, yarn: 0, down: 0 };
+    pDisp = 0; busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
     syncView();
     // the board arrives with a little drop
     for (var id in V) { var v = V[id]; v.path = [[0, v.y - R - 1 + (reduceMotion ? R : 0), v.x], [R + 1 - v.y * 0.3, v.y, v.x]]; v.pt = -v.x * 0.02; }
@@ -376,7 +381,9 @@
     $('levelLabel').textContent = 'Rescue ' + lvN;
     $('win').hidden = true; $('fail').hidden = true; $('hud').hidden = false;
     renderHud(true);
-    say(goalText(level.goal) + '!', heapTip() + (level.tip ? ' ' + level.tip : ''), level.tip ? 9 : 7);
+    var j = job();
+    if (j) { var more = goalText(level.goal); say(fill(j.goal), fill(j.tip) + (more ? ' And: ' + more.charAt(0).toLowerCase() + more.slice(1) + '.' : '') + (level.tip ? ' ' + level.tip : ''), 7); }
+    else say(goalText(level.goal) + ' ' + BEFORE[level.peril] + '!', level.tip, 4.5);
     if (!quiet && window.GG && GG.track) GG.track('Start level', { game: 'rescue', level: lvN });
     layout();
   }
@@ -391,11 +398,11 @@
     return (icons[key] = cv.toDataURL());
   }
   var GOAL_ICONS = {
+    job: function (c) { c.scale(1.15, 1.15); drawPart(c, partKind()); },
     kittens: function (c) { c.translate(0, 8); GGCat.draw(c, { preset: 'ginger', size: 92, face: 'happy' }); },
     boxes: function (c) { drawBox(c, 1, -1); },
     yarn: function (c) { c.scale(0.9, 0.9); PIECES[3](c); drawTangle(c); },
-    down: function (c) { drawCushion(c, 1); },
-    pile: function (c) { SC.heapIcon(c, level.peril, lw(5)); }
+    down: function (c) { drawCushion(c, 1); }
   };
   var GOAL_WORDS = { kittens: 'kittens freed', boxes: 'boxes broken', yarn: 'yarns untangled', down: 'cushion kittens brought down' };
   var goalEls = {};
@@ -403,10 +410,10 @@
     var box = $('goals');
     if (rebuild) {
       box.innerHTML = ''; goalEls = {};
-      ['pile', 'kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
+      ['job', 'kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
         if (!st.goal[k]) return;
         var d = document.createElement('div'); d.className = 'goal';
-        d.innerHTML = '<img alt="" src="' + icon(k === 'pile' ? 'pile' + level.peril : k, GOAL_ICONS[k]) + '"><b></b><small></small>';
+        d.innerHTML = '<img alt="" src="' + icon(k === 'job' ? 'job' + partKind() : k, GOAL_ICONS[k]) + '"><b></b><small></small>';
         box.appendChild(d); goalEls[k] = d;
       });
     }
@@ -414,15 +421,12 @@
       var d = goalEls[k], got = Math.min(shown[k], st.goal[k]);
       d.querySelector('b').textContent = got; d.querySelector('small').textContent = '/' + st.goal[k];
       d.classList.toggle('done', got >= st.goal[k]);
-      d.setAttribute('aria-label', got + ' of ' + st.goal[k] + ' ' + (k === 'pile' ? HEAPTXT[level.peril].count : GOAL_WORDS[k]));
+      d.setAttribute('aria-label', got + ' of ' + st.goal[k] + ' ' + (k === 'job' ? (job() ? job().parts : 'parts') + ' sent up' : GOAL_WORDS[k]));
     });
-    var left = Math.max(0, Math.ceil(E.movesLeft(st) - 1e-6));
-    if (lastLeft >= 0 && left > lastLeft && phase === 'play' && !reduceMotion) { var mv = $('moves'); mv.classList.remove('plus'); void mv.offsetWidth; mv.classList.add('plus'); setTimeout(function () { mv.classList.remove('plus'); }, 900); }
-    lastLeft = left;
+    var left = Math.max(0, E.movesLeft(st));
     $('movesN').textContent = left; $('movesL').textContent = left === 1 ? 'move left' : 'moves left';
     $('moves').classList.toggle('low', left <= 3 && phase === 'play');
   }
-  var lastLeft = -1;
   function bumpGoal(k) { var d = goalEls[k]; if (!d || reduceMotion) return; d.classList.remove('bump'); void d.offsetWidth; d.classList.add('bump'); }
   function count(k) { shown[k]++; renderHud(false); bumpGoal(k); }
 
@@ -455,7 +459,6 @@
       else if (q.shape === 'yarn') { c.beginPath(); c.moveTo(-q.r * 2, 0); c.quadraticCurveTo(0, -q.r * 2, q.r * 2, 0); c.strokeStyle = INK; c.lineWidth = 5; c.stroke(); c.strokeStyle = YARN; c.lineWidth = 2.6; c.stroke(); }
       else if (q.shape === 'puff') { c.fillStyle = 'rgba(255,248,236,.9)'; c.beginPath(); c.arc(0, 0, q.r * (1 + q.life * 3), 0, TAU); c.fill(); }
       else if (q.shape === 'heart') { SC.heart(c, 0, 0, q.r, '#FF7EA8', 1); }
-      else if (q.shape === 'chunk') { SC.chunk(c, level.peril, q.r, q.i, 1.8); }
       else if (q.shape === 'star') { c.beginPath(); for (var k = 0; k < 10; k++) { var an = k * Math.PI / 5 - Math.PI / 2, rr = k % 2 ? q.r * 0.6 : q.r * 1.4; c.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } c.closePath(); c.fillStyle = q.col; c.fill(); }
       else { c.beginPath(); c.arc(0, 0, q.r, 0, TAU); c.fillStyle = q.col; c.fill(); }
       c.restore();
@@ -589,16 +592,6 @@
         ev.list.forEach(function (d) { delete V[d.id]; burst(cx(d.c), cy(d.r), '#FF8FAB', 8, 'star', 0.8); freeKitten(KITTENS[d.kit], d.r, d.c, 'down'); });
         Sound.chime();
         await wait(0.25);
-      } else if (ev.type === 'drainout') {
-        // the heap pours out through the drain under every channel, bits tumbling out under the board
-        for (var dn = 0; dn < ev.n; dn++) later(dn * 0.08, function () { count('pile'); });
-        ev.cols.forEach(function (k) { tumble(cx(k), BY + (st.bottom[k] + 1) * T + GB * 0.5, reduceMotion ? 2 : 3 + ev.n, 1); });
-        Sound.gulp(); buzz(8);
-        await wait(0.12);
-      } else if (ev.type === 'feed') {
-        // more of it falls in from the top of the scene onto the heap
-        feedBits(ev.n);
-        Sound.pour();
       } else if (ev.type === 'shuffle') {
         say('No swaps left, so the pieces mix themselves up', null, 2);
         var from = {};
@@ -629,17 +622,14 @@
         for (var i = 0; i < (reduceMotion ? 2 : 5); i++) parts.push({ x: cx(u.c), y: cy(u.r), vx: rand(-160, 160) * (T / 60), vy: rand(-260, -80) * (T / 60), life: 0, max: 0.7, r: T * 0.08, shape: 'yarn', rot: rand(0, TAU), vr: rand(-8, 8), g: 700 });
       });
     });
+    ev.parts.forEach(function (q) { maxD = Math.max(maxD, q.d); later(q.d, function () { sendPart(q); }); });
     if (ev.removed.length >= 5 || ev.chain >= 2) Sound.purr(0.12);
     await wait(maxD + 0.27);
     ev.made.forEach(function (m) { var v = V[m.id]; if (v) { v.sp = m.sp; v.k = m.k; v.made = 0; burst(cx(m.c), cy(m.r), '#FFE680', 8, 'star', 0.8); } });
     if (ev.made.length) { Sound.made(); buzz(10); await wait(0.12); }
   }
   async function playFall(ev) {
-    ev.spawned.forEach(function (s) {
-      V[s.id] = newV(s.id, s.k, s.sp || null, -1, 0);
-    });
-    // cells dug out open as the pieces fall away from them, and bits of the heap tumble down into them
-    (ev.opened || []).forEach(function (q) { later(q[2] * TK, function () { openShown[q[0]][q[1]] = true; if (heapDisp > 0.5) tumble(cx(q[1]), cy(q[0]) - T * 0.4, reduceMotion ? 1 : 3, 1, true); }); });
+    ev.spawned.forEach(function (s) { V[s.id] = newV(s.id, s.k, s.sp || null, -1, 0); });
     var moving = [];
     for (var id in ev.paths) { var v = V[id]; if (!v) continue; v.path = ev.paths[id]; v.pt = 0; moving.push(v); }
     await until(function () { for (var i = 0; i < moving.length; i++) if (moving[i].path) return false; return true; });
@@ -673,8 +663,9 @@
     return log[0].type !== 'nope';
   }
   async function checkEnd() {
-    if (E.won(st)) { phase = 'winning'; await until(function () { return !actors.length; }); winSeq(); return; }
-    if (E.movesLeft(st) <= 0) { phase = 'failing'; await until(function () { return !actors.length; }); if (E.won(st)) { phase = 'winning'; winSeq(); } else failSeq(); }
+    var calm = function () { return !actors.length && !flyers.length; };
+    if (E.won(st)) { phase = 'winning'; await until(calm); await wait(0.35); winSeq(); return; }
+    if (E.movesLeft(st) <= 0) { phase = 'failing'; await until(calm); if (E.won(st)) { phase = 'winning'; winSeq(); } else failSeq(); }
   }
 
   /* ================= rescued, or not quite in time ================= */
@@ -687,10 +678,12 @@
     later(1.0, function () { Sound.chime(); buzz([20, 50, 30]); });
     later(1.25, function () { Sound.purr(); });
     later(1.6, function () { scn.saved.forEach(function (k, i) { if (k) Sound.mrrp(i * 0.12); }); });
-    later(SC.WIN, function () {
+    var j = job();
+    if (j) { var tw = SC.winTime(level.peril, st.goal.job) - 1.1; later(0.55, function () { Sound.boing(); }); for (var i = 0; i < st.goal.job; i++) later(0.55 + i * 0.2, function () { Sound.land(); }); later(tw - 0.75, function () { Sound.boing(); }); }
+    later(SC.winTime(level.peril, st.goal.job), function () {
       var n = scn.saved.filter(Boolean).length;
       $('winTitle').textContent = 'Rescued!';
-      $('winNote').textContent = level.cat.name + ' is safe and cosy' + (n ? ', and so ' + (n === 1 ? 'is the kitten' : 'are the ' + n + ' kittens') + ' you freed.' : '.');
+      $('winNote').textContent = (j ? fill(j.done) : level.cat.name + ' is safe and cosy') + (n ? ', and so ' + (n === 1 ? 'is the kitten' : 'are the ' + n + ' kittens') + ' you freed.' : '.');
       var last = lvN >= LEVELS.length;
       $('nextLabel').textContent = last ? 'All rescues' : 'Next rescue';
       $('win').hidden = false; $('nextBtn').focus();
@@ -705,12 +698,13 @@
   };
   function failSeq() {
     phase = 'fail'; scn.mode = 'fail'; scn.mt = 0; sel = null; hint = null;
-    var f = FAIL[level.peril];
-    f[2](); buzz(30);
-    later(1.9, function () { Sound.mrrp(); });
-    later(SC.FAIL, function () {
-      $('failTitle').textContent = f[0];
-      $('failNote').textContent = level.cat.name + ' is fine, just ' + f[1] + '. Have another go?';
+    var f = FAIL[level.peril], j = job();
+    if (j) { later(0.3, function () { Sound.mrrp(); }); }
+    else { f[2](); buzz(30); later(1.9, function () { Sound.mrrp(); }); }
+    later(SC.failTime(level.peril), function () {
+      var left = st.goal.job - st.got.job;
+      $('failTitle').textContent = j ? 'Nearly there!' : f[0];
+      $('failNote').textContent = j ? level.cat.name + ' is still waiting ' + j.where + (left > 0 ? ' for ' + (left === 1 ? 'one more ' + j.part : left + ' more ' + j.parts) : '') + '. Have another go?' : level.cat.name + ' is fine, just ' + f[1] + '. Have another go?';
       $('plusBtn').hidden = plusUsed;
       $('fail').hidden = false; (plusUsed ? $('retryBtn') : $('plusBtn')).focus();
     });
@@ -761,10 +755,10 @@
   /* ================= input: tap or drag to swap; arrows and space/enter on a keyboard ================= */
   function cellAt(x, y) {
     var c = Math.floor((x - BX) / T), r = Math.floor((y - BY) / T);
-    if (r < 0 || c < 0 || r >= R || c >= C || !st.mask[r][c] || st.open[r][c]) return null;
+    if (r < 0 || c < 0 || r >= R || c >= C || !st.mask[r][c]) return null;
     return [r, c];
   }
-  function canPick(rc) { var p = st.g[rc[0]][rc[1]]; return !!p && !p.tg && !E.fixed(p); }
+  function canPick(rc) { var p = st.g[rc[0]][rc[1]]; return !!p && !p.tg && p.sp !== 'cush'; }
   var drag = null;
   canvas.addEventListener('pointerdown', function (e) {
     Sound.init();
@@ -804,19 +798,19 @@
     }
     if (busy) return;
     if (sel && sel[0] === cursor[0] && sel[1] === cursor[1]) sel = null;
-    else if (st.mask[cursor[0]][cursor[1]] && !st.open[cursor[0]][cursor[1]] && canPick(cursor)) { sel = cursor.slice(); Sound.swap(); }
+    else if (st.mask[cursor[0]][cursor[1]] && canPick(cursor)) { sel = cursor.slice(); Sound.swap(); }
     else nudge(cursor);
   });
 
   /* ================= drawing ================= */
   function boardPath() {
     var p = new Path2D();
-    for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) if (tileCell(r, c)) p.rect(BX + c * T, BY + r * T, T, T);
+    for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) if (st.mask[r][c]) p.rect(BX + c * T, BY + r * T, T, T);
     return p;
   }
   /* just the board's outer edge (every cell side with no cell beyond it) */
   function edgePath() {
-    var p = new Path2D(), m = tileCell;
+    var p = new Path2D(), m = function (r, c) { return r >= 0 && c >= 0 && r < R && c < C && st.mask[r][c]; };
     for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) {
       if (!m(r, c)) continue;
       var x = BX + c * T, y = BY + r * T;
@@ -830,11 +824,10 @@
   function drawBoard(c, dt, now) {
     var bp = boardPath(), ep = edgePath();
     D.shadow(c, BX + C * T / 2, BY + R * T + 6, C * T * 0.5, 10);
-    drawHoles(c, dt);
     c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 9; c.stroke(ep);
     c.fillStyle = '#FFF8EC'; c.fill(bp);
     c.fillStyle = '#F6E8D2';
-    for (var r = 0; r < R; r++) for (var q = 0; q < C; q++) if (tileCell(r, q) && (r + q) % 2) c.fillRect(BX + q * T, BY + r * T, T, T);
+    for (var r = 0; r < R; r++) for (var q = 0; q < C; q++) if (st.mask[r][q] && (r + q) % 2) c.fillRect(BX + q * T, BY + r * T, T, T);
     // where the cushion kittens are going: soft arrows in the bottom row
     if (st.goal.down) {
       c.save(); c.fillStyle = 'rgba(255,143,171,.35)';
@@ -854,8 +847,7 @@
     // pieces
     var hintIds = hint ? [hint.a, hint.b] : [];
     for (var id in V) {
-      var v = V[id];
-      var x = cx(v.x), y = cy(v.y), s = T, rot = 0, sxk = 1, syk = 1;
+      var v = V[id], x = cx(v.x), y = cy(v.y), s = T, rot = 0, sxk = 1, syk = 1;
       if (v.pop !== null) {
         v.pop += dt;
         if (v.pop >= 0.26) { delete V[id]; continue; }
@@ -872,6 +864,11 @@
       if (sel && Math.round(v.x) === sel[1] && Math.round(v.y) === sel[0] && !v.path) s *= 1 + Math.sin(now * 8) * 0.04;
       if (hintIds.indexOf(v.id) >= 0 && !reduceMotion) { var hp = (hintT % 2.2); if (hp < 1) rot = Math.sin(hp * TAU * 3) * 0.14 * (1 - hp); }
       if (s <= 0) continue;
+      if (v.sp === 'res') {
+        var gl = 0.8 + Math.sin(now * 3 + v.id) * (reduceMotion ? 0 : 0.2), gg = c.createRadialGradient(x, y, T * 0.05, x, y, T * 0.52);
+        gg.addColorStop(0, 'rgba(255,236,150,' + gl + ')'); gg.addColorStop(1, 'rgba(255,226,120,0)');
+        c.fillStyle = gg; c.beginPath(); c.arc(x, y, T * 0.52, 0, TAU); c.fill();
+      }
       if (E.isSp({ sp: v.sp }) && v.pop === null) {
         var g = 0.5 + Math.sin(now * 4 + v.id) * 0.15;
         c.save(); c.globalAlpha = g; c.fillStyle = v.sp === 'rain' ? '#FFFFFF' : '#FFF1A8'; c.beginPath(); c.arc(x, y, T * 0.46, 0, TAU); c.fill(); c.restore();
@@ -887,99 +884,43 @@
   /* the scene: the top of one picture that the board finishes */
   function drawPicture(c) {
     var x = SX, w = SW, vy = SY + SH - SV, yb = BY, r = 18;
-    D.shadow(c, x + w / 2, BY + R * T + GB + 6, w * 0.5, 10);
+    D.shadow(c, x + w / 2, BY + R * T + 6, w * 0.5, 10);
     var outline = new Path2D(); outline.moveTo(x, yb + 2); outline.lineTo(x, vy + r); outline.arcTo(x, vy, x + r, vy, r); outline.lineTo(x + w - r, vy); outline.arcTo(x + w, vy, x + w, vy + r, r); outline.lineTo(x + w, yb + 2);
     c.save(); c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 9; c.stroke(outline); c.restore();
-    SC.draw(c, level.peril, { p: pDisp, t: scn.t, mode: scn.mode, mt: scn.mt, cat: level.cat, saved: scn.saved, reduce: reduceMotion }, SX, SY, SW, true, SV);
+    var j = !!job(), since = scn.t - scn.added;
+    SC.draw(c, level.peril, { p: j ? 0 : pDisp, built: scn.built, n: st.goal.job, pop: reduceMotion ? 1 : back(since / 0.4), cheer: since, t: scn.t, mode: scn.mode, mt: scn.mt, cat: level.cat, saved: scn.saved, reduce: reduceMotion }, SX, SY, SW, true, SV);
     c.save(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(outline); c.restore();
   }
-  /* the drain: a grate under the bottom cell of every column, where the heap pours out */
-  function drawDrain(c) {
-    for (var k = 0; k < C; k++) {
-      var b = st.bottom[k]; if (b < 0) continue;
-      var x = BX + k * T, y = BY + (b + 1) * T - 2, h = GB;
-      c.save();
-      D.shape(c, D.rrPath(x + 1.5, y, T - 3, h, Math.min(5, h * 0.4)), '#8C8AA3', { lw: 2.5, depth: 0, inside: function (c) {
-        c.fillStyle = '#3A3046';
-        for (var s2 = 0; s2 < 4; s2++) c.fillRect(x + T * (0.14 + s2 * 0.2), y + h * 0.3, T * 0.1, h * 0.55);
-        c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x + 3, y + 2, T - 6, Math.max(1.5, h * 0.16));
-      } });
-      c.restore();
-    }
-  }
-  /* bits of the heap tumbling loose: dir 1 falls out under the drain, -1 flies up and off (a blast or a sweep) */
-  function tumble(x, y, n, dir, short) {
-    for (var i = 0; i < n; i++) parts.push({ short: short, x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.1, T * 0.1), vx: rand(-60, 60) * (T / 60), vy: (dir > 0 ? rand(20, 120) : rand(-300, -120)) * (T / 60), life: 0, max: short ? rand(0.2, 0.3) : dir > 0 ? rand(0.45, 0.7) : rand(0.5, 0.8), r: T * rand(0.1, 0.14), shape: 'chunk', i: Math.floor(rand(0, 99)), rot: rand(0, TAU), vr: rand(-6, 6), g: 900 });
-  }
 
-  /* ================= the heap =================
-     The heap is loose stuff, not a block: lots of little bits (SC.chunk), each its own little shape. What's up in the
-     scene is a mound over the holes (drawMound); the rest fills the holes cut in the board, from the lowest open cell
-     up (drawHoles). heapDisp eases towards st.heap, so it builds and drains smoothly; openShown is which cells look
-     open right now (a cell opens as the pieces fall away from it). */
-  var heapDisp = 0, openShown = [], mound = { key: '', cv: null, x: 0, y: 0 };
-  function tileCell(r, c) { return r >= 0 && c >= 0 && r < R && c < C && st.mask[r][c] && !(openShown[r] && openShown[r][c]); }
-  function holeCells() { var list = []; for (var r = R - 1; r >= 0; r--) for (var c = 0; c < C; c++) if (st.mask[r][c] && openShown[r] && openShown[r][c]) list.push([r, c]); return list; }
-  function holeMid() { var a = 0, n = 0; for (var c = 0; c < C; c++) { var t = st.top[c]; if (t >= 0 && st.open[t][c]) { a += c; n++; } } return n ? cx(a / n) : BX + C * T / 2; }
-  function inHoles() { return Math.min(heapDisp, holeCells().length); }
-  /* how worried the scene looks: how big the heap in the scene is */
-  function sceneShare() { var n = st.goal.pile || 1; return clamp((heapDisp - inHoles()) / Math.max(6, n * 0.45), 0, 1); }
-  function heapBits(v) { return sprite('heap' + level.peril + v, function (c) { SC.heapTexture(c, level.peril, 40, v, lw(4)); }); }
-  function bit(c, x, y, i, size) { c.save(); c.translate(x, y); c.scale(T / 100, T / 100); SC.chunk(c, level.peril, size || 15, i, lw(4)); c.restore(); }
-
-  /* the holes: what's behind the board (a deep soft shade, shadowed under the board's edge), filled with heap */
-  function drawHoles(c, dt) {
-    var cells = holeCells(); if (!cells.length) return;
-    var hp = new Path2D(); cells.forEach(function (q) { hp.rect(BX + q[1] * T - 0.5, BY + q[0] * T - 0.5, T + 1, T + 1); });
-    c.save(); c.clip(hp);
-    c.fillStyle = D.tone(c, '#5E5072', BY, BY + R * T); c.fillRect(BX, BY, C * T, R * T);
-    c.fillStyle = 'rgba(20,14,34,.32)';
-    cells.forEach(function (q) { var x = BX + q[1] * T, y = BY + q[0] * T; if (tileCell(q[0], q[1] - 1)) c.fillRect(x, y, T * 0.14, T); if (tileCell(q[0] - 1, q[1])) c.fillRect(x, y, T, T * 0.14); });
-    var vol = inHoles();
-    cells.forEach(function (q, i) {
-      var f = clamp(vol - i, 0, 1); if (f <= 0.02) return;
-      blit(c, heapBits((q[0] * 7 + q[1] * 3) % 4), cx(q[1]), cy(q[0]) + (1 - f) * T * 0.85, T);
-    });
-    c.restore();
-    // pouring out of every channel while there's heap to go, and trickling in from the top while the source lasts
-    if (phase === 'play' && !reduceMotion) {
-      if (heapDisp > 0.3) for (var k = 0; k < C; k++) { var b = st.bottom[k]; if (b >= 0 && openShown[b][k] && Math.random() < dt * 7) tumble(cx(k), BY + (b + 1) * T + GB * 0.3, 1, 1); }
-    }
+  /* ================= rescue parts flying up to the rescue =================
+     A collected part pops off the board, flies in an arc to its place in the scene (shrinking to the scene's size),
+     and clicks into the rescue: one more rung on the ladder, with sparkles, a knock and a cheer from the cat. */
+  var FLY = 0.62;
+  function sendPart(q) {
+    delete V[q.id];
+    var x0 = cx(q.c), y0 = cy(q.r);
+    burst(x0, y0, '#FFE680', reduceMotion ? 2 : 6, 'star', 0.7);
+    Sound.whoosh();
+    flyers.push({ x0: x0, y0: y0, i: q.n - 1, t: 0, dur: reduceMotion ? 0.3 : FLY + Math.min(0.25, (BY - SY) / 4000) });
   }
-  /* the mound up in the scene: loose bits piled up over the holes, as many as there's heap up there (drawn to a
-     canvas of its own, again only when it changes) */
-  function drawMound(c) {
-    var n = Math.min(110, Math.round((heapDisp - inHoles()) * 3));
-    if (phase === 'play' && st.src > 0 && !reduceMotion && Math.random() < 0.03) feedBits(0.3);
-    if (n <= 0) return;
-    var key = level.peril + ':' + n + ':' + T + ':' + lvN + ':' + dpr;
-    if (mound.key !== key) {
-      var s = T * 0.36, w = Math.min(SW * 0.9, T * 1.6 + n * s * 0.1), hgt = T * 3.2, cv = mound.cv || document.createElement('canvas');
-      cv.width = Math.ceil(w + T) * dpr; cv.height = Math.ceil(hgt + T) * dpr;
-      var m = cv.getContext('2d'); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.clearRect(0, 0, cv.width, cv.height); m.lineJoin = 'round'; m.lineCap = 'round';
-      var rr = D.seeded(lvN * 31 + 7), placed = 0, base = hgt + T * 0.15, mid = (w + T) / 2;
-      // rows from the bottom up, each a little narrower, like a heap settles
-      for (var row = 0; placed < n && row < 40; row++) {
-        var half = w / 2 - row * s * 0.75; if (half < s * 0.6) half = s * 0.6;
-        var k = Math.max(1, Math.round(half * 2 / s)), y = base - row * s * 0.62;
-        for (var j = 0; j < k && placed < n; j++, placed++) {
-          var x = mid - half + (j + 0.5) * (half * 2 / k) + (rr() - 0.5) * s * 0.5;
-          m.save(); m.translate(x, y + (rr() - 0.5) * s * 0.3); m.scale(T / 100, T / 100); SC.chunk(m, level.peril, 21 + rr() * 7, Math.floor(rr() * 997), lw(4.5)); m.restore();
-        }
+  function drawFlyers(c, dt) {
+    for (var i = flyers.length - 1; i >= 0; i--) {
+      var f = flyers[i]; f.t += dt;
+      var tg = SC.partAt(level.peril, f.i, st.goal.job, SX, SY, SW), u = clamp(f.t / f.dur, 0, 1), k = ease(u);
+      if (u >= 1) {
+        flyers.splice(i, 1);
+        scn.built = Math.max(scn.built, f.i + 1); scn.added = scn.t;
+        count('job');
+        burst(tg.x, tg.y, '#FFE680', reduceMotion ? 3 : 10, 'star', 0.9);
+        Sound.knock(f.i); buzz(12); later(0.12, function () { Sound.mrrp(); });
+        continue;
       }
-      mound.cv = cv; mound.key = key; mound.w = w + T; mound.h = hgt + T;
-    }
-    var x0 = clamp(holeMid() - mound.w / 2, SX - T * 0.3, SX + SW - mound.w + T * 0.3);
-    c.save(); c.beginPath(); c.rect(SX, SY + SH - SV, SW, SV + T * 0.25); c.clip();
-    c.drawImage(mound.cv, x0, BY + T * 0.2 - mound.h, mound.w, mound.h);
-    c.restore();
-  }
-  /* more of the heap falling in from the top of the scene: n units, as a shower of bits onto the mound */
-  function feedBits(n) {
-    var top = SY + SH - SV + 6, d = Math.max(20, BY - T * 0.8 - top), x = holeMid(), cnt = reduceMotion ? 1 : Math.max(1, Math.round(n * 4));
-    for (var i = 0; i < cnt; i++) {
-      var g = 900, t = Math.sqrt(2 * d / g);
-      parts.push({ x: x + rand(-T * 0.9, T * 0.9), y: top - rand(0, T * 0.6), vx: rand(-20, 20), vy: rand(0, 40), life: -rand(0, 0.35), max: t, r: T * rand(0.11, 0.15), shape: 'chunk', i: Math.floor(rand(0, 99)), rot: rand(0, TAU), vr: rand(-5, 5), g: g });
+      // up and over in an arc, turning to lie flat, shrinking to the rung's size
+      var x = lerp(f.x0, tg.x, k), y = lerp(f.y0, tg.y, k) - Math.sin(u * Math.PI) * T * 1.6;
+      var size = lerp(T * 1.05, Math.max(tg.w * 1.6, T * 0.5), k), rot = Math.sin(u * Math.PI) * 0.5;
+      c.save(); c.globalAlpha = 0.5 * (1 - u); c.fillStyle = '#FFF1A8'; c.beginPath(); c.arc(x, y, size * 0.5, 0, TAU); c.fill(); c.restore();
+      blit(c, partSprite(), x, y, size, rot);
+      if (!reduceMotion && Math.random() < dt * 20) parts.push({ x: x, y: y, vx: rand(-30, 30), vy: rand(-20, 20), life: 0, max: 0.4, r: T * 0.05, col: '#FFE680', shape: 'star', rot: 0, vr: rand(-6, 6), g: 0 });
     }
   }
 
@@ -992,8 +933,7 @@
     if (freeze) { scn.mode = freeze.mode; scn.mt = freeze.mt; if (freeze.p !== undefined) pDisp = freeze.p; }
     if (sayTimer > 0) { sayTimer -= dt; if (sayTimer <= 0) $('say').classList.add('hide'); }
     if (st) {
-      var target = sceneShare();
-      heapDisp += (st.heap - heapDisp) * Math.min(1, dt * 2.5);
+      var target = clamp(st.used / (st.moves + st.extra), 0, 1);
       if (!freeze) pDisp += (target - pDisp) * Math.min(1, dt * 3);
       if (phase === 'play' && !busy) {
         idle += dt;
@@ -1006,12 +946,11 @@
     c.lineJoin = 'round'; c.lineCap = 'round';
     if (st) {
       drawPicture(c);
-      drawDrain(c);
-      drawMound(c);
       drawBoard(c, dt, scn.t);
       c.save(); c.clip(boardPath()); drawFx(c, dt); c.restore();
       drawParts(c, dt);
       drawActors(c, dt);
+      drawFlyers(c, dt);
     }
     requestAnimationFrame(frame);
   }
@@ -1029,14 +968,14 @@
   /* ================= test hook ================= */
   window.__rescue = {
     state: function () {
-      var open = E.openN(st), channels = E.channels(st);
-      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, saved: scn.saved.filter(Boolean).length, heap: st.heap, src: st.src, open: open, channels: channels, progress: JSON.parse(JSON.stringify(PG)) };
+      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, flyers: flyers.length, built: scn.built, onBoard: E.partsOnBoard(st), saved: scn.saved.filter(Boolean).length, progress: JSON.parse(JSON.stringify(PG)) };
     },
     jump: function (n) { $('listWrap').hidden = true; start(n); return until(function () { for (var id in V) if (V[id].path) return false; return true; }); },
     swap: function (r1, c1, r2, c2) { return doSwap(r1, c1, r2, c2); },
     moves: function () { return E.allMoves(st); },
     best: function () { return E.bestMove(st); },
-    settled: function () { return !busy && !actors.length && !tasks.length; },
+    settled: function () { return !busy && !actors.length && !flyers.length && !tasks.length; },
+    parts: function () { var out = []; for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) { var p = st.g[r][c]; if (p && p.sp === 'res') out.push([r, c]); } return out; },
     hit: async function (cells) { busy = true; await playLog(E.blast(st, cells)); busy = false; renderHud(false); await checkEnd(); },
     special: function (r, c, sp) { var p = st.g[r][c]; if (p) { p.sp = sp; if (sp === 'rain') p.k = -1; syncView(); } },
     setUsed: function (n) { st.used = n; renderHud(false); },

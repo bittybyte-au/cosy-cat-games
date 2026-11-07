@@ -1,7 +1,11 @@
-/* Cat Rescue: the little rescue scene above the board, one per peril, and what the peril's heap is made of (the
-   game draws the heap itself, over the scene and down into the board). Drawn in a 400 × 240 space.
+/* Cat Rescue: the little rescue scene above the board. Drawn in a 400 × 240 space.
+   A rescue scene (so far: tree) has a cat stuck somewhere and a rescue the board builds one part at a time (the
+   ladder: shared/scene.js GGScene.ladder). The older scenes (bath, rain, tide, laundry) still have a peril that
+   creeps forward with each move; they are next to be turned into rescues.
    Each scene is a function of time, so nothing here keeps state:
-     S = { p: how much of the heap is left (0..1; the peril eases as the heap is cleared), t: seconds, mode: 'play' | 'win' | 'fail', mt: seconds in that mode,
+     S = { p: how far the peril has crept (0..1, older scenes), built / n / pop / cheer (rescue scenes: parts up so
+           far, parts needed, 0..1 since the newest arrived, seconds since then), t: seconds,
+           mode: 'play' | 'win' | 'fail', mt: seconds in that mode,
            cat: { name, preset }, saved: [kitten presets sitting safe by the basket], reduce: reduced motion }
    The cat in peril is always rescued into the basket on the right, where the freed kittens wait.
    Not in time is gentle and comic: a splash and a shake, a soft landing in leaves, a sock on the head. */
@@ -101,11 +105,12 @@
     var b = S.reduce ? 0 : Math.max(0, Math.sin(span(mt, 1, 1.4) * Math.PI)) * 8 + Math.max(0, Math.sin((mt - 1.4) * 5)) * 1.5;
     inBasket(c, { preset: S.cat.preset, size: size * 0.92, pose: 'peek', face: 'happy' }, b);
   }
-  function hearts(c, S) {
-    if (S.mode !== 'win' || S.mt < 1) return;
+  function hearts(c, S, from) {
+    from = from || 1;
+    if (S.mode !== 'win' || S.mt < from) return;
     for (var i = 0; i < 7; i++) {
-      var q = ((S.mt - 1) * 0.55 + i / 7) % 1;
-      if (S.mt - 1 < i * 0.18) continue;
+      var q = ((S.mt - from) * 0.55 + i / 7) % 1;
+      if (S.mt - from < i * 0.18) continue;
       var x = BASKET[0] + Math.sin(i * 2.3) * 46 + Math.sin(q * 6 + i) * 6, y = BASKET[1] - 50 - q * 150;
       heart(c, x, y, 7 + (i % 3) * 2, i % 2 ? '#FF7EA8' : '#FF9EC4', 1 - q * q);
     }
@@ -188,13 +193,12 @@
     D.shape(c, D.rrPath(22, 94, 236, 10, 5), '#FFFFFF', { lw: 3.5, depth: 2 });
     drawCat();
     if (yw < 136) water(0.72);
-    // tap: a pipe on the wall; it drips while you play, and gushes when the splash comes
+    // tap: a pipe on the wall and running water while the peril creeps
     D.shape(c, D.rrPath(14, 52, 10, 46, 4), '#C9C2D6', { lw: 3, depth: 0 });
     D.shape(c, D.rrPath(14, 52, 48, 10, 5), '#C9C2D6', { lw: 3, depth: 2 });
     D.shape(c, D.rrPath(52, 58, 12, 14, 4), '#C9C2D6', { lw: 3, depth: 2 });
     D.shape(c, D.rrPath(28, 42, 14, 8, 4), '#FF8FAB', { lw: 2.5, depth: 0 });
-    var running = S.mode === 'fail' && mt < 0.6;
-    if (S.mode === 'play' && p > 0.05) drop(c, 58, 76 + ((S.t * 40) % Math.max(10, yw - 80)), 2.6, 0.9);
+    var running = S.mode === 'play' || (S.mode === 'fail' && mt < 0.6);
     if (running) {
       c.save(); c.beginPath(); c.rect(0, 0, W, yw + 2); c.clip();
       var sp = new Path2D(); sp.moveTo(58, 72); for (var sy = 72; sy < yw + 4; sy += 6) sp.lineTo(58 + Math.sin(sy * 0.3 + S.t * 14) * (S.reduce ? 0 : 1.2), sy);
@@ -209,65 +213,65 @@
     if (S.mode === 'win') rescue(c, S, [150, 129], size, {}); else basketFront(c);
   }
 
-  /* ================= tree: a branch bends lower under a kitten ================= */
+  /* ================= tree: a cat stuck up a tree, and a ladder built up to it one rung at a time =================
+     S.built: rungs up so far (of S.n); S.pop: 0..1 since the newest rung arrived (it bounces in); S.cheer: seconds
+     since then (the cat cheers). Win: the cat climbs down the ladder, rung by rung, and hops into the basket. */
+  var TREE = { foot: [262, 208], h: 94, w: 36, lean: -0.07, branchY: 124, catX: 236 };
+  function ladderOpts(S) { return { h: TREE.h, w: TREE.w, rungs: S.n || 6, lean: TREE.lean, ls: LS }; }
+  function branchAt(x) { return TREE.branchY - 4 + (x - 120) * 0.03 + Math.pow(Math.max(0, x - 200) / 70, 2) * 2; }
   function tree(c, S) {
-    var p = S.p, mt = S.mt, size = 40;
+    var mt = S.mt, size = 40, n = S.n || 6, built = Math.min(n, S.built || 0);
     sky(c, '#BFE6FF', 200);
-    cloud(c, 300, 43, 0.55, '#FFFFFF');
+    cloud(c, 318, 40, 0.55, '#FFFFFF');
     G.hills(c, 0, 128, W, 82, { kind: 'bumpy', col: '#B8E6A8', ls: LS });
     grass(c, 196, '#9BDC8C');
-    // the leaf pile under the branch's end
-    var pile = function (puff) {
-      var q = new Path2D(), px = 236, py = 206;
-      q.moveTo(px - 50, py); q.quadraticCurveTo(px - 52, py - 18, px - 34, py - 22); q.quadraticCurveTo(px - 26, py - 36 - puff, px - 6, py - 32 - puff);
-      q.quadraticCurveTo(px + 12, py - 42 - puff, px + 28, py - 28); q.quadraticCurveTo(px + 50, py - 26, px + 50, py); q.closePath();
-      D.shadow(c, px, py + 2, 52, 5);
-      D.shape(c, q, D.tone(c, '#FF9A4D', py - 40, py), { lw: 3.5, depth: 5, inside: function (c) {
-        var r = rng(11); for (var i = 0; i < 16; i++) { var lx = px - 46 + r() * 92, ly = py - 34 + r() * 32; c.save(); c.translate(lx, ly); c.rotate(r() * TAU); c.fillStyle = ['#FFC93C', '#FF6B57', '#E8743B', '#FFD87A'][i % 4]; c.beginPath(); c.ellipse(0, 0, 6, 3, 0, 0, TAU); c.fill(); c.restore(); }
-      } });
-    };
-    // the branch: bends with the peril; on a fail it dips to the leaves, then springs back
-    var bend = p * 46;
-    if (S.mode === 'fail') {
-      var down = eout(span(mt, 0, 0.7)), back = span(mt, 1.0, 2.4);
-      bend = lerp(46, 92, down);
-      if (mt > 1.0) bend = lerp(92, 30, eout(back)) + (S.reduce ? 0 : Math.sin(back * 18) * 10 * (1 - back));
-    }
-    if (S.mode === 'win') bend = lerp(p * 46, 10, eout(span(mt, 0.35, 1.2))) + (S.reduce ? 0 : Math.sin(span(mt, 0.35, 1.6) * 16) * 6 * (1 - span(mt, 0.35, 1.6)));
-    var ex = 262, ey = 86 + bend;
-    var qy = 90 + bend * 0.1;
-    // the height of the branch's middle line at x: find t on the curve where it reaches x
-    var by = function (x) {
-      var lo = 0, hi = 1;
-      for (var i = 0; i < 18; i++) { var t = (lo + hi) / 2, bx = (1 - t) * (1 - t) * 80 + 2 * (1 - t) * t * 170 + t * t * ex; if (bx < x) lo = t; else hi = t; }
-      var u = (lo + hi) / 2; return (1 - u) * (1 - u) * 92 + 2 * (1 - u) * u * qy + u * u * ey;
-    };
-    var br = new Path2D(); br.moveTo(80, 92); br.quadraticCurveTo(170, qy, ex, ey);
-    // the branch (it bends with the game, so it's drawn here), then the shared tree over its root
-    c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 15; c.stroke(br); c.strokeStyle = '#B07A4A'; c.lineWidth = 9; c.stroke(br);
-    [[150, -1], [196, 1], [236, -1]].forEach(function (l) { var lx = l[0], ly = by(lx); c.save(); c.translate(lx, ly); c.rotate(l[1] * 0.6); D.shape(c, D.ellPath(0, l[1] * 9, 5, 9), '#7BD389', { lw: 2.5, depth: 0 }); c.restore(); });
-    G.tree(c, 86, 208, { kind: 'round', size: 206, leaf: '#7BD389', trunk: '#B07A4A', ls: LS });
-    // the kitten near the end of the branch
-    var kx = 238, slope = Math.atan2(by(kx + 4) - by(kx - 4), 8);
-    var kittenOnBranch = function (face, slide) { var x = Math.min(ex - 2, kx + slide * 22), y = by(x) - 5; catAt(c, x, y, { preset: S.cat.preset, pose: 'sit', size: size, face: face }, slope * 0.8); };
-    if (S.mode === 'play') { pile(0); kittenOnBranch(p > 0.75 ? 'surprised' : blinkFace(S.t, 2), 0); }
-    else if (S.mode === 'fail') {
-      if (mt < 0.75) { pile(0); kittenOnBranch('surprised', eout(span(mt, 0.3, 0.75))); }
-      else {
-        // into the leaves with a soft flump, then pops out with a leaf on its head
-        var puff = S.reduce ? 0 : Math.sin(span(mt, 0.75, 1.1) * Math.PI) * 8;
-        var rise = eout(span(mt, 1.3, 1.8));
-        c.save(); c.beginPath(); c.rect(0, 0, W, 186); c.clip();
-        catAt(c, 238, lerp(222, 178, rise), { preset: S.cat.preset, pose: 'head', size: 34, face: mt < 2.0 ? 'surprised' : 'happy' });
-        c.restore();
-        pile(puff);
-        if (rise > 0.4) { c.save(); c.translate(240, lerp(222, 178, rise) - 36); c.rotate(-0.4); D.shape(c, D.ellPath(0, 0, 9, 4.5), '#FF6B57', { lw: 2.5, depth: 0, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); c.stroke(); } }); c.restore(); }
-        if (!S.reduce && mt < 1.6) { var r = rng(5); for (var i = 0; i < 12; i++) { var u = span(mt, 0.75, 1.6), a = -Math.PI * (0.1 + r() * 0.8), sp = 30 + r() * 40; c.save(); c.globalAlpha = 1 - u; c.translate(238 + Math.cos(a) * sp * u * 1.5, 186 + Math.sin(a) * sp * u * 1.5 + 40 * u * u); c.rotate(u * 6 + i); c.fillStyle = ['#FFC93C', '#FF6B57', '#E8743B'][i % 3]; c.beginPath(); c.ellipse(0, 0, 5, 2.6, 0, 0, TAU); c.fill(); c.restore(); } }
-      }
-    } else pile(0);
+    // the branch the cat is stuck on, reaching out from the tree, with a few leaves along it
+    var br = new Path2D(); br.moveTo(110, branchAt(110) + 4); br.quadraticCurveTo(190, branchAt(190) + 2, 270, branchAt(270));
+    c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 16; c.stroke(br); c.strokeStyle = '#B07A4A'; c.lineWidth = 10; c.stroke(br);
+    [[170, -1], [206, 1], [268, -1]].forEach(function (l) { var ly = branchAt(l[0]); c.save(); c.translate(l[0], ly); c.rotate(l[1] * 0.6); D.shape(c, D.ellPath(0, l[1] * 9, 5, 9), '#7BD389', { lw: 2.5, depth: 0 }); c.restore(); });
+    G.tree(c, 88, 208, { kind: 'round', size: 198, leaf: '#7BD389', trunk: '#B07A4A', ls: LS });
+    // the ladder, built from the ground up, leaning on the branch
+    var lo = ladderOpts(S); lo.built = S.mode === 'win' ? n : built; lo.pop = S.mode === 'win' ? 1 : S.pop;
+    D.shadow(c, TREE.foot[0], TREE.foot[1] + 1, 22, 4);
+    G.ladder(c, TREE.foot[0], TREE.foot[1], lo);
     basketBack(c);
-    if (S.mode === 'win') rescue(c, S, [kx, by(kx) - 5], size, {}); else basketFront(c);
+    var cy = branchAt(TREE.catX) - 6;
+    if (S.mode === 'win') { treeWin(c, S, size, n, cy); return; }
+    // stuck: looks down at the ladder; cheers (a hop, a happy face) each time a rung arrives; on not-in-time, waves
+    var ch = S.cheer === undefined ? 9 : S.cheer, hop = !S.reduce && ch < 0.5 ? Math.sin(ch / 0.5 * Math.PI) * 9 : 0;
+    var face = ch < 1.1 ? 'happy' : blinkFace(S.t, 2), pose = 'sit';
+    if (S.mode === 'fail') { pose = 'wave'; face = 'happy'; }
+    catAt(c, TREE.catX, cy - hop, { preset: S.cat.preset, pose: pose, size: size, face: face, wag: S.t * 3 }, S.reduce ? 0 : Math.sin(S.t * 1.4) * 0.03);
+    basketFront(c);
   }
+  /* rescued: off the branch onto the ladder's top, down the rungs one at a time, a hop to the basket */
+  function treeWin(c, S, size, n, cy) {
+    var mt = S.mt, lo = ladderOpts(S), f = TREE.foot;
+    var topR = G.ladder.rungAt(f[0], f[1], lo, n - 1), STEP = 0.2, down0 = 0.55, down1 = down0 + n * STEP, hop1 = down1 + 0.75;
+    if (mt < 0.3) { catAt(c, TREE.catX, cy, { preset: S.cat.preset, pose: 'sit', size: size, face: 'happy' }, 0, 1, S.reduce ? 1 : 1 - Math.sin(mt / 0.3 * Math.PI) * 0.1); basketFront(c); return; }
+    if (mt < down0) {
+      var u = ease(span(mt, 0.3, down0));
+      catAt(c, lerp(TREE.catX, topR.x, u), lerp(cy, topR.y - 2, u) - Math.sin(u * Math.PI) * 10, { preset: S.cat.preset, pose: 'sit', size: size, face: 'happy' });
+      basketFront(c); return;
+    }
+    if (mt < down1) {
+      // one rung per step, a little bounce on each
+      var q = (mt - down0) / STEP, i = Math.floor(q), w = q - i, from = n - 1 - i, to = Math.max(-1, from - 1);
+      var a = G.ladder.rungAt(f[0], f[1], lo, from), b = to >= 0 ? G.ladder.rungAt(f[0], f[1], lo, to) : { x: f[0], y: f[1] };
+      var k = ease(w);
+      catAt(c, lerp(a.x, b.x, k), lerp(a.y, b.y, k) - 2 - Math.sin(w * Math.PI) * (S.reduce ? 0 : 4), { preset: S.cat.preset, pose: 'sit', size: size, face: 'happy' }, S.reduce ? 0 : Math.sin(w * Math.PI) * 0.08);
+      basketFront(c); return;
+    }
+    if (mt < hop1) {
+      var v = ease(span(mt, down1, hop1)), x = lerp(f[0], BASKET[0], v), y = lerp(f[1], BASKET[1] - 40, v) - Math.sin(v * Math.PI) * 46;
+      basketFront(c);
+      catAt(c, x, y, { preset: S.cat.preset, size: size * 0.9, pose: 'walk', moving: true, step: mt * 18, wag: mt * 6, dir: 1, face: 'happy' }, (v - 0.5) * 0.5);
+      return;
+    }
+    var bb = S.reduce ? 0 : Math.max(0, Math.sin(span(mt, hop1, hop1 + 0.4) * Math.PI)) * 8 + Math.max(0, Math.sin((mt - hop1 - 0.4) * 5)) * 1.5;
+    inBasket(c, { preset: S.cat.preset, size: size * 0.92, pose: 'peek', face: 'happy' }, bb);
+  }
+  function treeWinTime(n) { return 0.55 + n * 0.2 + 0.75; }
 
   /* ================= rain: a rain cloud drifts over a napping cat ================= */
   function rain(c, S) {
@@ -420,93 +424,34 @@
 
   var SCENES = { bath: bath, tree: tree, rain: rain, tide: tide, laundry: laundry };
 
-  /* ================= the heap =================
-     Each peril's filling heaps up round the cat and tumbles down through the holes dug in the board:
-     bubble foam from the bath, autumn leaves under the tree, mud after the rain, wet sand with shells on the beach,
-     and odd socks from the washing. It's always loose bits, each its own little shape (chunk); heapTexture packs a
-     cell's worth of them, for the holes. */
-  var HEAP = {
-    bath: { word: 'bubbles', col: '#CFEAFF', hi: '#F4FBFF' },
-    tree: { word: 'leaves', col: '#F0A35A', hi: '#FFC98A' },
-    rain: { word: 'mud', col: '#A9774A', hi: '#C8996A' },
-    tide: { word: 'sand', col: '#EBC27A', hi: '#FBE0A6' },
-    laundry: { word: 'socks', col: '#D7C4EC', hi: '#EEE4FA' }
-  };
-  var LEAF = ['#FF9F43', '#FF6B57', '#FFD23F', '#E07B1F'], MUD = ['#8E5E36', '#A06A3E', '#7A5030', '#B07A4A'];
-  var SOCK = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#B48CFF', '#7BD389', '#FFFFFF'];
-  function leafPath(r) { var p = new Path2D(); p.moveTo(-r, 0); p.quadraticCurveTo(-r * 0.2, -r * 0.9, r, 0); p.quadraticCurveTo(-r * 0.2, r * 0.9, -r, 0); p.closePath(); return p; }
-  /* one bit of a heap, centred at (0, 0), about r across the middle; i picks its colour and turn; lwk its line */
-  function chunk(c, name, r, i, lwk) {
-    var lw = lwk || Math.max(1.6, r * 0.16), rot = ((i * 2.399) % TAU) - Math.PI;
-    if (name === 'bath') {
-      D.shape(c, D.ellPath(0, 0, r, r), D.tone(c, i % 3 ? '#FFFFFF' : '#E6F6FF', -r, r), { lw: lw, depth: r * 0.18 });
-      c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.ellipse(-r * 0.35, -r * 0.4, r * 0.28, r * 0.18, -0.6, 0, TAU); c.fill();
-      if (i % 4 === 1) { c.strokeStyle = 'rgba(180,140,255,.55)'; c.lineWidth = lw * 0.8; c.beginPath(); c.arc(0, 0, r * 0.7, 0.2, 1.3); c.stroke(); }
-    } else if (name === 'tree') {
-      var col = LEAF[i % LEAF.length];
-      c.save(); c.rotate(rot * 0.5);
-      D.shape(c, leafPath(r * 1.15), col, { lw: lw, depth: r * 0.12, inside: function (c) { c.beginPath(); c.moveTo(-r, 0); c.lineTo(r * 0.9, 0); c.strokeStyle = D.darker(col, 0.25); c.lineWidth = lw * 0.7; c.stroke(); } });
-      c.restore();
-    } else if (name === 'rain') {
-      // a lump of mud, with a shiny wet spot (and now and then a pebble or a little puddle)
-      var mc = MUD[i % MUD.length];
-      c.save(); c.rotate(rot * 0.3);
-      D.shape(c, D.ellPath(0, 0, r * 1.1, r * 0.85), D.tone(c, mc, -r, r), { lw: lw, depth: r * 0.2 });
-      c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(-r * 0.4, -r * 0.35, r * 0.3, r * 0.16, -0.4, 0, TAU); c.fill();
-      if (i % 3 === 0) { c.fillStyle = 'rgba(143,211,255,.85)'; c.beginPath(); c.ellipse(r * 0.25, r * 0.2, r * 0.38, r * 0.2, 0, 0, TAU); c.fill(); }
-      c.restore();
-    } else if (name === 'tide') {
-      D.shape(c, D.ellPath(0, r * 0.1, r * 1.08, r * 0.9), D.tone(c, '#F6D9A0', -r, r), { lw: lw, depth: r * 0.16, inside: function (c) { c.fillStyle = 'rgba(176,130,70,.4)'; [[-0.4, 0.1], [0.3, -0.2], [0.1, 0.45]].forEach(function (q) { c.beginPath(); c.arc(q[0] * r, q[1] * r, r * 0.08, 0, TAU); c.fill(); }); } });
-      if (i % 3 === 0) {
-        c.save(); c.translate(r * 0.15, -r * 0.1); c.rotate(rot * 0.3);
-        var sh = new Path2D(); sh.moveTo(0, r * 0.45); sh.lineTo(-r * 0.5, -r * 0.15); sh.quadraticCurveTo(0, -r * 0.6, r * 0.5, -r * 0.15); sh.closePath();
-        D.shape(c, sh, i % 2 ? '#FFB3C7' : '#FFF1C9', { lw: lw * 0.9, depth: 0, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = lw * 0.6; c.beginPath(); for (var k = -1; k <= 1; k++) { c.moveTo(0, r * 0.4); c.lineTo(k * r * 0.3, -r * 0.3); } c.stroke(); } });
-        c.restore();
-      }
-    } else {
-      // an odd sock, every colour of the rainbow
-      var sc = SOCK[i % SOCK.length];
-      c.save(); c.rotate(rot * 0.45);
-      var p = new Path2D(); p.moveTo(-r * 0.5, -r); p.lineTo(r * 0.2, -r); p.lineTo(r * 0.2, r * 0.1); p.quadraticCurveTo(r * 1.1, r * 0.1, r * 1.05, r * 0.6); p.quadraticCurveTo(r * 1, r * 1.05, r * 0.2, r * 0.95); p.lineTo(-r * 0.3, r * 0.95); p.quadraticCurveTo(-r * 0.6, r * 0.9, -r * 0.5, r * 0.4); p.closePath();
-      c.translate(-r * 0.2, -r * 0.05);
-      D.shape(c, p, sc, { lw: lw, depth: r * 0.14, inside: function (c) { c.fillStyle = D.darker(sc, 0.18); c.fillRect(-r, -r, r * 2.2, r * 0.38); if (i % 2) { c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(-r, -r * 0.2, r * 2.2, r * 0.18); } } });
-      c.restore();
-    }
-  }
-  /* the heap's texture: a square of bits (side 2 × half, centred on 0, 0) packed tight and spilling over the edges,
-     so that tiles of it laid side by side (and clipped to the heap) read as one heap. v picks a variation. */
-  function heapTexture(c, name, half, v, lw) {
-    var r = D.seeded(31 + v * 977 + name.length * 13), size = half * ({ bath: 0.4, tree: 0.34, rain: 0.36, tide: 0.32, laundry: 0.38 }[name] || 0.34), n = 9;
-    for (var k = 0; k < n; k++) {
-      var gx = (k % 3 - 1) * half * 0.68 + (r() - 0.5) * half * 0.42, gy = (Math.floor(k / 3) - 1) * half * 0.68 + (r() - 0.5) * half * 0.42;
-      c.save(); c.translate(gx, gy); chunk(c, name, size * (0.85 + r() * 0.35), Math.floor(r() * 1000), lw); c.restore();
-    }
-  }
-  /* a little heap for the goal's icon, in a 100-unit box: loose bits piled up */
-  function heapIcon(c, name, lw) {
-    [[-26, 22, 17, 3], [0, 24, 17, 8], [26, 22, 17, 5], [-13, 0, 17, 1], [13, 0, 17, 7], [0, -22, 17, 2]].forEach(function (q) { c.save(); c.translate(q[0], q[1]); chunk(c, name, q[2], q[3], lw * 0.8); c.restore(); });
-  }
-
-
-  /* draw a scene into the box (x, y, w); the height is w * 0.6 */
+  /* draw a scene into the box (x, y, w); the height is w * 0.6.
+     joined: the scene is the top of one picture with the board below, so only its top corners are rounded and the
+     game draws the outline; vis: how much of its height shows (the sky is cut off the top on short screens) */
   function draw(c, name, S, x, y, w, joined, vis) {
-    var k = w / W, h = H * k, cut = vis && vis < h ? h - vis : 0;   // cut: how much of the top is left off (sky)
+    var k = w / W, h = H * k, cut = vis && vis < h ? h - vis : 0;
     if (cut) { y += cut; h -= cut; }
     c.save();
     if (!joined) D.shadow(c, x + w / 2, y + h + 4, w * 0.48, 8);
-    // joined: the scene is the top of one picture with the heap and the board below, so only its top is rounded
     var frame = joined ? (function () { var p = new Path2D(), r = 18; p.moveTo(x, y + h); p.lineTo(x, y + r); p.arcTo(x, y, x + r, y, r); p.lineTo(x + w - r, y); p.arcTo(x + w, y, x + w, y + r, r); p.lineTo(x + w, y + h); p.closePath(); return p; })() : D.rrPath(x, y, w, h, 18);
     c.save(); c.clip(frame); c.translate(x, y - cut); c.scale(k, k); LS = k;
     c.lineJoin = 'round'; c.lineCap = 'round';
     (SCENES[name] || bath)(c, S);
     kittens(c, S);
-    hearts(c, S);
+    hearts(c, S, name === 'tree' ? treeWinTime(S.n || 6) : 1);
     c.restore();
     if (!joined) { c.lineWidth = 4; c.strokeStyle = INK; c.stroke(frame); }
     c.restore();
   }
   /* where the next freed kitten will sit, in page pixels for a scene drawn at (x, y, w) */
   function slotAt(i, x, y, w) { var s = slot(i), k = w / W; return { x: x + s.x * k, y: y + s.y * k, k: k }; }
+  /* where rescue part i (0 = the first) goes in the scene, in page pixels: a flying part aims here */
+  function partAt(name, i, n, x, y, w) {
+    var k = w / W, p = G.ladder.rungAt(TREE.foot[0], TREE.foot[1], { h: TREE.h, rungs: n, lean: TREE.lean }, i);
+    return { x: x + p.x * k, y: y + p.y * k, k: k, w: TREE.w * k };
+  }
+  /* how long the win and not-in-time moments run before their cards come up */
+  function winTime(name, n) { return name === 'tree' ? treeWinTime(n || 6) + 1.1 : 3.4; }
+  function failTime(name) { return name === 'tree' ? 1.0 : 2.7; }
 
-  window.RescueScenes = { draw: draw, slotAt: slotAt, KSIZE: KSIZE, WIN: 3.4, FAIL: 2.7, catAt: catAt, heart: heart, HEAP: HEAP, chunk: chunk, heapTexture: heapTexture, heapIcon: heapIcon };
+  window.RescueScenes = { draw: draw, slotAt: slotAt, partAt: partAt, winTime: winTime, failTime: failTime, KSIZE: KSIZE, catAt: catAt, heart: heart };
 })();

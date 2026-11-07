@@ -105,8 +105,9 @@
       'The 123 button puts numbers on the squares.'] },
     rescue: { name: 'Cat Rescue', lines: [
       'Swap two pieces next to each other to make a line of three.',
+      'A cat is stuck! Glowing rescue pieces (like ladder rungs) drop onto the board. Make a match next to one to send it up to the rescue.',
+      'Each one you send builds the rescue a bit more. Finish it and the cat climbs down safe.',
       'Match three next to a box to break it open and free the kitten.',
-      'Leaves (or bubbles, mud, sand or socks) keep falling in from the top. Clear the tiles under the hole to dig it down through the board: reach the bottom and they pour out!',
       'Reach the goal before the moves run out to save the cat.',
       'Four in a row, an L or T shape, or five in a row make special pieces.'] },
     hotpaws: { name: 'Hot Paws', lines: [

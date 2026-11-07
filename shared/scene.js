@@ -58,7 +58,8 @@
      GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h
    More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file.
    More furniture in front and top views (bookcase, dining tables long and round, a floor lamp from above, inside
-     walls from above): see batch F at the very end of this file. */
+     walls from above): see batch F near the end of this file. Ground to dig and a cat house: batch G.
+   Rescues built step by step (Cat Rescue: a ladder): batch H at the very end. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -1377,4 +1378,55 @@
       c.restore();
     };
   })(window.GGScene);
+  /* ================= end of batch G ================= */
+  /* ================= batch H: rescues built step by step (Cat Rescue) =================
+     GGScene.ladder(c, x, y, { h (full height, default 120), w (outside width, default 34), rungs (how many in the
+                    finished ladder, default 6), built (how many are up so far, default all), pop (0..1+, the newest
+                    rung settling in: pass an overshooting ease for a bounce, default 1), lean (radians from upright,
+                    + leans the top right), col (rails), rung (rungs' colour), ghost (default true: a dashed outline of
+                    the part still to build), ls })
+         a wooden ladder standing on (x, y) (the middle of its feet), built from the bottom up: the rails reach
+         just past the highest rung, so each new rung makes it visibly taller.
+     GGScene.ladder.rungAt(x, y, o, i)   where rung i (0 = the bottom one) sits, for a ladder drawn with o: { x, y } */
+  (function (G) {
+    G.VARIANTS.ladder = ['built', 'building'];
+    function geo(o) { var n = Math.max(1, o.rungs || 6), h = o.h || 120; return { n: n, h: h, w: o.w || 34, gap: h / (n + 1) }; }
+    G.ladder = function (c, x, y, o) {
+      o = opt(o);
+      var g = geo(o), n = g.n, built = Math.max(0, Math.min(n, pick(o.built, n))), pop = pick(o.pop, 1), half = g.w / 2;
+      var rw = Math.max(5, g.w * 0.22), col = o.col || '#D9944F', rc = o.rung || '#F2C27B';
+      var railH = function (k) { return k >= n ? g.h : k <= 0 ? g.gap * 0.45 : k * g.gap + g.gap * 0.45; };
+      var top = built >= 1 ? lerpN(railH(built - 1), railH(built), Math.min(1, pop)) : railH(0);
+      c.save(); c.translate(x, y); c.rotate(o.lean || 0);
+      c.lineJoin = 'round'; c.lineCap = 'round';
+      if (pick(o.ghost, true) && built < n) {
+        // the rest of the ladder, still to build: a soft dashed outline
+        c.save(); c.setLineDash([W(o, 5), W(o, 4)]); c.strokeStyle = 'rgba(42,35,64,.5)'; c.lineWidth = W(o, 2.5);
+        c.fillStyle = 'rgba(255,255,255,.45)';
+        [-half, half - rw].forEach(function (rx) { var p = D.rrPath(rx, -g.h, rw, g.h - top + rw, rw / 2); c.fill(p); c.stroke(p); });
+        for (var j = Math.ceil(built); j < n; j++) { var gy = -(j + 1) * g.gap; c.beginPath(); c.moveTo(-half + rw, gy); c.lineTo(half - rw, gy); c.stroke(); }
+        c.restore();
+      }
+      // rungs first (the rails cover their ends), the newest popping in
+      for (var i = 0; i < Math.ceil(built); i++) {
+        var ry = -(i + 1) * g.gap, k = i === Math.ceil(built) - 1 ? Math.max(0, pop) : 1, th = Math.max(5, g.gap * 0.4);
+        c.save(); c.translate(0, ry); c.scale(k, k);
+        sh(c, D.rrPath(-half + rw * 0.5, -th / 2, g.w - rw, th, th / 2), D.tone(c, rc, -th / 2, th / 2), o, LW.fine, { depth: 2 });
+        c.restore();
+      }
+      if (built > 0) [-half, half - rw].forEach(function (rx) {
+        sh(c, D.rrPath(rx, -top, rw, top, rw / 2), D.tone(c, col, -top, 0, rx, rx + rw), o, LW.mid, { depth: 0, inside: function (c) {
+          c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(rx + rw * 0.18, -top + rw * 0.5, rw * 0.22, top - rw);
+          c.fillStyle = 'rgba(42,35,64,.14)'; c.fillRect(rx + rw * 0.7, -top, rw * 0.3, top);
+        } });
+      });
+      c.restore();
+    };
+    function lerpN(a, b, t) { return a + (b - a) * t; }
+    G.ladder.rungAt = function (x, y, o, i) {
+      var g = geo(opt(o)), d = (i + 1) * g.gap, a = (o && o.lean) || 0;
+      return { x: x + Math.sin(a) * d, y: y - Math.cos(a) * d };
+    };
+  })(window.GGScene);
+  /* ================= end of batch H ================= */
 })();

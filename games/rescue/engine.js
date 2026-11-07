@@ -7,37 +7,25 @@
      'rain'       rainbow yarn (k -1): swapped with a piece, clears every piece of that kind   (made by 5 in a line)
      'cush'       a kitten on a cushion (k -1): never matches or swaps; it falls as pieces under it clear,
                   and is rescued when it reaches the bottom of its column
+     'res'        a rescue part (k -1): a ladder rung, a plank, a cushion... for the level's rescue job (def.job). It
+                  never makes a line itself, but it swaps and falls like a piece. A match made next to it collects it
+                  (got.job), and so does any blast that reaches it. New ones drop in with the refills, so that while
+                  more are needed there are always def.job.keep of them on the board.
    p.tg = a yarn tangle round the piece: it can't be swapped and doesn't fall. Anything that would clear the
    piece (a match it is part of, or a blast) takes the yarn off instead, and the piece stays.
    Boxes (hp 1, or 2 when taped) take one hit from each match made next to them, and from any blast that reaches
    them. Some hold a kitten (kit >= 0), which is freed when the box breaks.
 
-   The heap: the peril's filling (bubble foam, leaves, mud, wet sand, socks), st.heap units of it, heaped up in the
-   rescue scene above the board, and more of it (st.src units) still to come from the peril's source at the top of
-   the scene (the tap, the tree, the rain cloud, the washing, the waves): after each move up to def.feed units fall
-   in from the top onto the heap, until the source runs dry. Some of the board's top cells start open ('o' in the map, st.open): cut out of the
-   board for good, a hole the heap can tumble into. A cell that's emptied with an open cell straight above it opens
-   too, as nothing can ever fall into it again; so clearing the pieces under a hole (or clearing anything next to
-   the piece at the bottom of a hole, which digs that piece out too) digs it down as a channel (boxes,
-   tangles and cushions are in the way until they've gone), and cells only ever open downwards, in the columns that
-   started open. No piece ever goes into an open cell. The heap fills the open cells from the lowest up (that's all
-   drawing: it doesn't block anything), and once a channel reaches the bottom of the board, the heap pours out
-   through it: after each move DRAIN units per open bottom cell. Pouring all of it out, the heap and everything the
-   source still had to give, is the 'pile' goal.
-
    swap(state, r1, c1, r2, c2) plays a move and returns a log of what happened, step by step, for the game to
    animate: 'nope' | 'swap' | 'pass' (things cleared, boxes hit, yarn off, specials made) | 'fall' (each piece's
-   path, one cell per tick, and the cells that opened: opened [[r, c, tick]]) | 'down' (cushion kittens reaching
-   the bottom) | 'drainout' (heap pouring out: n units, through the columns cols) | 'feed' (n units falling in
-   from the source) | 'shuffle'.
-   Level map characters: '.' piece, '#' no cell, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
-   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'o' an open cell (a hole for the heap). */
+   path, one cell per tick) | 'down' (cushion kittens reaching the bottom) | 'shuffle'.
+   Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
+   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'r' a rescue part. */
 (function () {
   'use strict';
 
   var SPECIAL = { zh: 1, zv: 1, nip: 1, rain: 1 };
-  var DRAIN = 2;   // units of heap pouring out of each open bottom cell after every move
-  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'pile'];
+  var GOALS = ['job', 'kittens', 'boxes', 'yarn', 'down'];
 
   function rnd(st) {
     st.seed = (st.seed + 0x6D2B79F5) | 0;
@@ -58,23 +46,25 @@
     colours.sort();
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
-      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 },
-      moves: def.moves, used: 0, extra: 0, heap: def.heap | 0, src: def.src | 0, feed: def.feed || 1, open: [], top: [], bottom: []
+      goal: {}, got: { job: 0, kittens: 0, boxes: 0, yarn: 0, down: 0 },
+      moves: def.moves, used: 0, extra: 0, dropped: 0, top: [], bottom: [], keep: (def.job && def.job.keep) || 2
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
-    st.goal.pile = st.heap + st.src;
+    if (def.job) st.goal.job = def.job.n;
     var randomCells = [];
     for (var r = 0; r < R; r++) {
-      st.mask.push([]); st.g.push([]); st.box.push([]); st.open.push([]);
+      st.mask.push([]); st.g.push([]); st.box.push([]);
       for (var c = 0; c < C; c++) {
         var ch = def.map[r].charAt(c) || '#';
         st.mask[r].push(ch !== '#' && ch !== ' ');
-        st.g[r].push(null); st.box[r].push(null); st.open[r].push(ch === 'o');
+        st.g[r].push(null); st.box[r].push(null);
         if (ch === 'b' || ch === 'B' || ch === 'k' || ch === 'K') {
           var kit = ch === 'k' || ch === 'K';
           st.box[r][c] = { id: st.nid++, hp: ch === 'B' || ch === 'K' ? 2 : 1, kit: kit ? (st.kitN++ % 6) : -1 };
         } else if (ch === 'c') {
           var cu = piece(st, -1, 'cush'); cu.kit = st.kitN++ % 6; st.g[r][c] = cu;
+        } else if (ch === 'r' && st.goal.job) {
+          st.g[r][c] = piece(st, -1, 'res');
         } else if (ch === '.' || ch === 't') {
           var p = piece(st, 0); p.tg = ch === 't'; st.g[r][c] = p; randomCells.push([r, c]);
         }
@@ -84,7 +74,7 @@
       st.top[cc] = -1; st.bottom[cc] = -1;
       for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; }
     }
-    // colour the pieces with no ready-made lines, and at least one move
+    // fill the pieces with no ready-made lines, and at least one move
     for (var tries = 0; tries < 200; tries++) {
       randomCells.forEach(function (q) {
         var p = st.g[q[0]][q[1]], guard = 0;
@@ -92,8 +82,18 @@
       });
       if (!findGroups(st).length && hasMove(st)) break;
     }
+    // the rescue parts the map doesn't place go on random cells in the top half, away from each other
+    var want = Math.min(st.keep, st.goal.job) - partsOnBoard(st), spots = randomCells.filter(function (q) { return q[0] < R / 2 && !st.g[q[0]][q[1]].tg; });
+    for (var n = 0; n < 60 && want > 0 && spots.length; n++) {
+      var at = spots.splice(Math.floor(rnd(st) * spots.length), 1)[0], near = false;
+      for (var y = 0; y < R; y++) for (var x = 0; x < C; x++) { var t = st.g[y][x]; if (t && t.sp === 'res' && Math.abs(y - at[0]) + Math.abs(x - at[1]) < 3) near = true; }
+      if (near && n < 40) continue;
+      var pp = st.g[at[0]][at[1]]; pp.k = -1; pp.sp = 'res'; want--;
+    }
+    if (!hasMove(st)) { var lg = []; shuffle(st, lg); }
     return st;
   }
+  function partsOnBoard(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'res') n++; } return n; }
   function makesLineBehind(st, r, c, k) {
     return (kindAt(st, r, c - 1) === k && kindAt(st, r, c - 2) === k) || (kindAt(st, r - 1, c) === k && kindAt(st, r - 2, c) === k);
   }
@@ -102,9 +102,8 @@
     var o = {}, k;
     for (k in st) o[k] = st[k];
     o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours;
-    o.open = st.open.map(function (row) { return row.slice(); });
     o.goal = st.goal;
-    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, pile: st.got.pile };
+    o.got = {}; GOALS.forEach(function (k) { o.got[k] = st.got[k]; });
     o.g = []; o.box = [];
     for (var r = 0; r < st.R; r++) {
       var gr = [], br = [];
@@ -119,11 +118,9 @@
   }
 
   /* ---------- looking at the board ---------- */
-  function inside(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c] && !st.open[r][c]; }
-  function isOpen(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c] && st.open[r][c]; }
+  function inside(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c]; }
   function kindAt(st, r, c) { if (!inside(st, r, c)) return -1; var p = st.g[r][c]; return p ? p.k : -1; }
-  function fixed(p) { return p.sp === 'cush'; }   // pieces that never swap or match
-  function swappable(st, r, c) { if (!inside(st, r, c)) return false; var p = st.g[r][c]; return !!p && !p.tg && !fixed(p); }
+  function swappable(st, r, c) { if (!inside(st, r, c)) return false; var p = st.g[r][c]; return !!p && !p.tg && p.sp !== 'cush'; }
   function isSp(p) { return !!(p && SPECIAL[p.sp]); }
 
   function lineAt(st, r, c, k) {
@@ -199,12 +196,11 @@
   }
   function won(st) { for (var i = 0; i < GOALS.length; i++) if (st.got[GOALS[i]] < st.goal[GOALS[i]]) return false; return true; }
   function movesLeft(st) { return st.moves + st.extra - st.used; }
-  function openN(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) if (isOpen(st, r, c)) n++; return n; }
-  /* the channels: columns whose bottom cell is open, so the heap pours out through them */
-  function channels(st) { var n = 0; for (var c = 0; c < st.C; c++) if (st.bottom[c] >= 0 && st.open[st.bottom[c]][c]) n++; return n; }
 
   /* ---------- one clearing pass ---------- */
-  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], chain: 0 }; }
+  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], parts: [], made: [], convert: [], fx: [], chain: 0 }; }
+  /* a rescue part collected: it leaves the board and goes up to the rescue */
+  function collect(st, ev, p, r, c, d) { st.g[r][c] = null; st.got.job++; ev.parts.push({ id: p.id, r: r, c: c, d: d, n: st.got.job }); }
 
   function damageBox(st, ev, r, c, d) {
     var b = st.box[r][c];
@@ -257,15 +253,16 @@
       keep[at[0] * 64 + at[1]] = 1;
       made.push({ r: at[0], c: at[1], sp: sp, k: g.k });
     });
-    // a match breaks one layer off each box next to it, and digs out the floor of a hole next to it
+    // a match breaks one layer off each box next to it
     groups.forEach(function (g) {
       var seen = {};
       g.cells.forEach(function (p) {
         [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) {
           var r = p[0] + o[0], c = p[1] + o[1];
           if (!inside(st, r, c) || seen[r * 64 + c]) return;
+          var t = st.g[r][c];
           if (st.box[r][c]) { seen[r * 64 + c] = 1; q.push([r, c, 0.05, 1]); }
-          else if (isOpen(st, r - 1, c)) { seen[r * 64 + c] = 1; q.push([r, c, 0.06]); }   // the floor of a hole: dug out
+          else if (t && t.sp === 'res') { seen[r * 64 + c] = 1; q.push([r, c, 0.08, 2]); }
         });
       });
       g.cells.forEach(function (p) { q.push([p[0], p[1], 0]); });
@@ -275,7 +272,8 @@
       var it = q[i], r = it[0], c = it[1], d = it[2];
       if (!inside(st, r, c)) continue;
       var key = r * 64 + c;
-      if (it[3]) { damageBox(st, ev, r, c, d); continue; }
+      if (it[3] === 1) { damageBox(st, ev, r, c, d); continue; }
+      if (it[3] === 2) { var rp = st.g[r][c]; if (rp && rp.sp === 'res' && !hit[key]) { hit[key] = 1; collect(st, ev, rp, r, c, d); } continue; }
       if (hit[key]) continue;
       hit[key] = 1;
       if (keep[key]) continue;
@@ -284,11 +282,10 @@
       if (!p) continue;
       if (p.tg) { p.tg = false; st.got.yarn++; ev.untangled.push({ id: p.id, r: r, c: c, d: d }); continue; }
       if (p.sp === 'cush') continue;
+      if (p.sp === 'res') { collect(st, ev, p, r, c, d); continue; }
       st.g[r][c] = null;
       ev.removed.push({ id: p.id, r: r, c: c, k: p.k, sp: p.sp, d: d });
       if (SPECIAL[p.sp]) fire(st, ev, p, r, c, d, q);
-      // anything cleared next to the floor of a hole digs that out too
-      [[1, 0], [0, 1], [0, -1]].forEach(function (o) { var y = r + o[0], x = c + o[1]; if (inside(st, y, x) && !st.box[y][x] && st.g[y][x] && isOpen(st, y - 1, x)) q.push([y, x, d + 0.06]); });
     }
     made.forEach(function (m) {
       var p = st.g[m.r][m.c];
@@ -302,7 +299,7 @@
   /* ---------- falling, one cell per tick ---------- */
   function supplied(st, r, c) {
     for (var y = r - 1; y >= st.top[c]; y--) {
-      if (!inside(st, y, c) || st.box[y][c]) return false;
+      if (!st.mask[y][c] || st.box[y][c]) return false;
       var p = st.g[y][c];
       if (p) return !p.tg;
     }
@@ -314,41 +311,28 @@
     else if (p[p.length - 1][0] < t) p.push([t, r0, c0]);
     p.push([t + 1, r1, c1]);
   }
-  function empty(st, r, c) { return inside(st, r, c) && !st.box[r][c] && !st.g[r][c]; }
-  /* an empty cell with an open cell straight above it opens: nothing can ever fall into it again */
-  function dig(st, t, opened) {
-    var any = false;
-    for (var r = 1; r < st.R; r++) for (var c = 0; c < st.C; c++) {
-      if (empty(st, r, c) && isOpen(st, r - 1, c)) { st.open[r][c] = true; opened.push([r, c, t]); any = true; }
+  function tick(st, t, paths, spawned) {
+    var moved = false, did = {}, r, c, p;
+    for (r = st.R - 1; r >= 0; r--) for (c = 0; c < st.C; c++) {
+      if (!st.mask[r][c] || st.box[r][c] || st.g[r][c]) continue;
+      if (r === st.top[c]) {
+        p = piece(st, randomKind(st)); st.g[r][c] = p; did[p.id] = 1;
+        spawned.push({ id: p.id, k: p.k }); paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
+      } else if (r > st.top[c] && st.mask[r - 1][c] && !st.box[r - 1][c]) {
+        p = st.g[r - 1][c];
+        if (p && !p.tg && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
+      }
     }
-    return any;
-  }
-  /* One tick: open what's been dug out, pieces fall straight down, empty top cells get a new piece, open again (a
-     piece that just fell out from under a hole leaves a cell nothing can reach), then cells nothing can fall into
-     take a piece sliding down from the side. */
-  function tick(st, t, paths, spawned, opened) {
-    var moved = dig(st, t, opened), did = {}, r, c, p;
+    // cells nothing can fall into from above take a piece sliding down from the side
     for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
-      if (!empty(st, r, c) || r <= st.top[c] || !inside(st, r - 1, c) || st.box[r - 1][c]) continue;
-      p = st.g[r - 1][c];
-      if (p && !p.tg && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
-    }
-    for (c = 0; c < st.C; c++) {
-      r = st.top[c];
-      if (r < 0 || !empty(st, r, c)) continue;
-      p = piece(st, randomKind(st)); st.g[r][c] = p; did[p.id] = 1;
-      spawned.push({ id: p.id, k: p.k }); paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
-    }
-    if (dig(st, t, opened)) moved = true;
-    for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
-      if (!empty(st, r, c) || supplied(st, r, c)) continue;
+      if (!st.mask[r][c] || st.box[r][c] || st.g[r][c] || supplied(st, r, c)) continue;
       var order = (t + r + c) & 1 ? [-1, 1] : [1, -1];
-      for (var j = 0; j < 2; j++) {
-        var sc = c + order[j];
+      for (var i = 0; i < 2; i++) {
+        var sc = c + order[i];
         if (!inside(st, r - 1, sc) || st.box[r - 1][sc]) continue;
         p = st.g[r - 1][sc];
         if (!p || p.tg || did[p.id]) continue;
-        if (empty(st, r, sc)) continue; // it would rather fall straight down
+        if (st.mask[r][sc] && !st.box[r][sc] && !st.g[r][sc]) continue; // it would rather fall straight down
         st.g[r][c] = p; st.g[r - 1][sc] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, sc, r, c); moved = true;
         break;
       }
@@ -371,13 +355,29 @@
       if (opts.length) { p.k = pick(st, opts); s.k = p.k; }
     });
   }
-  /* the board settles; cushion kittens reaching the bottom are rescued */
+  /* while the rescue still needs parts, new ones drop in with the refills: one of the new pieces in a move becomes a
+     part, until there are st.keep of them on the board (never more than the job still needs). One a move keeps the
+     rescue growing step by step, and there's always at least one on the board to go for. */
+  function supply(st, spawned) {
+    if (!st.goal.job || !spawned.length || st.dropped >= 1) return;
+    var want = Math.min(1, st.keep - partsOnBoard(st), st.goal.job - st.got.job - partsOnBoard(st));
+    if (want <= 0) return;
+    var at = {}, r, c;
+    for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) if (st.g[r][c]) at[st.g[r][c].id] = 1;
+    var list = spawned.filter(function (s) { return at[s.id]; });
+    for (var i = 0; i < want && list.length; i++) {
+      var s = list.splice(Math.floor(rnd(st) * list.length), 1)[0];
+      for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.id === s.id) { p.k = -1; p.sp = 'res'; } }
+      s.k = -1; s.sp = 'res'; st.dropped++;
+    }
+  }
   function fall(st, log) {
     for (var loop = 0; loop < 30; loop++) {
-      var paths = {}, spawned = [], opened = [], t = 0;
-      while (t < 300 && tick(st, t, paths, spawned, opened)) t++;
+      var paths = {}, spawned = [], t = 0;
+      while (t < 300 && tick(st, t, paths, spawned)) t++;
       settleKinds(st, spawned);
-      if (t) log.push({ type: 'fall', paths: paths, spawned: spawned, opened: opened, ticks: t });
+      supply(st, spawned);
+      if (t) log.push({ type: 'fall', paths: paths, spawned: spawned, ticks: t });
       var downs = [];
       for (var c = 0; c < st.C; c++) {
         var r = st.bottom[c];
@@ -424,7 +424,7 @@
   function swap(st, r1, c1, r2, c2) {
     if (!swapWorks(st, r1, c1, r2, c2)) return [{ type: 'nope', a: [r1, c1], b: [r2, c2] }];
     var a = st.g[r1][c1], b = st.g[r2][c2];
-    st.g[r1][c1] = b; st.g[r2][c2] = a; st.used++;
+    st.g[r1][c1] = b; st.g[r2][c2] = a; st.used++; st.dropped = 0;
     var log = [{ type: 'swap', a: [r1, c1], b: [r2, c2], ida: a.id, idb: b.id }];
     var seed = null, r, c;
     // a moved to (r2, c2), b to (r1, c1); combos centre on where the moved piece landed
@@ -474,14 +474,6 @@
       if (isSp(b)) seed.hits.push([r1, c1, 0]);
     }
     cascade(st, log, seed, [[r2, c2], [r1, c1]]);
-    // the heap pours out through every channel that's through to the bottom
-    var cols = [];
-    for (c = 0; c < st.C; c++) if (st.bottom[c] >= 0 && st.open[st.bottom[c]][c]) cols.push(c);
-    var n = Math.min(st.heap, cols.length * DRAIN);
-    if (n > 0) { st.heap -= n; st.got.pile += n; log.push({ type: 'drainout', n: n, cols: cols }); }
-    // and more falls in from the top while the source lasts
-    var f = Math.min(st.src, st.feed);
-    if (f > 0) { st.src -= f; st.heap += f; log.push({ type: 'feed', n: f }); }
     return log;
   }
 
@@ -496,57 +488,19 @@
      Tries each move on a copy of the board, with new random pieces falling in (so it can't see the future),
      and scores what the move did for the level's goals. */
   function boxHp(st, kitOnly) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var b = st.box[r][c]; if (b && (!kitOnly || b.kit >= 0)) n += b.hp; } return n; }
-  function depth(st, sp) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === sp) n += r; } return n; }
+  function cushionDepth(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'cush') n += r; } return n; }
   function specials(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (isSp(p)) n += p.sp === 'rain' ? 2 : 1; } return n; }
   function need(st, k) { return st.got[k] < st.goal[k]; }
-  /* how much is still in the way of the channels: for each column that's open at the top and not through yet, the
-     cells under its hole (more for a box or a tangle); and the least of those, for the first channel through */
-  function digCost(st) {
-    var sum = 0, least = 99;
-    for (var c = 0; c < st.C; c++) {
-      var top = st.top[c];
-      if (top < 0 || !st.open[top][c]) continue;
-      if (st.open[st.bottom[c]][c]) { least = 0; continue; }
-      var n = 0;
-      for (var r = top; r <= st.bottom[c]; r++) {
-        if (!st.mask[r][c] || st.open[r][c]) continue;
-        var q = st.g[r][c];
-        n += st.box[r][c] ? 1 + 2 * st.box[r][c].hp : q && q.tg ? 3 : 1;
-      }
-      sum += n; least = Math.min(least, n);
-    }
-    return { sum: sum, least: least === 99 ? 0 : least };
-  }
-  /* how much digging the specials on the board would do if they went off: any piece cleared under a hole digs it a
-     cell deeper (the pieces above it fall and leave the top cell with nothing to fill it) */
-  function digPotential(st) {
-    var n = 0, r, c, y, x, col = [];
-    for (c = 0; c < st.C; c++) col.push(st.top[c] >= 0 && st.open[st.top[c]][c] && !st.open[st.bottom[c]][c]);
-    var dug = function (y, x) { return x >= 0 && x < st.C && col[x] && inside(st, y, x) ? 1 : 0; };
-    for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) {
-      var p = st.g[r][c]; if (!isSp(p)) continue;
-      if (p.sp === 'zh') { for (x = 0; x < st.C; x++) n += dug(r, x); }
-      else if (p.sp === 'zv') { for (y = 0; y < st.R; y++) n += dug(y, c); }
-      else if (p.sp === 'nip') { for (y = r - 1; y <= r + 1; y++) for (x = c - 1; x <= c + 1; x++) n += dug(y, x); }
-    }
-    return n;
-  }
   function score(before, after) {
     var s = 0;
-    var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
-    // the heap: dig channels down under it to the bottom, so it pours out (the first one through matters most)
-    var np = need(before, 'pile');
-    if (np) {
-      var d0 = digCost(before), d1 = digCost(after);
-      s += (d0.sum - d1.sum) * 10 + (d0.least - d1.least) * 14 + (channels(after) - channels(before)) * 40 + (after.got.pile - before.got.pile) * 6;
-      s += (digPotential(after) - digPotential(before)) * 5;
-    }
+    var dj = after.got.job - before.got.job, dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
+    s += dj * (need(before, 'job') ? 120 : 0);
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);
     s += dd * (need(before, 'down') ? 150 : 5);
     s += (boxHp(before) - boxHp(after)) * 6 + (boxHp(before, true) - boxHp(after, true)) * (need(before, 'kittens') ? 24 : 0);
-    if (need(before, 'down')) s += (depth(after, 'cush') - depth(before, 'cush') + dd * 2) * 22;
+    if (need(before, 'down')) s += (cushionDepth(after) - cushionDepth(before) + dd * 2) * 22;
     s += (specials(after) - specials(before)) * 7;
     return s;
   }
@@ -565,6 +519,6 @@
 
   window.RescueEngine = {
     make: make, clone: clone, swap: swap, blast: blast, swapWorks: swapWorks, allMoves: allMoves, hasMove: hasMove,
-    findGroups: findGroups, won: won, movesLeft: movesLeft, openN: openN, channels: channels, isOpen: isOpen, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, fixed: fixed
+    findGroups: findGroups, won: won, movesLeft: movesLeft, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, partsOnBoard: partsOnBoard
   };
 })();
