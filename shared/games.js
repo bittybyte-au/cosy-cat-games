@@ -476,7 +476,7 @@
     },
     {
       id: 'mouse-pop', save: 'mousepop', name: 'Mouse Pop', blurb: 'Tap the mice to pop them',
-      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE0EC',
+      ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#F2DDC0',
       art: ART.mousepop
     },
     {
