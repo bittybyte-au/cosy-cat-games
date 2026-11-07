@@ -183,7 +183,7 @@
     PIECES[k](c);
   }
   /* a cardboard box; a kitten's ears poke out of the lid and its eyes peek from a hole; taped boxes are crossed with tape */
-  function drawBox(c, hp, kit) {
+  function drawBox(c, hp, kit, part) {
     if (kit >= 0) {
       var o = GGCat.PRESETS[KITTENS[kit]];
       [-1, 1].forEach(function (s) {
@@ -201,9 +201,17 @@
         var eye = GGCat.PRESETS[KITTENS[kit]].eyes === 'green' ? '#9BFF6E' : '#FFFFFF';
         c.fillStyle = eye; c.beginPath(); c.arc(-5, 9, 3, 0, TAU); c.arc(5, 9, 3, 0, TAU); c.fill();
       } else {
-        c.fillStyle = 'rgba(156,106,58,.45)';
-        c.beginPath(); c.ellipse(0, 16, 9, 7, 0, 0, TAU); c.fill();
-        [[-10, 3], [-3.5, -1], [3.5, -1], [10, 3]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 3.4, 4, 0, 0, TAU); c.fill(); });
+        // a box with a rescue part inside has a torn hole, and the part pokes out of it, so you can see which boxes
+        // to break into; a plain box has a paw print
+        if (part) {
+          var hole = new Path2D('M-24 -4L-16 -12L-8 -6L0 -14L9 -7L18 -13L25 -3L22 10L27 22L16 33L4 28L-8 35L-19 28L-27 16L-22 6Z');
+          c.fillStyle = '#5A3A22'; c.fill(hole); c.strokeStyle = 'rgba(42,35,64,.6)'; c.lineWidth = lw(2.5); c.stroke(hole);
+        }
+        else {
+          c.fillStyle = 'rgba(156,106,58,.45)';
+          c.beginPath(); c.ellipse(0, 16, 9, 7, 0, 0, TAU); c.fill();
+          [[-10, 3], [-3.5, -1], [3.5, -1], [10, 3]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], 3.4, 4, 0, 0, TAU); c.fill(); });
+        }
       }
       if (hp > 1) {
         c.fillStyle = '#C98B5B'; c.fillRect(-45, -6, 90, 15); c.fillRect(-26, -33, 15, 79);
@@ -211,6 +219,7 @@
         c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = lw(2); c.strokeRect(-45, -6, 90, 15); c.strokeRect(-26, -33, 15, 79);
       }
     } });
+    if (part) { c.save(); c.translate(2, 6); c.rotate(-0.5); c.scale(0.68, 0.68); drawPart(c, partKind()); c.restore(); }
   }
   var YARN = '#F2545B';
   function drawTangle(c) {
@@ -340,7 +349,7 @@
         seen[p.id] = 1;
       }
       var b = st.box[r][c], key = r * 64 + c;
-      if (b) { var vb = boxes[key]; if (!vb || vb.id !== b.id) boxes[key] = { id: b.id, hp: b.hp, kit: b.kit, shake: 0 }; else vb.hp = b.hp; }
+      if (b) { var vb = boxes[key]; if (!vb || vb.id !== b.id) boxes[key] = { id: b.id, hp: b.hp, kit: b.kit, part: b.part, shake: 0 }; else vb.hp = b.hp; }
       else delete boxes[key];
     }
     for (var id in V) if (!seen[id] && !V[id].pop) delete V[id];
@@ -360,8 +369,8 @@
   var BEFORE = { bath: 'before the bath fills up', tree: 'before the branch bends down', rain: 'before the rain cloud arrives', tide: 'before the tide comes in', laundry: 'before the washing topples' };
   /* each rescue job, in words: % is the cat's name, # how many parts */
   var JOBS = {
-    tree: { part: 'ladder rung', parts: 'ladder rungs', goal: 'Build a ladder up to %!', where: 'up the tree',
-            tip: 'Make a match next to a ladder rung on the board to send it up the tree. # rungs and % can climb down!',
+    tree: { part: 'ladder rung', parts: 'ladder rungs', goal: 'Break open the boxes to find the ladder rungs!', where: 'up the tree',
+            tip: 'Make matches next to the boxes to break them. Boxes with a rung peeking out of a hole hold the ladder: find all # rungs and % can climb down!',
             done: '% climbed down the ladder, safe and cosy' }
   };
   function job() { return level && level.job ? JOBS[level.job.scene] : null; }
@@ -535,6 +544,7 @@
     for (var i = 0; i < (reduceMotion ? 3 : 7); i++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.3, T * 0.3), vx: rand(-180, 180) * (T / 60), vy: rand(-320, -120) * (T / 60), life: 0, max: rand(0.6, 0.9), r: T * rand(0.06, 0.1), shape: 'card', rot: rand(0, TAU), vr: rand(-10, 10), g: 900 });
     for (var j = 0; j < 4; j++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.2, T * 0.3), vx: rand(-30, 30), vy: rand(-40, -10), life: 0, max: 0.5, r: T * 0.1, shape: 'puff', rot: 0, vr: 0, g: 0 });
     if (b.kit >= 0) freeKitten(KITTENS[b.kit], b.r, b.c, 'kittens');
+    if (b.part) sendPart({ id: -1, r: b.r, c: b.c, n: b.n });
   }
   function freeKitten(preset, r, c, goal) {
     actors.push({ preset: preset, r: r, c: c, t: 0, slot: scn.reserved++, goal: goal });
@@ -842,7 +852,7 @@
       var b = boxes[key], br2 = Math.floor(key / 64), bc = key % 64;
       if (b.shake > 0) b.shake -= dt;
       var sx = b.shake > 0 && !reduceMotion ? Math.sin(b.shake * 60) * T * 0.05 : 0;
-      blit(c, sprite('b' + b.hp + ':' + b.kit, function (cc) { drawBox(cc, b.hp, b.kit); }), cx(bc) + sx, cy(br2), T);
+      blit(c, sprite('b' + b.hp + ':' + b.kit + (b.part ? 'p' + partKind() : ''), function (cc) { drawBox(cc, b.hp, b.kit, b.part); }), cx(bc) + sx, cy(br2), T);
     }
     // pieces
     var hintIds = hint ? [hint.a, hint.b] : [];

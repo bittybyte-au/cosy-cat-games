@@ -19,6 +19,7 @@
    swap(state, r1, c1, r2, c2) plays a move and returns a log of what happened, step by step, for the game to
    animate: 'nope' | 'swap' | 'pass' (things cleared, boxes hit, yarn off, specials made) | 'fall' (each piece's
    path, one cell per tick) | 'down' (cushion kittens reaching the bottom) | 'shuffle'.
+   A box can hold a rescue part instead ('l', or 'L' taped): when it breaks the part is collected (got.job).
    Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
    a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'r' a rescue part. */
 (function () {
@@ -47,7 +48,7 @@
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
       goal: {}, got: { job: 0, kittens: 0, boxes: 0, yarn: 0, down: 0 },
-      moves: def.moves, used: 0, extra: 0, dropped: 0, top: [], bottom: [], keep: (def.job && def.job.keep) || 2
+      moves: def.moves, used: 0, extra: 0, dropped: 0, top: [], bottom: [], keep: def.job && def.job.keep !== undefined ? def.job.keep : 2
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
     if (def.job) st.goal.job = def.job.n;
@@ -58,7 +59,9 @@
         var ch = def.map[r].charAt(c) || '#';
         st.mask[r].push(ch !== '#' && ch !== ' ');
         st.g[r].push(null); st.box[r].push(null);
-        if (ch === 'b' || ch === 'B' || ch === 'k' || ch === 'K') {
+        if (ch === 'l' || ch === 'L') {
+          st.box[r][c] = { id: st.nid++, hp: ch === 'L' ? 2 : 1, kit: -1, part: true };
+        } else if (ch === 'b' || ch === 'B' || ch === 'k' || ch === 'K') {
           var kit = ch === 'k' || ch === 'K';
           st.box[r][c] = { id: st.nid++, hp: ch === 'B' || ch === 'K' ? 2 : 1, kit: kit ? (st.kitN++ % 6) : -1 };
         } else if (ch === 'c') {
@@ -83,7 +86,7 @@
       if (!findGroups(st).length && hasMove(st)) break;
     }
     // the rescue parts the map doesn't place go on random cells in the top half, away from each other
-    var want = Math.min(st.keep, st.goal.job) - partsOnBoard(st), spots = randomCells.filter(function (q) { return q[0] < R / 2 && !st.g[q[0]][q[1]].tg; });
+    var want = Math.min(st.keep, st.goal.job - partBoxes(st)) - partsOnBoard(st), spots = randomCells.filter(function (q) { return q[0] < R / 2 && !st.g[q[0]][q[1]].tg; });
     for (var n = 0; n < 60 && want > 0 && spots.length; n++) {
       var at = spots.splice(Math.floor(rnd(st) * spots.length), 1)[0], near = false;
       for (var y = 0; y < R; y++) for (var x = 0; x < C; x++) { var t = st.g[y][x]; if (t && t.sp === 'res' && Math.abs(y - at[0]) + Math.abs(x - at[1]) < 3) near = true; }
@@ -93,6 +96,7 @@
     if (!hasMove(st)) { var lg = []; shuffle(st, lg); }
     return st;
   }
+  function partBoxes(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var b = st.box[r][c]; if (b && b.part) n++; } return n; }
   function partsOnBoard(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'res') n++; } return n; }
   function makesLineBehind(st, r, c, k) {
     return (kindAt(st, r, c - 1) === k && kindAt(st, r, c - 2) === k) || (kindAt(st, r - 1, c) === k && kindAt(st, r - 2, c) === k);
@@ -110,7 +114,7 @@
       for (var c = 0; c < st.C; c++) {
         var p = st.g[r][c], b = st.box[r][c];
         gr.push(p ? { id: p.id, k: p.k, sp: p.sp, tg: p.tg, kit: p.kit } : null);
-        br.push(b ? { id: b.id, hp: b.hp, kit: b.kit } : null);
+        br.push(b ? { id: b.id, hp: b.hp, kit: b.kit, part: b.part } : null);
       }
       o.g.push(gr); o.box.push(br);
     }
@@ -209,8 +213,9 @@
     if (b.hp <= 0) {
       st.box[r][c] = null; st.got.boxes++;
       if (b.kit >= 0) st.got.kittens++;
-      ev.boxes.push({ id: b.id, r: r, c: c, hp: 0, broke: true, kit: b.kit, d: d });
-    } else ev.boxes.push({ id: b.id, r: r, c: c, hp: b.hp, broke: false, kit: b.kit, d: d });
+      if (b.part) st.got.job++;
+      ev.boxes.push({ id: b.id, r: r, c: c, hp: 0, broke: true, kit: b.kit, part: !!b.part, n: st.got.job, d: d });
+    } else ev.boxes.push({ id: b.id, r: r, c: c, hp: b.hp, broke: false, kit: b.kit, part: !!b.part, d: d });
   }
 
   function fire(st, ev, p, r, c, d, q) {
@@ -360,7 +365,7 @@
      rescue growing step by step, and there's always at least one on the board to go for. */
   function supply(st, spawned) {
     if (!st.goal.job || !spawned.length || st.dropped >= 1) return;
-    var want = Math.min(1, st.keep - partsOnBoard(st), st.goal.job - st.got.job - partsOnBoard(st));
+    var want = Math.min(1, st.keep - partsOnBoard(st), st.goal.job - st.got.job - partsOnBoard(st) - partBoxes(st));
     if (want <= 0) return;
     var at = {}, r, c;
     for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) if (st.g[r][c]) at[st.g[r][c].id] = 1;
@@ -487,7 +492,7 @@
   /* ---------- the helper bot (and the hint) ----------
      Tries each move on a copy of the board, with new random pieces falling in (so it can't see the future),
      and scores what the move did for the level's goals. */
-  function boxHp(st, kitOnly) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var b = st.box[r][c]; if (b && (!kitOnly || b.kit >= 0)) n += b.hp; } return n; }
+  function boxHp(st, kitOnly) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var b = st.box[r][c]; if (b && (!kitOnly || (kitOnly === 'part' ? b.part : b.kit >= 0))) n += b.hp; } return n; }
   function cushionDepth(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'cush') n += r; } return n; }
   function specials(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (isSp(p)) n += p.sp === 'rain' ? 2 : 1; } return n; }
   function need(st, k) { return st.got[k] < st.goal[k]; }
@@ -495,6 +500,7 @@
     var s = 0;
     var dj = after.got.job - before.got.job, dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
     s += dj * (need(before, 'job') ? 120 : 0);
+    if (need(before, 'job')) s += (boxHp(before, 'part') - boxHp(after, 'part')) * 24;
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);

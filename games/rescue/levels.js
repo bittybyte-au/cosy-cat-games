@@ -1,9 +1,11 @@
 /* Cat Rescue: the 30 rescues. Each is a map (8 rows of 8, top row first), the goal, the moves, the scene and its cat.
    Map: '.' piece, '#' no cell, 'b' box, 'B' taped box (two hits), 'k' box with a kitten, 'K' taped box with a kitten,
-   't' piece wrapped in yarn, 'c' a kitten on a cushion (bring it down to the bottom), 'r' a rescue part.
+   't' piece wrapped in yarn, 'c' a kitten on a cushion (bring it down to the bottom), 'r' a rescue part,
+   'l' a box with a rescue part inside ('L' taped).
    goal: kittens (freed from boxes), boxes (broken, kitten boxes count too), yarn (untangled), down (cushion kittens).
    job: the rescue built step by step in the scene: { scene, part (the board tile: 'rung' | 'plank' | 'cushion' |
-   'balloon'), n (how many parts finish it), keep (how many are on the board at once while more are needed) }.
+   'balloon'), n (how many parts finish it), keep (how many loose ones are on the board at once while more are needed;
+   0 = none drop in, so every part is in a box) }. Parts in boxes ('l') count towards n; loose ones only top it up.
    It's a goal too: the level is won when the rescue is built and the other goals are done.
    PROTOTYPE: only rescue 1 has a job so far (the tree and the ladder); the rest still use the old scenes.
    colours: how many kinds of piece (4 is gentle, 5 normal, 6 tricky). tip: a line shown at the start.
@@ -18,8 +20,8 @@
     ['Pudding', 'white'], ['Basil', 'ginger'], ['Crumpet', 'pink'], ['Miso', 'blue'], ['Button', 'purple']
   ];
   var L = [
-    { moves: 15, colours: 5, goal: {}, job: { scene: 'tree', part: 'rung', n: 6, keep: 2 },
-      map: ['........', '........', '........', '........', '........', '........', '........', '........'] },
+    { moves: 14, colours: 5, goal: {}, job: { scene: 'tree', part: 'rung', n: 6, keep: 0 },
+      map: ['........', '........', '.bb..bb.', '.ll..ll.', '.bl..lb.', '........', '..t..t..', '........'] },
     { moves: 16, colours: 5, goal: { kittens: 4 }, tip: 'Line up four to make zoomies. Swap it to clear a whole line!',
       map: ['........', '........', '.bbbbbb.', '.k.bb.k.', '..bbbb..', '...kk...', '........', '........'] },
     { moves: 16, colours: 5, goal: { boxes: 16, kittens: 2 }, tip: 'Make an L or a T shape for catnip: it clears all round it.',

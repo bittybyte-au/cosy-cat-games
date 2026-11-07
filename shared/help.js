@@ -105,7 +105,7 @@
       'The 123 button puts numbers on the squares.'] },
     rescue: { name: 'Cat Rescue', lines: [
       'Swap two pieces next to each other to make a line of three.',
-      'A cat is stuck! Glowing rescue pieces (like ladder rungs) drop onto the board. Make a match next to one to send it up to the rescue.',
+      'A cat is stuck! The pieces for its rescue (like ladder rungs) are hidden in boxes: you can see them peeking out. Break those boxes (match next to them) to send the pieces up.',
       'Each one you send builds the rescue a bit more. Finish it and the cat climbs down safe.',
       'Match three next to a box to break it open and free the kitten.',
       'Reach the goal before the moves run out to save the cat.',
