@@ -1,4 +1,4 @@
-/* Cat Rescue (ages 11+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
+/* Cat Rescue (ages 10+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
    matches break the cardboard boxes next to them, and kittens hiding in boxes pop out and scamper up to safety.
    Above the board a cat is in a little cosy peril that creeps forward with each move; finish the goal in time and
    it leaps into a basket. Not in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.

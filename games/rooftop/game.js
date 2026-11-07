@@ -1,4 +1,4 @@
-/* Rooftop Run – a one-tap runner for older kids (11+). Your own cat runs across the city's rooftops at night.
+/* Rooftop Run – a one-tap runner for older kids (10+). Your own cat runs across the city's rooftops at night.
    Tap (or space / up) to jump; tap again in the air for one more jump; hold for a higher jump. Fall into a gap or
    run into the side of a chimney or air-con box and the run is over; landing on top of them is fine (and often
    the best way). Fish to collect, gold fish worth 5. It speeds up as you go. The score is just how far you ran;

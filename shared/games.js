@@ -4,7 +4,7 @@
 
    id        folder name under /games/ (also used by the pass and allow/block lists)
    save      the key the game uses with GG.getProgress / GG.setProgress
-   ages      one or more of 'under5', '5-10', '11+' (suggestions only, used by filters)
+   ages      one or more of 'under5', '5-10', '10+' (suggestions only, used by filters)
    toddler   true = shown on the toddler home (and tagged as a toddler game); toddler games have no badge/counter
    toddlerToo true = a regular game with its own toddler version: shown on both homes, not tagged
    free      what guests and expired passes can play: 'all', a list of parts, or a number of levels
@@ -310,15 +310,22 @@
       return svg(out);
     })(),
     kittenkitchen: svg(
-      cat({ preset: 'ginger', face: 'happy', x: 50, y: 70, size: 60 }) +
+      // the cat sits beside a birthday cake it's decorating: drippy icing, strawberries, sprinkles and candles
+      cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 46, y: 80, size: 54 }) +
       shadow(150, 136, 80, 7) + sh(E(150, 128, 76, 13), '#fff', { k: 3 }) +
-      sh(P(96, 78, 'h108v42q-54 16 -108 0z'), '#FFB3CB', { k: 5, in: ln('M96 104q54 14 108 0', 6, '#FFF4E6') }) +
-      sh(P(94, 80, 'q56 -16 112 0v8q-8 10 -16 0q-11 12 -22 0q-12 12 -24 0q-12 12 -24 0q-11 12 -22 0q-8 10 -16 0z'), '#FFF8FB', { lw: 3, k: 0 }) +
+      sh(P(96, 78, 'h108v42q-54 16 -108 0z'), '#FFB3CB', { k: 5, in: ln('M96 106q54 14 108 0', 6, '#FFF4E6') +
+        ln('M112 100l5 -3M140 104l5 2M164 99l4 -4M186 102l5 1M128 114l4 3M172 116l4 -3', 3.5, '#7CC4FF') + ln('M102 112l4 2M154 114l3 -4M196 110l-3 4', 3.5, '#FFC93C') }) +
+      sh(P(94, 80, 'q56 -16 112 0v6h-5v8a5 5 0 0 1 -10 0v-8h-5v13a5 5 0 0 1 -10 0v-13h-5v9a5 5 0 0 1 -10 0v-9h-5v16a5 5 0 0 1 -10 0v-16h-5v7a5 5 0 0 1 -10 0v-7h-5v14a5 5 0 0 1 -10 0v-14h-5v8a5 5 0 0 1 -10 0v-8h-7z'), '#FFF8FB', { lw: 3, k: 2 }) +
       [[126, '#7CC4FF', 46], [150, '#FF8FAB', 40], [174, '#7BD389', 46]].map(function (c) {
         return sh(R(c[0] - 4.5, c[2], 9, 76 - c[2], 3), c[1], { lw: 3, k: 0 }) + sh(P(c[0], c[2] - 20, 'q8 10 0 15q-8 -5 0 -15z'), '#FFC93C', { lw: 2.5, k: 0 });
       }).join('') +
-      sh(E(124, 110, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) + sh(E(176, 112, 7, 7), '#E2223C', { lw: 2.5, k: 2 }) +
-      sh(P(150, 120, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 })),
+      // strawberries like the pancake ones: a rounded berry with seeds and a leafy top
+      [[110, 72], [190, 72]].map(function (b) {
+        return sh(P(b[0], b[1] - 6, 'c6 -2 9 3 7 8c-2 5 -5 8 -7 8c-2 0 -5 -3 -7 -8c-2 -5 1 -10 7 -8z'), '#F0435A', { lw: 2.5, k: 2,
+          in: el(b[0] - 3, b[1] - 1, 1, 1.4, '#FFE27A') + el(b[0] + 3, b[1] - 1, 1, 1.4, '#FFE27A') + el(b[0], b[1] + 4, 1, 1.4, '#FFE27A') }) +
+          sh(P(b[0] - 5, b[1] - 7, 'q5 -5 10 0q-5 3 -10 0z'), '#5DBB63', { lw: 2, k: 0 });
+      }).join('') +
+      ''),
 
     laser: svg(
       sh(R(8, 8, 224, 134, 16), '#6B4F57', { lw: 4, k: 0, in: ln('M8 52h224M8 96h224M60 8v44M150 52v44M100 96v46M200 8v44', 2, 'rgba(42,35,64,.3)') }) +
@@ -425,7 +432,7 @@
     },
     {
       id: 'pottery', save: 'pottery', name: 'Pottery', blurb: 'Shape, paint and fire a pot',
-      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DCC6',
+      ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DCC6',
       badge: function (p) { var n = p && typeof p.made === 'number' ? p.made : 0; return n ? n + (n === 1 ? ' pot made' : ' pots made') : ''; },
       art: ART.pottery
     },
@@ -452,13 +459,13 @@
     },
     {
       id: 'rescue', save: 'rescue', name: 'Cat Rescue', blurb: 'Match to free kittens from boxes',
-      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
       badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' cat rescued' : ' cats rescued') : ''; },
       art: ART.rescue
     },
     {
       id: 'hotpaws', save: 'hotpaws', name: 'Hot Paws', blurb: 'Dodge the lava, grab the diamonds',
-      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDEFD8',
+      ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDEFD8',
       badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' round done' : ' rounds done') : ''; },
       art: ART.hotpaws
     },
@@ -503,33 +510,33 @@
       art: ART.crossing
     },
     {
-      id: 'kitten-kitchen', save: 'kittenkitchen', name: 'Kitten Kitchen', blurb: 'Decorate pizza, pancakes and cake',
+      id: 'kitten-kitchen', save: 'kittenkitchen', name: 'Topping Time', blurb: 'Decorate pizza, pancakes and cake',
       ages: ['under5'], toddler: true, free: 'all', status: 'live', season: null, colour: '#FFE2C7',
       art: ART.kittenkitchen
     },
     {
       id: 'laser', save: 'laser', name: 'Laser Bounce', blurb: 'Bounce the laser to every cat',
-      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#D9CCF2',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#D9CCF2',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.laser
     },
     {
       id: 'rooftop', save: 'rooftop', name: 'Rooftop Run', blurb: 'Leap across the city at night',
-      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C9CBEF',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C9CBEF',
       badge: function (p) { return p && p.best ? 'Best ' + p.best + ' m' : ''; }, art: ART.rooftop
     },
     {
       id: 'sneaky', save: 'sneaky', name: 'Sneaky Cat', blurb: 'Tiptoe past the sleeping dogs',
-      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#B9B2E8',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#B9B2E8',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.sneaky
     },
     {
       id: 'yarn-defence', save: 'yarndefence', name: 'Yarn Defence', blurb: 'Send the mice home, save the yarn',
-      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.yarndefence
     },
     {
       id: 'fashion', save: 'fashion', name: 'Cat Fashion Studio', blurb: 'Dress up your cat, then strike a pose',
-      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFC4DA',
+      ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFC4DA',
       badge: function (p) { return p && p.shots ? p.shots + (p.shots === 1 ? ' photo' : ' photos') : ''; }, art: ART.fashion
     }
   ];
@@ -544,7 +551,7 @@
 
   window.GGGames = {
     all: GAMES,
-    AGES: [{ id: 'under5', label: 'Under 5' }, { id: '5-10', label: '5\u201310' }, { id: '11+', label: '11+' }],
+    AGES: [{ id: 'under5', label: 'Under 5' }, { id: '5-10', label: '5\u201310' }, { id: '10+', label: '10+' }],
     get: function (id) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i]; return null; },
     /* games to show on the home page right now (season games only in their season) */
     visible: function (opts) {

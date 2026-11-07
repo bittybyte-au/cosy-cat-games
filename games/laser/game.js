@@ -1,4 +1,4 @@
-/* Laser Bounce – a light puzzle for older kids (11+). A laser pointer sits on the floor of a cosy room at night.
+/* Laser Bounce – a light puzzle for older kids (10+). A laser pointer sits on the floor of a cosy room at night.
    Tap a mirror to turn it (/ or \) and the beam bounces off it; get the red dot to every sleeping cat to wake them.
    Furniture stops the beam. As levels go on: more mirrors, decoy mirrors, fixed mirrors (grey with bolts, can't turn),
    glass that splits the beam in two (so two cats to reach), and loose mirrors to drag in from the tray.

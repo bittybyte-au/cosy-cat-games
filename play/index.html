@@ -62,6 +62,13 @@ h1 a { color: inherit; text-decoration: none; }
 .confirm-text { text-align: center; font: 800 1.3rem var(--body); }
 
 /* your own cat (your avatar) says hello */
+/* suggested-age filter: just a suggestion, any kid can play anything outside toddler mode */
+.ages { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 4px auto 22px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink), var(--soft); width: max-content; max-width: 100%; }
+.ages .lab { font: 800 .85rem var(--body); color: var(--muted); padding: 0 6px 0 8px; }
+.ages button { border: 0; background: transparent; border-radius: 999px; padding: 7px 13px 5px; font: 800 1rem/1 var(--display); color: var(--ink); cursor: pointer; min-height: 38px; }
+.ages button[aria-pressed="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
+body.toddler .ages { display: none; }
+@media (max-width: 420px) { .ages .lab { display: none; } .ages button { padding: 7px 10px 5px; font-size: .92rem; } }
 .hello { display: flex; align-items: center; gap: 4px; margin-block: -6px -4px; }
 .mascot { width: 96px; flex: none; animation: bob 2.6s ease-in-out infinite; }
 .mascot svg { display: block; width: 100%; height: auto; }
@@ -93,7 +100,7 @@ h1 a { color: inherit; text-decoration: none; }
   .tile .age-tag { padding: 3px; }
   .tile .age-tag > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
-/* toddler games carry a little rattle tag between the tile's ears, tween (11+) games a lightning bolt.
+/* toddler games carry a little rattle tag between the tile's ears, tween (10+) games a lightning bolt.
    Ages are only a suggestion: any game can be played outside toddler mode. */
 .tile .age-tag {
   position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 1; display: flex; align-items: center; gap: 5px;
@@ -192,6 +199,7 @@ body.toddler .tile .age-tag { display: none; }
   </header>
   <div class="hello"><span class="mascot" id="mascot" aria-hidden="true"></span><p class="greeting" id="greeting"></p></div>
 
+  <div class="ages" id="ages" role="group" aria-label="Suggested age"></div>
   <div id="installBanner" hidden></div>
   <main class="tiles" id="tiles">
     <div class="tile more" aria-label="More games coming soon">
@@ -239,8 +247,8 @@ body.toddler .tile .age-tag { display: none; }
   var panel = document.getElementById('panel');
 
   var BOLT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2 L5 13.5 H11 L9.5 22 L19 9.5 H13 Z" fill="#FFD23F" stroke="#2A2340" stroke-width="2.2" stroke-linejoin="round"/><path d="M12.6 5.2 L8.6 10.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></svg>';
-  // a tween game is one suggested only for 11+ (games for 5-10 and 11+ are for everyone)
-  function isTween(g) { var a = g.ages || []; return a.indexOf('11+') >= 0 && a.indexOf('5-10') < 0; }
+  // a tween game is one suggested only for 10+ (games for 5-10 and 10+ are for everyone)
+  function isTween(g) { var a = g.ages || []; return a.indexOf('10+') >= 0 && a.indexOf('5-10') < 0; }
   var RATTLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 13.5 L20 20" stroke="#2A2340" stroke-width="3.2" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6" fill="#FFD23F" stroke="#2A2340" stroke-width="1.8"/><circle cx="9" cy="9" r="7" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.2"/><circle cx="7" cy="7" r="1.6" fill="#fff"/><circle cx="11" cy="10.5" r="1.3" fill="#fff"/></svg>';
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
@@ -376,13 +384,30 @@ body.toddler .tile .age-tag { display: none; }
   function toddlerGames() { return GGGames.visible({ toddler: true }).filter(GGGames.playable); }
   function toddlerReady() { return toddlerGames().length >= 3; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
+  /* the suggested-age filter above the tiles ('' = all ages); remembered on this device */
+  function ageFilter() { var a = GG.getSetting('ageFilter', ''); return GGGames.AGES.some(function (x) { return x.id === a; }) ? a : ''; }
+  function renderAges(tod) {
+    var box = document.getElementById('ages'); if (tod) { box.innerHTML = ''; return; }
+    var cur = ageFilter();
+    box.innerHTML = '<span class="lab">Suggested age</span>' + [{ id: '', label: 'All' }].concat(GGGames.AGES).map(function (a) {
+      return '<button type="button" data-age="' + a.id + '" aria-pressed="' + (a.id === cur) + '">' + a.label + '</button>';
+    }).join('');
+  }
+  document.getElementById('ages').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-age]'); if (!b) return;
+    GG.setSetting('ageFilter', b.dataset.age);
+    if (GG.track) GG.track('Age filter', { age: b.dataset.age || 'all' });
+    renderTiles(); if (typeof renderHeader === 'function') renderHeader();
+  });
   function renderTiles() {
     var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.more');
     box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });
     var tod = toddlerOn();
     document.body.classList.toggle('toddler', tod);
     sleepy.hidden = tod;
-    GGGames.visible(tod ? { toddler: true } : {}).forEach(function (g) {
+    renderAges(tod);
+    var age = tod ? '' : ageFilter();
+    GGGames.visible(tod ? { toddler: true } : (age ? { age: age } : {})).forEach(function (g) {
       var ok = GGGames.playable(g);
       var t = document.createElement(ok ? 'a' : 'div');
       t.className = 'tile' + (ok ? '' : ' coming');
@@ -392,7 +417,7 @@ body.toddler .tile .age-tag { display: none; }
       else t.setAttribute('aria-label', g.name + ', coming soon');
       t.innerHTML = EAR_L + EAR_R +
         '<span class="badge"' + (ok ? ' hidden' : '') + '>' + (ok ? '' : 'Coming soon') + '</span>' +
-        (g.toddler ? '<span class="age-tag" title="A game for toddlers">' + RATTLE + '<span>Toddler</span></span>' : isTween(g) ? '<span class="age-tag tween" title="A bigger challenge, for tweens (11+)">' + BOLT + '<span>Tween</span></span>' : '') +
+        (g.toddler ? '<span class="age-tag" title="A game for toddlers">' + RATTLE + '<span>Toddler</span></span>' : isTween(g) ? '<span class="age-tag tween" title="A bigger challenge, for tweens (10+)">' + BOLT + '<span>Tween</span></span>' : '') +
         '<div class="art" aria-hidden="true">' + g.art + '</div><h2>' + esc(g.name) + '</h2>';
       if (ok) t.addEventListener('click', function (e) {
         if (!GG.current()) { e.preventDefault(); showSetup(); return; }

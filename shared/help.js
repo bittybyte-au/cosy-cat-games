@@ -22,7 +22,7 @@
     feed: { name: 'Feed the Cat', lines: [
       'Look at the colour of the bowl.',
       'Tap the cat with the same colour, or drag the bowl to it.'] },
-    'kitten-kitchen': { name: 'Kitten Kitchen', lines: [
+    'kitten-kitchen': { name: 'Topping Time', lines: [
       'Pick a pizza, pancakes or a cake.',
       'Pick a topping, then tap the food to put it on.',
       'Ring the bell to give it to your cat.'] },

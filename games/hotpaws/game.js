@@ -1,4 +1,4 @@
-/* Hot Paws (ages 5-10 and 11+): a light-up floor, like the one at the games arcade, seen from above. Each round
+/* Hot Paws (ages 5-10 and 10+): a light-up floor, like the one at the games arcade, seen from above. Each round
    has its own fixed green tiles, always safe; the other tiles sit dark until a pattern lights them: blue squares
    are diamonds to collect, orange warns that lava is coming and red is lava. Your cat walks one tile at a time:
    swipe (hold to keep walking), tap a tile, or use the arrow keys / WASD. Lava under the paws is "Hot paws!": the

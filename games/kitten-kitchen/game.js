@@ -1,4 +1,4 @@
-/* Kitten Kitchen – a toddler game. Pick a pizza, a stack of pancakes or a birthday cake, then pick a topping from
+/* Topping Time – a toddler game. Pick a pizza, a stack of pancakes or a birthday cake, then pick a topping from
    the tray and tap (or drag) on the food to put it on. Ring the bell and your cat gets it: a cake with candles gets
    the birthday tune and the candles are blown out (tap the flames to help), then the cat has a happy munch and a
    new plate comes. No words, no counters, nothing to get wrong. Saves a count to GG.setProgress('kittenkitchen'). */

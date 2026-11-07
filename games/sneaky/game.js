@@ -1,4 +1,4 @@
-/* Sneaky Cat – a stealth game for older kids (11+). It's the middle of the night and your cat wants the snack at the
+/* Sneaky Cat – a stealth game for older kids (10+). It's the middle of the night and your cat wants the snack at the
    far end of the house. Dogs are asleep along the way. Hold (or hold → / D) to tiptoe; let go to freeze.
    Each dog sleeps, then stirs (its ear goes up: a warning), then looks along the floor in front of it (the glow
    shows how far it can see). Move inside that glow while it's looking and it woofs: your cat scurries back to the

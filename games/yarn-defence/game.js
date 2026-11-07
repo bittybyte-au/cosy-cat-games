@@ -1,4 +1,4 @@
-/* Yarn Defence – a gentle tower-defence for older kids (11+). Mice come out of their hole and run along the path
+/* Yarn Defence – a gentle tower-defence for older kids (10+). Mice come out of their hole and run along the path
    to your basket of yarn. Put cats on the floor beside the path to send them home: nobody gets hurt, a mouse that's
    been batted enough just tumbles back to its hole, a bit dizzy. Cats cost fish; every mouse sent home earns fish,
    and so does each new wave.
