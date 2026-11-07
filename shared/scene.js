@@ -56,7 +56,9 @@
    SVG twins (pages built from SVG, like the games home), from the same shape definitions:
      GGScene.svg.cloud({ x, y, size, kind: 'puff' | 'cat', col, face })   an SVG <g>
      GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h
-   More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file. */
+   More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file.
+   More furniture in front and top views (bookcase, dining tables long and round, a floor lamp from above, inside
+     walls from above): see batch F at the very end of this file. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -1143,4 +1145,160 @@
       c.restore();
     };
   })(window.GGScene);
+  /* ================= batch F: more furniture in front and top views (Sneaky Cat's rooms) =================
+     The same pattern as batch E: view 'front' stands on the floor ((x, y) the middle of its base), view 'top' is seen
+     from straight above ((x, y) its middle). Rotate the canvas for a top view facing another way.
+     GGScene.bookcase(c, x, y, { view, w, h (front: height, default w * 0.95), d (top: depth, default w * 0.24),
+                      col, seed (picks the books' colours and widths) })
+         front: shelves of books; top: the tops of a row of books along its length
+     GGScene.diningTable(c, x, y, { kind: 'long' | 'round', view, w, d (top, long: depth, default w * 0.5), col,
+                         cloth (a runner along a long table, a scalloped cloth on a round one; a colour, or false),
+                         on (things on top: a fruit bowl, a mug and a book; or false), seed })
+         front: on legs, the cloth hanging over the front edge; top: from above
+     GGScene.lamp(c, x, y, { kind: 'floor', view: 'top', size (across), shade, on })   a floor lamp's round shade from
+         above, glowing when on (the front views above are unchanged)
+     GGScene.skirting(c, x, y, w, h, { kind: 'block', col })   an inside wall seen from above, filling (x, y, w, h), in
+         the same look as the skirting round the room ('around' above is unchanged) */
+  (function (G) {
+    var V = G.VARIANTS;
+    V.bookcase = ['front', 'top']; V.diningTable = ['long', 'round']; V.diningTableView = ['front', 'top']; V.lampView = ['front', 'top'];
+    V.skirting = V.skirting.concat(['block']);
+    var BOOKS = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#7BD389', '#B48CFF', '#FF9F43', '#F3EEFF', '#FF6B57'];
+    // a soft shadow offset to the lower right, the shape of the thing seen from above
+    function under(c, path, o) { c.save(); c.translate(W(o, 6), W(o, 8)); c.fillStyle = 'rgba(20,14,36,' + pick(o.shadow, 0.2) + ')'; c.fill(path); c.restore(); }
+    function bookRow(c, x0, y0, len, dep, r, o, along) {
+      // a row of books packed along a shelf: spines (front) or tops (top), each outlined finely inside the case
+      var t = 0;
+      while (t < len - 2) {
+        var bw = Math.min(len - t, 8 + r() * 10), bc = BOOKS[Math.floor(r() * BOOKS.length)], bd = dep * (0.72 + r() * 0.28);
+        if (r() < 0.08) { t += bw * 0.6; continue; }
+        var b = along ? [x0 + t, y0 + dep - bd, bw, bd] : [x0, y0 + t, bd, bw];
+        c.fillStyle = bc; c.fillRect(b[0], b[1], b[2], b[3]);
+        c.fillStyle = 'rgba(255,255,255,.3)'; if (along) c.fillRect(b[0] + 2, b[1], 2.5, b[3]); else c.fillRect(b[0], b[1] + 2, b[2], 2.5);
+        c.strokeStyle = 'rgba(42,35,64,.55)'; c.lineWidth = W(o, 2); c.strokeRect(b[0], b[1], b[2], b[3]);
+        t += bw;
+      }
+    }
+
+    G.bookcase = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 160, col = o.col || '#8A6650', r = D.seeded(o.seed || 7);
+      if (o.view === 'top') {
+        var d = o.d || w * 0.24, x0 = x - w / 2, y0 = y - d / 2, p = D.rrPath(x0, y0, w, d, 6);
+        under(c, p, o);
+        sh(c, p, D.tone(c, col, y0, y0 + d), o, LW.big, { depth: 0, inside: function (c) {
+          var m = d * 0.16; bookRow(c, x0 + m, y0 + m, w - m * 2, d - m * 2, r, o, true); D.crescent(c, p, 6);
+        } });
+        return;
+      }
+      var h = o.h || w * 0.95, X = x - w / 2, Y = y - h, n = Math.max(2, Math.round(h / 52)), fr = w * 0.07, sh0 = (h - fr * 1.4) / n;
+      D.shadow(c, x, y, w * 0.52, 7);
+      var cp = D.rrPath(X, Y, w, h, 6);
+      sh(c, cp, D.tone(c, col, Y, y), o, LW.big, { depth: 0, inside: function (c) {
+        for (var i = 0; i < n; i++) {
+          var sy = Y + fr * 0.7 + i * sh0;
+          c.fillStyle = D.darker(col, 0.35); c.fillRect(X + fr, sy, w - fr * 2, sh0 - fr * 0.4);
+          bookRow(c, X + fr + 2, sy + 4, w - fr * 2 - 4, sh0 - fr * 0.4 - 4, r, o, true);
+          c.fillStyle = D.lighter(col, 0.08); c.fillRect(X, sy + sh0 - fr * 0.4, w, fr * 0.4);
+        }
+        D.crescent(c, cp, 8);
+      } });
+    };
+
+    G.diningTable = function (c, x, y, o) {
+      o = opt(o);
+      var round = o.kind === 'round', w = o.w || (round ? 120 : 200), col = o.col || '#B98559', r = D.seeded(o.seed || 3);
+      var cl = o.cloth === false ? null : (o.cloth || (round ? '#FFF1DC' : '#E9B8C8'));
+      if (o.view !== 'top') {
+        // on legs: the shared legs table, the cloth hanging over the front
+        var h = w * (round ? 0.6 : 0.42), top = y - h;
+        G.table(c, x - w / 2, x + w / 2, top, y, { kind: 'legs', col: col, legs: D.darker(col, 0.15), ls: o.ls });
+        if (cl) sh(c, D.rrPath(x - w * (round ? 0.46 : 0.2), top - 2, w * (round ? 0.92 : 0.4), h * 0.22, 4), cl, o, LW.fine, { depth: 3 });
+        if (o.on !== false) fruitBowl(c, x, top - w * 0.06, w * 0.12, o, true);
+        return;
+      }
+      if (round) {
+        var R = w / 2;
+        under(c, circ(x, y, R), o);
+        sh(c, circ(x, y, R), D.tone(c, col, y - R, y + R), o, LW.big, { depth: 7 });
+        if (cl) {
+          var cp = new Path2D(), nn = 14;
+          for (var i = 0; i <= nn * 4; i++) { var a = i / (nn * 4) * TAU, rr = R * (0.8 + 0.05 * Math.cos(a * nn)); if (i) cp.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else cp.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+          cp.closePath();
+          sh(c, cp, D.tone(c, cl, y - R, y + R), o, LW.fine, { depth: 5, inside: function (c) {
+            c.fillStyle = 'rgba(42,35,64,.1)';
+            for (var j = 0; j < nn; j++) { var b = (j + 0.5) / nn * TAU; c.beginPath(); c.arc(x + Math.cos(b) * R * 0.68, y + Math.sin(b) * R * 0.68, W(o, 2.5), 0, TAU); c.fill(); }
+          }, shine: [x - R * 0.35, y - R * 0.4, R * 0.2, R * 0.08, -0.6, 0.35] });
+        }
+        if (o.on !== false) {
+          // a little vase of flowers in the middle
+          var vr = R * 0.22;
+          [0, 1, 2, 3, 4].forEach(function (j) { var b = j / 5 * TAU - 0.3; sh(c, circ(x + Math.cos(b) * vr * 1.25, y + Math.sin(b) * vr * 1.25, vr * 0.62), ['#FF8FAB', '#FFD23F', '#B48CFF', '#FF8FAB', '#7CC4FF'][j], o, LW.fine, { depth: 2 }); });
+          sh(c, circ(x, y, vr * 0.8), '#7CC4FF', o, LW.fine, { depth: 2, inside: function (c) { c.fillStyle = '#4FB868'; c.beginPath(); c.arc(x, y, vr * 0.45, 0, TAU); c.fill(); } });
+        }
+        return;
+      }
+      var d = o.d || w * 0.5, x0 = x - w / 2, y0 = y - d / 2, p = D.rrPath(x0, y0, w, d, Math.min(14, d * 0.16));
+      under(c, p, o);
+      sh(c, p, D.tone(c, col, y0, y0 + d), o, LW.big, { depth: 7, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.12)'; c.lineWidth = W(o, 2);
+        for (var k = 1; k < 5; k++) { var gy = y0 + d * k / 5; c.beginPath(); c.moveTo(x0, gy); c.bezierCurveTo(x0 + w * 0.3, gy + 4, x0 + w * 0.7, gy - 4, x0 + w, gy); c.stroke(); }
+        if (cl) {
+          var rw = d * 0.42; c.fillStyle = cl; c.fillRect(x0, y - rw / 2, w, rw);
+          c.save(); c.setLineDash([5, 5]); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = W(o, 2); c.beginPath();
+          c.moveTo(x0, y - rw / 2 + 5); c.lineTo(x0 + w, y - rw / 2 + 5); c.moveTo(x0, y + rw / 2 - 5); c.lineTo(x0 + w, y + rw / 2 - 5); c.stroke(); c.restore();
+        }
+      }, shine: [x0 + w * 0.2, y0 + d * 0.18, d * 0.12, d * 0.05, -0.3, 0.22] });
+      if (o.on === false) return;
+      fruitBowl(c, x, y, d * 0.24, o, false);
+      if (w > d * 1.6) {
+        var flip = r() < 0.5 ? 1 : -1, mx = x + w * 0.32 * flip, mr = d * 0.11;
+        tube(c, function (c) { c.moveTo(mx + mr * 0.7, y); c.lineTo(mx + mr * 1.5, y); }, '#FFFFFF', mr * 0.45, o);
+        sh(c, circ(mx, y, mr), '#FFFFFF', o, LW.fine, { depth: 0, inside: function (c) { c.fillStyle = '#9A6440'; c.beginPath(); c.arc(mx, y, mr * 0.66, 0, TAU); c.fill(); } });
+        var bx = x - w * 0.32 * flip, bw = d * 0.3, bh = d * 0.4, bc = BOOKS[Math.floor(r() * BOOKS.length)];
+        c.save(); c.translate(bx, y); c.rotate((r() - 0.5) * 0.5);
+        sh(c, D.rrPath(-bw / 2, -bh / 2, bw, bh, 3), bc, o, LW.fine, { depth: 3, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(-bw / 2 + 4, -bh / 2, 3, bh); } });
+        c.restore();
+      }
+    };
+    // a bowl of fruit: from above (round, three fruits in it) or from the front (fruit heaped over the rim)
+    function fruitBowl(c, x, y, br, o, front) {
+      var fruit = [[-0.3, -0.25, '#FF6B57'], [0.32, -0.12, '#FFD23F'], [-0.05, 0.3, '#7BD389']];
+      if (front) {
+        fruit.forEach(function (f, i) { var fr = br * 0.42; sh(c, circ(x + (i - 1) * br * 0.5, y - br * 0.2 - (i === 1 ? br * 0.25 : 0), fr), f[2], o, LW.fine, { depth: 2 }); });
+        sh(c, pth(function (p) { p.moveTo(x - br, y - br * 0.15); p.lineTo(x + br, y - br * 0.15); p.quadraticCurveTo(x + br, y + br * 0.6, x, y + br * 0.6); p.quadraticCurveTo(x - br, y + br * 0.6, x - br, y - br * 0.15); p.closePath(); }), '#FFF6D8', o, LW.fine, { depth: 3 });
+        return;
+      }
+      sh(c, circ(x, y, br), D.tone(c, '#FFF6D8', y - br, y + br), o, LW.fine, { depth: 3, inside: function (c) { c.fillStyle = 'rgba(42,35,64,.12)'; c.beginPath(); c.arc(x, y, br * 0.7, 0, TAU); c.fill(); } });
+      fruit.forEach(function (f) { var fx = x + f[0] * br, fy = y + f[1] * br, fr = br * 0.36; sh(c, circ(fx, fy, fr), f[2], o, LW.fine, { depth: 2, shine: [fx - fr * 0.3, fy - fr * 0.35, fr * 0.3, fr * 0.2, -0.5, 0.5] }); });
+    }
+
+    var lampFront = G.lamp;
+    G.lamp = function (c, x, y, o) {
+      if (!o || o.view !== 'top') return lampFront.apply(this, arguments);
+      var R = (o.size || 44) / 2, col = o.shade || '#E9B8C8';
+      if (o.on) {
+        var g = c.createRadialGradient(x, y, R * 0.5, x, y, R * 3.2);
+        g.addColorStop(0, 'rgba(255,226,160,.32)'); g.addColorStop(1, 'rgba(255,226,160,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(x, y, R * 3.2, 0, TAU); c.fill();
+      }
+      under(c, circ(x, y, R), o);
+      sh(c, circ(x, y, R), D.tone(c, col, y - R, y + R), o, LW.mid, { depth: 5, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.14)'; c.lineWidth = W(o, 2);
+        for (var i = 0; i < 8; i++) { var a = i / 8 * TAU; c.beginPath(); c.moveTo(x + Math.cos(a) * R * 0.5, y + Math.sin(a) * R * 0.5); c.lineTo(x + Math.cos(a) * R, y + Math.sin(a) * R); c.stroke(); }
+      } });
+      sh(c, circ(x, y, R * 0.48), o.on ? '#FFF1C9' : D.darker(col, 0.25), o, LW.fine, { depth: 0, inside: function (c) {
+        c.fillStyle = o.on ? '#FFE08A' : 'rgba(42,35,64,.25)'; c.beginPath(); c.arc(x, y, R * 0.2, 0, TAU); c.fill();
+      } });
+    };
+
+    var skirtingAround = G.skirting;
+    G.skirting = function (c, x, y, w, h, o) {
+      if (!o || o.kind !== 'block') return skirtingAround.apply(this, arguments);
+      var p = D.rrPath(x, y, w, h, Math.min(8, Math.min(w, h) * 0.2));
+      under(c, p, o);
+      sh(c, p, D.tone(c, o.col || '#FFF1DC', y, y + h), o, LW.mid, { depth: 4 });
+    };
+  })(window.GGScene);
+  /* ================= end of batch F ================= */
 })();

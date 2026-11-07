@@ -154,6 +154,17 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
     { name: "maze {kind:'hedge'} + lawn", draw: function (c) { S.lawn(c, 0, 0, CW, CH, { stripe: 30 }); S.maze(c, ['########', '#......#', '#.##.#.#', '#....#.#', '########'], 0, 20, 30, {}); } },
     { name: "yarnBall {end, shadow} / gold · fish", draw: function (c) { above(c); T.yarnBall(c, 60, 90, { r: 34, col: '#FF8FAB', end: true, shadow: true }); T.yarnBall(c, 150, 70, { r: 24, gold: true, spin: 1 }); T.fish(c, 170, 150, { size: 1.6 }); T.fish(c, 90, 160, { size: 1.2, gold: true }); } }
   ]);
+  /* ---------- batch F (Sneaky Cat's rooms): more furniture front and top, and things from above ---------- */
+  function night(c) { S.floor(c, 0, 0, CW, CH, { kind: 'boards', col: '#6E4E5C', size: 26, len: 110, edge: false }); }
+  section('Added: batch F (more furniture, front and top) + things from above', [
+    { name: "bookcase front / top", draw: function (c) { room(c); S.bookcase(c, 70, 190, { w: 110 }); S.bookcase(c, 178, 60, { view: 'top', w: 110 }); c.save(); c.translate(200, 150); c.rotate(Math.PI / 2); S.bookcase(c, 0, 0, { view: 'top', w: 90, seed: 3 }); c.restore(); } },
+    { name: "diningTable {kind:'long'} front / top", draw: function (c) { room(c); S.diningTable(c, 66, 190, { w: 110 }); S.diningTable(c, 170, 70, { view: 'top', w: 120, cloth: '#9FD8B2' }); } },
+    { name: "diningTable {kind:'round'} front / top", draw: function (c) { room(c); S.diningTable(c, 66, 190, { kind: 'round', w: 100, cloth: '#FFB3C7' }); S.diningTable(c, 172, 72, { kind: 'round', view: 'top', w: 110 }); } },
+    { name: "lamp {view:'top', on} + skirting {kind:'block'}", draw: function (c) { night(c); S.lamp(c, 70, 70, { view: 'top', size: 54, on: true }); S.lamp(c, 170, 70, { view: 'top', size: 40, shade: '#9FD8B2' }); S.skirting(c, 0, 150, 150, 26, { kind: 'block', col: '#3B3360' }); S.skirting(c, 200, 120, 26, 80, { kind: 'block', col: '#3B3360' }); } },
+    { name: "dog {view:'top', a} turned in its bed", draw: function (c) { night(c); c.save(); c.translate(120, 100); c.scale(0.8, 0.8); T.dog(c, 0, 0, { view: 'top', a: 0, eyes: 'open', bed: '#5C7FC4', ls: 0.8 }); c.restore(); } },
+    { name: "dog {view:'top', walk} / {still}", draw: function (c) { night(c); T.dog(c, 90, 70, { view: 'top', walk: 1, a: 0.3, wag: 1 }); T.dog(c, 150, 150, { view: 'top', walk: 0, still: true, a: Math.PI, eyes: 'closed', col: { body: '#EBD7B0', dark: '#CDB281', ear: '#B8925E', spots: true }, size: 0.8 }); } },
+    { name: "bowl {food:'fish'} / kibble · toy bone", draw: function (c) { night(c); T.bowl(c, 60, 80, { r: 30 }); T.bowl(c, 160, 70, { r: 26, col: '#FF8FAB', food: 'kibble' }); T.toy(c, 70, 160, { a: 0.4 }); T.toy(c, 170, 160, { a: -0.3, squeeze: 1, col: '#7CC4FF' }); } }
+  ]);
   section('SVG twins', [
     { name: "svg.cloud cat + svg.hills two", draw: function (c) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200"><rect width="240" height="200" fill="#BFE6FF"/>' + S.svg.hills({ w: 240, h: 200, kind: 'two', top: 0.5, col: '#7BD389', back: '#4FB868' }) + S.svg.cloud({ x: 120, y: 70, size: 150, kind: 'cat', face: 'open' }) + '</svg>';

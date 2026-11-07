@@ -25,7 +25,8 @@
          a puppy's face looking at you (for games where the characters are faces, like Fish Maze), centred
      GGThings.catnip(c, x, y, { size (1 = about 40 tall), glow (0..1), ls })   a sprig of catnip, centred
      GGThings.yarnBall(c, x, y, { r, col, gold, spin, end (a loose end), shadow, ls })   centred
-     GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left */
+     GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left
+   More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -238,3 +239,90 @@
     mouse: mouse, dog: dog, yarnBall: yarnBall, fish: fish, catnip: catnip, star: star
   };
 })();
+
+/* ================= added for Sneaky Cat: a walking dog from above, a turned dog in its bed, a pet bowl, a squeaky toy =================
+   (its own block; the looks above are unchanged)
+     GGThings.dog(c, x, y, { view: 'top', a })          the curled-up dog in its bed, turned so its face points along a
+                                                        (radians; without a it is drawn exactly as above)
+     GGThings.dog(c, x, y, { view: 'top', walk, a, col, eyes, wag, size (1 = about 130 long), shadow, ls })
+         a dog up and walking, seen from above, facing a: walk is a phase for the legs (leave out or null for the
+         curled-up dog), still: true stands it still; centred on its body
+     GGThings.bowl(c, x, y, { view: 'top', r, col, food: 'fish' | 'kibble' | false, ls })   a pet bowl from above
+     GGThings.toy(c, x, y, { kind: 'bone', view: 'top', a, col, squeeze (0..1, it squashes as it squeaks), ls })
+         a rubber bone, with little squeak lines (brighter while it squeezes) */
+(function (T) {
+  'use strict';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
+  function W(o, w, k) { return w / (((o && o.ls) || 1) * (k || 1)); }
+  // the crescent of shade on a shape turned by a, kept to the lower right of the screen
+  function turned(dep, a) { var x = -0.7 * dep, y = -dep, cs = Math.cos(-a), sn = Math.sin(-a); return { dx: x * cs - y * sn, dy: x * sn + y * cs }; }
+  T.VARIANTS.dog = T.VARIANTS.dog.concat(['topWalk']); T.VARIANTS.bowl = ['top']; T.VARIANTS.toy = ['bone'];
+  var dogBase = T.dog;
+  T.dog = function (c, x, y, o) {
+    o = o || {};
+    if (o.view !== 'top' || (o.walk === undefined || o.walk === null) && o.a === undefined) return dogBase(c, x, y, o);
+    if (o.walk === undefined || o.walk === null) {
+      c.save(); c.translate(x, y); c.rotate(o.a - Math.PI / 2); dogBase(c, 0, 0, o); c.restore();
+      return;
+    }
+    var col = o.col || { body: '#C98B5B', dark: '#9A6440', ear: '#7E4E30' }, a = o.a || 0, s = o.size || 1;
+    var lm = W(o, LW.mid, s), lf = W(o, LW.fine, s), ph = o.walk || 0, still = !!o.still, wag = Math.sin(o.wag || 0);
+    var light = D.lighter(col.body, 0.3);
+    if (o.shadow !== false) { c.save(); c.translate(x + 4, y + 7); c.rotate(a); c.scale(s, s); c.fillStyle = 'rgba(20,14,36,.22)'; c.beginPath(); c.ellipse(4, 0, 64, 30, 0, 0, TAU); c.fill(); c.restore(); }
+    c.save(); c.translate(x, y); c.rotate(a); c.scale(s, s);
+    // the tail first (the body covers its root), then the paws stepping out from under the body
+    c.beginPath(); c.moveTo(-40, 0); c.quadraticCurveTo(-62, wag * 10, -72, wag * 18 - 4); c.lineCap = 'round';
+    c.strokeStyle = INK; c.lineWidth = 7 + lf * 2; c.stroke(); c.strokeStyle = col.body; c.lineWidth = 7; c.stroke();
+    [[24, -1, 0], [24, 1, Math.PI], [-28, -1, Math.PI], [-28, 1, 0]].forEach(function (l) {
+      var sw = still ? 0 : Math.sin(ph + l[2]) * 7;
+      D.shape(c, D.ellPath(l[0] + sw, l[1] * 22, 9, 7), col.dark, { lw: lf, depth: 0 });
+    });
+    var bc = turned(7, a);
+    D.shape(c, D.ellPath(-4, 0, 48, 25), D.tone(c, col.body, -25, 25), { lw: lm, depth: 1, dx: bc.dx, dy: bc.dy, inside: function (c) {
+      c.fillStyle = light; c.beginPath(); c.ellipse(-8, 0, 26, 8, 0, 0, TAU); c.fill();
+      if (col.spots) { c.fillStyle = '#4A4262'; [[4, -12, 12, 8], [-26, 9, 10, 7], [16, 10, 8, 6]].forEach(function (q) { c.beginPath(); c.ellipse(q[0], q[1], q[2], q[3], 0.3, 0, TAU); c.fill(); }); }
+    } });
+    // the head: floppy ears tucked under it, a muzzle, the nose at the front
+    [-1, 1].forEach(function (sg) { D.shape(c, D.ellPath(34, sg * 18, 13, 8, sg * 0.5), col.ear, { lw: lf, depth: 0 }); });
+    var hc = turned(5, a);
+    D.shape(c, D.ellPath(42, 0, 21, 19), D.tone(c, col.body, -19, 19), { lw: lm, depth: 1, dx: hc.dx, dy: hc.dy });
+    D.shape(c, D.ellPath(60, 0, 12, 9), light, { lw: lf, depth: 0 });
+    c.beginPath(); c.ellipse(70, 0, 5, 6, 0, 0, TAU); c.fillStyle = INK; c.fill();
+    [-1, 1].forEach(function (sg) {
+      if ((o.eyes || 'open') === 'open') { c.beginPath(); c.arc(48, sg * 8, 4.4, 0, TAU); c.fillStyle = '#FFFFFF'; c.fill(); D.ink(c, lf * 0.7); c.beginPath(); c.arc(49.6, sg * 8, 2.3, 0, TAU); c.fillStyle = INK; c.fill(); }
+      else { c.beginPath(); c.moveTo(45, sg * 8 - 3); c.quadraticCurveTo(49, sg * 8, 45, sg * 8 + 3); D.ink(c, lf * 0.8); }
+    });
+    c.restore();
+  };
+
+  T.bowl = function (c, x, y, o) {
+    o = o || {};
+    var r = o.r || 24, col = o.col || '#7CC4FF', lm = W(o, LW.mid), food = o.food === undefined ? 'fish' : o.food;
+    D.shadow(c, x + 3, y + 5, r * 1.05, r * 0.9);
+    D.shape(c, D.ellPath(x, y, r, r * 0.84), D.tone(c, col, y - r, y + r), { lw: lm, depth: r * 0.16, inside: function (c) {
+      c.fillStyle = D.darker(col, 0.3); c.beginPath(); c.ellipse(x, y + r * 0.04, r * 0.68, r * 0.56, 0, 0, TAU); c.fill();
+      if (food === 'kibble') { c.fillStyle = '#B97A4A'; for (var i = 0; i < 9; i++) { var an = i * 2.4, rr = r * 0.4 * Math.sqrt((i + 0.5) / 9); c.beginPath(); c.arc(x + Math.cos(an) * rr, y + Math.sin(an) * rr * 0.8, r * 0.12, 0, TAU); c.fill(); } }
+    }, shine: [x - r * 0.45, y - r * 0.5, r * 0.22, r * 0.1, -0.5, 0.45] });
+    if (food === 'fish' && T.fish) T.fish(c, x, y, { size: r / 30, col: '#FFB070', a: -0.3, ls: o.ls });
+  };
+
+  T.toy = function (c, x, y, o) {
+    o = o || {};
+    var a = o.a || 0, sq = Math.max(0, Math.min(1, o.squeeze || 0)), col = o.col || '#FF8FAB', lf = W(o, LW.fine);
+    D.shadow(c, x + 3, y + 6, 22, 8);
+    c.save(); c.translate(x, y); c.rotate(a); c.scale(1 + sq * 0.15, 1 - sq * 0.2);
+    var bone = new Path2D();
+    [[-15, -6], [-15, 6], [15, -6], [15, 6]].forEach(function (q) { bone.moveTo(q[0] + 7, q[1]); bone.arc(q[0], q[1], 7, 0, TAU); });
+    bone.rect(-15, -5, 30, 10);
+    // one outline round the whole bone: the ink twice as wide, the fill over its inner half
+    c.save(); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = lf * 2; c.stroke(bone); c.restore();
+    c.fillStyle = col; c.fill(bone);
+    var cr = turned(3, a); c.save(); c.clip(bone);
+    var hole = new Path2D(); hole.rect(-100, -100, 200, 200); hole.addPath(bone, new DOMMatrix().translate(cr.dx, cr.dy));
+    c.fillStyle = 'rgba(42,35,64,.15)'; c.fill(hole, 'evenodd'); c.restore();
+    c.restore();
+    c.save(); c.translate(x, y); c.strokeStyle = 'rgba(255,246,216,' + (0.3 + sq * 0.6) + ')'; c.lineWidth = W(o, 3); c.lineCap = 'round';
+    [-1, 0, 1].forEach(function (i) { var r0 = 20 + sq * 8, an = -Math.PI / 2 + i * 0.55; c.beginPath(); c.moveTo(Math.cos(an) * r0, Math.sin(an) * r0); c.lineTo(Math.cos(an) * (r0 + 8), Math.sin(an) * (r0 + 8)); c.stroke(); });
+    c.restore();
+  };
+})(window.GGThings);

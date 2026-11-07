@@ -128,11 +128,11 @@
       'Don’t fall in a gap or run into the side of a chimney. Landing on top is fine!',
       'Grab the fish. Gold fish are worth 5.'] },
     sneaky: { name: 'Sneaky Cat', lines: [
-      'Hold to tiptoe. Let go to freeze.',
-      'When a dog’s ear goes up, it’s about to look. Stay out of its glow!',
-      'Boxes, plant pots and armchairs are safe hiding places.',
-      'A quick tap hops over squeaky floorboards.',
-      'Reach the snack at the end. Grab the fish too!'] },
+      'Press and hold where you want to go, and your cat walks there. A quick tap sends it to that spot. Arrow keys work too.',
+      'When a dog’s ear goes up, it’s about to look. Its glow shows everything it can see.',
+      'Sofas, tables, shelves, plants and boxes block its view: hide behind them!',
+      'Seen? Your cat scurries back to the last safe spot. Walk around squeaky toys: they wake the dogs.',
+      'Reach the midnight snack. Grab the fish too!'] },
     'yarn-defence': { name: 'Yarn Defence', lines: [
       'Mice run along the path to steal your yarn.',
       'Pick a cat below, then tap a spot beside the path to put it there.',

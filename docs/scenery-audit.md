@@ -245,3 +245,8 @@ armchair, box, plant), Rooftop Run (fish), Mouse Pop (mouse), Yarn Dash (toy mou
 Yarn Defence (floor, rug path, mouse hole, basket, cushions, mice, yarn balls), Laser Bounce (books, basket,
 cushion). The single-use list above is no longer a reason to draw locally.
 
+
+Batch F (Sneaky Cat, now a top-down room): `bookcase` and `diningTable` (long and round), each front and top, a top
+view for the floor `lamp`, and `skirting` kind `block` (an inside wall seen from above). GGThings gained the dog
+turned in its bed (`a`), the dog walking from above (`walk`), a pet `bowl` and a squeaky `toy`. Sneaky Cat draws
+nothing locally: rooms, furniture, dogs, fish, bowl and toys all come from the kits.

@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-4279d0ca47';
+const VERSION = 'ccg-c541b6142b';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -25,13 +25,13 @@ const FILES = {
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "196bc4e3d1",
   "./shared/games.js": "14b15cf1f6",
-  "./shared/help.js": "b5874d5ebd",
+  "./shared/help.js": "2a6206f950",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
-  "./shared/scene.js": "e744be804d",
+  "./shared/scene.js": "efcd653282",
   "./shared/site.css": "7f9619cffc",
   "./shared/store.js": "12a8ec5516",
-  "./shared/things.js": "c90a35edc2",
+  "./shared/things.js": "f039f0c1d7",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
   "./fonts/baloo-2-latin-800-normal.woff2": "694f2e10bb",
   "./fonts/fonts.css": "e52febfe7d",
@@ -123,9 +123,9 @@ const FILES = {
   "./games/slide/game.js": "ad3e14ef85",
   "./games/slide/": "d7b78b2397",
   "./games/slide/index.html": "d7b78b2397",
-  "./games/sneaky/game.js": "9d040a32c6",
-  "./games/sneaky/": "22671fc111",
-  "./games/sneaky/index.html": "22671fc111",
+  "./games/sneaky/game.js": "e41f926f31",
+  "./games/sneaky/": "543b5b9324",
+  "./games/sneaky/index.html": "543b5b9324",
   "./games/stack/game.js": "351d12d346",
   "./games/stack/": "024b0986ab",
   "./games/stack/index.html": "024b0986ab",

@@ -14,10 +14,11 @@
 <link rel="stylesheet" href="../../shared/site.css">
 <link rel="stylesheet" href="../../shared/game.css">
 <style>
-/* A stealth game for older kids: your cat sneaks through the house at night to the midnight snack, past sleeping
-   dogs. Hold to tiptoe, let go to freeze. Dogs stir, then look; move where a looking dog can see and it woofs, and
-   your cat scurries back to the last safe spot. Hide in boxes, behind plants and chairs; hop over squeaky
-   floorboards. One canvas for the house; the top bar holds the level picker. Single night look by design. */
+/* A stealth game for older kids, seen from above: your cat sneaks across the room at night to the midnight snack,
+   past sleeping dogs. Press and hold where you want to go (or arrow keys); the cat walks there round the furniture.
+   Dogs stir, then look; their glow shows what they can see, and furniture blocks it, so hide behind it. Seen, and
+   your cat scurries back to the last safe spot. One canvas for the room (turned on an upright phone); the top bar
+   holds the level picker. Single night look by design. */
 body { background: #2B2550; }
 #stage { touch-action: none; }
 .middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; min-width: 0; }
@@ -26,23 +27,25 @@ body { background: #2B2550; }
 .step svg { width: 22px; height: 22px; }
 .say { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 78px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-.hop {
-  position: fixed; z-index: 6; right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px));
-  width: 86px; height: 86px; border-radius: 50%; border: 4px solid var(--ink); background: #7CC4FF; box-shadow: 0 5px 0 var(--ink), var(--soft);
-  display: grid; place-items: center; cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none;
-}
-.hop:active, .hop.on { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
-.hop svg { width: 46px; height: 46px; pointer-events: none; }
-.hop span { position: absolute; bottom: -26px; font: 800 .85rem var(--body); color: #FFF6D8; text-shadow: 0 2px 0 var(--ink); }
-.hop[hidden] { display: none; }
 .card canvas { width: min(240px, 60vw); height: auto; display: block; }
 .card .tip { font: 800 .95rem var(--body); color: var(--muted); }
 .card .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-@media (max-width: 400px) { .level { font-size: .9rem; padding: 6px 9px 4px; } .step { width: 36px; height: 36px; } .hop { width: 76px; height: 76px; } }
+/* a phone on its side: the picture beside the words, so the whole card fits */
+@media (max-height: 520px) {
+  .say { top: auto; bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+  .say.hide { transform: translateX(-50%) translateY(10px); }
+}
+@media (max-height: 520px) and (min-width: 560px) {
+  .card-wrap .card { width: min(660px, 100%); display: grid; grid-template-columns: 210px 1fr; column-gap: 20px; row-gap: 8px; padding: 16px 20px; }
+  .card canvas { grid-row: 1 / span 4; width: 210px; align-self: center; }
+  .card h2 { font-size: 1.8rem; }
+  .card p { font-size: 1rem; }
+}
+@media (max-width: 400px) { .level { font-size: .9rem; padding: 6px 9px 4px; } .step { width: 36px; height: 36px; } }
 </style>
 </head>
 <body class="game">
-<canvas id="stage" aria-label="Sneaky Cat. Hold to tiptoe, let go to freeze. Don't move while a dog is looking."></canvas>
+<canvas id="stage" aria-label="Sneaky Cat. Press and hold where you want your cat to go. Stay out of a looking dog's glow: hide behind the furniture."></canvas>
 
 <div class="topbar" id="topbar">
   <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
@@ -61,17 +64,12 @@ body { background: #2B2550; }
 
 <div class="say hide" id="say" aria-live="polite"></div>
 
-<button class="hop" id="hopBtn" type="button" aria-label="Hop" hidden>
-  <svg viewBox="0 0 48 48"><path d="M8 36 Q24 2 40 36" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 9"/><path d="M33 30 L40 37 L44 27" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="37" r="5" fill="#FFF6D8" stroke="#2A2340" stroke-width="3"/></svg>
-  <span>Hop</span>
-</button>
-
 <div class="card-wrap" id="cardWrap">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
     <canvas id="cardPic" width="440" height="300" aria-hidden="true"></canvas>
     <h2 id="cardTitle">Sneaky Cat</h2>
     <p id="cardNote">Sneak past the sleeping dogs to your midnight snack.</p>
-    <p class="tip" id="cardTip">Hold to tiptoe. Let go to freeze. Don’t move while a dog is looking!</p>
+    <p class="tip" id="cardTip">Press and hold where you want to go. When a dog’s ear goes up, hide behind the furniture!</p>
     <div class="btns">
       <button class="big" id="againBtn" type="button" hidden>Play again</button>
       <button class="big" id="goBtn" type="button">Sneak!</button>
