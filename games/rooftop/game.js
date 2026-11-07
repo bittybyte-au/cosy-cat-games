@@ -75,13 +75,15 @@
     if (steps) {
       var cx = prev.x + prev.w, ctop = prev.top, nC = Math.random() < 0.5 ? 2 : 3;
       for (var ci = 0; ci < nC; ci++) {
-        var cwid = rand(130, 170);
-        cx += rand(0.28, 0.42) * sp; ctop -= rand(70, 92);
+        // wide, closely spaced steps: both a quick tap and a full held jump land on the next cloud
+        // (tested in a simulation with the jump physics: the window to press is ~0.4 s for a tap and ~0.3 s for a hold)
+        var cwid = rand(300, 380);
+        cx += rand(0.22, 0.34) * sp; ctop -= rand(60, 85);
         G.clouds.push({ x: cx, w: cwid, top: ctop, seed: Math.random() });
         for (var cf = 0; cf < 2; cf++) G.fishes.push({ x: cx + cwid * (0.35 + cf * 0.3), y: ctop - 40, gold: ci === nC - 1 && cf === 1 && Math.random() < 0.4, got: false });
         cx += cwid;
       }
-      gap = cx + rand(0.28, 0.42) * sp - (prev.x + prev.w);
+      gap = cx + rand(0.22, 0.34) * sp - (prev.x + prev.w);
       top = clamp(ctop - rand(-30, 50), 200, 510);
     }
     var b = makeBldg(prev.x + prev.w + gap, w, top, prev.n + 1);
