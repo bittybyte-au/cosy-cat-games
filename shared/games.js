@@ -270,6 +270,29 @@
       cat({ preset: 'ginger', pose: 'peek', face: 'happy', x: 188, y: 76, size: 46 }) +
       sh(P(152, 102, 'h72l-8 32q-28 6 -56 0z'), '#E6B477', { k: 4, in: ln('M164 102l4 36M178 102l2 38M194 102l-1 38M208 102l-4 36M152 118q36 6 72 0', 2.5, '#C98B5B') }) +
       sh(P(224, 24, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 }) + sh(P(212, 50, 'c-7 -6 -4 -11 0 -8c4 -3 7 2 0 8z'), '#FF8FAB', { lw: 2.5, k: 0 })),
+    hotpaws: (function () {
+      // a little light-up floor from above: green and dark tiles are safe, blue ones are diamonds, orange warns, red is lava
+      var K = { on: ['#5FE08B', '#C4FFD3'], off: ['#3A3262', '#4E4579'], d: ['#5DB6F5', '#D7F0FF'], warn: ['#FFB547', '#FFEBA8'], lava: ['#FF5B3A', '#FFB14A'] };
+      var map = [['on', 'off', 'd', 'warn', 'lava'], ['off', 'on', 'off', 'lava', 'lava'], ['d', 'off', 'on', 'warn', 'off']];
+      var out = sh(R(10, 8, 220, 138, 18), '#4A3F78', { k: 5 });
+      map.forEach(function (row, j) {
+        row.forEach(function (key, i) {
+          var x = 20 + i * 41, y = 17 + j * 41, cx = x + 19, cy = y + 19, k = K[key], inner = '';
+          if (key !== 'off') inner += el(cx, cy, 15, 15, k[1], 0.55);
+          if (key === 'off') inner += el(cx - 7, cy - 7, 2, 2, '#fff', 0.12) + el(cx + 7, cy - 7, 2, 2, '#fff', 0.12) + el(cx - 7, cy + 7, 2, 2, '#fff', 0.12) + el(cx + 7, cy + 7, 2, 2, '#fff', 0.12);
+          if (key === 'lava') inner += ln('M' + x + ' ' + (cy - 7) + 'q5 -5 10 0t10 0t10 0t10 0M' + x + ' ' + (cy + 6) + 'q5 -5 10 0t10 0t10 0t10 0', 3, '#FFC46A') + sh(E(cx + 8, cy - 1, 3.5, 3.5), '#FFD45A', { lw: 1.6, k: 0 });
+          if (key === 'warn') inner += ln('M' + (x - 4) + ' ' + (y + 24) + 'l24 -26M' + (x + 8) + ' ' + (y + 38) + 'l30 -32', 4, 'rgba(255,240,170,.8)');
+          if (key !== 'off') inner += shine(cx - 7, cy - 10, 7, 3);
+          out += sh(R(x, y, 38, 38, 8), k[0], { lw: 3, k: 3, in: inner });
+          if (key === 'warn') out += sh(P(cx, cy - 9, 'l9 16h-18z'), '#FFF6D8', { lw: 2.5, k: 0 }) + ln('M' + cx + ' ' + (cy - 3) + 'v4', 2.5) + el(cx, cy + 4.5, 1.4, 1.4, INK);
+          if (key === 'd') out += sh(P(cx - 6, cy - 7, 'h12l5 5.5l-11 13l-11 -13z'), '#F2FAFF', { lw: 2.5, k: 0, in: '<path d="M' + (cx + 2) + ' ' + (cy - 1.5) + 'h9l-11 13z" fill="#9ED8FF"/>' + ln('M' + (cx - 11) + ' ' + (cy - 1.5) + 'h22', 1.6) });
+        });
+      });
+      // the cat, mid-step on a safe tile, with a puff from the lava it just hopped off
+      out += shadow(81, 80, 19, 3.5) + cat({ preset: 'ginger', pose: 'walk', step: 1.3, moving: true, face: 'happy', dir: 1, x: 88, y: 56, size: 30 });
+      out += sh(U(E(166, 58, 7, 7), E(176, 54, 8, 8), E(184, 60, 6, 6)), '#FFF8EC', { union: true, lw: 2.5, k: 2 });
+      return svg(out);
+    })(),
     kittenkitchen: svg(
       cat({ preset: 'ginger', face: 'happy', x: 50, y: 70, size: 60 }) +
       shadow(150, 136, 80, 7) + sh(E(150, 128, 76, 13), '#fff', { k: 3 }) +
@@ -367,6 +390,12 @@
       ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
       badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' cat rescued' : ' cats rescued') : ''; },
       art: ART.rescue
+    },
+    {
+      id: 'hotpaws', save: 'hotpaws', name: 'Hot Paws', blurb: 'Dodge the lava, grab the diamonds',
+      ages: ['5-10', '11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDEFD8',
+      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' round done' : ' rounds done') : ''; },
+      art: ART.hotpaws
     },
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
