@@ -955,11 +955,15 @@
          the plant kinds above, unchanged)
      GGScene.runner(c, pts, { w, col, col2, prints })   a long rug laid along a path of points [{ x, y }], with paw prints
      GGScene.mousehole(c, x, y, { size, a (the way into the room, radians), col (the skirting) })
-     GGScene.box(c, x, y, { view, w, h, col, flaps (open flaps, default true) })   an open cardboard box */
+     GGScene.box(c, x, y, { view, w, h, col, flaps (open flaps, default true) })   an open cardboard box
+     GGScene.maze(c, grid, x, y, cell, { kind: 'hedge', col })   the walls of a maze seen from above: grid is rows of
+         characters, '#' a wall; (x, y) is the grid's top left and cell the size of one square. Walls next to each
+         other join up into one hedge, with one outline round it.
+     GGScene.lawn(c, x, y, w, h, { col, stripe (the mown stripes' width), seed })   grass seen from above */
   (function (G) {
     var V = G.VARIANTS;
     V.sofa = ['sofa', 'armchair']; V.sofaView = ['front', 'top']; V.basket = ['front', 'top']; V.cushion = ['square', 'round'];
-    V.books = ['front', 'top']; V.plantView = ['front', 'top']; V.runner = ['plain']; V.mousehole = ['skirting']; V.box = ['front', 'top'];
+    V.books = ['front', 'top']; V.plantView = ['front', 'top']; V.runner = ['plain']; V.mousehole = ['skirting']; V.box = ['front', 'top']; V.maze = ['hedge']; V.lawn = ['stripes'];
     var WOODC = '#C98B5B';
     function seatsOf(o) { return o.seats || (o.kind === 'armchair' ? 1 : 2); }
 
@@ -1093,6 +1097,40 @@
         c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x - 14, top, 28, h + 2);
         c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = W(o, 2); c.beginPath(); c.moveTo(x - w / 2 + 14, y - 30); c.lineTo(x - w / 2 + 34, y - 30); c.moveTo(x - w / 2 + 14, y - 22); c.lineTo(x - w / 2 + 28, y - 22); c.stroke();
       } });
+    };
+
+    G.maze = function (c, grid, x, y, cell, o) {
+      o = opt(o);
+      var col = o.col || '#5CCB75', rows = grid.length, cols = grid[0].length, wall = function (gx, gy) { return gy >= 0 && gy < rows && gx >= 0 && gx < cols && grid[gy].charAt(gx) === '#'; };
+      var p = new Path2D();
+      for (var gy = 0; gy < rows; gy++) for (var gx = 0; gx < cols; gx++) {
+        if (!wall(gx, gy)) continue;
+        var cx = x + (gx + 0.5) * cell, cy = y + (gy + 0.5) * cell;
+        p.moveTo(cx, cy); p.lineTo(cx + 0.01, cy);
+        if (wall(gx + 1, gy)) { p.moveTo(cx, cy); p.lineTo(cx + cell, cy); }
+        if (wall(gx, gy + 1)) { p.moveTo(cx, cy); p.lineTo(cx, cy + cell); }
+        // a 2x2 block of hedge would leave a little hole in the middle of its ring: fill it across the diagonal
+        if (wall(gx + 1, gy) && wall(gx, gy + 1) && wall(gx + 1, gy + 1)) { p.moveTo(cx, cy); p.lineTo(cx + cell, cy + cell); }
+      }
+      var wd = cell * 0.84;
+      c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+      c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = wd; c.translate(cell * 0.06, cell * 0.1); c.stroke(p); c.translate(-cell * 0.06, -cell * 0.1);
+      c.strokeStyle = INK; c.lineWidth = wd + W(o, LW.mid) * 2; c.stroke(p);
+      c.strokeStyle = D.darker(col, 0.12); c.lineWidth = wd; c.stroke(p);
+      c.translate(-cell * 0.05, -cell * 0.07); c.strokeStyle = col; c.lineWidth = wd * 0.72; c.stroke(p);
+      c.translate(cell * 0.05, cell * 0.07);
+      // leafy speckles along the top of the hedge
+      var r = D.seeded(o.seed || 3); c.fillStyle = D.lighter(col, 0.25);
+      for (var sy = 0; sy < rows; sy++) for (var sx = 0; sx < cols; sx++) if (wall(sx, sy)) for (var k = 0; k < 2; k++) { c.beginPath(); c.ellipse(x + (sx + 0.25 + r() * 0.5) * cell, y + (sy + 0.2 + r() * 0.5) * cell, cell * 0.08, cell * 0.05, r() * 3, 0, TAU); c.fill(); }
+      c.restore();
+    };
+    G.lawn = function (c, x, y, w, h, o) {
+      o = opt(o);
+      var col = o.col || '#BDE8A8', st = o.stripe || 40, r = D.seeded(o.seed || 9);
+      c.fillStyle = col; c.fillRect(x, y, w, h);
+      c.fillStyle = D.darker(col, 0.05); for (var sx = x; sx < x + w; sx += st * 2) c.fillRect(sx, y, st, h);
+      c.strokeStyle = D.darker(col, 0.16); c.lineWidth = W(o, 1.6); c.lineCap = 'round';
+      for (var i = 0; i < w * h / 1800; i++) { var tx = x + r() * w, ty = y + r() * h; c.beginPath(); c.moveTo(tx - 3, ty + 2); c.lineTo(tx - 1, ty - 3); c.moveTo(tx + 1, ty + 2); c.lineTo(tx + 3, ty - 3); c.stroke(); }
     };
 
     G.mousehole = function (c, x, y, o) {

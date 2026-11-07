@@ -383,6 +383,16 @@
       cat({ preset: 'ginger', pose: 'sit', face: 'happy', x: 84, y: 40, size: 36 }) +
       shadow(160, 132, 20, 4) + sh(E(160, 130, 18, 6), '#B48CFF', { lw: 2.5, k: 0 }) +
       cat({ color: '#F1E3CB', build: 'fluffy', pose: 'lie', face: 'sleep', x: 160, y: 118, size: 34 })),
+    fishmaze: svg(
+      sh(R(0, 0, 240, 150, 0), '#BDE8A8', { lw: 0, k: 0 }) +
+      '<path d="M0 0h30v150H0zM60 0h30v150H60zM120 0h30v150h-30zM180 0h30v150h-30z" fill="rgba(42,35,64,.04)"/>' +
+      ln('M20 20H220V130H20Z', 30) + ln('M20 20H220V130H20Z', 24, '#4FB868') + ln('M20 20H220V130H20Z', 17, '#5CCB75') +
+      ln('M70 75H170', 30) + ln('M70 75H170', 24, '#4FB868') + ln('M70 75H170', 17, '#5CCB75') +
+      [[86, 47], [112, 47], [138, 47], [164, 47], [112, 103], [138, 103], [164, 103], [190, 103]].map(function (q) { return sh(P(q[0] - 8, q[1], 'q5 -6 10 -2.5l5 -3.5v10l-5 -3.5q-5 3.5 -10 -0.5z'), '#7CC4FF', { lw: 2.2, k: 0 }); }).join('') +
+      el(194, 47, 9, 9, 'rgba(196,255,176,.7)') + sh(E(190, 47, 5, 8), '#5DBB72', { lw: 2.2, k: 0 }) + sh(E(198, 47, 5, 8), '#5DBB72', { lw: 2.2, k: 0 }) +
+      sh(E(58, 103, 17, 14), '#C98B5B', { lw: 3, k: 2 }) + sh(E(43, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) + sh(E(73, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) +
+      el(52, 100, 2.4, 2.4, '#2A2340') + el(64, 100, 2.4, 2.4, '#2A2340') + el(58, 107, 3, 2.2, '#2A2340') +
+      cat({ preset: 'ginger', pose: 'head', face: 'open', x: 58, y: 40, size: 34 })),
     fashion: svg(
       sh(R(0, 0, 240, 150, 0), '#FFD3E4', { lw: 0, k: 0 }) +
       el(120, 70, 80, 66, '#FFFFFF', 0.5) + el(120, 138, 84, 10, '#FFFFFF', 0.45) +
@@ -544,6 +554,11 @@
       id: 'yarn-defence', save: 'yarndefence', name: 'Yarn Defence', blurb: 'Send the mice home, save the yarn',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.yarndefence
+    },
+    {
+      id: 'fishmaze', save: 'fishmaze', name: 'Fish Maze', blurb: 'Munch the fish, dodge the puppies',
+      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C6EBB5',
+      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.fishmaze
     },
     {
       id: 'fashion', save: 'fashion', name: 'Cat Fashion Studio', blurb: 'Dress up your cat, then strike a pose',

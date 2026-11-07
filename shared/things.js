@@ -21,6 +21,9 @@
                   wag (a phase), breathe (a small squash, e.g. sin(t) * 0.03), dir (side: 1 head right, -1 head left), ls })
          side: lying on its bed, (x, y) the floor under its middle; top: curled up in a round bed seen from above,
          (x, y) the bed's middle
+     GGThings.dog(c, x, y, { view: 'face', size (1 = about 70 across), col, eyes, tongue (0..1, a happy lick), ls })
+         a puppy's face looking at you (for games where the characters are faces, like Fish Maze), centred
+     GGThings.catnip(c, x, y, { size (1 = about 40 tall), glow (0..1), ls })   a sprig of catnip, centred
      GGThings.yarnBall(c, x, y, { r, col, gold, spin, end (a loose end), shadow, ls })   centred
      GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left */
 (function () {
@@ -86,7 +89,7 @@
   var DOG_COL = { body: '#C98B5B', dark: '#9A6440', ear: '#7E4E30' };
   function dog(c, x, y, o) {
     o = o || {};
-    return o.view === 'top' ? dogTop(c, x, y, o) : dogSide(c, x, y, o);
+    return o.view === 'top' ? dogTop(c, x, y, o) : o.view === 'face' ? dogFace(c, x, y, o) : dogSide(c, x, y, o);
   }
   function eyesSide(c, o, lf) {
     var e = o.eyes || 'closed';
@@ -161,6 +164,42 @@
     c.restore();
   }
 
+  /* a puppy's face, looking at you: the top view's head, with its floppy ears and a happy mouth */
+  function dogFace(c, x, y, o) {
+    var s = pick(o.size, 1), col = o.col || DOG_COL, lm = W(o, LW.mid, s), lf = W(o, LW.fine, s), light = D.lighter(col.body, 0.3);
+    c.save(); c.translate(x, y); c.scale(s, s);
+    var flop = o.flop || 0;
+    [[-30, 0.35 + flop], [30, -0.35 - flop]].forEach(function (e) { D.shape(c, D.ellPath(e[0], 2, 13, 24, e[1]), col.ear, { lw: lf, depth: 3 }); });
+    D.shape(c, D.ellPath(0, 0, 32, 28), D.tone(c, col.body, -28, 28), { lw: lm, depth: 6, inside: function (c) {
+      c.beginPath(); c.ellipse(0, 12, 17, 12, 0, 0, TAU); c.fillStyle = light; c.fill();
+      if (col.spots) { c.beginPath(); c.ellipse(-14, -12, 9, 7, 0.4, 0, TAU); c.fillStyle = '#4A4262'; c.fill(); }
+    } });
+    c.beginPath(); c.ellipse(0, 6, 6.5, 5, 0, 0, TAU); c.fillStyle = INK; c.fill();
+    var e = o.eyes || 'open';
+    if (e === 'closed') { c.beginPath(); c.moveTo(-17, -6); c.quadraticCurveTo(-11, -1, -5, -6); c.moveTo(5, -6); c.quadraticCurveTo(11, -1, 17, -6); D.ink(c, lf); }
+    else if (e === 'peek') { c.beginPath(); c.moveTo(-17, -6); c.lineTo(-5, -6); c.moveTo(5, -6); c.lineTo(17, -6); D.ink(c, lf); }
+    else { c.fillStyle = INK; [-11, 11].forEach(function (ex) { c.beginPath(); c.arc(ex, -6, 5, 0, TAU); c.fill(); }); c.fillStyle = '#fff'; [-9.5, 12.5].forEach(function (ex) { c.beginPath(); c.arc(ex, -7.5, 1.6, 0, TAU); c.fill(); }); }
+    c.beginPath(); c.moveTo(-7, 13); c.quadraticCurveTo(-3.5, 17, 0, 13); c.quadraticCurveTo(3.5, 17, 7, 13); D.ink(c, lf * 0.9);
+    if (o.tongue) { c.save(); c.translate(0, 16); c.scale(1, o.tongue); D.shape(c, D.rrPath(-5, 0, 10, 12, 5), '#FF7FA6', { lw: lf * 0.8, depth: 0 }); c.restore(); }
+    c.restore();
+  }
+
+  /* ================= catnip ================= */
+  function catnip(c, x, y, o) {
+    o = o || {};
+    var s = pick(o.size, 1), lf = W(o, LW.fine, s);
+    c.save(); c.translate(x, y); c.scale(s, s);
+    if (o.glow) { c.save(); c.globalAlpha = 0.5 * o.glow; var g = c.createRadialGradient(0, 0, 4, 0, 0, 30); g.addColorStop(0, 'rgba(190,255,170,1)'); g.addColorStop(1, 'rgba(190,255,170,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 30, 0, TAU); c.fill(); c.restore(); }
+    c.beginPath(); c.moveTo(0, 18); c.lineTo(0, -16); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 4 + lf * 2; c.stroke(); c.strokeStyle = '#4FB868'; c.lineWidth = 4; c.stroke();
+    [[-1, 8, 0.5], [1, 2, -0.5], [-1, -6, 0.6], [1, -12, -0.6]].forEach(function (l) {
+      c.save(); c.translate(0, l[1]); c.rotate(l[2] + (l[0] < 0 ? Math.PI : 0));
+      D.shape(c, D.ellPath(11, 0, 11, 6), l[1] < 0 ? '#7BD389' : '#5CCB75', { lw: lf, depth: 0, inside: function (c) { c.beginPath(); c.moveTo(2, 0); c.lineTo(19, 0); c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.5; c.stroke(); } });
+      c.restore();
+    });
+    D.shape(c, D.ellPath(0, -19, 4, 4), '#B48CFF', { lw: lf, depth: 0 });
+    c.restore();
+  }
+
   /* ================= yarn ball ================= */
   function yarnBall(c, x, y, o) {
     o = o || {};
@@ -195,7 +234,7 @@
   }
 
   window.GGThings = {
-    VARIANTS: { mouse: ['top', 'side'], dog: ['side', 'top'], yarnBall: ['plain', 'gold'], fish: ['plain', 'gold'] },
-    mouse: mouse, dog: dog, yarnBall: yarnBall, fish: fish, star: star
+    VARIANTS: { mouse: ['top', 'side'], dog: ['side', 'top', 'face'], yarnBall: ['plain', 'gold'], fish: ['plain', 'gold'], catnip: ['sprig'] },
+    mouse: mouse, dog: dog, yarnBall: yarnBall, fish: fish, catnip: catnip, star: star
   };
 })();
