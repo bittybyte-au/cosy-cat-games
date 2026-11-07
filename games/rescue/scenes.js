@@ -1,5 +1,5 @@
-/* Cat Rescue: the little rescue scene above the board, one per peril, and the heap that sits between it and the
-   board. Drawn in a 400 × 240 space.
+/* Cat Rescue: the little rescue scene above the board, one per peril, the filling that rises in it, and the wall of
+   bricks between it and the board. Drawn in a 400 × 240 space.
    Each scene is a function of time, so nothing here keeps state:
      S = { p: how far the peril has crept (0..1), t: seconds, mode: 'play' | 'win' | 'fail', mt: seconds in that mode,
            cat: { name, preset }, saved: [kitten presets sitting safe by the basket], reduce: reduced motion }
@@ -419,15 +419,17 @@
 
   var SCENES = { bath: bath, tree: tree, rain: rain, tide: tide, laundry: laundry };
 
-  /* ================= the heap on top of the board =================
-     Each peril has its own soft heap. It sits between the scene and the board, one little stack per column;
-     every piece cleared in a column knocks a bit of it down into the board. */
-  var HEAPS = {
-    bath: { word: 'bubbles', ground: '#FFE3C2', mass: '#DDF1FF' },
-    tree: { word: 'leaves', ground: '#9BDC8C', mass: '#F0A35A' },
-    rain: { word: 'soggy leaves', ground: '#8FD48A', mass: '#5DB862' },
-    tide: { word: 'sand', ground: '#F6D9A0', mass: '#EDC77E' },
-    laundry: { word: 'socks', ground: '#E6B98A', mass: '#D7C4EC' }
+  /* ================= the filling and the wall =================
+     The peril fills up the scene where the cat is: bath water and the tide do it in their own scenes, and here the
+     leaves pile up under the tree, rainwater rises in the garden and the washing piles up as socks. Along the top
+     of the board runs a wall of bricks between the scene and the board; every brick knocked out is a gap the
+     filling pours down through, so it drops again. */
+  var FILL = {
+    bath: { word: 'water', col: '#8FD3FF', kind: 'own' },
+    tree: { word: 'leaves', col: '#F0A35A', kind: 'pile', top: 176 },
+    rain: { word: 'rainwater', col: '#8FD3FF', kind: 'water', top: 186 },
+    tide: { word: 'sea', col: '#7CC4FF', kind: 'own' },
+    laundry: { word: 'socks', col: '#D7C4EC', kind: 'pile', top: 186 }
   };
   var LEAF = ['#FF9F43', '#FF6B57', '#FFD23F', '#E07B1F'], WET = ['#5CCB75', '#7BD389', '#B7E36B', '#4FB868'];
   var SOCK = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#B48CFF', '#7BD389', '#FFFFFF'];
@@ -463,50 +465,70 @@
       c.restore();
     }
   }
-  /* the whole heap: the floor carries on under it; heights[c] (may be fractional while a bit falls) */
-  function drawHeap(c, name, heights, x, y, w, h, colW, bitH, t, reduce) {
-    var H0 = HEAPS[name] || HEAPS.bath;
-    c.save();
-    c.beginPath(); c.rect(x, y, w, h); c.clip();
-    c.fillStyle = D.tone(c, H0.ground, y - h, y + h); c.fillRect(x, y, w, h);
-    var r = colW * 0.4, n = heights.length;
-    // the heap's soft shape first, through the top of each column, so the bits read as one heap
-    var tops = heights.map(function (v) { return v > 0 ? y + h - v * bitH - bitH * 0.15 : y + h + 2; });
-    if (tops.some(function (v) { return v < y + h; })) {
-      var m = new Path2D(), px = function (i) { return x + (i + 0.5) * colW; };
-      m.moveTo(x - 4, y + h + 4); m.lineTo(x - 4, tops[0] + (heights[0] > 0 ? bitH * 0.4 : 0));
-      for (var i = 0; i < n; i++) {
-        var nx = i < n - 1 ? (px(i) + px(i + 1)) / 2 : x + w + 4, ny = i < n - 1 ? (tops[i] + tops[i + 1]) / 2 : tops[i] + (heights[i] > 0 ? bitH * 0.4 : 0);
-        m.quadraticCurveTo(px(i), tops[i], nx, ny);
-      }
-      m.lineTo(x + w + 4, y + h + 4); m.closePath();
-      D.shape(c, m, D.tone(c, H0.mass, y, y + h), { lw: Math.max(2.5, colW * 0.06), depth: bitH * 0.4 });
+  /* the filling rising over the bottom of the scene (scene units): p is how full, 0..1 */
+  function drawFill(c, name, p, t, reduce) {
+    var F = FILL[name]; if (!F || F.kind === 'own' || p <= 0.001) return;
+    var yTop = lerp(H + 4, F.top, clamp(p, 0, 1));
+    if (F.kind === 'water') {
+      var wp = new Path2D(); wp.moveTo(0, H + 2);
+      for (var x = 0; x <= W; x += 10) wp.lineTo(x, yTop + Math.sin(x * 0.06 + t * 2.5) * (reduce ? 0 : 2));
+      wp.lineTo(W, H + 2); wp.closePath();
+      c.save(); c.globalAlpha = 0.78; c.fillStyle = D.tone(c, F.col, yTop, H); c.fill(wp); c.globalAlpha = 1;
+      c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke(wp); c.restore();
+      return;
     }
-    for (var row = 0; row < 12; row++) {
-      for (var col = 0; col < n; col++) {
-        var hc = heights[col]; if (row >= Math.ceil(hc)) continue;
-        var part = Math.min(1, hc - row);
-        var seed = col * 13 + row * 7, jx = Math.sin(seed * 1.7) * colW * 0.12, jy = Math.cos(seed * 2.3) * bitH * 0.12;
-        var bob = reduce ? 0 : Math.sin(t * 2 + seed) * bitH * 0.03;
-        c.save(); c.translate(x + (col + 0.5) * colW + jx, y + h - (row + 0.55) * bitH + jy + bob);
-        if (part < 1) { c.globalAlpha = part; c.scale(part, part); }
-        chunk(c, name, r, seed);
-        c.restore();
+    // a pile of leaves or socks: a soft mound, then bits on it
+    var m = new Path2D(); m.moveTo(-4, H + 4);
+    for (var i = 0; i <= 10; i++) { var px = i / 10 * W, py = yTop + Math.sin(i * 1.7) * 6 + (i === 0 || i === 10 ? 8 : 0); if (i === 0) m.lineTo(px, py); else m.quadraticCurveTo(px - W / 20, py - 6, px, py); }
+    m.lineTo(W + 4, H + 4); m.closePath();
+    D.shape(c, m, D.tone(c, F.col, yTop, H), { lw: 3, depth: 6 });
+    c.save(); c.clip(m);
+    for (var row = 0; row * 16 < H - yTop + 16; row++) for (var k = 0; k < 12; k++) {
+      var seed = row * 13 + k * 7, bx = (k + (row % 2) * 0.5) * (W / 11) + Math.sin(seed) * 6, by = yTop + 6 + row * 16 + Math.cos(seed) * 4;
+      c.save(); c.translate(bx, by); chunk(c, name, 10, seed); c.restore();
+    }
+    c.restore();
+  }
+  /* the wall along the top of the board: wall[c] is each brick's strength now (0 = knocked out), brick[c] its
+     strength to start with (0 = no brick there; a taped brick, 2, cracks after one hit); drawn in page pixels in the band (x, y, w, h), one brick per column of colW */
+  var BRICK = '#E58F74';
+  function drawWall(c, name, wall, brick, x, y, w, h, colW, t, shake) {
+    c.save();
+    c.fillStyle = '#5A4A60'; c.fillRect(x, y, w, h);
+    for (var col = 0; col < wall.length; col++) {
+      var bx = x + col * colW, hp = wall[col];
+      if (!brick[col] || hp <= 0) {
+        // a gap: dark, with a little rubble at the sides
+        c.fillStyle = '#3A3046'; c.fillRect(bx, y, colW, h);
+        if (brick[col]) { c.fillStyle = BRICK; [[0.08, 0.7], [0.86, 0.75]].forEach(function (q) { c.beginPath(); c.arc(bx + q[0] * colW, y + q[1] * h, h * 0.16, 0, TAU); c.fill(); }); }
+        continue;
       }
+      var sx = shake && shake[col] > 0 ? Math.sin(shake[col] * 60) * colW * 0.04 : 0;
+      c.save(); c.translate(bx + sx, y);
+      var taped = hp >= 2, p = D.rrPath(2, 2, colW - 4, h - 4, Math.min(6, h * 0.2));
+      D.shape(c, p, D.tone(c, taped ? '#C9725C' : BRICK, 0, h), { lw: 3, depth: h * 0.14, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.28)'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(0, h / 2); c.lineTo(colW, h / 2); c.moveTo(colW * 0.5, 0); c.lineTo(colW * 0.5, h / 2); c.moveTo(colW * 0.25, h / 2); c.lineTo(colW * 0.25, h); c.moveTo(colW * 0.75, h / 2); c.lineTo(colW * 0.75, h); c.stroke();
+        if (taped) { c.fillStyle = 'rgba(201,139,91,.95)'; c.fillRect(0, h * 0.36, colW, h * 0.28); c.strokeStyle = 'rgba(42,35,64,.35)'; c.strokeRect(-2, h * 0.36, colW + 4, h * 0.28); }
+      } });
+      if (brick[col] >= 2 && hp === 1) { c.beginPath(); c.moveTo(colW * 0.3, 3); c.lineTo(colW * 0.45, h * 0.45); c.lineTo(colW * 0.35, h - 3); c.strokeStyle = INK; c.lineWidth = 2.2; c.stroke(); }
+      c.restore();
     }
     c.restore();
   }
 
   /* draw a scene into the box (x, y, w); the height is w * 0.6 */
-  function draw(c, name, S, x, y, w, joined) {
-    var k = w / W, h = H * k;
+  function draw(c, name, S, x, y, w, joined, vis) {
+    var k = w / W, h = H * k, cut = vis && vis < h ? h - vis : 0;   // cut: how much of the top is left off (sky)
+    if (cut) { y += cut; h -= cut; }
     c.save();
     if (!joined) D.shadow(c, x + w / 2, y + h + 4, w * 0.48, 8);
     // joined: the scene is the top of one picture with the heap and the board below, so only its top is rounded
     var frame = joined ? (function () { var p = new Path2D(), r = 18; p.moveTo(x, y + h); p.lineTo(x, y + r); p.arcTo(x, y, x + r, y, r); p.lineTo(x + w - r, y); p.arcTo(x + w, y, x + w, y + r, r); p.lineTo(x + w, y + h); p.closePath(); return p; })() : D.rrPath(x, y, w, h, 18);
-    c.save(); c.clip(frame); c.translate(x, y); c.scale(k, k); LS = k;
+    c.save(); c.clip(frame); c.translate(x, y - cut); c.scale(k, k); LS = k;
     c.lineJoin = 'round'; c.lineCap = 'round';
     (SCENES[name] || bath)(c, S);
+    drawFill(c, name, S.p, S.t, S.reduce);
     kittens(c, S);
     hearts(c, S);
     c.restore();
@@ -516,5 +538,5 @@
   /* where the next freed kitten will sit, in page pixels for a scene drawn at (x, y, w) */
   function slotAt(i, x, y, w) { var s = slot(i), k = w / W; return { x: x + s.x * k, y: y + s.y * k, k: k }; }
 
-  window.RescueScenes = { draw: draw, slotAt: slotAt, KSIZE: KSIZE, WIN: 3.4, FAIL: 2.7, catAt: catAt, heart: heart, HEAPS: HEAPS, chunk: chunk, drawHeap: drawHeap };
+  window.RescueScenes = { draw: draw, slotAt: slotAt, KSIZE: KSIZE, WIN: 3.4, FAIL: 2.7, catAt: catAt, heart: heart, FILL: FILL, chunk: chunk, drawWall: drawWall };
 })();

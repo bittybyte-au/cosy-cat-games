@@ -273,19 +273,29 @@
     })(),
 
     rescue: svg(
-      // a cardboard box burst open, a kitten popping out, scampering over to the cosy basket where a cat is already safe
-      shadow(66, 136, 46, 4) +
-      sh(P(34, 68, 'l6 -16h52l6 16z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(24, 78, 'l10 -10h64l10 10z'), '#9C6A3A', { lw: 3, k: 0 }) +
-      sh(P(24, 78, 'l10 -10l-20 -12l-12 10z'), '#D9A066', { lw: 3, k: 0 }) + sh(P(108, 78, 'l-10 -10l20 -12l12 10z'), '#D9A066', { lw: 3, k: 0 }) +
-      cat({ preset: 'white', pose: 'peek', face: 'happy', x: 66, y: 52, size: 54 }) +
-      sh(R(24, 78, 84, 58, 4), '#E2A866', { k: 4, in: '<rect x="24" y="78" width="84" height="12" fill="#F3C88E"/><rect x="58" y="78" width="14" height="58" fill="#C98B5B"/>' }) +
-      sh(R(-6, -4, 12, 8, 2), '#E2A866', { lw: 2.5, k: 0, t: 'translate(14 46) rotate(-30)' }) + sh(R(-5, -4, 10, 8, 2), '#E2A866', { lw: 2.5, k: 0, t: 'translate(120 40) rotate(25)' }) +
-      ln('M100 30Q138 4 168 38', 3, 0, ' stroke-dasharray="6 6"') + ln('M160 34L169 40L170 29', 3) +
-      shadow(188, 138, 40, 4) +
-      sh(E(188, 104, 36, 9), '#9C6A3A', { lw: 3, k: 0, in: el(188, 107, 28, 6, '#FF9EC4') }) +
-      cat({ preset: 'ginger', pose: 'peek', face: 'happy', x: 188, y: 76, size: 46 }) +
-      sh(P(152, 102, 'h72l-8 32q-28 6 -56 0z'), '#E6B477', { k: 4, in: ln('M164 102l4 36M178 102l2 38M194 102l-1 38M208 102l-4 36M152 118q36 6 72 0', 2.5, '#C98B5B') }) +
-      sh(P(224, 24, 'c-10 -8 -6 -16 0 -11c6 -5 10 3 0 11z'), '#FF8FAB', { lw: 2.5, k: 0 }) + sh(P(212, 50, 'c-7 -6 -4 -11 0 -8c4 -3 7 2 0 8z'), '#FF8FAB', { lw: 2.5, k: 0 })),
+      // the game as it looks: the bath scene on top, the water rising round a cat on a stool, a brick wall with a
+      // gap the water pours through, and the board of pieces (with a kitten box) underneath
+      sh(R(0, 0, 240, 150, 0), '#D4EEFF', { lw: 0, k: 0 }) +
+      ln('M0 18h240M0 36h240M30 0v58M60 0v58M90 0v58M120 0v58M150 0v58M180 0v58M210 0v58', 1.5, 'rgba(255,255,255,.8)') +
+      sh(R(0, 52, 240, 12, 0), '#FFE3C2', { lw: 0, k: 0 }) +
+      '<path d="M26 34H150V44Q150 58 136 58H40Q26 58 26 44Z" fill="#8FD3FF" opacity=".85"/>' +
+      sh(P(20, 30, 'h136v14q0 16 -16 16h-104q-16 0 -16 -16z'), 'none', { lw: 3.5, k: 0 }) + sh(R(16, 27, 144, 6, 3), '#FFFFFF', { lw: 3, k: 0 }) +
+      sh(R(76, 36, 26, 5, 2), '#E6B98A', { lw: 2.5, k: 0 }) + ln('M80 41v12M98 41v12', 3, '#C98B5B') +
+      cat({ preset: 'ginger', pose: 'sit', face: 'surprised', x: 89, y: 17, size: 23 }) +
+      sh(P(186, 46, 'h40l-4 12q-16 3 -32 0z'), '#E6B477', { lw: 2.5, k: 0 }) +
+      // the wall, with one brick knocked out and the water pouring through
+      [0, 1, 2, 4, 5].map(function (i) { return sh(R(i * 40 + 2, 64, 36, 12, 3), '#E58F74', { lw: 2.5, k: 2, in: ln('M' + (i * 40) + ' 70h40M' + (i * 40 + 20) + ' 64v6', 1.5, 'rgba(42,35,64,.3)') }); }).join('') +
+      '<rect x="120" y="64" width="40" height="12" fill="#3A3046"/>' +
+      '<path d="M133 62q-2 14 1 26h12q3 -12 1 -26z" fill="#8FD3FF"' + stroke(2) + '/>' +
+      // the board
+      sh(R(0, 76, 240, 74, 0), '#FFF8EC', { lw: 0, k: 0 }) +
+      '<path d="M40 76h40v37H40zM120 76h40v37h-40zM0 113h40v37H0zM80 113h40v37H80zM160 113h40v37h-40z" fill="#F6E8D2"/>' +
+      sh(R(84, 82, 32, 26, 4), '#E2A866', { lw: 2.5, k: 2, in: '<rect x="96" y="82" width="8" height="26" fill="#C98B5B"/>' }) +
+      [[20, 95, '#5DB6F5'], [180, 95, '#5DB6F5'], [140, 132, '#5DB6F5']].map(function (q) { return sh(P(q[0] - 11, q[1], 'q7 -8 14 -3l6 -4v14l-6 -4q-7 5 -14 -3z'), q[2], { lw: 2.5, k: 0 }); }).join('') +
+      [[60, 95], [220, 132], [100, 132]].map(function (q) { return sh(E(q[0], q[1], 10, 10), '#FF7EB6', { lw: 2.5, k: 2, in: ln('M' + (q[0] - 10) + ' ' + (q[1] - 2) + 'q10 -6 20 0M' + (q[0] - 10) + ' ' + (q[1] + 4) + 'q10 -6 20 0', 1.5, 'rgba(42,35,64,.35)') }); }).join('') +
+      [[140, 95], [20, 132], [220, 95]].map(function (q) { return sh(E(q[0], q[1] + 3, 7, 6), '#A77BFF', { lw: 2.2, k: 0 }) + el(q[0] - 7, q[1] - 6, 3, 3, '#A77BFF') + el(q[0], q[1] - 9, 3, 3, '#A77BFF') + el(q[0] + 7, q[1] - 6, 3, 3, '#A77BFF'); }).join('') +
+      [[180, 132], [60, 132]].map(function (q) { return sh(P(q[0] - 9, q[1] + 8, 'q0 -18 9 -18q9 0 9 18z'), '#FFC93C', { lw: 2.5, k: 0 }); }).join('') +
+      ln('M0 76h240', 3)),
     hotpaws: (function () {
       // a little light-up floor from above: green and dark tiles are safe, blue ones are diamonds, orange warns, red is lava
       var K = { on: ['#5FE08B', '#C4FFD3'], off: ['#3A3262', '#4E4579'], d: ['#5DB6F5', '#D7F0FF'], warn: ['#FFB547', '#FFEBA8'], lava: ['#FF5B3A', '#FFB14A'] };

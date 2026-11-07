@@ -17,15 +17,17 @@
    path, one cell per tick) | 'down' (cushion kittens reaching the bottom) | 'shuffle'.
    Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
    a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion.
-   The heap (def.pile: how many bits of it rest on top of each column) sits on the top of the board, under the
-   rescue scene. Every piece cleared in a column knocks one bit of that column's heap down into the board
-   (logged as pass.drain); clearing the whole heap is the 'pile' goal. */
+   The wall: a row of bricks along the top of the board, one on each column (def.wall: each brick's strength, 1 or 2;
+   0 = none), between the board and the rescue scene, where the peril is filling up. Clearing a piece (or breaking a
+   box) in a column's top row knocks the brick above it (logged as pass.wall). Every brick knocked out is a gap the
+   filling drains through: after each move each gap takes DRAIN of a move off the moves used (st.drained, at most
+   DRAIN_MAX a move), so the peril creeps more slowly; knocking down the whole wall is the 'wall' goal. */
 (function () {
   'use strict';
 
   var SPECIAL = { zh: 1, zv: 1, nip: 1, rain: 1 };
-  var DRAIN_ROWS = 3;   // only pieces cleared this near the top of a column (where the heap rests) knock bits down
-  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'pile'];
+  var DRAIN = 0.08, DRAIN_MAX = 0.6;   // how much of a move each open gap drains away after every move, and the most in all
+  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'wall'];
 
   function rnd(st) {
     st.seed = (st.seed + 0x6D2B79F5) | 0;
@@ -46,12 +48,10 @@
     colours.sort();
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
-      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 },
-      moves: def.moves, used: 0, extra: 0, top: [], bottom: [], pile: []
+      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, wall: 0 },
+      moves: def.moves, used: 0, extra: 0, drained: 0, top: [], bottom: [], wall: [], brick: []
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
-    for (var pc = 0; pc < C; pc++) st.pile.push(Math.max(0, (def.pile && def.pile[pc]) | 0));
-    st.goal.pile = st.pile.reduce(function (a, b) { return a + b; }, 0);
     var randomCells = [];
     for (var r = 0; r < R; r++) {
       st.mask.push([]); st.g.push([]); st.box.push([]);
@@ -73,6 +73,12 @@
       st.top[cc] = -1; st.bottom[cc] = -1;
       for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; }
     }
+    // the wall: one brick on top of each column that has cells (def.wall gives each one's strength)
+    for (var wc = 0; wc < C; wc++) {
+      var hp = st.top[wc] < 0 ? 0 : (def.wall ? (def.wall[wc] | 0) : 1);
+      st.wall.push(hp); st.brick.push(hp > 0);
+      if (hp > 0) st.goal.wall++;
+    }
     // fill the pieces with no ready-made lines, and at least one move
     for (var tries = 0; tries < 200; tries++) {
       randomCells.forEach(function (q) {
@@ -92,8 +98,8 @@
     for (k in st) o[k] = st[k];
     o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours;
     o.goal = st.goal;
-    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, pile: st.got.pile };
-    o.pile = st.pile.slice();
+    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, wall: st.got.wall };
+    o.wall = st.wall.slice(); o.brick = st.brick;
     o.g = []; o.box = [];
     for (var r = 0; r < st.R; r++) {
       var gr = [], br = [];
@@ -185,10 +191,11 @@
     return best;
   }
   function won(st) { for (var i = 0; i < GOALS.length; i++) if (st.got[GOALS[i]] < st.goal[GOALS[i]]) return false; return true; }
-  function movesLeft(st) { return st.moves + st.extra - st.used; }
+  function movesLeft(st) { return st.moves + st.extra - st.used + st.drained; }
+  function gaps(st) { var n = 0; for (var c = 0; c < st.C; c++) if (st.brick[c] && st.wall[c] <= 0) n++; return n; }
 
   /* ---------- one clearing pass ---------- */
-  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], drain: [], chain: 0 }; }
+  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], wall: [], chain: 0 }; }
 
   function damageBox(st, ev, r, c, d) {
     var b = st.box[r][c];
@@ -272,9 +279,14 @@
       ev.removed.push({ id: p.id, r: r, c: c, k: p.k, sp: p.sp, d: d });
       if (SPECIAL[p.sp]) fire(st, ev, p, r, c, d, q);
     }
-    // each piece cleared knocks a bit of the heap above its column down into the board
-    ev.removed.forEach(function (rm) {
-      if (st.pile[rm.c] > 0 && rm.r - st.top[rm.c] < DRAIN_ROWS) { st.pile[rm.c]--; st.got.pile++; ev.drain.push({ c: rm.c, r: rm.r, d: rm.d, left: st.pile[rm.c] }); }
+    // anything cleared in a column's top row knocks the brick above it (once a pass)
+    var knocked = {};
+    ev.removed.concat(ev.boxes).forEach(function (it) {
+      var c = it.c;
+      if (it.r !== st.top[c] || knocked[c] || !(st.wall[c] > 0)) return;
+      knocked[c] = 1; st.wall[c]--;
+      if (st.wall[c] <= 0) st.got.wall++;
+      ev.wall.push({ c: c, hp: st.wall[c], broke: st.wall[c] <= 0, d: it.d || 0 });
     });
     made.forEach(function (m) {
       var p = st.g[m.r][m.c];
@@ -446,6 +458,9 @@
       if (isSp(b)) seed.hits.push([r1, c1, 0]);
     }
     cascade(st, log, seed, [[r2, c2], [r1, c1]]);
+    // the filling drains through every gap in the wall
+    var n = gaps(st);
+    if (n) { var amt = Math.min(DRAIN_MAX, n * DRAIN); st.drained += amt; log.push({ type: 'drain', gaps: n, amount: amt }); }
     return log;
   }
 
@@ -465,8 +480,9 @@
   function need(st, k) { return st.got[k] < st.goal[k]; }
   function score(before, after) {
     var s = 0;
-    var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down, dp = after.got.pile - before.got.pile;
-    s += dp * (need(before, 'pile') ? 14 : 0);
+    var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
+    var hits = 0; for (var wc = 0; wc < before.C; wc++) hits += Math.max(0, before.wall[wc] - after.wall[wc]);
+    s += hits * (need(before, 'wall') ? 26 : 0) + (after.got.wall - before.got.wall) * (need(before, 'wall') ? 20 : 0);
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);
@@ -491,6 +507,6 @@
 
   window.RescueEngine = {
     make: make, clone: clone, swap: swap, blast: blast, swapWorks: swapWorks, allMoves: allMoves, hasMove: hasMove,
-    findGroups: findGroups, won: won, movesLeft: movesLeft, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp
+    findGroups: findGroups, won: won, movesLeft: movesLeft, gaps: gaps, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp
   };
 })();
