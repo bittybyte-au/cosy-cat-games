@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenery Gallery</title>
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+/* A reference sheet for shared/scene.js: every kind of scenery and each of its variants, drawn by GGScene.
+   Not part of the site (not linked, not cached offline); open it to check a change to the kit looks right. */
+:root { --ink: #2A2340; --bg: #FFF8EE; --card: #FFFFFF; --muted: #5E5675; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #FFF8EE; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 600 14px/1.3 "Nunito", ui-rounded, system-ui, sans-serif; padding: 16px; }
+h1 { font: 800 1.6rem/1 "Baloo 2", ui-rounded, sans-serif; margin: 4px 0 4px; }
+p { margin: 0 0 14px; color: var(--muted); }
+h2 { font: 800 1.1rem/1 "Baloo 2", ui-rounded, sans-serif; margin: 18px 0 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+figure { margin: 0; background: var(--card); border: 3px solid var(--ink); border-radius: 14px; overflow: hidden; }
+canvas { display: block; width: 100%; height: auto; }
+figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: ui-monospace, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<h1>Scenery gallery</h1>
+<p>Every kind in <code>shared/scene.js</code> (GGScene), each variant drawn once. Games call these; they never draw scenery themselves.</p>
+<div id="out"></div>
+<script src="../shared/draw.js"></script>
+<script src="../shared/cat.js"></script>
+<script src="../shared/scene.js"></script>
+<script>
+(function () {
+  var S = GGScene, CW = 240, CH = 200, DPR = 2;
+  var out = document.getElementById('out');
+  function section(title, cells) {
+    var h = document.createElement('h2'); h.textContent = title; out.appendChild(h);
+    var g = document.createElement('div'); g.className = 'grid'; out.appendChild(g);
+    cells.forEach(function (cell) {
+      var f = document.createElement('figure'), cv = document.createElement('canvas');
+      cv.width = CW * DPR; cv.height = CH * DPR;
+      var c = cv.getContext('2d'); c.scale(DPR, DPR); c.lineJoin = 'round'; c.lineCap = 'round';
+      c.fillStyle = cell.bg || '#FFF8EE'; c.fillRect(0, 0, CW, CH);
+      try { cell.draw(c); } catch (e) { c.fillStyle = 'red'; c.fillText(e.message, 8, 20); console.error(cell.name, e); }
+      var cap = document.createElement('figcaption'); cap.textContent = cell.name;
+      f.appendChild(cv); f.appendChild(cap); g.appendChild(f);
+    });
+  }
+  function ground(c, y) { S.ground(c, 0, y, CW, CH - y, { tufts: 0 }); }
+
+  section('Sky', [
+    { name: "sky {kind:'day'} + sun plain", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'day' }); S.sun(c, 120, 100, { size: 80 }); } },
+    { name: "sky {kind:'dusk'} + sun cat", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'dusk' }); S.sun(c, 120, 104, { kind: 'cat', size: 84 }); } },
+    { name: "sky {kind:'night'} + moon full", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'night' }); S.moon(c, 120, 100, { size: 80, glow: true }); } },
+    { name: "moon {kind:'crescent'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'night', stars: 0 }); S.stars(c, 0, 0, CW, CH, { n: 30, kind: 'dot' }); S.moon(c, 120, 100, { kind: 'crescent', size: 110 }); } },
+    { name: "star {r, string} / stars", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'night', stars: 14 }); S.star(c, 80, 110, { r: 30, string: 70 }); S.star(c, 170, 80, { r: 22, col: '#FF8FAB' }); S.star(c, 180, 150, { r: 12 }); } },
+    { name: "sun {rays:false}, small sizes", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.sun(c, 60, 70, { size: 60, rays: false }); S.sun(c, 150, 70, { size: 40 }); S.sun(c, 190, 150, { kind: 'cat', size: 44, face: 'open' }); } }
+  ]);
+  section('Clouds', [
+    { name: "cloud {kind:'puff'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.cloud(c, 120, 100, { size: 170 }); S.cloud(c, 60, 40, { size: 70 }); } },
+    { name: "cloud {kind:'cat', face:'open'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.cloud(c, 120, 110, { kind: 'cat', size: 170, face: 'open' }); } },
+    { name: "cloud {kind:'cat', face:'sleep', col}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.cloud(c, 120, 110, { kind: 'cat', size: 150, face: 'sleep', col: '#E3E7F2' }); } },
+    { name: "cloud {kind:'flat'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, { kind: 'night', stars: 10 }); S.cloud(c, 120, 90, { kind: 'flat', size: 170, col: '#F3EEFF' }); } }
+  ]);
+  section('Land', [
+    { name: "hills {kind:'one'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.hills(c, 0, 90, CW, 110, { kind: 'one' }); } },
+    { name: "hills {kind:'two'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.hills(c, 0, 80, CW, 120, { kind: 'two', col: '#7BD389', back: '#4FB868' }); } },
+    { name: "hills {kind:'bumpy'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.hills(c, 0, 100, CW, 100, { kind: 'bumpy', col: '#9BDC8C' }); } },
+    { name: "ground {kind:'grass', tufts}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.ground(c, 0, 90, CW, 110, { tufts: 12 }); } },
+    { name: "ground {kind:'sand', edge:'wave'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.water(c, 0, 60, CW, 50, { kind: 'sea' }); S.ground(c, 0, 106, CW, 94, { kind: 'sand', edge: 'wave', tufts: 18 }); } },
+    { name: "ground {kind:'soil'} + tuft", draw: function (c) { S.ground(c, 0, 90, CW, 110, { kind: 'soil', tufts: 14 }); S.tuft(c, 60, 90, { size: 22, col: '#4FB868' }); S.tuft(c, 180, 90, { size: 18, col: '#4FB868' }); } },
+    { name: "water {kind:'sea'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.water(c, 0, 80, CW, 120, { kind: 'sea' }); } },
+    { name: "water {kind:'pond'}", draw: function (c) { ground(c, 50); S.water(c, 30, 80, 180, 80, { kind: 'pond' }); } },
+    { name: "fence {kind:'picket'} / {kind:'rail'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); S.fence(c, 0, CW, 95, { h: 70 }); S.ground(c, 0, 95, CW, 10, { tufts: 0 }); S.fence(c, 0, CW, 190, { kind: 'rail', h: 70, col: '#C98B5B' }); } }
+  ]);
+  section('Trees and plants outdoors', [
+    { name: "tree {kind:'round'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); ground(c, 176); S.tree(c, 120, 180, { size: 170 }); } },
+    { name: "tree {kind:'round', fruit}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); ground(c, 176); S.tree(c, 120, 180, { size: 170, fruit: '#FF5A5F' }); } },
+    { name: "tree {kind:'pine'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); ground(c, 176); S.tree(c, 80, 180, { kind: 'pine', size: 170 }); S.tree(c, 180, 180, { kind: 'pine', size: 110, fruit: '#FFD23F' }); } },
+    { name: "tree {kind:'blossom'}", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); ground(c, 176); S.tree(c, 120, 180, { kind: 'blossom', size: 170 }); } },
+    { name: "tree {kind:'round', flower} small", draw: function (c) { S.sky(c, 0, 0, CW, CH, {}); ground(c, 176); S.tree(c, 70, 180, { size: 90, flower: '#FFFFFF' }); S.tree(c, 170, 180, { size: 120, leaf: '#7BD389' }); } },
+    { name: "bush {kind:'mound', berries}", draw: function (c) { ground(c, 150); S.bush(c, 120, 170, { w: 190, h: 120, berries: '#B48CFF' }); } },
+    { name: "bush {kind:'hedge'}", draw: function (c) { ground(c, 150); S.bush(c, 120, 170, { kind: 'hedge', w: 200, h: 110, col: '#4FB868' }); } },
+    { name: "bush {kind:'ball', flower}", draw: function (c) { ground(c, 150); S.bush(c, 120, 170, { kind: 'ball', w: 170, h: 120, col: '#7BD389', flower: '#FF8FAB' }); } },
+    { name: "flower daisy / tulip / bud", draw: function (c) { ground(c, 150); S.flower(c, 60, 170, { size: 110, col: '#FF8FAB' }); S.flower(c, 125, 170, { kind: 'tulip', size: 110, col: '#FF6B57' }); S.flower(c, 190, 170, { kind: 'bud', size: 100, col: '#B48CFF' }); } },
+    { name: "flowerTuft {cols, n}", draw: function (c) { ground(c, 150); S.flowerTuft(c, 70, 172, { size: 70 }); S.flowerTuft(c, 170, 172, { kind: 'tulip', size: 80, n: 2, cols: ['#FFD23F', '#FF6B57'] }); } }
+  ]);
+  section('Walls and floors', [
+    { name: "wall {pattern:'dots'} + floor planks", draw: function (c) { S.wall(c, 0, 0, CW, 120, { pattern: 'dots', col: '#FFE6F0' }); S.floor(c, 0, 120, CW, 80, {}); } },
+    { name: "wall {pattern:'stripes'} + floor tiles", draw: function (c) { S.wall(c, 0, 0, CW, 120, { pattern: 'stripes', col: '#E3F4D9', col2: '#D2EBC4' }); S.floor(c, 0, 120, CW, 80, { kind: 'tiles', skirting: true }); } },
+    { name: "wall {pattern:'tiles'} + floor check", draw: function (c) { S.wall(c, 0, 0, CW, 120, { pattern: 'tiles', col: '#FFFFFF', edge: 'top' }); S.floor(c, 0, 120, CW, 80, { kind: 'check', size: 40 }); } },
+    { name: "wall {pattern:'plain'} + floor carpet", draw: function (c) { S.wall(c, 0, 0, CW, 120, { col: '#EAF7E6' }); S.floor(c, 0, 120, CW, 80, { kind: 'carpet', skirting: '#FFF8EC' }); } }
+  ]);
+  section('Windows and curtains', [
+    { name: "window {view:'garden'} + tied gingham", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'stripes', col: '#E3F4D9', col2: '#D2EBC4' }); S.window(c, 60, 40, 120, 100, { bars: 'none', curtains: { pattern: 'gingham', colour: '#FF6B57', tie: '#7BD389', rod: '#A86B3C' } }); } },
+    { name: "window {view:'day', bars:'mid'} + stars", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'dots', col: '#E6F2FF' }); S.window(c, 70, 40, 100, 120, { view: 'day', bars: 'mid', sill: false, curtains: { pattern: 'stars', colour: '#B48CFF', colour2: '#FFE14D', rod: '#8E7FA8' } }); } },
+    { name: "window {view:'night', frame}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { col: '#5A4A7A' }); S.window(c, 60, 40, 120, 110, { view: 'night', frame: '#E9DCC8', sill: '#E9DCC8' }); } },
+    { name: "window {frame, bars:'cross'} + stripes", draw: function (c) { S.wall(c, 0, 0, CW, CH, { col: '#FFF3D6' }); S.window(c, 70, 40, 100, 100, { frame: '#FFFFFF', sill: '#E6B98A', curtains: { pattern: 'stripes', colour: '#7CC4FF', tie: '#FFD23F' } }); } },
+    { name: "curtains {kind:'drape', pattern:'dots'}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { col: '#FFF1DC' }); S.window(c, 75, 40, 90, 100, { view: 'sky', frame: '#FFFFFF', cloud: 0.4, curtains: { kind: 'drape', pattern: 'dots', colour: '#FF8FAB' } }); } },
+    { name: "curtains {pattern:'plain'}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { col: '#EAF7E6' }); S.window(c, 70, 40, 100, 110, { view: 'garden', bars: 'mid', curtains: { pattern: 'plain', colour: '#FFC93C', tie: '#FF8FAB' } }); } }
+  ]);
+  section('Furniture', [
+    { name: "shelf {kind:'brackets'} / 'plain' / 'sill'", draw: function (c) { S.wall(c, 0, 0, CW, CH, { col: '#FFF1DC' }); S.shelf(c, 30, 210, 40, {}); S.shelf(c, 30, 210, 100, { kind: 'plain', thick: 14 }); S.shelf(c, 30, 210, 160, { kind: 'sill' }); } },
+    { name: "table {kind:'legs', apron}", draw: function (c) { S.wall(c, 0, 0, CW, 160, { col: '#FFF1DC' }); S.floor(c, 0, 160, CW, 40, {}); S.table(c, 30, 210, 80, 170, { apron: '#FFD3E4' }); } },
+    { name: "table {kind:'legs', cloth}", draw: function (c) { S.wall(c, 0, 0, CW, 160, { col: '#FFF1DC' }); S.floor(c, 0, 160, CW, 40, {}); S.table(c, 30, 210, 80, 170, { cloth: 'rgba(255,90,95,.55)', col: '#FFFFFF' }); } },
+    { name: "table {kind:'cabinet'}", draw: function (c) { S.wall(c, 0, 0, CW, 160, { col: '#FFF1DC' }); S.floor(c, 0, 160, CW, 40, {}); S.table(c, 30, 210, 60, 172, { kind: 'cabinet' }); } },
+    { name: "table {kind:'bench'} / {doors}", draw: function (c) { S.wall(c, 0, 0, CW, 100, { col: '#FFF1DC' }); S.table(c, 0, CW, 60, 120, { kind: 'bench' }); S.table(c, 0, CW, 130, CH, { kind: 'bench', col: '#E6B98A', front: '#C98B5B', doors: true }); } },
+    { name: "rug plain / stitch / rings", draw: function (c) { S.floor(c, 0, 0, CW, CH, { kind: 'planks', skirting: false }); S.rug(c, 60, 60, 50, 26, { col: '#C7EBD2' }); S.rug(c, 175, 60, 52, 28, { kind: 'stitch', col: '#FFE7F0', col2: '#FFC2DA' }); S.rug(c, 120, 145, 95, 36, { kind: 'rings', col: '#B48CFF' }); } },
+    { name: "lamp {kind:'floor'} / {kind:'table', on}", draw: function (c) { S.wall(c, 0, 0, CW, 170, { col: '#E6F2FF' }); S.floor(c, 0, 170, CW, 30, {}); S.lamp(c, 60, 180, { size: 160 }); S.table(c, 120, 220, 120, 176, { kind: 'cabinet' }); S.lamp(c, 170, 120, { kind: 'table', size: 80, on: true, shade: '#E9B8C8' }); } },
+    { name: "picture hills / sea / night", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'dots', col: '#E6F2FF' }); S.picture(c, 20, 40, 90, 64, {}); S.picture(c, 130, 40, 90, 64, { view: 'sea', frame: '#7CC4FF' }); S.picture(c, 75, 128, 90, 60, { view: 'night', frame: '#C9A15B', string: false }); } },
+    { name: "bunting {sag, cols}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'stripes', col: '#FFF1DC', col2: '#FFE4C4' }); S.bunting(c, 0, 30, CW, 30, { sag: 24 }); S.bunting(c, 20, 110, 220, 140, { sag: 14, flag: 22 }); } },
+    { name: "plant leafy / flowers / cactus", draw: function (c) { S.wall(c, 0, 0, CW, 130, { col: '#FFF1DC' }); S.shelf(c, 0, CW, 130, { kind: 'plain', thick: 70 }); S.plant(c, 44, 134, { size: 110, pot: '#7CC4FF' }); S.plant(c, 122, 134, { kind: 'flowers', size: 110 }); S.plant(c, 198, 134, { kind: 'cactus', size: 100, pot: '#FF9EC4', flower: '#FF6B57' }); } }
+  ]);
+  section('SVG twins', [
+    { name: "svg.cloud cat + svg.hills two", draw: function (c) {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200"><rect width="240" height="200" fill="#BFE6FF"/>' + S.svg.hills({ w: 240, h: 200, kind: 'two', top: 0.5, col: '#7BD389', back: '#4FB868' }) + S.svg.cloud({ x: 120, y: 70, size: 150, kind: 'cat', face: 'open' }) + '</svg>';
+      var img = new Image(); img.onload = function () { c.drawImage(img, 0, 0); }; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    } },
+    { name: "canvas twin of the same", draw: function (c) { S.sky(c, 0, 0, CW, CH, { col: '#BFE6FF' }); S.hills(c, 0, 100, CW, 100, { kind: 'two', col: '#7BD389', back: '#4FB868', lw: 0.001 }); S.cloud(c, 120, 70, { kind: 'cat', size: 150, face: 'open' }); } }
+  ]);
+})();
+</script>
+</body>
+</html>

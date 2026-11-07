@@ -315,19 +315,10 @@
   var PROPS = {
     /* garden */
     bush: { peek: [[-0.5, -0.4], [0.5, -0.4], [0, -1.02], [-0.3, -0.88]], w: 190, h: 120, draw: function (c, p) {
-      sh(c, pth(function (q) { q.moveTo(-95, 0); [[-95, -40, -70, -78], [-60, -115, -10, -105], [10, -128, 55, -100], [90, -96, 95, -50]].forEach(function (k) { q.quadraticCurveTo(k[0], k[1], k[2], k[3]); }); q.quadraticCurveTo(100, -20, 95, 0); q.closePath(); }), D.tone(c, p.col, -120, 0), 5, function (c) {
-        c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.ellipse(-40, -78, 22, 12, -0.4, 0, TAU); c.fill(); c.beginPath(); c.ellipse(30, -86, 18, 10, 0.3, 0, TAU); c.fill();
-        if (p.berries) [[-50, -40], [-10, -70], [40, -50], [60, -24], [-30, -18]].forEach(function (k) { circle(c, k[0], k[1], 7); fillInk(c, p.berries, 2.5); });
-      }, 12);
+      GGScene.bush(c, 0, 0, { kind: 'mound', w: 190, h: 120, col: p.col, berries: p.berries, ls: LS });
     }, cols: ['#5CCB75', '#4FB868', '#7BD389'] },
     pot: { peek: [[-0.5, -0.4], [0.5, -0.4], [0, -0.62]], w: 120, h: 160, draw: function (c, p) {
-      [[-24, -150, '#FF8FAB'], [10, -164, '#FFD23F'], [36, -138, p.flower]].forEach(function (f) {
-        tube(c, function (c) { c.moveTo(f[0] * 0.4, -84); c.quadraticCurveTo(f[0] * 0.7, -110, f[0], f[1] + 16); }, '#4FB868', 4);
-        for (var i = 0; i < 5; i++) { var a = i * TAU / 5; circle(c, f[0] + Math.cos(a) * 12, f[1] + Math.sin(a) * 12, 10); fillInk(c, f[2], 3); }
-        circle(c, f[0], f[1], 8); fillInk(c, '#FFF3B0', 3);
-      });
-      sh(c, pth(function (q) { q.moveTo(-56, -84); q.lineTo(56, -84); q.lineTo(44, 0); q.lineTo(-44, 0); q.closePath(); }), D.tone(c, p.col, -84, 0), 5, null, 10);
-      sh(c, RR(-62, -96, 124, 20, 8), p.col, 4.5, null, 4);
+      GGScene.plant(c, 0, 0, { kind: 'flowers', size: 180, pot: p.col, flower: p.flower, ls: LS });
     }, cols: ['#E8875A', '#FF9EC4', '#7CC4FF'] },
     rock: { peek: [[-0.48, -0.35], [0.48, -0.3], [-0.1, -1.0]], w: 150, h: 80, draw: function (c, p) {
       sh(c, pth(function (q) { q.moveTo(-75, 0); q.quadraticCurveTo(-80, -50, -30, -74); q.quadraticCurveTo(20, -90, 56, -56); q.quadraticCurveTo(84, -30, 75, 0); q.closePath(); }), D.tone(c, p.col, -80, 0), 5, function (c) {
@@ -342,14 +333,7 @@
       sh(c, RR(-50, -90, 100, 90, 18), D.tone(c, p.col, -90, 0), 5, function (c) { c.beginPath(); c.arc(-18, -50, 7, 0, TAU); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill(); }, 10);
     }, cols: ['#7CC4FF', '#FF6B57', '#B48CFF'] },
     tree: { peek: [[-0.5, -0.63], [0.5, -0.66], [0, -1.08]], w: 210, h: 300, draw: function (c, p) {
-      sh(c, pth(function (q) { q.moveTo(-26, 0); q.lineTo(-18, -160); q.lineTo(18, -160); q.lineTo(26, 0); q.closePath(); }), '#A86B3C', 5, function (c) {
-        c.beginPath(); c.moveTo(-4, -60); c.quadraticCurveTo(4, -80, -2, -100); c.strokeStyle = '#7A4E2D'; c.lineWidth = 4; c.lineCap = 'round'; c.stroke();
-      }, 8);
-      // the crown: ink circles, then the leaf circles a line's width smaller, so only the outer edge shows
-      var crown = [[-60, -190, 64], [50, -200, 66], [0, -250, 74], [-10, -170, 60]], o = wt(5);
-      c.fillStyle = INK; crown.forEach(function (k) { circle(c, k[0], k[1], k[2] + o / 2); c.fill(); });
-      c.fillStyle = D.tone(c, p.col, -324, -110); crown.forEach(function (k) { circle(c, k[0], k[1], k[2] - o / 2); c.fill(); });
-      if (p.berries) [[-60, -200], [30, -240], [60, -180], [-20, -260], [0, -190]].forEach(function (k) { circle(c, k[0], k[1], 9); fillInk(c, p.berries, 2.5); });
+      GGScene.tree(c, 0, 0, { kind: 'round', size: 324, leaf: p.col, fruit: p.berries, ls: LS });
     }, cols: ['#5CCB75', '#7BD389'] },
     /* bedroom */
     bed: { peek: [[0.5, -0.55], [-0.1, -0.75], [0.3, -0.75]], w: 300, h: 150, draw: function (c, p) {
@@ -382,12 +366,7 @@
       sh(c, RR(-64, -28, 128, 28, 8), '#C98B5B', 4, null, 4);
     }, cols: ['#B48CFF', '#FF8FAB', '#7BD389', '#FF9F43'] },
     plant: { peek: [[-0.46, -0.25], [0.46, -0.25], [0, -0.42]], w: 110, h: 180, draw: function (c, p) {
-      [[-1.1, 70], [-0.6, 90], [0, 100], [0.6, 88], [1.1, 72]].forEach(function (l) {
-        c.save(); c.translate(0, -70); c.rotate(l[0]);
-        sh(c, pth(function (q) { q.moveTo(0, 0); q.quadraticCurveTo(-18, -l[1] * 0.6, 0, -l[1]); q.quadraticCurveTo(18, -l[1] * 0.6, 0, 0); q.closePath(); }), '#4FB868', 4, null, 4);
-        c.restore();
-      });
-      sh(c, pth(function (q) { q.moveTo(-50, -76); q.lineTo(50, -76); q.lineTo(40, 0); q.lineTo(-40, 0); q.closePath(); }), D.tone(c, p.col, -76, 0), 5, null, 9);
+      GGScene.plant(c, 0, 0, { kind: 'leafy', size: 180, pot: p.col, ls: LS });
     }, cols: ['#FFFFFF', '#FFC93C', '#7CC4FF'] },
     /* beach */
     castle: { peek: [[-0.48, -0.3], [0.48, -0.3], [-0.25, -0.56]], w: 180, h: 150, draw: function (c, p) {
@@ -455,8 +434,7 @@
       }, 0);
     } },
     table: { w: 250, h: 120, cols: ['#E6B98A', '#C98B5B', '#FFFFFF'], draw: function (c, p) {
-      [-100, 100].forEach(function (x) { sh(c, RR(x - 8, -104, 16, 104, 6), '#C98B5B', 4, null, 3); });
-      sh(c, RR(-125, -122, 250, 26, 10), p.col, 5, function (c) { c.fillStyle = 'rgba(255,90,95,.55)'; for (var x = -125; x < 125; x += 28) c.fillRect(x, -122, 14, 26); }, 5);
+      GGScene.table(c, -125, 125, -122, 0, { kind: 'legs', col: p.col, cloth: 'rgba(255,90,95,.55)', ls: LS });
     } },
     stool: { w: 90, h: 110, cols: ['#FF6B57', '#FFC93C', '#7CC4FF'], draw: function (c, p) {
       c.beginPath(); c.moveTo(-30, 0); c.lineTo(-22, -96); c.moveTo(30, 0); c.lineTo(22, -96); c.moveTo(-26, -40); c.lineTo(26, -40); ink(c, 6);
@@ -478,106 +456,34 @@
   function sceneDef(id) { for (var i = 0; i < SCENES.length; i++) if (SCENES[i].id === id) return SCENES[i]; return SCENES[0]; }
 
   var CURTAINS = [
-    { pat: 'stripes', col: '#7CC4FF', col2: '#FFFFFF', tie: '#FFD23F', rod: '#C98B5B' },
-    { pat: 'dots', col: '#FF8FAB', col2: '#FFFFFF', tie: '#B48CFF', rod: '#C98B5B' },
-    { pat: 'stars', col: '#B48CFF', col2: '#FFE14D', tie: '#FFD23F', rod: '#8E7FA8' },
-    { pat: 'gingham', col: '#7BD389', col2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }
+    { pattern: 'stripes', colour: '#7CC4FF', colour2: '#FFFFFF', tie: '#FFD23F', rod: '#C98B5B' },
+    { pattern: 'dots', colour: '#FF8FAB', colour2: '#FFFFFF', tie: '#B48CFF', rod: '#C98B5B' },
+    { pattern: 'stars', colour: '#B48CFF', colour2: '#FFE14D', tie: '#FFD23F', rod: '#8E7FA8' },
+    { pattern: 'gingham', colour: '#7BD389', colour2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }
   ];
-  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
-  var curtainTiles = {};
-  function curtainTile(st) {
-    var key = st.pat + st.col + st.col2;
-    if (curtainTiles[key]) return curtainTiles[key];
-    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
-    var c = cv.getContext('2d');
-    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
-    c.fillStyle = st.col2;
-    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
-    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
-    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
-    else if (st.pat === 'stars') {
-      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
-    }
-    return (curtainTiles[key] = cv);
-  }
-  function drawCurtains(c, x, y, w, h, st) {
-    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
-    var fill = c.createPattern(curtainTile(st), 'repeat');
-    [-1, 1].forEach(function (side) {
-      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
-      var xi = xo - side * cwid;                           // the inner edge at the top
-      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
-      c.beginPath();
-      c.moveTo(xo, top); c.lineTo(xi, top);
-      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
-      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
-      c.lineTo(xo, bot); c.closePath();
-      c.fillStyle = fill; c.fill(); ink(c, 3.5);
-      // a couple of soft folds
-      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
-      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
-      // the tie
-      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
-      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
-      c.restore();
-    });
-    // the rod with round ends
-    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
-    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
-  }
 
+  /* the backdrop of each picture: all scenery comes from shared/scene.js */
   function drawBackground(c, S, W, H) {
-    var gy = H * S.def.ground;
+    var G = GGScene, gy = H * S.def.ground;
     if (S.def.id === 'garden') {
-      c.fillStyle = '#BFE6FF'; c.fillRect(0, 0, W, gy);
-      sh(c, E(W * 0.86, H * 0.1, 40, 40), '#FFE14D', 4, null, 7);
-      [[0.18, 0.12], [0.55, 0.08]].forEach(function (q) { var x = W * q[0], y = H * q[1]; c.fillStyle = '#fff'; circle(c, x, y, 26); c.fill(); circle(c, x + 30, y - 8, 30); c.fill(); circle(c, x + 60, y, 24); c.fill(); });
-      // fence
-      c.fillStyle = '#FFF1DC'; for (var x = 10; x < W; x += 46) { c.beginPath(); c.moveTo(x, gy); c.lineTo(x, gy - 70); c.lineTo(x + 16, gy - 86); c.lineTo(x + 32, gy - 70); c.lineTo(x + 32, gy); c.closePath(); c.fill(); ink(c, 3); }
-      rr(c, 0, gy - 56, W, 12, 4); c.fillStyle = '#FFF1DC'; c.fill(); ink(c, 3);
-      c.fillStyle = D.tone(c, '#9BDC8C', gy, H); c.fillRect(0, gy, W, H - gy); c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
-      c.strokeStyle = '#7BC96E'; c.lineWidth = 3; S.tufts.forEach(function (t) { c.beginPath(); c.moveTo(t.x - 8, t.y); c.lineTo(t.x - 4, t.y - 12); c.moveTo(t.x, t.y); c.lineTo(t.x, t.y - 16); c.moveTo(t.x + 8, t.y); c.lineTo(t.x + 4, t.y - 12); c.stroke(); });
-    } else if (S.def.id === 'bedroom') {
-      c.fillStyle = S.wall; c.fillRect(0, 0, W, gy);
-      c.fillStyle = 'rgba(255,255,255,.45)'; for (var yy = 30; yy < gy; yy += 60) for (var xx = 30 + (yy / 60 % 2) * 30; xx < W; xx += 60) { circle(c, xx, yy, 6); c.fill(); }
-      var wx = S.winX * W;
-      sh(c, RR(wx - 90, gy * 0.16, 180, gy * 0.56, 12), D.tone(c, '#9EDCFF', gy * 0.16, gy * 0.72), 5, function (c) {
-        circle(c, wx + 50, gy * 0.3, 18); c.fillStyle = '#FFE14D'; c.fill();
-        c.fillStyle = '#fff'; c.fillRect(wx - 3.5, 0, 7, gy);
-      }, 0);
-      drawCurtains(c, wx - 90, gy * 0.16, 180, gy * 0.56, S.curtain);
-      c.fillStyle = D.tone(c, '#E6B98A', gy, H); c.fillRect(0, gy, W, H - gy);
-      c.strokeStyle = '#D9A877'; c.lineWidth = 3; for (var fy = gy + 40; fy < H; fy += 50) { c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); c.stroke(); }
-      c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
-      sh(c, E(W * S.rugX, gy + (H - gy) * 0.55, W * 0.28, (H - gy) * 0.22), S.rug, 4, null, 10);
-    } else if (S.def.id === 'kitchen') {
-      c.fillStyle = S.wall; c.fillRect(0, 0, W, gy);
-      // tiles behind the worktops
-      var ty = gy - Math.min(120, gy * 0.32);
-      c.fillStyle = '#FFFFFF'; c.fillRect(0, ty, W, gy - ty);
-      c.strokeStyle = 'rgba(42,35,64,.14)'; c.lineWidth = 2;
-      for (var tyy = ty; tyy < gy; tyy += 30) { c.beginPath(); c.moveTo(0, tyy); c.lineTo(W, tyy); c.stroke(); }
-      for (var txx = 0; txx < W; txx += 30) { c.beginPath(); c.moveTo(txx, ty); c.lineTo(txx, gy); c.stroke(); }
-      c.beginPath(); c.moveTo(0, ty); c.lineTo(W, ty); ink(c, 3);
-      var kx = S.winX * W;
-      sh(c, RR(kx - 90, gy * 0.12, 180, ty - gy * 0.12 - 24, 12), D.tone(c, '#9EDCFF', gy * 0.12, ty - 24), 5, function (c) {
-        circle(c, kx + 50, gy * 0.24, 16); c.fillStyle = '#FFE14D'; c.fill();
-        c.fillStyle = '#fff'; c.fillRect(kx - 3.5, 0, 7, gy);
-      }, 0);
-      drawCurtains(c, kx - 90, gy * 0.12, 180, ty - gy * 0.12 - 24, S.curtain);
-      // checked floor
-      var tile = 60; c.fillStyle = '#F4E9DA'; c.fillRect(0, gy, W, H - gy); c.fillStyle = '#E3CDB1';
-      for (var fy2 = gy, r2 = 0; fy2 < H; fy2 += tile, r2++) for (var fx2 = (r2 % 2) * tile; fx2 < W; fx2 += tile * 2) c.fillRect(fx2, fy2, tile, tile);
-      c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); ink(c, 4);
-      sh(c, E(W * S.rugX, gy + (H - gy) * 0.6, W * 0.2, (H - gy) * 0.16), S.rug, 4, null, 10);
+      G.sky(c, 0, 0, W, gy, { col: '#BFE6FF' });
+      G.sun(c, W * 0.86, H * 0.1, { size: 80, rays: false });
+      [[0.18, 0.12], [0.55, 0.08]].forEach(function (q) { G.cloud(c, W * q[0] + 30, H * q[1], { size: 130 }); });
+      G.fence(c, 0, W, gy, { kind: 'picket', h: 86 });
+      G.ground(c, 0, gy, W, H - gy, { kind: 'grass', col: '#9BDC8C', tufts: 30, seed: S.id });
+    } else if (S.def.id === 'bedroom' || S.def.id === 'kitchen') {
+      var kitchen = S.def.id === 'kitchen', ty = kitchen ? gy - Math.min(120, gy * 0.32) : gy;
+      G.wall(c, 0, 0, W, gy, { pattern: kitchen ? 'plain' : 'dots', col: S.wall });
+      if (kitchen) G.wall(c, 0, ty, W, gy - ty, { pattern: 'tiles', col: '#FFFFFF', size: 30, edge: 'top' });
+      var wy = gy * (kitchen ? 0.12 : 0.16), wh = kitchen ? ty - wy - 24 : gy * 0.56;
+      G.window(c, S.winX * W - 90, wy, 180, wh, { view: 'day', bars: 'mid', sill: false, cloud: false, sun: { x: 0.64, y: 0.25, size: kitchen ? 32 : 36 }, curtains: S.curtain });
+      G.floor(c, 0, gy, W, H - gy, kitchen ? { kind: 'check', col: '#F4E9DA', col2: '#E3CDB1', size: 60 } : { kind: 'planks', col: '#E6B98A', col2: '#D9A877', size: 50 });
+      G.rug(c, W * S.rugX, gy + (H - gy) * (kitchen ? 0.6 : 0.55), W * (kitchen ? 0.2 : 0.28), (H - gy) * (kitchen ? 0.16 : 0.22), { col: S.rug });
     } else {
-      c.fillStyle = '#BFE6FF'; c.fillRect(0, 0, W, gy * 0.7);
-      sh(c, E(W * 0.14, H * 0.1, 40, 40), '#FFE14D', 4, null, 7);
-      c.fillStyle = '#4DB6E8'; c.fillRect(0, gy * 0.7, W, gy * 0.3 + 4);
-      c.strokeStyle = '#fff'; c.lineWidth = 4; for (var i = 0; i < 6; i++) { var x0 = (i * 180 + S.wave) % (W + 100) - 50, y0 = gy * 0.8 + (i % 2) * 18; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + 20, y0 - 10, x0 + 40, y0); c.stroke(); }
-      c.fillStyle = D.tone(c, '#F7E1A8', gy, H); c.fillRect(0, gy, W, H - gy);
-      c.beginPath(); c.moveTo(0, gy); for (var x2 = 0; x2 <= W; x2 += 40) c.lineTo(x2, gy + Math.sin(x2 / 40) * 5); ink(c, 4);
-      c.fillStyle = '#E8CB86'; S.tufts.forEach(function (t) { circle(c, t.x, t.y, 3); c.fill(); });
+      G.sky(c, 0, 0, W, gy * 0.7, { col: '#BFE6FF' });
+      G.sun(c, W * 0.14, H * 0.1, { size: 80, rays: false });
+      G.water(c, 0, gy * 0.7, W, gy * 0.3 + 4, { kind: 'sea', offset: S.wave });
+      G.ground(c, 0, gy, W, H - gy, { kind: 'sand', col: '#F7E1A8', edge: 'wave', tufts: 30, seed: S.id });
       S.shells.forEach(function (s) { c.save(); c.translate(s.x, s.y); c.rotate(s.r); c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 14, Math.PI, 0); c.closePath(); fillInk(c, s.col, 3); c.restore(); });
     }
   }
@@ -602,9 +508,7 @@
   var SURF = { bed: [-0.42, 0.36, -0.69], toybox: [-0.4, 0.4, -1.0], shelf: [-0.42, 0.42, -1.0], rock: [-0.25, 0.15, -0.92], towel: [-0.4, 0.4, -0.2],
     counter: [-0.42, 0.42, -1.0], table: [-0.4, 0.4, -1.0], oven: [-0.36, 0.36, -1.0], stool: [-0.15, 0.15, -0.95] };
   PROPS.shelf = { w: 230, h: 22, peek: [], cols: ['#C98B5B', '#E6B98A'], draw: function (c, p) {
-    // brackets first, starting inside the board, so the board covers the joins
-    [-80, 80].forEach(function (x) { c.beginPath(); c.moveTo(x, -12); c.lineTo(x, 8); c.lineTo(x + (x < 0 ? 14 : -14), -12); ink(c, 4); });
-    sh(c, RR(-115, -22, 230, 14, 5), D.tone(c, p.col, -22, -8), 4, null, 3);
+    GGScene.shelf(c, -115, 115, -22, { kind: 'brackets', col: p.col, thick: 14, ls: LS });
   } };
   PROPS.towel = { w: 220, h: 70, peek: [], cols: ['#FF8FAB', '#7CC4FF', '#FFD23F'], draw: function (c, p) {
     sh(c, pth(function (q) { q.moveTo(-100, 0); q.lineTo(-80, -60); q.lineTo(110, -60); q.lineTo(100, 0); q.closePath(); }), '#fff', 4, function (c) {
@@ -626,10 +530,9 @@
   var sceneCount = 0;
   function buildScene(id, W, H, nItems) {
     var def = sceneDef(id);
-    var S = { id: ++sceneCount, def: def, W: W, H: H, props: [], items: [], clutter: [], tufts: [], shells: [],
+    var S = { id: ++sceneCount, def: def, W: W, H: H, props: [], items: [], clutter: [], shells: [],
       wall: pick(['#FFE6F0', '#E6F2FF', '#FFF3D6', '#EAF7E6']), rug: pick(['#FFC2DA', '#C7EBD2', '#DCC8FF', '#FFE7A8']), curtain: pick(CURTAINS), winX: rand(0.25, 0.75), rugX: rand(0.35, 0.65), wave: rand(0, 200) };
     var gy = H * def.ground, wide = W > 800;
-    for (var t = 0; t < 30; t++) S.tufts.push({ x: rand(10, W - 10), y: rand(gy + 10, H - 10) });
     for (var s = 0; s < 4; s++) S.shells.push({ x: rand(30, W - 30), y: rand(gy + 30, H - 20), r: rand(-0.5, 0.5), col: pick(['#FFC2DA', '#FFFFFF', '#FFD9A8']) });
     function scaleAt(y) { return lerp(0.72, 1.05, clamp((y - gy) / (H - gy), 0, 1)); }
     // furniture

@@ -347,75 +347,24 @@
     }, 900);
   }
 
-  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
-  var curtainTiles = {};
-  function curtainTile(st) {
-    var key = st.pat + st.col + st.col2;
-    if (curtainTiles[key]) return curtainTiles[key];
-    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
-    var c = cv.getContext('2d');
-    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
-    c.fillStyle = st.col2;
-    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
-    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
-    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
-    else if (st.pat === 'stars') {
-      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
-    }
-    return (curtainTiles[key] = cv);
-  }
-  function drawCurtains(c, x, y, w, h, st) {
-    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
-    var fill = c.createPattern(curtainTile(st), 'repeat');
-    [-1, 1].forEach(function (side) {
-      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
-      var xi = xo - side * cwid;                           // the inner edge at the top
-      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
-      c.beginPath();
-      c.moveTo(xo, top); c.lineTo(xi, top);
-      c.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
-      c.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
-      c.lineTo(xo, bot); c.closePath();
-      c.fillStyle = fill; c.fill(); ink(c, 3.5);
-      // a couple of soft folds
-      c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
-      [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
-      // the tie
-      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
-      rr(c, -cwid * 0.3, -6, cwid * 0.6, 12, 6); c.fillStyle = st.tie; c.fill(); ink(c, 3);
-      c.restore();
-    });
-    // the rod with round ends
-    rr(c, x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5); c.fillStyle = st.rod; c.fill(); ink(c, 3);
-    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { c.beginPath(); c.arc(rx, top - 4, 8, 0, Math.PI * 2); c.fillStyle = st.rod; c.fill(); ink(c, 3); });
-  }
-
   function drawBench(c) {
     var B = bench(), W = LAY.W, H = LAY.H, win = B.win;
-    // a sunny garden shed: striped wall, and a window looking out at the sun
+    // a sunny garden shed: striped wall, and a window looking out at the sun (scenery from shared/scene.js)
+    var S = window.GGScene;
     c.fillStyle = '#E3F4D9'; c.fillRect(0, 0, W, H);
-    c.fillStyle = '#D2EBC4'; for (var x = 0; x < W; x += 50) c.fillRect(x, 0, 24, B.top);
-    var pane = D.rrPath(win.x, win.y, win.w, win.h, 14);
-    D.shape(c, pane, D.tone(c, '#9EDCFF', win.y, win.y + win.h), { lw: 4, depth: 0, inside: function (c) {
-      // the sun (the tap target in the sun step), rising from behind a hill outside
-      var sunPulse = grow.step === 'sun' ? 1 + Math.sin(time * 5) * 0.08 : 1;
-      c.save(); c.translate(B.sun.x, B.sun.y); c.scale(sunPulse, sunPulse);
-      c.strokeStyle = '#FFC93C'; c.lineWidth = 7; c.lineCap = 'round';
-      for (var i = 0; i < 10; i++) { var a = i * TAU / 10 + time * 0.3; c.beginPath(); c.moveTo(Math.cos(a) * 52, Math.sin(a) * 52); c.lineTo(Math.cos(a) * 70, Math.sin(a) * 70); c.stroke(); }
-      try { GGCat.draw(c, { preset: 'sun', face: grow.step === 'growing' || grow.step === 'done' ? 'happy' : 'open', size: 90 }); } catch (e) { circle(c, 0, 0, 44); c.fillStyle = '#FFC93C'; c.fill(); }
-      c.restore();
-      c.beginPath(); c.moveTo(win.x - 10, win.y + win.h * 0.82); c.quadraticCurveTo(win.x + win.w * 0.35, win.y + win.h * 0.62, win.x + win.w + 10, win.y + win.h * 0.8);
-      c.lineTo(win.x + win.w + 10, win.y + win.h + 10); c.lineTo(win.x - 10, win.y + win.h + 10); c.closePath();
-      c.fillStyle = D.tone(c, '#8FD88F', win.y + win.h * 0.62, win.y + win.h); c.fill(); D.ink(c, 3);
-    } });
-    // the sill
-    D.shape(c, D.rrPath(win.x - 14, win.y + win.h - 4, win.w + 28, 16, 6), D.tone(c, '#FFF3E4', win.y + win.h - 4, win.y + win.h + 12), { lw: 4, depth: 3 });
-    drawCurtains(c, win.x, win.y, win.w, win.h, { pat: 'gingham', col: '#FF6B57', col2: '#FFFFFF', tie: '#7BD389', rod: '#A86B3C' });
+    S.wall(c, 0, 0, W, B.top, { pattern: 'stripes', col: '#E3F4D9', col2: '#D2EBC4' });
+    S.window(c, win.x, win.y, win.w, win.h, { view: 'garden', r: 14, sun: false, cloud: false, bars: 'none', sill: '#FFF3E4',
+      // the sun is the tap target in the sun step: it pulses, and smiles once the plant is growing
+      behind: function (c) {
+        var pulse = grow.step === 'sun' ? 1 + Math.sin(time * 5) * 0.08 : 1;
+        c.save(); c.translate(B.sun.x, B.sun.y); c.scale(pulse, pulse);
+        S.sun(c, 0, 0, { kind: 'cat', size: 88, spin: time * 0.3, face: grow.step === 'growing' || grow.step === 'done' ? 'happy' : 'open' });
+        c.restore();
+      },
+      curtains: { pattern: 'gingham', colour: '#FF6B57', colour2: '#FFFFFF', tie: '#7BD389', rod: '#A86B3C' } });
     // bench, with soft shadows on its top board under the things standing on it
     var restCan = { x: B.can.x + 20, y: B.can.y - 20 };
-    c.fillStyle = D.tone(c, '#C9965F', B.top + 26, H); c.fillRect(0, B.top + 26, W, H - B.top - 26);
-    [W * 0.12, W * 0.88].forEach(function (lx) { D.shape(c, D.rrPath(lx - 12, B.top + 20, 24, H - B.top - 10, 4), '#B57F4B', { lw: 3, depth: 4 }); });
-    D.shape(c, D.rrPath(-10, B.top, W + 20, 26, 6), D.tone(c, '#E6B98A', B.top, B.top + 26), { lw: 4, depth: 5, inside: function (c) {
+    S.table(c, 0, W, B.top, H, { kind: 'bench', col: '#E6B98A', front: '#C9965F', legs: '#B57F4B', on: function (c) {
       D.shadow(c, B.bag.x + 4, B.top + 2, 56, 9);
       if (!grow.can) D.shadow(c, restCan.x, B.top + 2, 46, 8);
       if (grow.pot >= 0 && (grow.step !== 'seed' && grow.step !== 'pot' || grow.anim > 0.33)) D.shadow(c, B.pot.x + 4, B.top + 2, 56, 9);
