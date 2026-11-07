@@ -139,6 +139,16 @@
     track('Shuffle', { game: 'fashion' });
   });
 
+  // start again: take everything off (colours and patterns back to plain)
+  $('resetBtn').addEventListener('click', function () {
+    Sound.init(); Sound.swish(); hop(); buzz(8);
+    ['hat', 'glasses', 'neck', 'top'].forEach(function (k) { S.outfit[k] = { id: 'none', col: F.COLOURS[k === 'top' ? 5 : 0], pat: 'plain' }; });
+    sparkleAt(0.5, 0.45, 8);
+    save(); renderPanel();
+    say('Back to just your cat!', 1.6);
+    track('Reset outfit', { game: 'fashion' });
+  });
+
   /* ================= the photoshoot ================= */
   var lastPhoto = null;
   function photoData() {
