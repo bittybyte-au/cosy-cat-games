@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-5d79d8dc84';
+const VERSION = 'ccg-c2fb7e90af';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -23,7 +23,7 @@ const FILES = {
   "./shared/dishes.js": "1f04f839e4",
   "./shared/draw.js": "6af1578083",
   "./shared/game.css": "c916f187bf",
-  "./shared/games.js": "6ad3a73e71",
+  "./shared/games.js": "6889af7f76",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
   "./shared/site.css": "be553f2b0e",
@@ -38,7 +38,7 @@ const FILES = {
   "./icons/icon-512.png": "29acc5c7a1",
   "./icons/icon-maskable-512.png": "73ec626eab",
   "./icons/icon.svg": "485b63acd2",
-  "./games/bath/game.js": "2334900250",
+  "./games/bath/game.js": "1afdbf19ad",
   "./games/bath/": "6f1c2f951d",
   "./games/bath/index.html": "6f1c2f951d",
   "./games/boxes/boxes.js": "69a6967691",
@@ -83,7 +83,7 @@ const FILES = {
   "./games/kitty-pop/": "2d5e6afe11",
   "./games/kitty-pop/index.html": "2d5e6afe11",
   "./games/kitty-pop/specials.js": "b0ff751532",
-  "./games/laser/game.js": "ad6036b7a9",
+  "./games/laser/game.js": "dd6836cab5",
   "./games/laser/": "85b9b06d37",
   "./games/laser/index.html": "85b9b06d37",
   "./games/mouse-pop/game.js": "f945ded58b",
@@ -110,10 +110,10 @@ const FILES = {
   "./games/seek/game.js": "e3217528f5",
   "./games/seek/": "eea616cf33",
   "./games/seek/index.html": "eea616cf33",
-  "./games/slide/game.js": "1c7b05868b",
+  "./games/slide/game.js": "b3687cd95b",
   "./games/slide/": "05a6b8e255",
   "./games/slide/index.html": "05a6b8e255",
-  "./games/sneaky/game.js": "89a9f8ec4e",
+  "./games/sneaky/game.js": "160e766152",
   "./games/sneaky/": "b71c95182e",
   "./games/sneaky/index.html": "b71c95182e",
   "./games/stack/game.js": "e6f309eee6",
@@ -124,7 +124,10 @@ const FILES = {
   "./games/yarn/index.html": "26fffe14af",
   "./games/yarn-dash/game.js": "e2442e9451",
   "./games/yarn-dash/": "92f4d19e02",
-  "./games/yarn-dash/index.html": "92f4d19e02"
+  "./games/yarn-dash/index.html": "92f4d19e02",
+  "./games/yarn-defence/game.js": "114c9187e6",
+  "./games/yarn-defence/": "bd888a7983",
+  "./games/yarn-defence/index.html": "bd888a7983"
 };
 /* FILES:end */
 

@@ -354,7 +354,18 @@
       shadow(72, 130, 22, 4) +
       cat({ preset: 'ginger', pose: 'walk', face: 'open', x: 72, y: 106, size: 32, step: 1.2, moving: true, dir: 1 }) +
       sh(R(8, 100, 34, 32, 3), '#DDA86F', { lw: 3, k: 3, in: '<path d="M19 100h12v32H19z" fill="rgba(255,255,255,.35)"/>' }) +
-      [[108, 116]].map(function (q) { return sh(P(q[0] - 10, q[1], 'q6 -7 12 -3l6 -4v12l-6 -4q-6 4 -12 -1z'), '#7CC4FF', { lw: 2.5, k: 0 }); }).join(''))
+      [[108, 116]].map(function (q) { return sh(P(q[0] - 10, q[1], 'q6 -7 12 -3l6 -4v12l-6 -4q-6 4 -12 -1z'), '#7CC4FF', { lw: 2.5, k: 0 }); }).join('')),
+    yarndefence: svg(
+      sh(R(0, 0, 240, 150, 0), '#DCAA7A', { lw: 0, k: 0 }) +
+      ln('M0 30h240M0 60h240M0 90h240M0 120h240', 1.5, 'rgba(42,35,64,.14)') +
+      ln('M-10 110H120V50H250', 34) + ln('M-10 110H120V50H250', 28, '#E9837A') + ln('M-10 110H120V50H250', 18, '#F2A08E') +
+      [[34, 110], [74, 110]].map(function (q, i) { return sh(P(q[0] - 14, q[1] + 4, 'q0 -15 17 -15q14 0 18 13q-2 6 -14 6h-16q-5 0 -5 -4z'), i ? '#B8B3C9' : '#D2AE86', { lw: 2.5, k: 2 }) + el(q[0] + 4, q[1] - 10, 5, 5, '#FFB4C6') + el(q[0] + 12, q[1] - 4, 2.6, 2.6, '#2A2340') + el(q[0] + 21, q[1] + 2, 2.4, 2.4, '#FF8FAB') + ln('M' + (q[0] - 14) + ' ' + (q[1] + 2) + 'q-10 -2 -14 6', 2.2); }).join('') +
+      shadow(196, 62, 30, 5) + sh(P(170, 38, 'h52l-5 22h-42z'), '#C9935E', { lw: 3, k: 3 }) +
+      wool(184, 34, 10, '#FF8FAB', '#D9577C') + wool(204, 32, 10, '#7CC4FF', '#4F9BD9') + wool(194, 22, 9, '#FFD23F', '#E0A800') +
+      shadow(84, 76, 20, 4) + sh(E(84, 74, 18, 6), '#FFD23F', { lw: 2.5, k: 0 }) +
+      cat({ preset: 'ginger', pose: 'wave', face: 'happy', x: 84, y: 40, size: 36 }) +
+      shadow(160, 132, 20, 4) + sh(E(160, 130, 18, 6), '#B48CFF', { lw: 2.5, k: 0 }) +
+      cat({ color: '#F1E3CB', build: 'fluffy', pose: 'lie', face: 'sleep', x: 160, y: 118, size: 34 }))
   };
 
   var GAMES = [
@@ -495,6 +506,11 @@
       id: 'sneaky', save: 'sneaky', name: 'Sneaky Cat', blurb: 'Tiptoe past the sleeping dogs',
       ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#B9B2E8',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.sneaky
+    },
+    {
+      id: 'yarn-defence', save: 'yarndefence', name: 'Yarn Defence', blurb: 'Send the mice home, save the yarn',
+      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
+      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.yarndefence
     }
   ];
 

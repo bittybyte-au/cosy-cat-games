@@ -306,7 +306,7 @@
 
   /* ================= messages and cards ================= */
   var sayT = 0;
-  function say(t, s) { var el = $('say'); el.innerHTML = '<span class="pill">' + t + '</span>'; el.classList.remove('hide'); sayT = s || 2.2; }
+  function say(t, s) { var el = $('say'); el.textContent = t; el.classList.remove('hide'); sayT = s || 2.2; }
   function levelSay() {
     var pl = L.pl, prev = L.lv > 1 ? plan(L.lv - 1) : null;
     if (L.lv === 1) say('Hold to tiptoe. Let go to freeze.', 3);

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Yarn Defence</title>
+<meta name="theme-color" content="#F3D9B8">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* A gentle tower-defence for older kids: mice run along a path to your basket of yarn. Put cats beside the path to
+   bat them back home (they just tumble off, a bit dizzy). Cats cost fish; every mouse sent home gives fish.
+   The canvas is the living-room floor; a strip of pills under the top bar shows fish, yarn and the wave, and the
+   tray at the bottom holds the cats to place (or, with a cat picked, its upgrade). Single warm look by design. */
+body { background: #F3D9B8; }
+#stage { touch-action: none; }
+.middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; min-width: 0; }
+.step { width: 40px; height: 40px; }
+.step:disabled { opacity: .35; cursor: default; }
+.step svg { width: 22px; height: 22px; }
+.round.speed { font: 800 1rem var(--display); }
+.round.speed[aria-pressed="true"] { background: var(--sun); }
+.hud { position: fixed; left: 0; right: 0; z-index: 6; display: flex; justify-content: center; gap: 8px; padding: 0 10px; pointer-events: none; flex-wrap: wrap; }
+.hud .pill2 { pointer-events: auto; display: flex; align-items: center; gap: 6px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px 2px 7px; box-shadow: 0 3px 0 var(--ink); font: 800 1rem/1 var(--display); white-space: nowrap; }
+.hud .pill2 svg { width: 24px; height: 24px; flex: none; }
+.hud .pill2.bump { animation: bump .35s ease; }
+.hud .pill2.low { background: #FFD0D6; }
+.hud button.pill2 { cursor: pointer; background: #7BD389; font-size: 1rem; padding: 4px 14px 2px 10px; }
+.hud button.pill2:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.hud button.pill2[hidden] { display: none; }
+.tray {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--cream); border-top: 4px solid var(--ink);
+  padding: 8px max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  display: flex; gap: 8px; justify-content: safe center; overflow-x: auto; min-height: 96px; align-items: center;
+}
+.cat {
+  flex: none; width: 84px; height: 86px; border: 3px solid var(--ink); border-radius: 18px; background: #fff; cursor: pointer; padding: 2px 2px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; box-shadow: 0 3px 0 var(--ink), var(--soft); position: relative; font: 800 .8rem/1 var(--body); color: var(--ink);
+}
+.cat svg.pic { width: 52px; height: 44px; pointer-events: none; }
+.cat > span:not(.new):not(.cost) { margin-top: 2px; }
+.cat .cost { display: flex; align-items: center; gap: 3px; margin: 2px 0 5px; }
+.cat .cost svg { width: 16px; height: 16px; }
+.cat[aria-pressed="true"] { background: var(--sun); transform: translateY(-3px); box-shadow: 0 6px 0 var(--ink); }
+.cat.poor { opacity: .5; }
+.cat .new { position: absolute; top: -9px; right: -8px; background: #FF8FAB; border: 2.5px solid var(--ink); border-radius: 999px; padding: 3px 6px 1px; font-size: .7rem; }
+.info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.info .name { font: 800 1.05rem/1.1 var(--display); text-align: center; }
+.info .name small { display: block; font: 800 .8rem var(--body); color: var(--muted); }
+.info .act { display: flex; align-items: center; gap: 6px; border: 3px solid var(--ink); border-radius: 999px; background: #7BD389; padding: 8px 14px 6px; font: 800 .95rem/1 var(--body); box-shadow: 0 3px 0 var(--ink); cursor: pointer; color: var(--ink); }
+.info .act:disabled { opacity: .45; cursor: default; }
+.info .act.home { background: #fff; }
+.info .act svg { width: 18px; height: 18px; }
+.say { position: fixed; left: 50%; z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(8px); }
+.card canvas { width: min(240px, 60vw); height: auto; display: block; }
+.card .tip { font: 800 .95rem var(--body); color: var(--muted); }
+.card .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 400px) { .level { font-size: .9rem; padding: 6px 9px 4px; } .step { width: 36px; height: 36px; } .cat { width: 74px; } .hud .pill2 { font-size: .9rem; padding: 3px 9px 1px 5px; } .hud .pill2 svg { width: 20px; height: 20px; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="Yarn Defence. Put cats beside the path to send the mice home before they reach your yarn."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle">
+    <button class="round step" id="prevBtn" type="button" aria-label="Previous level"><svg viewBox="0 0 32 32"><path d="M20 7 L10 16 L20 25" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="level" id="levelLabel">Level 1</div>
+    <button class="round step" id="nextBtn" type="button" aria-label="Next level"><svg viewBox="0 0 32 32"><path d="M12 7 L22 16 L12 25" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <button class="round speed" id="speedBtn" type="button" aria-label="Double speed" aria-pressed="false">2×</button>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="hud" id="hud">
+  <div class="pill2" id="fishPill" aria-label="Fish"><svg viewBox="0 0 32 32"><path d="M4 16 Q12 7 21 12 L28 7 V25 L21 20 Q12 25 4 16 Z" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><circle cx="11" cy="15" r="1.8" fill="#2A2340"/></svg><b id="fish">0</b></div>
+  <div class="pill2" id="yarnPill" aria-label="Yarn left"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><path d="M7 12 Q16 8 25 13 M6 17 Q16 12 26 18 M8 22 Q16 17 24 23" fill="none" stroke="#D9577C" stroke-width="2"/></svg><b id="yarn">10</b></div>
+  <div class="pill2" id="wavePill" aria-label="Wave"><svg viewBox="0 0 32 32"><ellipse cx="15" cy="19" rx="10" ry="7" fill="#B8B3C9" stroke="#2A2340" stroke-width="2.6"/><circle cx="9" cy="12" r="4" fill="#FFB4C6" stroke="#2A2340" stroke-width="2.4"/><circle cx="21" cy="12" r="4" fill="#FFB4C6" stroke="#2A2340" stroke-width="2.4"/><path d="M25 21 Q30 23 29 28" fill="none" stroke="#2A2340" stroke-width="2.4" stroke-linecap="round"/></svg><b id="wave">0/6</b></div>
+  <button class="pill2" id="goBtn2" type="button">Send mice ▶</button>
+</div>
+
+<div class="tray" id="tray"></div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="card-wrap" id="cardWrap">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <canvas id="cardPic" width="440" height="300" aria-hidden="true"></canvas>
+    <h2 id="cardTitle">Yarn Defence</h2>
+    <p id="cardNote">Mice are after your yarn! Put cats beside the path to send them home.</p>
+    <p class="tip" id="cardTip">Pick a cat below, then tap a spot beside the path. Cats cost fish, and every mouse sent home gives you more.</p>
+    <div class="btns">
+      <button class="big" id="againBtn" type="button" hidden>Play again</button>
+      <button class="big" id="goBtn" type="button">Let’s go!</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/avatar.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
