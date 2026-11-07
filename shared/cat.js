@@ -166,6 +166,9 @@
     var paw = function (x, y) { return [{ d: ell(x, y, 14, 15), fill: fill, stroke: INK, lw: 4 }, { d: circ(x, y + 3, 4) + circ(x - 6, y - 4, 2.2) + circ(x, y - 7, 2.2) + circ(x + 6, y - 4, 2.2), fill: '#FFB3C7' }]; };
     if (pose === 'sit' || pose === 'wave') {
       back.push({ d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: INK, lw: 13 }, { d: 'M-30 76Q-62 72 -56 44Q-52 32 -42 38', stroke: fill, lw: 6 });
+      // the feet go behind the body, like the walking cat's: only their round fronts peek out below it
+      var feet = markings === 'tuxedo' ? '#FFFFFF' : fill;
+      back.push({ d: ell(-16, 89, 10, 8.5) + ell(16, 89, 10, 8.5), fill: feet, stroke: INK, lw: 3.5 });
       var fluffy = build === 'fluffy';
       var bodyE = fluffy ? tuftPath(0, 64, 38, 26, [[-0.12, 0.08, 3, 8, 1], [0.42, 0.62, 3, 8, -1]]) : ell(0, 64, 38, 26);
       back.push({ d: bodyE, fill: fill });
@@ -176,8 +179,6 @@
       if (markings === 'calico') back.push({ d: ell(-26, 54, 16, 13), fill: '#FFA94D', clipTo: bodyE }, { d: ell(28, 70, 14, 12), fill: '#4A4458', clipTo: bodyE });
       if (markings === 'tabby') back.push({ d: 'M-34 52L-24 56M-37 64L-26 66M34 52L24 56M37 64L26 66', stroke: shade(fill, 0.28), lw: 4.5, clipTo: bodyE });
       back.push({ d: bodyE + ell(-5, 57, 38, 26), fill: shadeFor(fill), rule: 'evenodd', clipTo: bodyE }, { d: bodyE, stroke: INK, lw: 5 });
-      var feet = markings === 'tuxedo' ? '#FFFFFF' : fill;
-      back.push({ d: ell(-14, 88, 11, 7) + ell(14, 88, 11, 7), fill: feet, stroke: INK, lw: 4 });
       if (pose === 'wave') front.push({ d: 'M28 70Q44 62 46 44', stroke: INK, lw: 16, wave: true }, { d: 'M28 70Q44 62 46 44', stroke: fill, lw: 8, wave: true }, { d: ell(47, 36, 12, 13), fill: fill, stroke: INK, lw: 4, wave: true }, { d: circ(47, 39, 3.6) + circ(41, 31, 2) + circ(47, 28, 2) + circ(53, 31, 2), fill: '#FFB3C7', wave: true });
     }
     if (pose === 'peek') front = front.concat(paw(-24, 46), paw(24, 46));
@@ -194,11 +195,10 @@
       // asleep: body and curled tail on the left, head resting on the right
       var f = c.fill;
       var lb = c.build === 'fluffy' ? tuftPath(-20, 22, 46, 22, [[0.6, 0.9, 7, 6, -0.75]]) : ell(-20, 22, 46, 22);   // fluffy: tufts along the back
-      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }, { d: lb, fill: f }, { d: lb + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: lb }, { d: lb, stroke: INK, lw: 5 }];
-      // little paws: two tucked under the chin and a back one peeking out, each with pink beans
-      [[12, 43], [34, 42], [-52, 41]].forEach(function (q) {
-        body.push({ d: ell(q[0], q[1], 10, 7), fill: f, stroke: INK, lw: 4 }, { d: circ(q[0] - 4, q[1] + 1, 1.8) + circ(q[0], q[1] + 2, 1.8) + circ(q[0] + 4, q[1] + 1, 1.8), fill: '#FFB3C7' });
-      });
+      var body = [{ d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: INK, lw: 12 }, { d: 'M-50 30Q-86 30 -80 8Q-76 -2 -66 4', stroke: f, lw: 5 }];
+      // little paws behind the body and head, like the walking cat's: two under the chin and a back one, peeking out below
+      [[12, 42], [34, 41], [-52, 40]].forEach(function (q) { body.push({ d: ell(q[0], q[1], 10, 8.5), fill: f, stroke: INK, lw: 3.5 }); });
+      body.push({ d: lb, fill: f }, { d: lb + ell(-25, 15, 46, 22), fill: shadeFor(f), rule: 'evenodd', clipTo: lb }, { d: lb, stroke: INK, lw: 5 });
       var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [30, 2, 0, 0.78]; if (s.tf) t.tf2 = s.tf; return t; });
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
