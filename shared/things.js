@@ -29,7 +29,8 @@
     GGThings.umbrella(c, x, y, { size (1 = about 60 across, 70 tall), col, open (0 furled .. 1 open), a (tilt), ls })
         (x, y) is the hook of the handle, where a paw holds it
    More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy;
-   and the pet shop's things (a tin of cat food, a bag of dry food, kitty litter, a cat bed, a collar, a paw print). */
+   the pet shop's things (a tin of cat food, a bag of dry food, kitty litter, a cat bed, a collar, a paw print);
+   and (Tidy Paws's block, the very end) a broom, a dustpan and brush, and litter grains on the floor. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -479,5 +480,143 @@
       c.beginPath(); c.arc(0, -4, 2, 0, TAU); c.fillStyle = INK; c.fill();
     }, shine: [-4, -16, 3.5, 2, -0.5, 0.6] });
     c.restore();
+  };
+})(window.GGThings);
+
+/* ================= added for Tidy Paws: a broom, a dustpan and brush, and cat litter =================
+   (its own block; the looks above are unchanged)
+     GGThings.broom(c, x, y, { view: 'top' | 'front', size (1 = the bristles about 100 across), a (top: the way it
+                    pushes, radians; front: a lean), sweep (0..1, the bristles bent back as it pushes), col (the
+                    binding), straw (the bristles), stick (the handle), ls })
+         top: (x, y) the middle of the bristles' front edge, the handle trailing behind; front: stood on its bristles,
+         (x, y) where they touch the floor, about 240 tall
+     GGThings.dustpan(c, x, y, { view: 'top' | 'front', size (1 = the pan about 80 across), a (top: the way its mouth
+                      faces), fill (0..1, litter in the pan), col, brush (default true: the hand brush with it),
+                      flick (0..1, the brush swept in towards the mouth), full (true: the heap glows a little), ls })
+         top: (x, y) the middle of the pan's mouth (its front lip); front: the lip on the floor at (x, y)
+     GGThings.litterGrains(c, grains, { r (a grain's size, default 4), cols: [...], glow (0..1, a soft gold glow behind each
+                     grain, to find the last few), ls })
+         cat litter on the floor: grains is a list of { x, y, z (height while flying: drawn up off its shadow), k (a
+         0..1 random, for its colour and shape), s (size, default 1) }. Grains next to each other share one outline,
+         so a swept pile reads as one heap. */
+(function (T) {
+  'use strict';
+  var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
+  function W(o, w, k) { return w / (((o && o.ls) || 1) * (k || 1)); }
+  function turned(dep, a) { var x = -0.7 * dep, y = -dep, cs = Math.cos(-a), sn = Math.sin(-a); return { dx: x * cs - y * sn, dy: x * sn + y * cs }; }
+  function stick(c, x0, y0, x1, y1, w, col, lf) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = w + lf * 2; c.stroke(); c.strokeStyle = col; c.lineWidth = w; c.stroke(); }
+  var SANDS = ['#E8D3A8', '#D6BC8C', '#F3E6C8', '#CBAF80'];
+  T.VARIANTS.broom = ['top', 'front']; T.VARIANTS.dustpan = ['top', 'front']; T.VARIANTS.litterGrains = ['scattered'];
+
+  T.broom = function (c, x, y, o) {
+    o = o || {};
+    var s = o.size || 1, col = o.col || '#FF6B57', straw = o.straw || '#F5C75E', wood = o.stick || '#C98B5B', lm = W(o, LW.mid, s), lf = W(o, LW.fine, s);
+    var bend = Math.max(0, Math.min(1, o.sweep || 0)) * 8;
+    c.save(); c.translate(x, y);
+    if (o.view === 'front') {
+      c.rotate(o.a || 0); c.scale(s, s);
+      D.shadow(c, 0, 2, 56, 7);
+      stick(c, 0, -60, 0, -236, 10, wood, lf);
+      D.shape(c, D.ellPath(0, -238, 8, 8), D.darker(wood, 0.15), { lw: lf, depth: 0 });
+      D.shape(c, function (p) { p.moveTo(-26, -66); p.lineTo(26, -66); p.lineTo(50, 0); for (var i = 0; i < 10; i++) p.quadraticCurveTo(45 - i * 10, 7, 40 - i * 10, 0); p.closePath(); }, D.tone(c, straw, -66, 0), { lw: lm, depth: 6, inside: function (c) {
+        c.strokeStyle = D.darker(straw, 0.25); c.lineWidth = W(o, 2, s); for (var k = -4; k <= 4; k++) { c.beginPath(); c.moveTo(k * 5, -60); c.lineTo(k * 10, -4); c.stroke(); }
+      } });
+      D.shape(c, D.rrPath(-30, -78, 60, 16, 6), col, { lw: lm, depth: 3, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-30, -76, 60, 4); } });
+      c.restore(); return;
+    }
+    var a = o.a || 0; c.rotate(a); c.scale(s, s);
+    // the handle trails back from the binding (towards the hands), then the bristles, then the binding over their roots
+    stick(c, -22, 0, -110, 0, 10, wood, lf);
+    D.shape(c, D.ellPath(-112, 0, 7, 7), D.darker(wood, 0.15), { lw: lf, depth: 0 });
+    var tb = turned(5, a);
+    D.shape(c, function (p) {
+      p.moveTo(-14, -44); p.lineTo(-bend, -50 - bend * 0.5);
+      for (var i = 0; i < 10; i++) { var y0 = -50 - bend * 0.5 + i * (100 + bend) / 10, y1 = y0 + (100 + bend) / 10; p.quadraticCurveTo(6 - bend + (i % 2) * 2, (y0 + y1) / 2, -bend, y1); }
+      p.lineTo(-14, 44); p.closePath();
+    }, D.tone(c, straw, -50, 50), { lw: lm, depth: 1, dx: tb.dx, dy: tb.dy, inside: function (c) {
+      c.strokeStyle = D.darker(straw, 0.25); c.lineWidth = W(o, 2, s); for (var k = -40; k <= 40; k += 10) { c.beginPath(); c.moveTo(-14, k * 0.9); c.lineTo(-bend + 2, k * (1 + bend / 100)); c.stroke(); }
+    } });
+    var tc = turned(3, a);
+    D.shape(c, D.rrPath(-26, -40, 14, 80, 6), col, { lw: lm, depth: 1, dx: tc.dx, dy: tc.dy, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-24, -40, 4, 80); } });
+    c.restore();
+  };
+
+  function heap(c, cx, cy, rx, ry, fill, o, s, glow) {
+    if (fill <= 0) return;
+    var hx = rx * (0.35 + 0.65 * Math.sqrt(fill)), hy = ry * (0.35 + 0.65 * Math.sqrt(fill)), r = D.seeded(11);
+    if (glow) { c.save(); c.fillStyle = 'rgba(255,226,120,.55)'; c.beginPath(); c.ellipse(cx, cy, hx + 6, hy + 6, 0, 0, TAU); c.fill(); c.restore(); }
+    D.shape(c, function (p) { for (var i = 0; i <= 24; i++) { var t = i / 24 * TAU, wob = 1 + 0.08 * Math.sin(t * 7); var px = cx + Math.cos(t) * hx * wob, py = cy + Math.sin(t) * hy * wob; if (i) p.lineTo(px, py); else p.moveTo(px, py); } p.closePath(); }, SANDS[0], { lw: W(o, 2.5, s), depth: 3, inside: function (c) {
+      for (var i = 0; i < 26; i++) { c.fillStyle = i % 3 ? SANDS[1] : '#FFFFFF'; c.beginPath(); c.arc(cx + (r() - 0.5) * hx * 1.8, cy + (r() - 0.5) * hy * 1.8, 2.2, 0, TAU); c.fill(); }
+    } });
+  }
+  function handBrush(c, x, y, rot, o, s, lm, lf) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    // seen from above, its bristles facing -x (towards the pan): the wooden back, the handle out to one side
+    stick(c, 0, -26, 0, -62, 9, '#C98B5B', lf);
+    D.shape(c, D.rrPath(-15, -36, 8, 72, 3), '#F5C75E', { lw: lf, depth: 0, inside: function (c) { c.strokeStyle = 'rgba(42,35,64,.3)'; c.lineWidth = W(o, 1.5, s); for (var k = -30; k <= 30; k += 6) { c.beginPath(); c.moveTo(-15, k); c.lineTo(-7, k); c.stroke(); } } });
+    D.shape(c, D.rrPath(-9, -38, 18, 76, 8), '#E0A15E', { lw: lm, depth: 3, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(-7, -38, 4, 76); } });
+    c.restore();
+  }
+  T.dustpan = function (c, x, y, o) {
+    o = o || {};
+    var s = o.size || 1, col = o.col || '#B48CFF', fill = Math.max(0, Math.min(1, o.fill || 0)), lm = W(o, LW.mid, s), lf = W(o, LW.fine, s);
+    var flick = Math.max(0, Math.min(1, o.flick || 0));
+    c.save(); c.translate(x, y);
+    if (o.view === 'front') {
+      c.scale(s, s);
+      D.shadow(c, 0, 2, 50, 6);
+      stick(c, 0, -40, 0, -96, 12, D.darker(col, 0.15), lf);
+      D.shape(c, D.rrPath(-40, -50, 80, 30, 8), D.tone(c, D.darker(col, 0.12), -50, -20), { lw: lm, depth: 3 });
+      D.shape(c, function (p) { p.moveTo(-40, -26); p.lineTo(40, -26); p.lineTo(46, 0); p.lineTo(-46, 0); p.closePath(); }, D.lighter(col, 0.35), { lw: lm, depth: 0 });
+      if (fill > 0) heap(c, 0, -12, 34, 10, fill, o, s, o.full);
+      D.shape(c, D.rrPath(-48, -5, 96, 8, 4), '#9C97AE', { lw: lf, depth: 0 });
+      if (o.brush !== false) {
+        c.save(); c.translate(64, 0); c.rotate(0.25);
+        stick(c, 0, -40, 0, -80, 9, '#C98B5B', lf);
+        D.shape(c, D.rrPath(-12, -46, 24, 28, 8), '#E0A15E', { lw: lm, depth: 3 });
+        D.shape(c, function (p) { p.moveTo(-12, -20); p.lineTo(12, -20); p.lineTo(15, 0); p.lineTo(-15, 0); p.closePath(); }, '#F5C75E', { lw: lf, depth: 0 });
+        c.restore();
+      }
+      c.restore(); return;
+    }
+    var a = o.a || 0; c.rotate(a); c.scale(s, s);
+    // the handle out of the back, the pan, its floor, the litter in it, the rubber lip along the mouth
+    stick(c, -40, 0, -84, 0, 13, D.darker(col, 0.15), lf);
+    D.shape(c, D.ellPath(-76, 0, 3.5, 3.5), INK, { lw: 0, depth: 0 });
+    var tp = turned(6, a);
+    var pan = function (p) { p.moveTo(0, -42); p.lineTo(-30, -42); p.quadraticCurveTo(-46, -42, -46, -26); p.lineTo(-46, 26); p.quadraticCurveTo(-46, 42, -30, 42); p.lineTo(0, 42); p.closePath(); };
+    D.shape(c, pan, D.tone(c, col, -42, 42), { lw: lm, depth: 1, dx: tp.dx, dy: tp.dy });
+    D.shape(c, function (p) { p.moveTo(0, -35); p.lineTo(-28, -35); p.quadraticCurveTo(-38, -35, -38, -24); p.lineTo(-38, 24); p.quadraticCurveTo(-38, 35, -28, 35); p.lineTo(0, 35); p.closePath(); }, D.lighter(col, 0.4), { lw: lf, depth: 0, inside: function (c) {
+      heap(c, -18, 0, 18, 30, fill, o, s, o.full);
+    } });
+    D.shape(c, D.rrPath(-3, -44, 9, 88, 4), '#9C97AE', { lw: lf, depth: 0 });
+    if (o.brush !== false) handBrush(c, 58 - flick * 22, 6, -0.12 + flick * 0.1, o, s, lm, lf);
+    c.restore();
+  };
+
+  T.litterGrains = function (c, grains, o) {
+    o = o || {};
+    if (!grains || !grains.length) return;
+    var r = o.r || 4, cols = o.cols || SANDS, lw = W(o, 1.6), i, g;
+    // flying grains: a shadow on the floor under each
+    c.save(); c.fillStyle = 'rgba(42,35,64,.18)'; c.beginPath();
+    for (i = 0; i < grains.length; i++) { g = grains[i]; if (g.z > 0.5) { var sr = r * (g.s || 1) * Math.max(0.4, 1 - g.z / (r * 30)); c.moveTo(g.x + sr, g.y + r * 0.4); c.ellipse(g.x, g.y + r * 0.4, sr, sr * 0.6, 0, 0, TAU); } }
+    c.fill(); c.restore();
+    if (o.glow) {
+      c.save(); c.globalAlpha = Math.min(1, o.glow); c.fillStyle = 'rgba(255,214,90,.55)'; c.beginPath();
+      for (i = 0; i < grains.length; i++) { g = grains[i]; c.moveTo(g.x + r * 3.2, g.y - (g.z || 0)); c.arc(g.x, g.y - (g.z || 0), r * 3.2, 0, TAU); }
+      c.fill(); c.restore();
+    }
+    var all = new Path2D(), byCol = cols.map(function () { return new Path2D(); }), hi = new Path2D();
+    for (i = 0; i < grains.length; i++) {
+      g = grains[i];
+      var k = g.k || 0, gs = r * (g.s || 1), gx = g.x, gy = g.y - (g.z || 0), rx = gs * (1 + k * 0.25), ry = gs * (0.85 - k * 0.1), rot = k * 6;
+      all.moveTo(gx + rx, gy); all.ellipse(gx, gy, rx, ry, rot, 0, TAU);
+      var pc = byCol[Math.floor(k * 997) % cols.length]; pc.moveTo(gx + rx, gy); pc.ellipse(gx, gy, rx, ry, rot, 0, TAU);
+      if (gs > 2.5) { hi.moveTo(gx - gs * 0.2, gy - gs * 0.32); hi.arc(gx - gs * 0.38, gy - gs * 0.32, gs * 0.18, 0, TAU); }
+    }
+    c.save(); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = lw * 2; c.stroke(all);
+    byCol.forEach(function (p, j) { c.fillStyle = cols[j]; c.fill(p); });
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.fill(hi); c.restore();
   };
 })(window.GGThings);

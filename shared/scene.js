@@ -59,7 +59,8 @@
    More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file.
    More furniture in front and top views (bookcase, dining tables long and round, a floor lamp from above, inside
      walls from above): see batch F near the end of this file.
-   Shop fittings (a shelving unit of cubbies, a picture sign for the wall): see batch H at the very end. */
+   Shop fittings (a shelving unit of cubbies, a picture sign for the wall): see batch H near the end.
+   The litter corner (a litter box, a pedal bin, a cat flap, front and top): batch I at the very end. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -1437,4 +1438,120 @@
       sh(c, D.rrPath(x - w / 2 + bw, y - h / 2 + bw, w - bw * 2, h - bw * 2, Math.max(4, r - bw * 0.6)), o.panel || '#FFFBF3', o, LW.fine, { depth: 4, inside: o.inside });
     };
   })(window.GGScene);
+  /* ================= batch I: the litter corner (Tidy Paws) =================
+     The same pattern as batches E and F: view 'front' stands on the floor ((x, y) the middle of its base), view 'top'
+     is seen from straight above ((x, y) its middle). Rotate the canvas for a top view facing another way.
+     GGScene.litterBox(c, x, y, { view, w, h (top: depth, default w * 0.76), col, litter (the sand's colour),
+                       dent: [dx, dy, r] (a hole a cat has dug, in 0..1 of the box from its middle, r in 0..1 of w), seed })
+         a low plastic tray of cat litter; front: a dip in the front rim to step in by, the litter heaped inside
+     GGScene.bin(c, x, y, { view, w, col, lid: 'open' | 'shut' | false, fill (0..1, litter inside it), glow (0..1) })
+         a pedal bin; top: the open lid flipped back behind it (upwards), the pedal at the front (down); front: about
+         w * 1.2 tall
+     GGScene.catFlap(c, x, y, { view, size (width), a (top: the way into the room, radians), wall (top: the wall's
+                     thickness), col (the frame), flap (colour), swing (-1..1, the flap pushed open) })
+         top: (x, y) the middle of the wall's inside edge, the flap in the wall; front: a flap door, (x, y) its bottom
+         middle on the floor */
+  (function (G) {
+    var V = G.VARIANTS;
+    V.litterBox = ['front', 'top']; V.bin = ['front', 'top']; V.catFlap = ['front', 'top'];
+    var SAND = '#EADFC8';
+    function under(c, path, o) { c.save(); c.translate(W(o, 6), W(o, 8)); c.fillStyle = 'rgba(20,14,36,.18)'; c.fill(path); c.restore(); }
+    function speckle(c, x0, y0, w, h, n, col, r, rr) { c.fillStyle = col; for (var i = 0; i < n; i++) { c.beginPath(); c.ellipse(x0 + rr() * w, y0 + rr() * h, r * (0.6 + rr() * 0.6), r * (0.5 + rr() * 0.4), rr() * 3, 0, TAU); c.fill(); } }
+
+    G.litterBox = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 110, col = o.col || '#7CC4FF', sand = o.litter || SAND, rr = D.seeded(o.seed || 4);
+      if (o.view === 'top') {
+        var h = o.h || w * 0.76, x0 = x - w / 2, y0 = y - h / 2, rad = Math.min(w, h) * 0.2, m = Math.min(w, h) * 0.1;
+        var tray = D.rrPath(x0, y0, w, h, rad), bed = D.rrPath(x0 + m, y0 + m, w - m * 2, h - m * 2, rad * 0.6);
+        under(c, tray, o);
+        sh(c, tray, D.tone(c, col, y0, y0 + h), o, LW.mid, { depth: 5, shine: [x0 + w * 0.18, y0 + m * 0.5, w * 0.12, m * 0.25, 0, 0.5] });
+        sh(c, bed, sand, o, LW.fine, { depth: 0, inside: function (c) {
+          speckle(c, x0 + m, y0 + m, w - m * 2, h - m * 2, Math.round(w * h / 160), D.darker(sand, 0.14), w * 0.012, rr);
+          speckle(c, x0 + m, y0 + m, w - m * 2, h - m * 2, Math.round(w * h / 300), '#FFFFFF', w * 0.01, rr);
+          if (o.dent) {
+            var dx = x + o.dent[0] * w * 0.5, dy = y + o.dent[1] * h * 0.5, dr = (o.dent[2] || 0.18) * w;
+            c.fillStyle = D.darker(sand, 0.2); c.beginPath(); c.ellipse(dx, dy, dr, dr * 0.8, 0, 0, TAU); c.fill();
+            c.fillStyle = D.lighter(sand, 0.4); c.beginPath(); c.ellipse(dx + dr * 0.25, dy + dr * 0.3, dr * 0.8, dr * 0.55, 0, 0, TAU); c.fill();
+            c.fillStyle = D.darker(sand, 0.12); c.beginPath(); c.ellipse(dx - dr * 0.1, dy - dr * 0.1, dr * 0.7, dr * 0.5, 0, 0, TAU); c.fill();
+          }
+          // the tray's wall shades the litter along its top and left
+          D.crescent(c, bed, 6, 'rgba(42,35,64,.16)', W(o, 4), W(o, 6));
+        } });
+        return;
+      }
+      var hf = w * 0.3, top = y - hf, dip = hf * 0.34;
+      D.shadow(c, x, y, w * 0.54, w * 0.06);
+      // the litter heaped inside, then the tray in front with its dipped rim
+      sh(c, pth(function (p) { p.moveTo(x - w * 0.44, top + 4); p.quadraticCurveTo(x - w * 0.3, top - hf * 0.42, x, top - hf * 0.36); p.quadraticCurveTo(x + w * 0.32, top - hf * 0.4, x + w * 0.44, top + 4); p.closePath(); }), sand, o, LW.fine, { depth: 0, inside: function (c) {
+        speckle(c, x - w * 0.44, top - hf * 0.4, w * 0.88, hf * 0.5, 14, D.darker(sand, 0.14), w * 0.012, rr);
+      } });
+      sh(c, pth(function (p) {
+        p.moveTo(x - w / 2, top); p.lineTo(x - w * 0.16, top); p.quadraticCurveTo(x - w * 0.12, top + dip, x, top + dip); p.quadraticCurveTo(x + w * 0.12, top + dip, x + w * 0.16, top);
+        p.lineTo(x + w / 2, top); p.lineTo(x + w * 0.46, y - 4); p.quadraticCurveTo(x + w * 0.45, y, x + w * 0.4, y); p.lineTo(x - w * 0.4, y); p.quadraticCurveTo(x - w * 0.45, y, x - w * 0.46, y - 4); p.closePath();
+      }), D.tone(c, col, top, y), o, LW.mid, { depth: 6, inside: function (c) {
+        c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x - w / 2, top, w, hf * 0.18);
+      } });
+    };
+
+    G.bin = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 70, col = o.col || '#7BD389', lid = o.lid === undefined ? 'open' : o.lid, fill = Math.max(0, Math.min(1, o.fill || 0)), dark = D.darker(col, 0.25);
+      if (o.view === 'top') {
+        var r = w / 2;
+        if (o.glow) { c.save(); c.globalAlpha = Math.min(1, o.glow); var g = c.createRadialGradient(x, y, r * 0.8, x, y, r * 1.9); g.addColorStop(0, 'rgba(255,226,120,.85)'); g.addColorStop(1, 'rgba(255,226,120,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 1.9, 0, TAU); c.fill(); c.restore(); }
+        if (lid === 'open') { under(c, D.ellPath(x, y - r * 1.12, r * 0.9, r * 0.34), o); sh(c, D.ellPath(x, y - r * 1.12, r * 0.9, r * 0.34), D.tone(c, dark, y - r * 1.5, y - r * 0.8), o, LW.mid, { depth: 3 }); }
+        // the pedal sticks out at the front
+        sh(c, D.rrPath(x - r * 0.28, y + r * 0.7, r * 0.56, r * 0.5, r * 0.14), '#B9B2C8', o, LW.fine, { depth: 0 });
+        under(c, circ(x, y, r), o);
+        sh(c, circ(x, y, r), D.tone(c, col, y - r, y + r), o, LW.big, { depth: 5, shine: [x - r * 0.5, y - r * 0.55, r * 0.22, r * 0.1, -0.7, 0.55] });
+        if (lid === 'shut') { sh(c, circ(x, y, r * 0.86), D.tone(c, D.lighter(col, 0.1), y - r, y + r), o, LW.fine, { depth: 4 }); sh(c, D.rrPath(x - r * 0.3, y - r * 0.1, r * 0.6, r * 0.2, r * 0.1), dark, o, LW.fine, { depth: 0 }); return; }
+        sh(c, circ(x, y, r * 0.76), '#4A4262', o, LW.mid, { depth: 0, inside: function (c) {
+          if (fill > 0) {
+            var fr = r * 0.74 * Math.min(1, 0.45 + fill * 0.6), rr = D.seeded(9);
+            c.fillStyle = SAND; c.beginPath(); c.arc(x, y + r * 0.04, fr, 0, TAU); c.fill();
+            speckle(c, x - fr, y - fr, fr * 2, fr * 2, Math.round(12 + fill * 20), D.darker(SAND, 0.18), r * 0.035, rr);
+            c.globalAlpha = 1 - Math.min(1, fill); c.fillStyle = '#4A4262'; c.beginPath(); c.arc(x, y, r * 0.8, 0, TAU); c.fill(); c.globalAlpha = 1;
+          }
+          // the rim's shade falls inside along the top left
+          c.fillStyle = 'rgba(20,14,36,.3)'; c.beginPath(); c.arc(x, y, r * 0.8, 0, TAU); c.arc(x + r * 0.1, y + r * 0.14, r * 0.74, 0, TAU, true); c.fill();
+        } });
+        return;
+      }
+      var h = w * 1.2, top = y - h, b = w * 0.4, t = w * 0.5;
+      D.shadow(c, x, y, w * 0.55, w * 0.07);
+      if (o.glow) { c.save(); c.globalAlpha = Math.min(1, o.glow); var g2 = c.createRadialGradient(x, y - h / 2, w * 0.3, x, y - h / 2, w * 1.2); g2.addColorStop(0, 'rgba(255,226,120,.8)'); g2.addColorStop(1, 'rgba(255,226,120,0)'); c.fillStyle = g2; c.beginPath(); c.arc(x, y - h / 2, w * 1.2, 0, TAU); c.fill(); c.restore(); }
+      if (lid === 'open') sh(c, D.ellPath(x, top - w * 0.26, t * 0.96, w * 0.34), D.tone(c, dark, top - w * 0.6, top), o, LW.mid, { depth: 4, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.ellipse(x, top - w * 0.26, t * 0.7, w * 0.24, 0, 0, TAU); c.fill(); } });
+      sh(c, pth(function (p) { p.moveTo(x - t, top + w * 0.08); p.lineTo(x + t, top + w * 0.08); p.lineTo(x + b, y - 3); p.quadraticCurveTo(x + b, y, x + b - 4, y); p.lineTo(x - b + 4, y); p.quadraticCurveTo(x - b, y, x - b, y - 3); p.closePath(); }), D.tone(c, col, top, y, x - t, x + t), o, LW.big, { depth: 7, inside: function (c) {
+        c.strokeStyle = 'rgba(42,35,64,.16)'; c.lineWidth = W(o, 3); [0.3, 0.55, 0.8].forEach(function (k) { c.beginPath(); c.moveTo(x - t, top + h * k); c.lineTo(x + t, top + h * k); c.stroke(); });
+      }, shine: [x - w * 0.28, top + h * 0.35, w * 0.05, h * 0.22, 0.1, 0.5] });
+      sh(c, D.rrPath(x - t - w * 0.04, top, w + w * 0.08, w * 0.14, w * 0.06), lid === 'shut' ? D.lighter(col, 0.1) : dark, o, LW.mid, { depth: 2 });
+      if (lid === 'shut') sh(c, pth(function (p) { p.moveTo(x - t, top + 2); p.quadraticCurveTo(x, top - w * 0.3, x + t, top + 2); p.closePath(); }), D.tone(c, D.lighter(col, 0.1), top - w * 0.3, top), o, LW.mid, { depth: 3 });
+      sh(c, D.rrPath(x - w * 0.16, y - w * 0.07, w * 0.32, w * 0.12, w * 0.05), '#B9B2C8', o, LW.fine, { depth: 0 });
+    };
+
+    G.catFlap = function (c, x, y, o) {
+      o = opt(o);
+      var s = o.size || 70, col = o.col || '#FFF1DC', flap = o.flap || '#BFE6FF', sw = Math.max(-1, Math.min(1, o.swing || 0));
+      if (o.view === 'top') {
+        var t = o.wall || 24;
+        c.save(); c.translate(x, y); c.rotate((o.a === undefined ? Math.PI / 2 : o.a) - Math.PI / 2);
+        // the opening through the wall, the frame either side, then the flap seen edge on, swung in or out
+        sh(c, D.rrPath(-s / 2, -t, s, t, 3), '#4A3656', o, LW.mid, { depth: 0 });
+        [-1, 1].forEach(function (k) { sh(c, D.rrPath(k < 0 ? -s / 2 - 8 : s / 2 - 4, -t - 2, 12, t + 6, 4), D.darker(col, 0.08), o, LW.fine, { depth: 0 }); });
+        var reach = Math.abs(sw) * s * 0.8, fy = -t * 0.5;
+        sh(c, D.rrPath(-s / 2 + 6, sw >= 0 ? fy : fy - reach, s - 12, Math.max(6, reach), 3), flap, o, LW.fine, { depth: 0, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(-s / 2 + 6, -t * 4, (s - 12) * 0.3, t * 8); } });
+        c.restore();
+        return;
+      }
+      var h = s * 1.05, top = y - h;
+      sh(c, D.rrPath(x - s / 2, top, s, h, s * 0.22), D.tone(c, col, top, y), o, LW.mid, { depth: 4 });
+      var inner = D.rrPath(x - s * 0.36, top + s * 0.16, s * 0.72, h - s * 0.3, s * 0.16);
+      sh(c, inner, '#4A3656', o, LW.fine, { depth: 0 });
+      c.save(); c.clip(inner); c.translate(0, top + s * 0.16); c.scale(1, 1 - Math.abs(sw) * 0.8);
+      sh(c, D.rrPath(x - s * 0.36, 0, s * 0.72, h - s * 0.3, s * 0.16), flap, o, LW.fine, { depth: 0, inside: function (c) { c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x - s * 0.3, 0, s * 0.14, h); } });
+      c.restore();
+    };
+  })(window.GGScene);
+  /* ================= end of batch I ================= */
 })();

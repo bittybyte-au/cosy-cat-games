@@ -9,6 +9,7 @@
      GGCat.g(opts)          an SVG <g> to place inside another picture (x, y, size)
      GGCat.draw(ctx, opts)  onto a canvas at the current origin (games); opts.size = width in px
    opts.pose: 'head' (default), 'sit', 'wave' (sit with a waving paw), 'peek' (paws on a ledge), 'lie' (asleep, paws tucked under the chin),
+     'top' (seen from straight above, for top-down games: see topShapes for its options),
      'walk' (side-on, the one walk for every game). Walking takes opts.step (a phase in radians that the game moves on
      while the cat is moving, e.g. step += dt * 16), opts.moving (legs only step while true), opts.dir (1 faces right,
      -1 left) and opts.wag (a phase for the tail sway, e.g. the time in seconds). */
@@ -186,7 +187,7 @@
   }
 
   /* the picture's bounds in the 100-unit space, per pose */
-  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 134, 172], wave: [-66, -72, 134, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 192, 104], walk: [-126, -72, 186, 150], walkLeft: [-60, -72, 186, 150] };
+  var BOX = { head: [-52, -72, 104, 124], sit: [-66, -72, 134, 172], wave: [-66, -72, 134, 172], peek: [-52, -72, 104, 136], lie: [-96, -52, 192, 104], walk: [-126, -72, 186, 150], walkLeft: [-60, -72, 186, 150], top: [-100, -100, 200, 200] };
 
   function allShapes(o) {
     var pose = o.pose || 'head';
@@ -203,6 +204,7 @@
       return { list: body.concat(head), head: c.head, headTf: [30, 2, 0, 0.78] };
     }
     if (pose === 'walk') return walkShapes(o, c);
+    if (pose === 'top') return topShapes(o, c);
     var p = poseShapes(pose, c.fill, o.markings, c.build);
     if (o.rays) {
       var r = '', minSin = o.rays === 'down' ? 0.2 : -0.55;
@@ -233,6 +235,77 @@
     var bob = walkBob(o);
     var head = c.shapes.map(function (s) { var t = {}; for (var k in s) t[k] = s[k]; t.tf = [0, n(bob), 0, 1]; if (s.tf) t.tf2 = s.tf; return t; });
     return { list: list.concat(head), head: c.head };
+  }
+
+  /* the cat seen from straight above (top-down games): the same colours, builds and markings, drawn facing -y in the
+     100-unit space and turned by opts.a (radians; 0 faces right, like GGThings). (0, 0) is the middle of its back.
+     Walking: opts.step + opts.moving step the paws and sway the body; opts.sit tucks the paws in and curls the tail
+     round; opts.dig (a phase, e.g. t * 14) scrabbles the front paws (sitting, head down). opts.wag sways the tail.
+     The crescent of shade stays on the lower right of the screen whichever way the cat faces (angles are rounded
+     to 10 degrees so the paths stay cached). opts.shadow: false leaves out the soft shadow under it. */
+  function topShapes(o, c) {
+    var P = o.preset && PRESETS[o.preset] ? PRESETS[o.preset] : {};
+    var get = function (k, dflt) { return o[k] !== undefined ? o[k] : (P[k] !== undefined ? P[k] : dflt); };
+    var f = c.fill, inner = c.inner, build = c.build, markings = o.plain ? 'none' : get('markings', 'none'), patch = get('patch', '#FFB26B');
+    var deg = Math.round(((o.a || 0) * 180 / Math.PI + 90) / 10) * 10, ph = deg * Math.PI / 180;
+    var sx = n(-5 * Math.cos(ph) - 7 * Math.sin(ph)), sy = n(5 * Math.sin(ph) - 7 * Math.cos(ph));
+    var sit = !!o.sit || (o.dig !== undefined && o.dig !== null), dig = o.dig !== undefined && o.dig !== null ? Math.round(((o.dig % (Math.PI * 2)) / (Math.PI / 6))) * (Math.PI / 6) : null;
+    var run = sit ? 0 : walkRun(o), wag = Math.round(Math.sin(o.wag || 0) * 4) * (sit ? 2 : 3);
+    var wide = build === 'chubby' ? 1.18 : build === 'fluffy' ? 1.06 : 1;
+    var bx = n(24 * wide), by = sit ? 31 : 36, bcy = sit ? 16 : 14, hy = dig !== null ? -30 : -34, sway = n(run * 2.5);
+    var list = [];
+    var tf = [0, 0, deg, 1];
+    var add = function (s) { s.tf = tf; list.push(s); };
+    // a soft shadow on the floor, down and right on screen
+    if (o.shadow !== false) add({ d: ell(n(4 * Math.cos(ph) + 6 * Math.sin(ph)), n(-4 * Math.sin(ph) + 6 * Math.cos(ph) - 4), n(bx + 8), sit ? 52 : 58), fill: 'rgba(42,35,64,.16)' });
+    // the tail first, starting under the body
+    var tail = sit ? 'M0 ' + (bcy + by - 6) + 'Q' + n(bx + 16) + ' ' + (bcy + by + 4) + ' ' + n(bx + 7) + ' ' + n(bcy - 2 + wag)
+      : 'M0 ' + (bcy + by - 8) + 'Q' + n(-6 + wag * 2) + ' ' + (bcy + by + 26) + ' ' + n(14 + wag * 3) + ' ' + (bcy + by + 44);
+    add({ d: tail, stroke: INK, lw: 13 }); add({ d: tail, stroke: markings === 'calico' ? '#4A4458' : f, lw: 6 });
+    if (markings === 'tabby' && !sit) add({ d: 'M-3 ' + (bcy + by + 14) + 'l7 0M' + n(1 + wag) + ' ' + (bcy + by + 26) + 'l7 0', stroke: get('dark', shade(f, 0.28)), lw: 4 });
+    // paws peeking out from under the body: front pair, back pair
+    var pawCol = markings === 'tuxedo' ? '#FFFFFF' : f;
+    var paws = sit ? [[-14, -20, 0], [14, -20, 0], [-bx + 1, bcy + 20, 0], [bx - 1, bcy + 20, 0]] : [[-17, -14, 1], [17, -14, -1], [-19, bcy + 26, -1], [19, bcy + 26, 1]];
+    paws.forEach(function (p, i) {
+      var py = p[1] + run * 9 * p[2], px = p[0];
+      if (dig !== null && i < 2) { var k = Math.sin(dig + i * Math.PI); py = -24 - Math.max(0, k) * 14; px = p[0] * 1.15 + k * 3 * (i ? 1 : -1); }
+      add({ d: ell(n(px), n(py), 8.5, 10), fill: i < 2 ? pawCol : f, stroke: INK, lw: 3.5 });
+    });
+    // the body
+    var body = build === 'fluffy' ? tuftPath(sway, bcy, bx, by, [[0.05, 0.2, 3, 7, 1], [0.3, 0.45, 3, 7, -1], [0.55, 0.7, 3, 6, 1], [0.8, 0.95, 3, 6, -1]]) : ell(sway, bcy, bx, by);
+    add({ d: body, fill: f });
+    var dk = get('dark', shade(f, 0.28));
+    if (markings === 'tabby') add({ d: 'M' + (-bx) + ' ' + (bcy - 12) + 'Q-8 ' + (bcy - 6) + ' -6 ' + (bcy - 16) + 'M' + bx + ' ' + (bcy - 12) + 'Q8 ' + (bcy - 6) + ' 6 ' + (bcy - 16) + 'M' + (-bx) + ' ' + (bcy + 4) + 'Q-8 ' + (bcy + 10) + ' -6 ' + bcy + 'M' + bx + ' ' + (bcy + 4) + 'Q8 ' + (bcy + 10) + ' 6 ' + bcy + 'M' + (-bx) + ' ' + (bcy + 20) + 'Q-8 ' + (bcy + 26) + ' -6 ' + (bcy + 16) + 'M' + bx + ' ' + (bcy + 20) + 'Q8 ' + (bcy + 26) + ' 6 ' + (bcy + 16), stroke: dk, lw: 4.5, clipTo: body });
+    if (markings === 'calico') { add({ d: ell(-12, bcy - 6, 14, 16) + ell(14, bcy + 18, 13, 14), fill: '#FFA94D', clipTo: body }); add({ d: ell(12, bcy - 14, 11, 10), fill: '#4A4458', clipTo: body }); }
+    if (markings === 'tuxedo') add({ d: ell(0, bcy - by + 4, 14, 12), fill: '#FFFFFF', clipTo: body });
+    if (markings === 'patch') add({ d: ell(10, bcy + 10, 14, 16), fill: patch, clipTo: body });
+    add({ d: body + (build === 'fluffy' ? tuftPath(sway + sx, bcy + sy, bx, by, [[0.05, 0.2, 3, 7, 1], [0.3, 0.45, 3, 7, -1], [0.55, 0.7, 3, 6, 1], [0.8, 0.95, 3, 6, -1]]) : ell(sway + sx, bcy + sy, bx, by)), fill: shadeFor(f), rule: 'evenodd', clipTo: body });
+    add({ d: body, stroke: INK, lw: 5 });
+    // the head: ears tucked under it, then the head, then a little face at the front
+    var hr = n(25 * wide), hry = 22, hx = n(sway * 1.6);
+    var earL = markings === 'calico' ? '#FFA94D' : f, earR = markings === 'calico' ? '#4A4458' : markings === 'patch' ? patch : f;
+    [-1, 1].forEach(function (s) {
+      var e = 'M' + n(hx + s * 5) + ' ' + (hy - 12) + 'Q' + n(hx + s * 12) + ' ' + (hy - 34) + ' ' + n(hx + s * (hr + 2)) + ' ' + (hy - 28) + 'Q' + n(hx + s * (hr + 5)) + ' ' + (hy - 14) + ' ' + n(hx + s * (hr - 2)) + ' ' + (hy + 2) + 'Z';
+      add({ d: e, fill: s < 0 ? earL : earR, stroke: INK, lw: 4 });
+      add({ d: 'M' + n(hx + s * 10) + ' ' + (hy - 14) + 'Q' + n(hx + s * 14) + ' ' + (hy - 27) + ' ' + n(hx + s * (hr - 1)) + ' ' + (hy - 23) + 'Q' + n(hx + s * hr) + ' ' + (hy - 14) + ' ' + n(hx + s * (hr - 5)) + ' ' + (hy - 6) + 'Z', fill: inner });
+    });
+    var head = build === 'fluffy' ? tuftPath(hx, hy, hr, hry, [[0.05, 0.2, 2, 6, 1], [0.3, 0.45, 2, 6, -1]]) : ell(hx, hy, hr, hry);
+    add({ d: head, fill: f });
+    if (markings === 'tabby') add({ d: 'M' + (hx - 8) + ' ' + (hy + 4) + 'L' + (hx - 6) + ' ' + (hy + 16) + 'M' + hx + ' ' + (hy + 2) + 'L' + hx + ' ' + (hy + 18) + 'M' + (hx + 8) + ' ' + (hy + 4) + 'L' + (hx + 6) + ' ' + (hy + 16), stroke: dk, lw: 4, clip: true });
+    if (markings === 'calico') { add({ d: ell(hx - 14, hy + 4, 12, 14), fill: '#FFA94D', clip: true }); add({ d: ell(hx + 14, hy + 6, 10, 12), fill: '#4A4458', clip: true }); }
+    if (markings === 'tuxedo') add({ d: 'M' + hx + ' ' + (hy + 2) + 'Q' + (hx - 9) + ' ' + (hy - 10) + ' ' + (hx - 12) + ' ' + (hy - 22) + 'L' + (hx + 12) + ' ' + (hy - 22) + 'Q' + (hx + 9) + ' ' + (hy - 10) + ' ' + hx + ' ' + (hy + 2) + 'Z', fill: '#FFFFFF', clip: true });
+    if (markings === 'patch') add({ d: ell(hx + 14, hy, 12, 16), fill: patch, clip: true });
+    add({ d: head + ell(hx + sx, hy + sy, hr, hry), fill: shadeFor(f), rule: 'evenodd', clip: true });
+    add({ d: head, stroke: INK, lw: 5 });
+    // the face, at the front of the head: eyes (shut while digging or happy), a pink nose, whiskers out past the cheeks
+    var line = get('line', isDark(f) ? '#F3EEFF' : INK), expr = o.face || (dig !== null ? 'happy' : 'open');
+    if (markings === 'tuxedo') line = '#F3EEFF';
+    var ey = hy - 8;
+    if (expr === 'happy' || expr === 'sleep' || expr === 'blink') add({ d: 'M' + (hx - 14) + ' ' + (ey + 1) + 'Q' + (hx - 10) + ' ' + (ey - 4) + ' ' + (hx - 6) + ' ' + (ey + 1) + 'M' + (hx + 6) + ' ' + (ey + 1) + 'Q' + (hx + 10) + ' ' + (ey - 4) + ' ' + (hx + 14) + ' ' + (ey + 1), stroke: line, lw: 3.5 });
+    else { add({ d: ell(hx - 10, ey, 4, 4.5) + ell(hx + 10, ey, 4, 4.5), fill: line }); add({ d: circ(hx - 9, ey - 2, 1.4) + circ(hx + 11, ey - 2, 1.4), fill: line === INK ? '#FFFFFF' : INK }); }
+    add({ d: 'M' + (hx - 3.5) + ' ' + (hy - hry + 3) + 'L' + (hx + 3.5) + ' ' + (hy - hry + 3) + 'L' + hx + ' ' + (hy - hry + 7) + 'Z', fill: '#FF7FA6' });
+    add({ d: 'M' + n(hx - hr + 4) + ' ' + (hy - 8) + 'L' + n(hx - hr - 12) + ' ' + (hy - 14) + 'M' + n(hx - hr + 4) + ' ' + (hy - 4) + 'L' + n(hx - hr - 12) + ' ' + (hy - 2) + 'M' + n(hx + hr - 4) + ' ' + (hy - 8) + 'L' + n(hx + hr + 12) + ' ' + (hy - 14) + 'M' + n(hx + hr - 4) + ' ' + (hy - 4) + 'L' + n(hx + hr + 12) + ' ' + (hy - 2), stroke: isDark(f) ? '#F3EEFF' : INK, lw: 1.8, alpha: 0.6 });
+    return { list: list, head: head };
   }
 
   /* ---------- SVG ---------- */

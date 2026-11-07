@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Tidy Paws</title>
+<meta name="theme-color" content="#F7DCC6">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* Sweep up the kitty litter, for 5-10. The room is seen from straight above: cats pop in through the cat flap, hop
+   into a litter box, dig, and litter flies out over the floor. Pick up the broom to sweep it into piles, the dustpan
+   and brush to scoop it up, and tip the pan into the bin. A day ends when every cat has been and the floor is clean;
+   paw stars for keeping it tidy along the way. No way to lose. Single bright look. */
+body { background: #F7DCC6; }
+#stage { touch-action: none; }
+.middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; min-width: 0; }
+.pill2 { display: flex; align-items: center; gap: 5px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 11px 2px 7px; box-shadow: 0 3px 0 var(--ink); font: 800 1rem/1 var(--display); white-space: nowrap; }
+.pill2 svg { width: 24px; height: 24px; flex: none; }
+.pill2.bump { animation: bump .35s ease; }
+.tools { position: fixed; z-index: 6; display: flex; gap: 12px; left: 50%; transform: translateX(-50%); bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.tools.side { flex-direction: column; left: auto; transform: none; bottom: auto; top: 50%; translate: 0 -50%; right: max(12px, env(safe-area-inset-right, 0px)); }
+.tool { position: relative; width: 92px; height: 84px; border: 4px solid var(--ink); border-radius: 22px; background: var(--cream); box-shadow: 0 5px 0 var(--ink), var(--soft); cursor: pointer; padding: 0; display: grid; place-items: center; touch-action: none; }
+.tool canvas { width: 76px; height: 68px; pointer-events: none; }
+.tool.on { background: var(--sun); transform: translateY(3px); box-shadow: 0 2px 0 var(--ink), var(--soft); }
+.tool .tag { position: absolute; top: -12px; right: -10px; background: #FF8FAB; border: 3px solid var(--ink); border-radius: 999px; padding: 3px 8px 1px; font: 800 .85rem/1 var(--display); pointer-events: none; }
+.tool .tag[hidden] { display: none; }
+.say { position: fixed; left: 50%; z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+.card canvas#cardPic { width: min(240px, 60vw); height: auto; display: block; }
+.card .tip { font: 800 .95rem var(--body); color: var(--muted); }
+.stars { display: flex; gap: 6px; justify-content: center; }
+.stars svg { width: 54px; height: 54px; }
+.stars svg.dim { opacity: .25; }
+.stars[hidden] { display: none; }
+.lvpick { display: flex; align-items: center; justify-content: center; gap: 10px; font: 800 1.1rem var(--display); }
+.lvpick[hidden] { display: none; }
+.lvpick button { width: 48px; height: 48px; border-radius: 50%; border: 3px solid var(--ink); background: var(--cream); box-shadow: 0 3px 0 var(--ink); font: 800 1.4rem/1 var(--display); cursor: pointer; }
+.lvpick button:disabled { opacity: .35; cursor: default; }
+@media (max-height: 520px) { .tool { width: 80px; height: 72px; border-radius: 19px; } .tool canvas { width: 66px; height: 58px; } }
+/* a short landscape screen: the picture and stars on the left, the words and buttons on the right */
+@media (max-height: 520px) and (min-width: 560px) {
+  .card-wrap .card { width: min(660px, 100%); display: grid; grid-template-columns: 220px 1fr; column-gap: 20px; row-gap: 8px; padding: 16px 20px; }
+  .card canvas#cardPic { grid-column: 1; grid-row: 1 / span 4; width: 220px; align-self: center; }
+  .card .stars { grid-column: 1; grid-row: 5 / span 2; align-self: start; }
+  .card .stars svg { width: 44px; height: 44px; }
+  .card h2, .card p, .card .lvpick, .card .big { grid-column: 2; }
+  .card h2 { font-size: 1.8rem; }
+  .card p { font-size: 1rem; }
+  .card .big { justify-self: center; min-height: 54px; }
+}
+@media (max-width: 400px) { .pill2 { font-size: .9rem; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="Tidy Paws. Cats use the litter boxes and kick litter out. Sweep it into piles with the broom, scoop it up with the dustpan and tip it in the bin."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle">
+    <div class="level" id="levelLabel">Day 1</div>
+    <div class="pill2" id="catPill" aria-label="Cat visits still to come"><svg viewBox="0 0 32 32"><path d="M7 13 L8 4 L14 9 Q16 8.5 18 9 L24 4 L25 13 Q28 17 26 22 Q22 28 16 28 Q10 28 6 22 Q4 17 7 13 Z" fill="#FFA94D" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.8" fill="#2A2340"/><circle cx="20" cy="17" r="1.8" fill="#2A2340"/><path d="M14.5 21 L17.5 21 L16 22.8 Z" fill="#FF7FA6"/></svg><b id="catsLeft">0</b></div>
+  </div>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="tools" id="tools" role="toolbar" aria-label="Tools">
+  <button class="tool on" id="toolBroom" type="button" data-tool="broom" aria-label="Broom: sweep the litter into a pile" aria-pressed="true"><canvas width="190" height="170"></canvas></button>
+  <button class="tool" id="toolPan" type="button" data-tool="pan" aria-label="Dustpan and brush: scoop up the litter" aria-pressed="false"><canvas width="190" height="170"></canvas><span class="tag" id="panTag" hidden>Full!</span></button>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<div class="card-wrap" id="cardWrap">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <canvas id="cardPic" width="480" height="300" aria-hidden="true"></canvas>
+    <div class="stars" id="stars" hidden aria-label="Paw stars"></div>
+    <h2 id="cardTitle">Tidy Paws</h2>
+    <p id="cardNote">The cats kick litter all over the floor. Can you keep it tidy?</p>
+    <p class="tip" id="cardTip">Sweep it into a pile with the broom, scoop it up with the dustpan, then tip it in the bin.</p>
+    <div class="lvpick" id="lvPick"><button type="button" id="lvPrev" aria-label="Previous day">‹</button><span id="lvName">Day 1</span><button type="button" id="lvNext" aria-label="Next day">›</button></div>
+    <button class="big" id="goBtn" type="button">Let’s go!</button>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/avatar.js"></script>
+<script src="../../shared/scene.js"></script>
+<script src="../../shared/things.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

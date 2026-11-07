@@ -428,6 +428,17 @@
       sh(E(58, 103, 17, 14), '#C98B5B', { lw: 3, k: 2 }) + sh(E(43, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) + sh(E(73, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) +
       el(52, 100, 2.4, 2.4, '#2A2340') + el(64, 100, 2.4, 2.4, '#2A2340') + el(58, 107, 3, 2.2, '#2A2340') +
       cat({ preset: 'ginger', pose: 'head', face: 'open', x: 58, y: 40, size: 34 })),
+    tidypaws: svg(
+      sh(R(0, 0, 240, 150, 0), '#E3F1F8', { lw: 0, k: 0 }) +
+      '<path d="M0 0h40v40H0zM80 0h40v40H80zM160 0h40v40h-40zM40 40h40v40H40zM120 40h40v40h-40zM200 40h40v40h-40zM0 80h40v40H0zM80 80h40v40H80zM160 80h40v40h-40zM40 120h40v30H40zM120 120h40v30h-40zM200 120h40v30h-40z" fill="#D2E8F3"/>' +
+      '<path d="M18 26h80a16 16 0 0 1 16 16v44a16 16 0 0 1 -16 16h-80a16 16 0 0 1 -16 -16v-44a16 16 0 0 1 16 -16z" fill="rgba(20,14,36,.18)" transform="translate(5 6)"/>' +
+      sh(R(10, 24, 104, 78, 16), '#7CC4FF', { k: 4 }) + sh(R(20, 34, 84, 58, 10), '#E8D3A8', { lw: 3, k: 0, in: el(40, 50, 2, 1.5, '#CBAF80') + el(80, 74, 2, 1.5, '#CBAF80') + el(60, 84, 2, 1.5, '#fff') }) +
+      cat({ preset: 'ginger', pose: 'top', dig: 1, a: -1.9, x: 62, y: 62, size: 46 }) +
+      [[124, 70], [132, 50], [140, 88], [150, 64], [118, 104], [134, 112], [154, 98], [126, 30], [144, 36], [108, 120], [160, 80], [96, 112]].map(function (q, i) { return sh(E(q[0], q[1], 4.6, 3.6), ['#E8D3A8', '#D6BC8C', '#F3E6C8'][i % 3], { lw: 2.2, k: 0 }); }).join('') +
+      [[196, 112], [204, 106], [200, 118], [210, 114], [192, 120], [206, 122], [214, 120], [198, 126]].map(function (q, i) { return sh(E(q[0], q[1], 4.6, 3.6), ['#E8D3A8', '#D6BC8C', '#F3E6C8'][i % 3], { lw: 2.2, k: 0 }); }).join('') +
+      tube('M232 30L186 90', '#C98B5B', 7) +
+      sh(P(170, 96, 'l14 -22l30 18l-12 24q-18 -2 -32 -20z'), '#F5C75E', { lw: 3, k: 2 }) +
+      sh(P(180, 76, 'l6 -9l32 19l-6 9z'), '#FF6B57', { lw: 3, k: 0 })),
     parade: svg(
       sh(R(0, 0, 240, 150, 0), '#BFE6FF', { lw: 0, k: 0 }) +
       '<path d="M0 104q60 -22 120 -6t120 -4v56H0z" fill="#A8E0A0"/>' + ln('M0 104q60 -22 120 -6t120 -4', 2.5) +
@@ -616,6 +627,11 @@
       id: 'fishmaze', save: 'fishmaze', name: 'Fish Maze', blurb: 'Munch the fish, dodge the puppies',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C6EBB5',
       levels: 15, done: DONE.open, art: ART.fishmaze
+    },
+    {
+      id: 'tidy-paws', save: 'tidypaws', name: 'Tidy Paws', blurb: 'Sweep up the litter the cats kick out',
+      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CFE8F5',
+      levels: 12, done: DONE.rated('stars'), art: ART.tidypaws
     },
     {
       id: 'parade', save: 'parade', name: 'Kitten Parade', blurb: 'Give the kittens jobs to get them all home',

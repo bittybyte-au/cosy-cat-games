@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-209c608d0d';
+const VERSION = 'ccg-e7f36d4dce';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -19,20 +19,20 @@ const FILES = {
   "./feedback/index.html": "740a376b13",
   "./manifest.webmanifest": "4ae50003e2",
   "./shared/avatar.js": "800d1be63f",
-  "./shared/cat.js": "5df0bc3d59",
+  "./shared/cat.js": "2bf54e2116",
   "./shared/dishes.js": "1f04f839e4",
   "./shared/draw.js": "6af1578083",
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "c668d6e801",
-  "./shared/games.js": "50c75295c2",
+  "./shared/games.js": "bf989e1bcd",
   "./shared/help.js": "ac7eec2f62",
   "./shared/install.js": "1c67ffafad",
   "./shared/levels.js": "c388bd525e",
   "./shared/pots.js": "068f16575f",
-  "./shared/scene.js": "86572caaa2",
+  "./shared/scene.js": "c9f209a5f0",
   "./shared/site.css": "7f9619cffc",
   "./shared/store.js": "12a8ec5516",
-  "./shared/things.js": "dead140370",
+  "./shared/things.js": "71cc134962",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
   "./fonts/baloo-2-latin-800-normal.woff2": "694f2e10bb",
   "./fonts/fonts.css": "e52febfe7d",
@@ -136,6 +136,9 @@ const FILES = {
   "./games/stack/game.js": "351d12d346",
   "./games/stack/": "024b0986ab",
   "./games/stack/index.html": "024b0986ab",
+  "./games/tidy-paws/game.js": "15e4f1cb8a",
+  "./games/tidy-paws/": "af65118ca2",
+  "./games/tidy-paws/index.html": "af65118ca2",
   "./games/yarn/game.js": "ecf9f0b375",
   "./games/yarn/": "28830c8362",
   "./games/yarn/index.html": "28830c8362",
