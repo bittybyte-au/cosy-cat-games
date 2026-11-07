@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Sneaky Cat</title>
+<meta name="theme-color" content="#2B2550">
+<link rel="manifest" href="../../manifest.webmanifest">
+<link rel="icon" href="../../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<link rel="stylesheet" href="../../shared/site.css">
+<link rel="stylesheet" href="../../shared/game.css">
+<style>
+/* A stealth game for older kids: your cat sneaks through the house at night to the midnight snack, past sleeping
+   dogs. Hold to tiptoe, let go to freeze. Dogs stir, then look; move where a looking dog can see and it woofs, and
+   your cat scurries back to the last safe spot. Hide in boxes, behind plants and chairs; hop over squeaky
+   floorboards. One canvas for the house; the top bar holds the level picker. Single night look by design. */
+body { background: #2B2550; }
+#stage { touch-action: none; }
+.middle { flex: 1; display: flex; justify-content: center; align-items: center; gap: 6px; min-width: 0; }
+.step { width: 40px; height: 40px; }
+.step:disabled { opacity: .35; cursor: default; }
+.step svg { width: 22px; height: 22px; }
+.say { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 78px); z-index: 6; transform: translateX(-50%); pointer-events: none; width: max-content; max-width: 90vw; transition: opacity .3s ease, transform .3s ease; }
+.say.hide { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+.hop {
+  position: fixed; z-index: 6; right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  width: 86px; height: 86px; border-radius: 50%; border: 4px solid var(--ink); background: #7CC4FF; box-shadow: 0 5px 0 var(--ink), var(--soft);
+  display: grid; place-items: center; cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.hop:active, .hop.on { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+.hop svg { width: 46px; height: 46px; pointer-events: none; }
+.hop span { position: absolute; bottom: -26px; font: 800 .85rem var(--body); color: #FFF6D8; text-shadow: 0 2px 0 var(--ink); }
+.hop[hidden] { display: none; }
+.card canvas { width: min(240px, 60vw); height: auto; display: block; }
+.card .tip { font: 800 .95rem var(--body); color: var(--muted); }
+.card .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 400px) { .level { font-size: .9rem; padding: 6px 9px 4px; } .step { width: 36px; height: 36px; } .hop { width: 76px; height: 76px; } }
+</style>
+</head>
+<body class="game">
+<canvas id="stage" aria-label="Sneaky Cat. Hold to tiptoe, let go to freeze. Don't move while a dog is looking."></canvas>
+
+<div class="topbar" id="topbar">
+  <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
+    <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
+  </a>
+  <div class="middle">
+    <button class="round step" id="prevBtn" type="button" aria-label="Previous level"><svg viewBox="0 0 32 32"><path d="M20 7 L10 16 L20 25" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="level" id="levelLabel">Level 1</div>
+    <button class="round step" id="nextBtn" type="button" aria-label="Next level"><svg viewBox="0 0 32 32"><path d="M12 7 L22 16 L12 25" fill="none" stroke="#2A2340" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <button class="round" id="resetBtn" type="button" aria-label="Start this level again">
+    <svg viewBox="0 0 32 32"><path d="M8 11 A10 10 0 1 1 7 19" fill="none" stroke="#2A2340" stroke-width="3.6" stroke-linecap="round"/><path d="M4 5 L8 12 L15 9" fill="none" stroke="#2A2340" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="round" id="soundBtn" type="button" aria-label="Sound on" aria-pressed="true"></button>
+</div>
+
+<div class="say hide" id="say" aria-live="polite"></div>
+
+<button class="hop" id="hopBtn" type="button" aria-label="Hop" hidden>
+  <svg viewBox="0 0 48 48"><path d="M8 36 Q24 2 40 36" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 9"/><path d="M33 30 L40 37 L44 27" fill="none" stroke="#2A2340" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="37" r="5" fill="#FFF6D8" stroke="#2A2340" stroke-width="3"/></svg>
+  <span>Hop</span>
+</button>
+
+<div class="card-wrap" id="cardWrap">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <canvas id="cardPic" width="440" height="300" aria-hidden="true"></canvas>
+    <h2 id="cardTitle">Sneaky Cat</h2>
+    <p id="cardNote">Sneak past the sleeping dogs to your midnight snack.</p>
+    <p class="tip" id="cardTip">Hold to tiptoe. Let go to freeze. Don’t move while a dog is looking!</p>
+    <div class="btns">
+      <button class="big" id="againBtn" type="button" hidden>Play again</button>
+      <button class="big" id="goBtn" type="button">Sneak!</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../shared/store.js"></script>
+<script src="../../shared/draw.js"></script>
+<script src="../../shared/cat.js"></script>
+<script src="../../shared/avatar.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -337,7 +337,24 @@
       sh(R(138, 88, 110, 70, 2), '#5E6B9E', { lw: 3.5, k: 0, in: '<rect x="152" y="104" width="16" height="20" rx="3" fill="#4A3F6B"/><rect x="186" y="104" width="16" height="20" rx="3" fill="#FFD98A"/><rect x="220" y="104" width="16" height="20" rx="3" fill="#FFD98A"/>' }) +
       sh(R(196, 62, 22, 26, 2), '#B65A4B', { lw: 3, k: 3 }) +
       [[100, 52], [120, 42], [140, 46]].map(function (q) { return sh(P(q[0] - 10, q[1], 'q6 -7 12 -3l6 -4v12l-6 -4q-6 4 -12 -1z'), '#7CC4FF', { lw: 2.5, k: 0 }); }).join('') +
-      cat({ preset: 'ginger', pose: 'walk', face: 'happy', x: 80, y: 56, size: 50, step: 1, moving: true, dir: 1, t: 'rotate(-12 70 70)' }))
+      cat({ preset: 'ginger', pose: 'walk', face: 'happy', x: 80, y: 56, size: 50, step: 1, moving: true, dir: 1, t: 'rotate(-12 70 70)' })),
+    sneaky: svg(
+      sh(R(0, 0, 240, 150, 0), '#4B4378', { lw: 0, k: 0 }) +
+      sh(R(150, 14, 60, 64, 4), '#2A2452', { lw: 3.5, k: 0, in: el(190, 34, 9, 9, '#FFF1C9') + el(162, 30, 1.4, 1.4, '#FFF6D8') + el(172, 60, 1.2, 1.2, '#FFF6D8') }) +
+      ln('M180 14v64M150 46h60', 3) +
+      '<path d="M0 104h240v46H0z" fill="#7A5560"/>' + '<path d="M0 98h240v8H0z" fill="#E9DCC8"/>' + ln('M0 98h240M0 106h240', 2.5) +
+      '<path d="M96 108h136v30H96z" fill="rgba(255,226,140,.25)"/>' +
+      shadow(178, 132, 52, 6) + sh(E(178, 128, 54, 10), '#B05F7C', { lw: 3, k: 0 }) +
+      sh(E(184, 114, 36, 15), '#C98B5B', { lw: 3, k: 3 }) + sh(E(206, 120, 13, 10), '#C98B5B', { lw: 3, k: 2 }) +
+      sh(R(128, 120, 30, 9, 4), '#C98B5B', { lw: 2.5, k: 0 }) +
+      sh(E(148, 112, 15, 13), '#C98B5B', { lw: 3, k: 2 }) + sh(E(135, 116, 9, 6.5), '#C98B5B', { lw: 2.5, k: 0 }) + el(127, 114, 3, 2.6, '#2A2340') +
+      ln('M144 108q3 2.5 6 0', 2) + sh(P(152, 103, 'q8 -2 8 8q0 9 -5 10q-5 -3 -3 -18z'), '#7E4E30', { lw: 2.5, k: 0 }) +
+      '<text x="160" y="88" font-family="Baloo 2, sans-serif" font-weight="800" font-size="15" fill="#BFE6FF" stroke="#2A2340" stroke-width="3" paint-order="stroke">z</text>' +
+      '<text x="170" y="76" font-family="Baloo 2, sans-serif" font-weight="800" font-size="11" fill="#BFE6FF" stroke="#2A2340" stroke-width="2.5" paint-order="stroke">z</text>' +
+      shadow(72, 130, 22, 4) +
+      cat({ preset: 'ginger', pose: 'walk', face: 'open', x: 72, y: 106, size: 32, step: 1.2, moving: true, dir: 1 }) +
+      sh(R(8, 100, 34, 32, 3), '#DDA86F', { lw: 3, k: 3, in: '<path d="M19 100h12v32H19z" fill="rgba(255,255,255,.35)"/>' }) +
+      [[108, 116]].map(function (q) { return sh(P(q[0] - 10, q[1], 'q6 -7 12 -3l6 -4v12l-6 -4q-6 4 -12 -1z'), '#7CC4FF', { lw: 2.5, k: 0 }); }).join(''))
   };
 
   var GAMES = [
@@ -473,6 +490,11 @@
       id: 'rooftop', save: 'rooftop', name: 'Rooftop Run', blurb: 'Leap across the city at night',
       ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C9CBEF',
       badge: function (p) { return p && p.best ? 'Best ' + p.best + ' m' : ''; }, art: ART.rooftop
+    },
+    {
+      id: 'sneaky', save: 'sneaky', name: 'Sneaky Cat', blurb: 'Tiptoe past the sleeping dogs',
+      ages: ['11+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#B9B2E8',
+      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.sneaky
     }
   ];
 
