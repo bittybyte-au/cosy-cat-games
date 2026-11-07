@@ -10,7 +10,7 @@
   'use strict';
 
   var D = GGDraw, INK = D.INK, TAU = Math.PI * 2;
-  var E = window.HotPawsEngine, LEVELS = window.HotPawsLevels;
+  var E = window.HotPawsEngine, LEVELS = window.HotPawsLevels;   // the set list of rounds: as many as `levels:` for hotpaws in shared/games.js
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var SPEED = 1, paused = false;
 
@@ -265,7 +265,7 @@
     parts = []; flyers = []; bubbles = []; hidden = {}; partyT = 0; hotT = -9; freezeVis = 0;
     phase = 'play'; paused = false;
     PG.last = lvN; save();
-    $('levelLabel').textContent = 'Round ' + lvN;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Round </span>' + lvN + '/' + LEVELS.length;
     $('win').hidden = true; $('hud').hidden = false; $('listWrap').hidden = true;
     renderHud();
     say('Collect ' + level.goal + ' blue diamonds!', level.tip || null, level.tip ? 5 : 3);
@@ -540,7 +540,8 @@
   function showWinCard() {
     phase = 'won';
     var hits = st.hits;
-    $('winTitle').textContent = lvN >= LEVELS.length ? 'You did them all!' : 'Round ' + lvN + ' done!';
+    var allDone = PG.done.length >= LEVELS.length;
+    $('winTitle').textContent = allDone && lvN >= LEVELS.length ? 'You finished all ' + LEVELS.length + ' rounds!' : 'Round ' + lvN + ' of ' + LEVELS.length + ' done!';
     $('winNote').textContent = level.goal + ' blue diamonds collected' + (hits === 0 ? ', and not one hot paw!' : '. Cool paws!');
     var last = lvN >= LEVELS.length;
     $('nextLabel').textContent = last ? 'All rounds' : 'Next round';

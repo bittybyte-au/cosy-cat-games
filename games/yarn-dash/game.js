@@ -20,7 +20,10 @@
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
 
-  /* ================= levels ================= */
+  /* ================= levels =================
+     A set number of levels (the same as `levels:` for yarn-dash in shared/games.js). The basket, the yarn's life and
+     the vacuum's speed reach their top at about level 16; the last levels are a full room at that pace. */
+  var LEVELS = 20;
   var NEW_THING = {
     1: { kind: 'yarn', title: 'Yarn Dash', note: 'Run around and collect the yarn before it rolls away! Gold yarn is worth 3.' },
     2: { kind: 'cucumber', title: 'Cucumbers!', note: 'Cats get a fright from cucumbers. Run around them!' },
@@ -48,6 +51,14 @@
   /* ================= saved progress ================= */
   var P = (function () { var p = {}; try { p = GG.getProgress('yarndash') || {}; } catch (e) {} if (typeof p.level !== 'number' || p.level < 1) p.level = 1; if (typeof p.best !== 'number') p.best = 0; return p; })();
   function save() { try { GG.setProgress('yarndash', P); } catch (e) {} }
+  /* levels finished (P.level is the next one to play; an old save past the last level counts as all done) */
+  function finishedCount() { return Math.min(LEVELS, Math.max(P.best, P.level - 1)); }
+  function showFinished() {
+    running = false; hold = null; keys = {};
+    $('cardWrap').hidden = true;
+    GGLevels.finished({ total: LEVELS, faces: catImg ? [catImg.src] : [],
+      onPick: function (n) { Sound.init(); Sound.grab(); startLevel(n); running = true; say('Fill the basket with ' + G.R.goal + ' yarn!', 1.8); } });
+  }
 
   /* ================= your cat (your avatar) ================= */
   var CAT = { preset: 'ginger' }, catImg = null, catKey = '';
@@ -120,6 +131,7 @@
     return false;
   }
   function startLevel(n) {
+    n = Math.max(1, Math.min(LEVELS, n | 0));
     if (window.GG && GG.track) GG.track('Start level', { game: 'yarn-dash', level: n });
     var R = rules(n);
     G = { n: n, R: R, got: 0, done: false, cat: { x: W / 2, y: H / 2, vx: 0, vy: 0, dir: 0, target: null, fright: 0, safe: 0, step: 0, slow: false },
@@ -134,7 +146,7 @@
     for (var v = 0; v < R.vacuums; v++) { var s = freeSpot(260, 40), a = rand(0, TAU); G.vacs.push({ x: s.x, y: s.y, a: a, turnT: rand(2, 4), spin: 0 }); }
     for (var y = 0; y < 3; y++) addYarn(false);
     renderHud();
-    $('levelLabel').textContent = 'Level ' + n;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + n + '/' + LEVELS;
   }
   function addYarn(near, at) {
     var gold = Math.random() < 0.15;
@@ -193,7 +205,7 @@
     if (GG.stat) GG.stat('yarn-dash', 'levels', 1);
     Sound.win(); buzz(40);
     for (var i = 0; i < 4; i++) sparkle(rand(W * 0.2, W * 0.8), rand(H * 0.2, H * 0.6), pick(YARN_COLS), 16, 1.3);
-    setTimeout(function () { showCard(n + 1, true); }, 1300);
+    setTimeout(function () { if (n >= LEVELS) showFinished(); else showCard(n + 1, true); }, 1300);
   }
 
   /* ================= update ================= */
@@ -522,7 +534,7 @@
     cardLevel = n;
     var nt = NEW_THING[n];
     if (after) {
-      $('cardTitle').textContent = 'Level ' + (n - 1) + ' done!';
+      $('cardTitle').textContent = 'Level ' + (n - 1) + ' of ' + LEVELS + ' done!';
       $('cardNote').textContent = nt ? 'Next up: ' + nt.title.replace('!', '').toLowerCase() + '!' : 'Basket full! Ready for level ' + n + '?';
       $('cardTip').textContent = nt ? nt.note : 'More yarn to catch, and it rolls away a little faster.';
       drawCardPic(nt ? nt.kind : 'basket');
@@ -674,7 +686,7 @@
 
   layout();
   startLevel(P.level);      // a level behind the first card, so the room isn't empty
-  showCard(P.level, false);
+  if (finishedCount() >= LEVELS) showFinished(); else showCard(Math.min(P.level, LEVELS), false);
   requestAnimationFrame(frame);
 
   /* test hook */
@@ -683,6 +695,7 @@
     saved: function () { return JSON.parse(JSON.stringify(P)); },
     toScreen: function (x, y) { return { x: OX + x * K, y: OY + y * K }; },
     room: function () { return { W: W, H: H }; },
+    total: LEVELS,
     jump: function (n) { $('cardWrap').hidden = true; startLevel(n); running = true; },
     teleport: function (x, y) { G.cat.x = x; G.cat.y = y; },
     setGot: function (n) { G.got = n; renderHud(); },

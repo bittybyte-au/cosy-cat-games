@@ -19,16 +19,21 @@
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
   function track(n, d) { if (window.GG && GG.track) GG.track(n, d); }
 
-  /* ================= saved progress ================= */
+  /* ================= saved progress =================
+     A set number of levels (the same as `levels:` for laser in shared/games.js): the ramp tops out at the last
+     (eight-wide rooms, two splitters, three loose mirrors). P.best is the highest level open; LEVELS + 1 = all done. */
+  var LEVELS = 30;
   var P = (function () {
     var p = {}; try { p = GG.getProgress('laser') || {}; } catch (e) {}
     if (typeof p.best !== 'number' || p.best < 1) p.best = 1;
     if (typeof p.cur !== 'number' || p.cur < 1) p.cur = 1;
     if (!p.solved || typeof p.solved !== 'object') p.solved = {};
-    p.cur = Math.min(p.cur, p.best);
+    p.cur = Math.min(p.cur, p.best, LEVELS);
     return p;
   })();
   function save() { try { GG.setProgress('laser', P); } catch (e) {} }
+  function lastOpen() { return Math.min(P.best, LEVELS); }
+  function allDone() { return P.best > LEVELS; }
 
   /* ================= the board =================
      cells: null | { t: 'mirror', o: 0 ('/') or 1 ('\'), fixed, loose } | { t: 'split', o, fixed } | { t: 'block', k }
@@ -227,7 +232,7 @@
   var catFx = {};      // per-cat: wake time
   var drag = null;     // dragging a loose mirror: { from: 'tray'|cell key, x, y }
   function loadLevel(lv, fresh) {
-    lv = clamp(lv, 1, P.best);
+    lv = clamp(lv, 1, lastOpen());
     P.cur = lv; save();
     L = makeLevel(lv);
     if (!fresh && P.state && P.state.lv === lv) { try { var st = JSON.parse(P.state.s); L.g = st.g; L.loose = st.loose; } catch (e) {} }
@@ -245,9 +250,9 @@
     if (!won && solved(L)) win();
   }
   function renderLevel() {
-    $('levelLabel').textContent = 'Level ' + L.lv;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + L.lv + '/' + LEVELS;
     $('prevBtn').disabled = L.lv <= 1;
-    $('nextBtn').disabled = L.lv >= P.best;
+    $('nextBtn').disabled = L.lv >= lastOpen();
   }
   function win() {
     won = true; winT = 0;
@@ -342,7 +347,7 @@
     var pl = plan(L.lv);
     if (mode === 'intro') {
       $('cardTitle').textContent = 'Laser Bounce';
-      $('cardNote').textContent = 'Turn the mirrors so the laser dot reaches every sleeping cat.';
+      $('cardNote').textContent = allDone() ? 'You finished all ' + LEVELS + ' levels! Play any level again with the arrows at the top.' : 'Turn the mirrors so the laser dot reaches every sleeping cat.';
       $('cardTip').textContent = 'Tap a mirror to turn it. Grey bolted mirrors can’t turn.';
       $('goBtn').textContent = P.best > 1 ? 'Play level ' + L.lv : 'Play';
     } else {
@@ -351,10 +356,11 @@
       else if (np.loose && !pl.loose) news = 'Next up: loose mirrors. Drag them from the tray onto the floor.';
       else if (np.fixed && !pl.fixed) news = 'Next up: grey mirrors are bolted down and can’t turn.';
       else if (np.n > pl.n) news = 'Next up: a bigger room.';
-      $('cardTitle').textContent = 'Purr-fect!';
-      $('cardNote').textContent = 'Level ' + L.lv + ' done' + (moves ? ' in ' + moves + (moves === 1 ? ' move.' : ' moves.') : '.');
-      $('cardTip').textContent = news;
-      $('goBtn').textContent = 'Level ' + nl;
+      var last = L.lv >= LEVELS;
+      $('cardTitle').textContent = last ? 'You finished all ' + LEVELS + ' levels!' : 'Purr-fect!';
+      $('cardNote').textContent = 'Level ' + L.lv + ' of ' + LEVELS + ' done' + (moves ? ' in ' + moves + (moves === 1 ? ' move.' : ' moves.') : '.');
+      $('cardTip').textContent = last ? 'Every cat is awake. Play any level again with the arrows at the top.' : news;
+      $('goBtn').textContent = last ? 'Level 1' : 'Level ' + nl;
     }
     drawCardPic();
     $('cardWrap').hidden = false;
@@ -362,7 +368,7 @@
   function hideCard() { $('cardWrap').hidden = true; }
   $('goBtn').addEventListener('click', function () {
     Sound.init(); Sound.click(); hideCard();
-    if (cardMode === 'done') loadLevel(L.lv + 1, true);
+    if (cardMode === 'done') loadLevel(L.lv >= LEVELS ? 1 : L.lv + 1, true);
   });
   function drawCardPic() {
     var c = $('cardPic').getContext('2d');
@@ -419,7 +425,9 @@
       } });
     } else {
       D.shape(c, D.rrPath(-len / 2, -th / 2, len, th, th * 0.45), frame, { lw: D.LW.mid, depth: 3, inside: function (c) {
-        D.rr(c, -len / 2 + 5, -th / 2 + 4, len - 10, th - 8, th * 0.3); c.fillStyle = '#CDEEFF'; c.fill();
+        // the glass: on a small phone's 8-wide room the frame is thin, so keep the glass at least a sliver tall
+        var gh = Math.max(2, th - 8);
+        D.rr(c, -len / 2 + 5, -gh / 2, len - 10, gh, Math.min(th * 0.3, gh / 2)); c.fillStyle = '#CDEEFF'; c.fill();
         c.fillStyle = 'rgba(255,255,255,.8)'; c.fillRect(-len / 2 + 9, -th / 2 + 5, len * 0.35, Math.max(2, th * 0.18));
       } });
       if (cell.fixed) { [-1, 1].forEach(function (k) { c.beginPath(); c.arc(k * len * 0.4, 0, Math.max(2.5, th * 0.17), 0, TAU); c.fillStyle = '#FFE08A'; c.fill(); D.ink(c, 2); }); }
@@ -611,6 +619,7 @@
 
   /* test hooks */
   window.__laser = {
+    total: LEVELS,
     state: function () { return { lv: L.lv, n: L.n, loose: L.loose.length, won: won, lit: Object.keys(lit).length, cats: cats(L).length, best: P.best }; },
     level: function (lv) { return makeLevel(lv); },
     solvedFresh: function (lv) { var x = makeLevel(lv); return solved(x); },

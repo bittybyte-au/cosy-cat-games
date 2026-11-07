@@ -165,6 +165,13 @@
     return p;
   })();
   function save() { try { GG.setProgress('slide', P); } catch (e) {} }
+  /* the set list of puzzles: every picture at 3×3 and 4×4 (12, `levels:` for slide in shared/games.js) */
+  var TOTAL = PICTURES.length * 2;
+  function solvedCount() {
+    var n = 0;
+    PICTURES.forEach(function (p) { var s = P.solved[p.id]; if (Array.isArray(s)) n += (s.indexOf(3) >= 0 ? 1 : 0) + (s.indexOf(4) >= 0 ? 1 : 0); });
+    return n;
+  }
   var UNLOCK4 = 0;                      // everything is open
   function bigOpen() { return true; }
 
@@ -232,7 +239,8 @@
     solved = true;
     if (window.GG && GG.track) GG.track('Finish puzzle', { game: 'slide', picture: picId, size: n + 'x' + n, level: P.diff });
     var s = P.solved[picId] = Array.isArray(P.solved[picId]) ? P.solved[picId] : [];
-    if (s.indexOf(n) < 0) s.push(n);
+    var fresh = s.indexOf(n) < 0;
+    if (fresh) s.push(n);
     var opened = false;
     if (n === 3) P.n3++; else P.n4++;
     save();
@@ -241,7 +249,9 @@
       for (var i = 0; i < 60; i++) parts.push({ x: board.x + Math.random() * board.s, y: board.y + board.s * 0.3, vx: (Math.random() - 0.5) * 500, vy: -200 - Math.random() * 500, r: Math.random() * TAU, vr: (Math.random() - 0.5) * 12, col: ['#FF8FAB', '#FFC93C', '#7CC4FF', '#7BD389', '#B48CFF'][i % 5], life: 1.6 });
     }, 350);
     setTimeout(function () {
-      $('winNote').textContent = opened ? 'The bigger 4×4 puzzles are open now!' : picById(picId).name + ' is back together.';
+      var k = solvedCount();
+      $('winTitle').textContent = k >= TOTAL && fresh ? 'You solved all ' + TOTAL + ' puzzles!' : 'You did it!';
+      $('winNote').textContent = opened ? 'The bigger 4×4 puzzles are open now!' : picById(picId).name + ' is back together. ' + (k >= TOTAL ? (fresh ? 'Play any of them again.' : 'Every puzzle solved!') : k + ' of ' + TOTAL + ' puzzles solved.');
       $('win').hidden = false; $('nextBtn').focus();
     }, 2600);   // time to enjoy the finished picture first
   }
@@ -377,7 +387,8 @@
       var done = Array.isArray(P.solved[p.id]) && P.solved[p.id].indexOf(n) >= 0;
       return '<button class="pic" type="button" data-pic="' + p.id + '" aria-label="' + p.name + (done ? ', done' : '') + '"><img alt="" src="' + thumb(p.id) + '">' + (done ? '<span class="done">' + TICK + '</span>' : '') + '</button>';
     }).join('');
-    $('lockNote').textContent = '';
+    var k = solvedCount();
+    $('lockNote').textContent = k >= TOTAL ? 'All ' + TOTAL + ' puzzles solved! Play any again.' : k + ' of ' + TOTAL + ' puzzles solved';
     $('pickWrap').hidden = false;
   }
   $('picBtn').addEventListener('click', openPicker);

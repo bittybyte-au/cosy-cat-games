@@ -259,14 +259,16 @@
   }
 
   /* ---------- levels ----------
-     Gentle ramp: more colours and bigger goals as levels go up. There is no move limit. */
+     Gentle ramp: more colours and bigger goals as levels go up. There is no move limit.
+     A set number of levels (the same as `levels:` for kitty-pop in shared/games.js): the ramp tops out at the last. */
+  var LEVELS = 20;
   /* Goal sizes: mixed amounts that grow slowly.
      Levels 1-2: one goal (15, 18). Levels 3-8: two goals (8 & 14 up to 13 & 24).
-     Level 9 on: three goals (8, 12, 18), each creeping up to a cap. */
+     Level 9 on: three goals (8, 12, 18), each creeping up to level 20's (19, 23, 35). */
   function goalAmounts(n) {
     if (n <= 2) return [12 + n * 3];
     if (n <= 8) return [8 + (n - 3), 14 + (n - 3) * 2];
-    var k = Math.min(n - 9, 12);
+    var k = Math.min(n - 9, 11);
     return [8 + k, 12 + k, 18 + Math.round(k * 1.5)];
   }
   function levelDef(n) {
@@ -602,6 +604,12 @@
 
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('kittypop'); p.level = p.level || 1; return p; }
+  /* levels finished: the saved level is the next one to play (an old save past the last level counts as all done) */
+  function finishedCount() { return Math.min(LEVELS, progress().level - 1); }
+  function showFinished() {
+    GGLevels.finished({ total: LEVELS, faces: level.colours.slice(0, 5).map(function (k) { return catImageURL(k, 'happy', 64); }),
+      onPick: function (n) { Sound.init(); Sound.pick(); startLevel(n); } });
+  }
 
   /* Levels the shared layer doesn't allow (the free taster, once accounts exist) replay the last allowed level.
      GG.allows doesn't exist yet, so for now every level is open. */
@@ -609,11 +617,12 @@
   function lastFreeLevel(n) { while (n > 1 && passBlocks(n)) n--; return n; }
 
   function startLevel(n) {
+    n = Math.max(1, Math.min(LEVELS, n | 0));
     if (passBlocks(n)) n = lastFreeLevel(n);
     level = levelDef(n);
     if (window.GG && GG.track) GG.track('Start level', { game: 'kitty-pop', level: n });
     won = false; busy = true; selected = null; idle = 0; hintMove = null;
-    $('levelLabel').textContent = $('sideLevel').textContent = 'Level ' + n;
+    $('levelLabel').innerHTML = $('sideLevel').innerHTML = '<span class="gg-lvword">Level </span>' + n + '/' + LEVELS;
     $('win').hidden = true;
     renderGoals();
     fillFresh();
@@ -640,7 +649,8 @@
     eachTile(function (t) { t.face = 'happy'; t.cheer = -(t.c * 0.07 + t.r * 0.04); });
     for (var i = 0; i < 6; i++) { var q = cellCenter(Math.floor(Math.random() * ROWS), Math.floor(Math.random() * COLS)); sparkle(q.x, q.y, CATS[level.colours[i % level.colours.length]].fill, 10); }
     await wait(1.1);
-    $('winNote').textContent = 'Level ' + n + ' done';
+    if (n >= LEVELS) { showFinished(); return; }
+    $('winNote').textContent = 'Level ' + n + ' of ' + LEVELS + ' done';
     var faces = $('winFaces'); faces.innerHTML = '';
     level.colours.forEach(function (k) { var im = document.createElement('img'); im.alt = ''; im.src = catImageURL(k, 'happy', 64); faces.appendChild(im); });
     $('win').hidden = false;
@@ -920,6 +930,7 @@
 
   resize();
   startLevel(progress().level);
+  if (finishedCount() >= LEVELS) showFinished();
   function recheck() { if (level && passBlocks(level.n)) startLevel(level.n); }
   window.addEventListener('gg-change', recheck);
   requestAnimationFrame(frame);
@@ -936,6 +947,7 @@
     set: function (r, c, kind, special, dir) { var t = grid[r][c]; t.kind = kind; t.special = special || null; t.dir = dir; },
     win: function () { level.goals.forEach(function (g) { g.left = 0; g.shown = 0; }); celebrate(); },
     start: function (n) { startLevel(n); },
+    total: LEVELS,
     specials: function () { return !!SP; }
   };
 })();

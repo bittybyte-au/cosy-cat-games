@@ -20,6 +20,9 @@
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
   function track(n, d) { if (window.GG && GG.track) GG.track(n, d); }
 
+  /* A set number of levels (the same as `levels:` for yarn-defence in shared/games.js): five times round the six
+     floor plans, ten waves from level 11. P.best is the highest level open; LEVELS + 1 = all done. */
+  var LEVELS = 30;
   var P = (function () {
     var p = {}; try { p = GG.getProgress('yarndefence') || {}; } catch (e) {}
     if (typeof p.best !== 'number' || p.best < 1) p.best = 1;
@@ -28,6 +31,8 @@
     return p;
   })();
   function save() { try { GG.setProgress('yarndefence', P); } catch (e) {} }
+  function lastOpen() { return Math.min(P.best, LEVELS); }
+  function allDone() { return P.best > LEVELS; }
 
   /* ================= your cat (the swatter) ================= */
   var MINE = { preset: 'ginger' };
@@ -120,13 +125,13 @@
     return { x: 0, y: 0, dx: 1, dy: 0 };
   }
   function loadLevel(lv) {
-    lv = clamp(lv, 1, P.best);
+    lv = clamp(lv, 1, lastOpen());
     P.cur = lv; save();
     var pl = plan(lv);
     L = { lv: lv, pl: pl, path: buildPath(lv) };
     G = { fish: pl.fish, yarn: pl.yarn, wave: 0, queue: [], waveT: 0, next: -1, started: false, mice: [], cats: {}, shots: [], fx: [], gone: [], over: null, sel: null, type: null, lost: 0, spent: 0, id: 0, t: 0 };
-    $('levelLabel').textContent = 'Level ' + lv;
-    $('prevBtn').disabled = lv <= 1; $('nextBtn').disabled = lv >= P.best;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + lv + '/' + LEVELS;
+    $('prevBtn').disabled = lv <= 1; $('nextBtn').disabled = lv >= lastOpen();
     G.type = 'swat';
     renderTray(); renderHud();
     track('Start level', { game: 'yarn-defence', level: lv });
@@ -371,7 +376,7 @@
   $('nextBtn').addEventListener('click', function () { Sound.init(); Sound.click(); hideCard(); loadLevel(L.lv + 1); });
   $('goBtn').addEventListener('click', function () {
     Sound.init(); Sound.click(); hideCard();
-    if (cardMode === 'won') loadLevel(L.lv + 1);
+    if (cardMode === 'won') loadLevel(L.lv >= LEVELS ? 1 : L.lv + 1);
     else if (cardMode === 'lost') loadLevel(L.lv);
     levelSay();
   });
@@ -402,10 +407,11 @@
     cardMode = mode;
     $('againBtn').hidden = mode !== 'won';
     if (mode === 'won') {
-      $('cardTitle').textContent = G.stars === 3 ? 'Not a strand lost!' : 'Yarn saved!';
-      $('cardNote').textContent = 'Level ' + L.lv + ' done with ' + G.yarn + ' of ' + L.pl.yarn + ' balls of yarn left.';
-      $('cardTip').textContent = G.stars < 3 ? 'For three stars, don’t let a single mouse reach the basket.' : '';
-      $('goBtn').textContent = 'Level ' + (L.lv + 1);
+      var last = L.lv >= LEVELS;
+      $('cardTitle').textContent = last ? 'You finished all ' + LEVELS + ' levels!' : G.stars === 3 ? 'Not a strand lost!' : 'Yarn saved!';
+      $('cardNote').textContent = 'Level ' + L.lv + ' of ' + LEVELS + ' done with ' + G.yarn + ' of ' + L.pl.yarn + ' balls of yarn left.';
+      $('cardTip').textContent = last ? 'The yarn is safe. Play any level again with the arrows at the top.' : G.stars < 3 ? 'For three stars, don’t let a single mouse reach the basket.' : '';
+      $('goBtn').textContent = last ? 'Level 1' : 'Level ' + (L.lv + 1);
     } else if (mode === 'lost') {
       $('cardTitle').textContent = 'The mice got the yarn!';
       $('cardNote').textContent = 'They made it to wave ' + G.wave + ' of ' + L.pl.waves + '.';
@@ -413,7 +419,7 @@
       $('goBtn').textContent = 'Try again';
     } else {
       $('cardTitle').textContent = 'Yarn Defence';
-      $('cardNote').textContent = 'Mice are after your yarn! Put cats beside the path to send them home.';
+      $('cardNote').textContent = allDone() ? 'You finished all ' + LEVELS + ' levels! Play any level again with the arrows at the top.' : 'Mice are after your yarn! Put cats beside the path to send them home.';
       $('cardTip').textContent = 'Pick a cat below, then tap a spot beside the path. Cats cost fish, and every mouse sent home gives you more.';
       $('goBtn').textContent = P.best > 1 ? 'Play level ' + L.lv : 'Let’s go!';
     }
@@ -683,6 +689,7 @@
 
   /* test hooks */
   window.__yd = {
+    total: LEVELS,
     state: function () { return { over: G.over, lv: L.lv, fish: G.fish, yarn: G.yarn, wave: G.wave, waves: L.pl.waves, mice: G.mice.length, cats: Object.keys(G.cats).length, stars: G.stars, best: P.best, portrait: portrait }; },
     load: function (lv) { hideCard(); P.best = Math.max(P.best, lv); loadLevel(lv); },
     place: function (x, y, t) { return place(x, y, t); },

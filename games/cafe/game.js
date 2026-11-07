@@ -214,7 +214,7 @@
   function blit(c, cv, x, y, w) { var h = w * cv.height / cv.width; c.drawImage(cv, x - w / 2, y - h / 2, w, h); }
 
   /* ================= saved progress ================= */
-  var MAX_DAY = 15;
+  var MAX_DAY = 15;   // the set number of Challenge days: `levels:` for cafe in shared/games.js (keep the two the same)
   var P = (function () {
     var p = {};
     try { p = GG.getProgress('cafe') || {}; } catch (e) {}
@@ -310,7 +310,7 @@
     $('menuBtn').hidden = false;
     $('leftPill').hidden = !chal;
     layout(); renderTray(); renderHud();
-    say(chal ? 'Day ' + day + '. Here come the customers!' : 'The café is open!', 1.8);
+    say(chal ? 'Day ' + day + ' of ' + MAX_DAY + '. Here come the customers!' : 'The café is open!', 1.8);
   }
   function remaining() { return G.total === Infinity ? 0 : G.total - G.served - G.left; }
 
@@ -478,9 +478,10 @@
       var html = '';
       for (var i = 0; i < 3; i++) html += '<svg viewBox="0 0 32 32"><path d="M16 3 L19.8 11.6 L29 12.4 L22 18.6 L24.2 27.8 L16 22.8 L7.8 27.8 L10 18.6 L3 12.4 L12.2 11.6 Z" fill="' + (i < rating ? '#FFD23F' : '#EEE8F3') + '" stroke="#2A2340" stroke-width="2.4" stroke-linejoin="round"/></svg>';
       $('bigStars').innerHTML = html;
-      $('endTitle').textContent = rating === 3 ? 'Amazing day!' : rating ? 'Day ' + d + ' done!' : 'Busy day!';
+      var all = rating > 0 && d >= MAX_DAY;
+      $('endTitle').textContent = all ? 'You finished all ' + MAX_DAY + ' days!' : rating === 3 ? 'Amazing day!' : rating ? 'Day ' + d + ' of ' + MAX_DAY + ' done!' : 'Busy day!';
       $('endNote').textContent = 'You served ' + G.served + ' of ' + G.total + ' cats and kept ' + G.stars + ' star' + (G.stars === 1 ? '' : 's') + '.' +
-        (rating ? (opened ? ' Day ' + (d + 1) + ' is open!' : '') : ' Try again to open the next day.');
+        (rating ? (opened ? ' Day ' + (d + 1) + ' is open!' : all ? ' Play any day again from the menu.' : '') : ' Try again to open the next day.');
       $('nextBtn').hidden = !(rating > 0 && d < MAX_DAY && d + 1 <= P.day);
       $('endWrap').hidden = false;
       (rating ? Sound.chime : Sound.leave)();

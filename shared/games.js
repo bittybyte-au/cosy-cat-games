@@ -11,11 +11,29 @@
    status    'live' playable, 'soon' greyed "Coming soon" tile while testing, 'dev' hidden on the live site
    season    null, or a season id (e.g. 'christmas') for games that only appear in that season
    tile      false = no tile on the games home or landing page (Cosy Home has its own house button)
-   badge     optional: progress -> short text for the tile badge, or '' for none */
+   badge     optional: progress -> short text for the tile badge, or '' for none
+   levels    level games: the set number of levels (rounds, days, puzzles). This is the one place the count lives:
+             each game keeps the same number as a constant (game pages don't load this file), with a comment pointing
+             here. Level games also give
+   done      progress -> how many levels are finished, from the game's own save. Their badge is made from the two
+             by levelsBadge below ('5/20'), so no level game writes its own badge. */
 (function () {
   /* cat heads in the tile pictures are drawn by the shared cat (shared/cat.js, loaded first) */
   function cat(o) { return window.GGCat ? window.GGCat.g(o) : ''; }
-  function level(p) { return p && p.level > 1 ? 'Level ' + p.level : ''; }
+  /* ---------- level games: "levels finished / levels", e.g. '5/20' ----------
+     Nothing before the first is finished; an old save from before the set count (past the end) counts as all done. */
+  function levelsBadge(done, total) { var n = Math.max(0, Math.min(total, Math.floor(done) || 0)); return n ? n + '/' + total : ''; }
+  function count(list, ok) { var seen = {}, n = 0; (Array.isArray(list) ? list : []).forEach(function (x) { if (ok(x) && !seen[x]) { seen[x] = 1; n++; } }); return n; }
+  var DONE = {
+    /* saves the next level to play: { level } */
+    next: function (p) { return p && p.level > 1 ? p.level - 1 : 0; },
+    /* saves the highest level open: { best } */
+    open: function (p) { return p && p.best > 1 ? p.best - 1 : 0; },
+    /* saves a list of the levels finished: { done: [n, ...] } */
+    list: function (p, total) { return count(p && p.done, function (n) { return n >= 1 && n <= total; }); },
+    /* saves stars (or a best rating) for each level finished: { [key]: { level: stars } } */
+    rated: function (key) { return function (p, total) { var o = p && p[key]; return o && typeof o === 'object' ? count(Object.keys(o), function (k) { return +k >= 1 && +k <= total && o[k] > 0; }) : 0; }; }
+  };
 
   /* ---------- the tile pictures, in the house style ----------
      One ink colour in three weights (4 main shapes, 3 parts, 2.5 small details). Outline last: a shape is filled,
@@ -433,17 +451,17 @@
     {
       id: 'kitty-pop', save: 'kittypop', name: 'Kitty Match', blurb: 'Line up three cats in a row',
       ages: ['5-10'], toddler: false, free: 3, status: 'live', season: null, colour: '#FFC2DA',
-      badge: level, art: ART.kittypop
+      levels: 20, done: DONE.next, art: ART.kittypop
     },
     {
       id: 'cubbies', save: 'cubbies', name: 'Cosy Cubbies', blurb: 'Tuck sleepy cats into their beds',
       ages: ['5-10'], toddler: false, free: 0, status: 'live', season: null, colour: '#BFE0FF',
-      badge: level, art: ART.cubbies
+      levels: 20, done: DONE.next, art: ART.cubbies
     },
     {
       id: 'yarn', save: 'yarn', name: 'Yarn Sort', blurb: 'Sort the wool into tubes',
       ages: ['5-10', '10+'], toddler: false, free: 0, status: 'live', season: null, colour: '#DCC8FF',
-      badge: level, art: ART.yarn
+      levels: 25, done: DONE.next, art: ART.yarn
     },
     {
       id: 'home', save: 'home', name: 'Cosy Home', blurb: 'Decorate your cosy house',
@@ -472,8 +490,7 @@
     {
       id: 'cafe', save: 'cafe', name: 'Cat Caf\u00e9', blurb: 'Serve hungry cat customers',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#FFD9C2',
-      badge: function (p) { var n = p && typeof p.served === 'number' ? p.served : 0; return n ? n + (n === 1 ? ' cat served' : ' cats served') : ''; },
-      art: ART.cafe
+      levels: 15, done: DONE.rated('best'), art: ART.cafe
     },
     {
       id: 'feed', save: 'feed', name: 'Feed the Cat', blurb: 'Give each cat its bowl',
@@ -483,25 +500,22 @@
     {
       id: 'yarn-dash', save: 'yarndash', name: 'Yarn Dash', blurb: 'Run and catch the yarn',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F2DDC0',
-      badge: level, art: ART.yarndash
+      levels: 20, done: function (p) { return Math.max(DONE.next(p), (p && p.best) | 0); }, art: ART.yarndash
     },
     {
       id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
       ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
-      badge: function (p) { var n = p ? (p.n3 || 0) + (p.n4 || 0) : 0; return n ? n + ' solved' : ''; },
-      art: ART.slide
+      levels: 12, done: function (p) { var s = p && p.solved, n = 0; if (s && typeof s === 'object') Object.keys(s).forEach(function (k) { if (Array.isArray(s[k])) n += (s[k].indexOf(3) >= 0) + (s[k].indexOf(4) >= 0); }); return n; }, art: ART.slide
     },
     {
       id: 'rescue', save: 'rescue', name: 'Cat Rescue', blurb: 'Match to free kittens from boxes',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6DDF2',
-      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + ' rescued' : ''; },
-      art: ART.rescue
+      levels: 30, done: DONE.list, art: ART.rescue
     },
     {
       id: 'hotpaws', save: 'hotpaws', name: 'Hot Paws', blurb: 'Dodge the lava, grab the diamonds',
       ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDEFD8',
-      badge: function (p) { var n = p && Array.isArray(p.done) ? p.done.length : 0; return n ? n + (n === 1 ? ' round done' : ' rounds done') : ''; },
-      art: ART.hotpaws
+      levels: 20, done: DONE.list, art: ART.hotpaws
     },
     {
       id: 'seek', save: 'seek', name: 'Hide and Seek', blurb: 'Find the hidden things',
@@ -551,7 +565,7 @@
     {
       id: 'laser', save: 'laser', name: 'Laser Bounce', blurb: 'Bounce the laser to every cat',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#D9CCF2',
-      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.laser
+      levels: 30, done: DONE.open, art: ART.laser
     },
     {
       id: 'rooftop', save: 'rooftop', name: 'Rooftop Run', blurb: 'Leap across the city at night',
@@ -561,22 +575,22 @@
     {
       id: 'sneaky', save: 'sneaky', name: 'Sneaky Cat', blurb: 'Tiptoe past the sleeping dogs',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#B9B2E8',
-      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.sneaky
+      levels: 20, done: DONE.open, art: ART.sneaky
     },
     {
       id: 'yarn-defence', save: 'yarndefence', name: 'Yarn Defence', blurb: 'Send the mice home, save the yarn',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#F6C9A8',
-      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.yarndefence
+      levels: 30, done: DONE.open, art: ART.yarndefence
     },
     {
       id: 'fishmaze', save: 'fishmaze', name: 'Fish Maze', blurb: 'Munch the fish, dodge the puppies',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C6EBB5',
-      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.fishmaze
+      levels: 15, done: DONE.open, art: ART.fishmaze
     },
     {
       id: 'parade', save: 'parade', name: 'Kitten Parade', blurb: 'Give the kittens jobs to get them all home',
       ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#BFE6FF',
-      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.parade
+      levels: 12, done: DONE.rated('stars'), art: ART.parade
     },
     {
       id: 'fashion', save: 'fashion', name: 'Cat Fashion Studio', blurb: 'Dress up your cat, then strike a pose',
@@ -584,6 +598,11 @@
       badge: function (p) { return p && p.shots ? p.shots + (p.shots === 1 ? ' photo' : ' photos') : ''; }, art: ART.fashion
     }
   ];
+
+  /* level games: the badge is levels finished out of the set count */
+  GAMES.forEach(function (g) {
+    if (g.levels && g.done) g.badge = function (p) { return levelsBadge(g.done(p || {}, g.levels), g.levels); };
+  });
 
   /* Dev games show on a test copy of the site (localhost, preview links) or with ?dev in the address. */
   function devVisible() {
@@ -596,6 +615,9 @@
   window.GGGames = {
     all: GAMES,
     AGES: [{ id: 'under5', label: 'Under 5' }, { id: '5-10', label: '5\u201310' }, { id: '10+', label: '10+' }],
+    levelsBadge: levelsBadge,
+    /* how many of a level game's levels are finished, from its saved progress (null for other games) */
+    levelsDone: function (g, p) { return g && g.levels && g.done ? Math.min(g.levels, Math.max(0, g.done(p || {}, g.levels) | 0)) : null; },
     get: function (id) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) return GAMES[i]; return null; },
     /* games to show on the home page right now (season games only in their season) */
     visible: function (opts) {

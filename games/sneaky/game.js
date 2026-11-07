@@ -54,6 +54,7 @@
      dogs: one entry per dog, in reading order: { turn: degrees its head sweeps while it looks, range, path: [[col, row], ...] }
      rugs: [[col0, row0, col1, row1, colour]], just to look at. */
   var CELL = 40;
+  /* the set list of levels: its length is `levels:` for sneaky in shared/games.js (keep the two the same) */
   var LEVELS = [
     { // 1: one dog, one sofa to hide behind
       say: 'Press and hold where you want to go.',
@@ -703,7 +704,7 @@
     n = clamp(n, 1, lastLevel());
     P.cur = n; save();
     L = parse(n); newGo();
-    $('levelLabel').textContent = 'Level ' + n;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + n + '/' + LEVELS.length;
     $('prevBtn').disabled = n <= 1; $('nextBtn').disabled = n >= lastLevel();
     layout();
     track('Start level', { game: 'sneaky', level: n });
@@ -898,11 +899,11 @@
     $('againBtn').hidden = mode !== 'won';
     if (mode === 'won') {
       var all = L.n >= LEVELS.length;
-      $('cardTitle').textContent = all ? 'Every room done!' : G.stars === 3 ? 'Purr-fectly sneaky!' : 'Snack time!';
+      $('cardTitle').textContent = all ? 'You finished all ' + LEVELS.length + ' levels!' : G.stars === 3 ? 'Purr-fectly sneaky!' : 'Snack time!';
       var bits = [];
       if (L.fish.length) bits.push(G.got >= L.fish.length ? 'every fish' : G.got + ' of ' + L.fish.length + ' fish');
       bits.push(G.spotted ? 'spotted ' + G.spotted + (G.spotted === 1 ? ' time' : ' times') : 'never spotted');
-      $('cardNote').textContent = 'Level ' + L.n + ' done: ' + bits.join(', ') + '.';
+      $('cardNote').textContent = 'Level ' + L.n + ' of ' + LEVELS.length + ' done: ' + bits.join(', ') + '.';
       $('cardTip').textContent = G.stars < 3 ? (G.spotted ? 'For three stars, don’t get spotted at all.' : 'For three stars, get every fish too.') : (G.newBest ? 'Three stars on this one now!' : all ? 'What a sneaky cat. Try for three stars in every room!' : '');
       $('goBtn').textContent = all ? 'Level 1' : 'Level ' + (L.n + 1);
     } else {

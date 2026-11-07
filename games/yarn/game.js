@@ -221,7 +221,9 @@
     return ok ? path.slice() : null;
   }
 
-  /* ---------- levels ---------- */
+  /* ---------- levels ----------
+     A set number of levels (the same as `levels:` for yarn in shared/games.js): eight colours from level 16 to the end. */
+  var LEVELS = 25;
   function levelDef(n) {
     var colours = n <= 1 ? 3 : n <= 3 ? 4 : n <= 6 ? 5 : n <= 10 ? 6 : n <= 15 ? 7 : 8;
     return { n: n, colours: colours, empties: 2, cap: 4 };
@@ -359,14 +361,21 @@
 
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('yarn'); p.level = p.level || 1; return p; }
+  /* levels finished: the saved level is the next one to play (an old save past the last level counts as all done) */
+  function finishedCount() { return Math.min(LEVELS, progress().level - 1); }
+  function showFinished() {
+    GGLevels.finished({ total: LEVELS, faces: [0, 4, 1, 3].map(function (k) { return catImageURL(k, 'happy', 64); }),
+      onPick: function (n) { Sound.init(); Sound.pop(); startLevel(n); } });
+  }
 
   function startLevel(n) {
+    n = Math.max(1, Math.min(LEVELS, n | 0));
     level = levelDef(n);
     if (window.GG && GG.track) GG.track('Start level', { game: 'yarn', level: level.n });
     tubes = makePuzzle(level);
     level.start = tubes.map(function (t) { return t.slice(); });
     reset();
-    $('levelLabel').textContent = 'Level ' + n;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + n + '/' + LEVELS;
     if (n === 1) say('Tap a tube, then another, to move the yarn!', 2.8);
   }
   function reset() {
@@ -392,7 +401,8 @@
     Sound.chime(); Sound.purr(0.45); buzz(30);
     Object.keys(doneCats).forEach(function (i) { var q = L.pos[i]; sparkle(q.x, q.y, '#FFE58A', 10); });
     setTimeout(function () {
-      $('cardNote').textContent = 'Level ' + level.n + ' done';
+      if (level.n >= LEVELS) { showFinished(); return; }
+      $('cardNote').textContent = 'Level ' + level.n + ' of ' + LEVELS + ' done';
       var faces = $('cardFaces'); faces.innerHTML = '';
       [0, 4, 1, 3].forEach(function (k) { var im = document.createElement('img'); im.alt = ''; im.src = catImageURL(k, 'happy', 64); faces.appendChild(im); });
       $('cardWrap').hidden = false;
@@ -769,6 +779,7 @@
 
   layout();
   startLevel(progress().level);
+  if (finishedCount() >= LEVELS) showFinished();
   requestAnimationFrame(frame);
 
   /* test hook for automated checks */
@@ -781,6 +792,7 @@
     pos: function (i) { return L.pos[i]; },
     dragging: function () { return drag; },
     tubeH: function () { return L.tubeH; },
-    start: function (n) { startLevel(n); }
+    start: function (n) { startLevel(n); },
+    total: LEVELS
   };
 })();

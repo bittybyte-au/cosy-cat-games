@@ -174,7 +174,10 @@
   })();
 
   /* ---------- levels ----------
-     Speeds are in "cat widths per second"; gaps are the space between cats, in cat widths. */
+     Speeds are in "cat widths per second"; gaps are the space between cats, in cat widths.
+     A set number of levels (the same as `levels:` for cubbies in shared/games.js). The ramp reaches its top speed,
+     goal and gap at about level 13; the last levels mix six colours at that pace. */
+  var LEVELS = 20;
   function levelDef(n) {
     var colours = n <= 2 ? 3 : n <= 5 ? 4 : n <= 9 ? 5 : 6;
     var cubbies = colours <= 3 ? 3 : 4;
@@ -361,14 +364,21 @@
 
   /* ---------- level flow ---------- */
   function progress() { var p = GG.getProgress('cubbies'); p.level = p.level || 1; return p; }
+  /* levels finished: the saved level is the next one to play (an old save past the last level counts as all done) */
+  function finishedCount() { return Math.min(LEVELS, progress().level - 1); }
+  function showFinished() {
+    GGLevels.finished({ total: LEVELS, faces: level.colours.slice(0, 5).map(function (k) { return catImageURL(k, 'happy', 64); }),
+      onPick: function (n) { Sound.init(); Sound.pick(); startLevel(n); } });
+  }
 
   function startLevel(n) {
+    n = Math.max(1, Math.min(LEVELS, n | 0));
     level = levelDef(n);
     if (window.GG && GG.track) GG.track('Start level', { game: 'cubbies', level: level.n });
     cats = []; mat = []; held = null; parts = [];
     for (var i = 0; i < MAT_SPOTS; i++) mat.push(null);
     tucked = 0; filled = 0; spawnDist = 0; nextGap = 0; idle = 0; recentKinds = [];
-    $('levelLabel').textContent = 'Level ' + n;
+    $('levelLabel').innerHTML = '<span class="gg-lvword">Level </span>' + n + '/' + LEVELS;
     $('cardWrap').hidden = true;
     layout();
     cubbies = [];
@@ -392,7 +402,8 @@
     cubbies.forEach(function (cb, i) { cb.glow = 1; sparkle(cb.x, cb.y, CATS[cb.kind].fill, 12); });
     cats.forEach(function (c) { c.face = 'happy'; });
     setTimeout(function () {
-      showCard('Hooray!', 'Level ' + level.n + ': all ' + level.goal + ' cubbies filled', 'Next level', false, 'happy');
+      if (level.n >= LEVELS) { showFinished(); return; }
+      showCard('Hooray!', 'Level ' + level.n + ' of ' + LEVELS + ': all ' + level.goal + ' cubbies filled', 'Next level', false, 'happy');
     }, 1100);
   }
 
@@ -902,6 +913,7 @@
   $('tallyImg').src = catImageURL(1, 'blink', 64);
   layout();
   startLevel(progress().level);
+  if (finishedCount() >= LEVELS) showFinished();
   requestAnimationFrame(frame);
 
   /* test hook for automated checks */
@@ -913,6 +925,7 @@
         belt: cats.filter(function (c) { return c.where === 'belt'; }).map(function (c) { return { kind: c.kind, x: c.x, y: c.y }; }) };
     },
     start: function (n) { startLevel(n); },
+    total: LEVELS,
     fill: function (k) { for (var i = 0; i < MAT_SPOTS; i++) if (!mat[i]) { var c = newCat(k); c.where = 'mat'; c.spot = i; c.x = L.matX[i]; c.y = L.matY; mat[i] = c; cats.push(c); } },
     tuckAlmost: function () { filled = level.goal - 1; renderTally(false); }
   };
