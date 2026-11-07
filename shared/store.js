@@ -155,6 +155,17 @@
     document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) noZoom(e); }, { passive: false });
   } catch (e) {}
 
+  /* Games: the "?" How to play button and panel (shared/help.js), loaded from next to this file so no game page
+     needs its own line. It only adds a button on /games/<id>/ pages that have help. */
+  try {
+    if (/\/games\/[^\/]+\//.test(location.pathname) && !window.GGHelp) {
+      var me = document.currentScript && document.currentScript.src;
+      var hs = document.createElement('script');
+      hs.src = me ? new URL('help.js', me).href : '/shared/help.js';
+      (document.head || document.documentElement).appendChild(hs);
+    }
+  } catch (e) {}
+
   /* Ask the browser not to clear our saved data when space is low (granted quietly to home screen apps). */
   try {
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;

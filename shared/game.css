@@ -59,9 +59,37 @@ body.game:has(> .card-wrap:not([hidden]), > .win:not([hidden]), > .overlay:not([
 @keyframes hop { to { transform: translateY(-8px); } }
 @keyframes bump { 50% { transform: scale(1.12); } }
 
+/* the "?" How to play panel (shared/help.js), on top of site.css .overlay + .panel */
+.gg-help { z-index: 70; }
+.gg-help[hidden] { display: none; }
+.gg-help .panel { width: min(460px, 100%); max-height: 100%; overflow-y: auto; gap: 14px; animation: present .45s cubic-bezier(.3, 1.6, .5, 1); }
+.gg-help .gg-help-sub { margin: -10px 0 0; text-align: center; font: 800 1rem var(--body); color: var(--muted); }
+.gg-help-lines { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.gg-help-lines li {
+  position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 18px; padding: 9px 12px 9px 40px;
+  font: 800 1.08rem/1.3 var(--body); text-wrap: pretty;
+}
+.gg-help-lines li::before {
+  content: ""; position: absolute; left: 13px; top: 15px; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--sun); border: 2.5px solid var(--ink);
+}
+.gg-help .gg-help-ok { align-self: center; min-width: 180px; justify-content: center; }
+.gg-help .gg-help-ok:focus-visible, .gg-help-btn:focus-visible { outline: 4px solid #7CC4FF; outline-offset: 3px; }
+
 @media (max-width: 400px) {
   .round { width: 48px; height: 48px; }
+  .gg-help .panel { padding: 18px 16px; }
+  .gg-help-lines li { font-size: 1rem; padding: 8px 10px 8px 36px; }
+  .gg-help-lines li::before { left: 11px; top: 14px; }
 }
+/* a top bar too full to fit (help.js checks, e.g. Sneaky Cat on a 320px phone): its buttons shrink a little and sit
+   closer; if that is still not enough, help.js scales the game's middle bits down to fit (zoom on .middle) */
+.topbar.gg-tight { gap: 6px; }
+.topbar.gg-tight > .round:not(.wide) { width: 42px; height: 42px; }
+.topbar.gg-tight > .round:not(.wide) svg { width: 26px; height: 26px; }
+.topbar.gg-tight.gg-tighter { gap: 4px; }
+.topbar.gg-tighter > .round:not(.wide) { width: 38px; height: 38px; border-width: 2.5px; }
+.topbar.gg-tighter > .round:not(.wide) svg { width: 24px; height: 24px; }
 @media (prefers-reduced-motion: reduce) {
   .card, .card .faces img { animation: none; }
 }
