@@ -129,7 +129,10 @@
         if (Math.hypot(m.x - lx, m.y - ly) < R + m.r) { m.amt = Math.max(0, m.amt - dist / 160); if (m.amt === 0) Sound.bubble(); }
       });
       // bubbles where you rub
-      if (Math.random() < Math.min(1, dist / 18) && kit.suds.length < 70) kit.suds.push({ x: lx + rand(-26, 26), y: ly + rand(-22, 22), r: rand(9, 18), t: 0 });
+      // lots of bubbles is the fun part: up to two per rub, and plenty before it stops adding more
+      for (var b = 0; b < 2; b++) {
+        if (Math.random() < Math.min(1, dist / 14) && kit.suds.length < 240) kit.suds.push({ x: lx + rand(-30, 30), y: ly + rand(-26, 26), r: rand(9, 18), t: 0 });
+      }
       scrubT -= dist; if (scrubT < 0) { scrubT = 60; Sound.scrub(); }
     } else if (tool === 'shower') {
       // water falls from the shower head on to where you point
