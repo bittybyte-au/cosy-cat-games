@@ -1,7 +1,9 @@
 /* Cat Rescue (ages 10+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
    matches break the cardboard boxes next to them, and kittens hiding in boxes pop out and scamper up to safety.
-   Above the board a cat is in a little cosy peril that creeps forward with each move; finish the goal in time and
-   it leaps into a basket. Not in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
+   Above the board a cat is in a little cosy peril that creeps forward with each move, and between the scene and the
+   board sits a heap (bubbles, leaves, sand, socks): every piece cleared in a column knocks a bit of its heap down
+   into the board. Scene, heap and board are one picture. Clear the heap and finish the goal in time and the cat
+   leaps into a basket. Not in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
    No stars, scores, lives, timers or rewards: the rescuing is the point.
    The rules live in engine.js (shared with the test bot), levels in levels.js, the scenes in scenes.js.
    Saves GG.setProgress('rescue', { done: [level numbers rescued], last }). */
@@ -245,40 +247,24 @@
   var canvas = $('stage'), ctx = canvas.getContext('2d'), dpr = 1, W = 0, H = 0;
   var T = 40, BX = 0, BY = 0, SX = 0, SY = 0, SW = 300, SH = 180, side = false;
   var R = 8, C = 8;
+  var PB = 60, BIT = 14, heapShown = [];
+  function heapMax() { var m = 0; ((level && level.pile) || [4]).forEach(function (v) { if (v > m) m = v; }); return Math.max(1, m); }
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5); W = innerWidth; H = innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     var top = $('topbar').getBoundingClientRect().bottom + 6, bottom = H - Math.max(12, safeBottom());
-    var hudH = 56;
-    side = W >= 760 && W / H >= 1.15;
-    if (side) {
-      SW = Math.round(clamp(W * 0.34, 300, 470));
-      T = Math.floor(Math.min((bottom - top - 8) / R, (W - 56 - SW) / C, 92));
-      SH = SW * 0.6;
-      var total = SW + 28 + T * C, x0 = Math.round((W - total) / 2);
-      BX = x0 + SW + 28; BY = Math.round(top + Math.max(0, (bottom - top - T * R) / 2));
-      var colH = SH + 14 + hudH;
-      SX = x0; SY = Math.round(BY + Math.max(0, (T * R - colH) / 2));
-      placeHud(SX, SY + SH + 14, SW);
-    } else {
-      var availW = W - 24;
-      // the scene is a little wider than the board, so work out the whole stack and shrink until it fits the screen
-      var bw;
-      var stackH = function () {
-        bw = T * C;
-        SW = Math.min(availW, Math.max(bw, Math.min(availW, 520)));
-        if (SW > bw * 1.12) SW = bw * 1.12;
-        SH = SW * 0.6;
-        return SH + 10 + hudH + 10 + T * R;
-      };
-      T = Math.floor(Math.min(availW / C, 74));
-      while (T > 16 && stackH() > bottom - top) T--;
-      stackH();
-      var used = SH + 10 + hudH + 10 + T * R, y0 = top + Math.max(0, (bottom - top - used) / 2);
-      SX = Math.round((W - SW) / 2); SY = Math.round(y0);
-      placeHud(Math.round((W - Math.max(bw, Math.min(SW, 420))) / 2), SY + SH + 10, Math.max(bw, Math.min(SW, 420)));
-      BX = Math.round((W - bw) / 2); BY = Math.round(SY + SH + 10 + hudH + 10);
-    }
+    var hudH = 56, hm = heapMax();
+    side = false;
+    // one picture, top to bottom: the scene, the heap resting on the board, the board; the goals and moves below
+    var stackH = function () { BIT = T * 0.34; PB = Math.round(hm * BIT + T * 0.2); return C * T * 0.6 + PB + R * T + 10 + hudH; };
+    T = Math.floor(Math.min((W - 24) / C, 74));
+    while (T > 16 && stackH() > bottom - top) T--;
+    stackH();
+    var bw = T * C, used = stackH(), y0 = top + Math.max(0, (bottom - top - used) / 2);
+    SW = bw; SH = SW * 0.6;
+    SX = Math.round((W - bw) / 2); SY = Math.round(y0);
+    BX = SX; BY = Math.round(SY + SH + PB);
+    placeHud(BX, BY + R * T + 10, bw);
     buildSprites(T * dpr, T);
     placeSay(); placeCards();
   }
@@ -289,7 +275,7 @@
     ['win', 'fail'].forEach(function (id) {
       var w = $(id);
       if (side) { w.style.paddingTop = BY + 'px'; w.style.paddingLeft = BX + 'px'; w.style.paddingRight = Math.max(16, W - BX - C * T) + 'px'; w.style.paddingBottom = Math.max(16, H - BY - R * T) + 'px'; }
-      else { w.style.paddingTop = Math.round(SY + SH + 12) + 'px'; w.style.paddingLeft = w.style.paddingRight = ''; w.style.paddingBottom = ''; }
+      else { w.style.paddingTop = Math.round(SY + SH * 0.6) + 'px'; w.style.paddingLeft = w.style.paddingRight = ''; w.style.paddingBottom = ''; }
     });
   }
   function placeSay() { var s = $('say'); s.style.left = (SX + SW / 2) + 'px'; s.style.top = (SY + 10) + 'px'; s.style.maxWidth = Math.min(SW - 20, 440) + 'px'; }
@@ -323,7 +309,7 @@
   var V = {}, boxes = {};                 // what's on screen: pieces by id, boxes by cell
   var parts = [], fx = [], actors = [];   // particles, specials' effects, kittens running to safety
   var scn = { mode: 'play', mt: 0, t: 0, saved: [], reserved: 0 };
-  var shown = { kittens: 0, boxes: 0, yarn: 0, down: 0 };
+  var shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 };
   var pDisp = 0, busy = false, phase = 'list', sel = null, cursor = null, idle = 0, hint = null, hintT = 0, plusUsed = false;
   var PG = (function () { var p = {}; try { p = GG.getProgress('rescue') || {}; } catch (e) {} if (!Array.isArray(p.done)) p.done = []; p.done = p.done.filter(function (n) { return n >= 1 && n <= LEVELS.length; }); return p; })();
   function save() { try { GG.setProgress('rescue', PG); } catch (e) {} }
@@ -352,6 +338,7 @@
   /* ================= starting a rescue ================= */
   function goalText(g) {
     var parts = [];
+    if (st && st.goal.pile) parts.push('clear the ' + SC.HEAPS[level.peril].word);
     if (g.boxes) parts.push('break ' + g.boxes + ' boxes');
     if (g.yarn) parts.push('untangle ' + g.yarn + ' yarn' + (g.yarn > 1 ? 's' : ''));
     if (g.kittens) parts.push(g.kittens === 1 ? 'free the kitten' : 'free ' + g.kittens + ' kittens');
@@ -366,7 +353,8 @@
     R = st.R; C = st.C;
     V = {}; boxes = {}; parts = []; fx = []; actors = []; tasks = [];
     scn = { mode: 'play', mt: 0, t: scn.t || 0, saved: [], reserved: 0 };
-    shown = { kittens: 0, boxes: 0, yarn: 0, down: 0 };
+    shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 };
+    heapShown = st.pile.slice();
     pDisp = 0; busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
     syncView();
     // the board arrives with a little drop
@@ -393,18 +381,19 @@
     kittens: function (c) { c.translate(0, 8); GGCat.draw(c, { preset: 'ginger', size: 92, face: 'happy' }); },
     boxes: function (c) { drawBox(c, 1, -1); },
     yarn: function (c) { c.scale(0.9, 0.9); PIECES[3](c); drawTangle(c); },
-    down: function (c) { drawCushion(c, 1); }
+    down: function (c) { drawCushion(c, 1); },
+    pile: function (c) { var nm = level ? level.peril : 'bath'; [[-20, 16, 3], [20, 16, 5], [0, 14, 1], [-11, -12, 2], [11, -12, 4], [0, -36, 6]].forEach(function (q) { c.save(); c.translate(q[0], q[1]); SC.chunk(c, nm, 24, q[2]); c.restore(); }); }
   };
-  var GOAL_WORDS = { kittens: 'kittens freed', boxes: 'boxes broken', yarn: 'yarns untangled', down: 'cushion kittens brought down' };
+  var GOAL_WORDS = { kittens: 'kittens freed', boxes: 'boxes broken', yarn: 'yarns untangled', down: 'cushion kittens brought down', pile: 'of the heap cleared' };
   var goalEls = {};
   function renderHud(rebuild) {
     var box = $('goals');
     if (rebuild) {
       box.innerHTML = ''; goalEls = {};
-      ['kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
+      ['pile', 'kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
         if (!st.goal[k]) return;
         var d = document.createElement('div'); d.className = 'goal';
-        d.innerHTML = '<img alt="" src="' + icon(k, GOAL_ICONS[k]) + '"><b></b><small></small>';
+        d.innerHTML = '<img alt="" src="' + icon(k === 'pile' ? 'pile:' + level.peril : k, GOAL_ICONS[k]) + '"><b></b><small></small>';
         box.appendChild(d); goalEls[k] = d;
       });
     }
@@ -450,6 +439,7 @@
       else if (q.shape === 'yarn') { c.beginPath(); c.moveTo(-q.r * 2, 0); c.quadraticCurveTo(0, -q.r * 2, q.r * 2, 0); c.strokeStyle = INK; c.lineWidth = 5; c.stroke(); c.strokeStyle = YARN; c.lineWidth = 2.6; c.stroke(); }
       else if (q.shape === 'puff') { c.fillStyle = 'rgba(255,248,236,.9)'; c.beginPath(); c.arc(0, 0, q.r * (1 + q.life * 3), 0, TAU); c.fill(); }
       else if (q.shape === 'heart') { SC.heart(c, 0, 0, q.r, '#FF7EA8', 1); }
+      else if (q.shape === 'bit') { var sk = 1 - Math.max(0, q.life / q.max - 0.5) * 2; c.scale(sk, sk); SC.chunk(c, level.peril, q.r * 0.9, q.seed); }
       else if (q.shape === 'star') { c.beginPath(); for (var k = 0; k < 10; k++) { var an = k * Math.PI / 5 - Math.PI / 2, rr = k % 2 ? q.r * 0.6 : q.r * 1.4; c.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } c.closePath(); c.fillStyle = q.col; c.fill(); }
       else { c.beginPath(); c.arc(0, 0, q.r, 0, TAU); c.fillStyle = q.col; c.fill(); }
       c.restore();
@@ -526,6 +516,14 @@
     for (var i = 0; i < (reduceMotion ? 3 : 7); i++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.3, T * 0.3), vx: rand(-180, 180) * (T / 60), vy: rand(-320, -120) * (T / 60), life: 0, max: rand(0.6, 0.9), r: T * rand(0.06, 0.1), shape: 'card', rot: rand(0, TAU), vr: rand(-10, 10), g: 900 });
     for (var j = 0; j < 4; j++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.2, T * 0.3), vx: rand(-30, 30), vy: rand(-40, -10), life: 0, max: 0.5, r: T * 0.1, shape: 'puff', rot: 0, vr: 0, g: 0 });
     if (b.kit >= 0) freeKitten(KITTENS[b.kit], b.r, b.c, 'kittens');
+  }
+  /* the top bit of a column's heap tumbles down into the board */
+  function dropBit(col) {
+    var h = heapShown[col]; if (!(h > 0)) return;
+    heapShown[col] = h - 1;
+    var x = cx(col), y = SY + SH + PB - (h - 0.45) * BIT;
+    parts.push({ x: x, y: y, vx: rand(-30, 30) * (T / 60), vy: rand(-140, -60) * (T / 60), life: 0, max: 0.55, r: T * 0.3, shape: 'bit', seed: col * 13 + (h - 1) * 7, rot: 0, vr: rand(-6, 6), g: 1500 * (T / 60) });
+    Sound.land(); count('pile');
   }
   function freeKitten(preset, r, c, goal) {
     actors.push({ preset: preset, r: r, c: c, t: 0, slot: scn.reserved++, goal: goal });
@@ -612,6 +610,10 @@
         Sound.pluck(); buzz(8); count('yarn');
         for (var i = 0; i < (reduceMotion ? 2 : 5); i++) parts.push({ x: cx(u.c), y: cy(u.r), vx: rand(-160, 160) * (T / 60), vy: rand(-260, -80) * (T / 60), life: 0, max: 0.7, r: T * 0.08, shape: 'yarn', rot: rand(0, TAU), vr: rand(-8, 8), g: 700 });
       });
+    });
+    (ev.drain || []).forEach(function (dr) {
+      maxD = Math.max(maxD, dr.d);
+      later(dr.d + 0.05, function () { dropBit(dr.c); });
     });
     if (ev.removed.length >= 5 || ev.chain >= 2) Sound.purr(0.12);
     await wait(maxD + 0.27);
@@ -862,6 +864,19 @@
     c.lineWidth = 4; c.strokeStyle = INK; c.stroke(ep);
   }
 
+  /* the scene and the heap: the top of one picture that the board finishes */
+  function drawPicture(c) {
+    var x = SX, y = SY, w = SW, yb = BY, r = 18;
+    D.shadow(c, x + w / 2, BY + R * T + 6, w * 0.5, 10);
+    var outline = new Path2D(); outline.moveTo(x, yb + 2); outline.lineTo(x, y + r); outline.arcTo(x, y, x + r, y, r); outline.lineTo(x + w - r, y); outline.arcTo(x + w, y, x + w, y + r, r); outline.lineTo(x + w, yb + 2);
+    c.save(); c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 9; c.stroke(outline); c.restore();
+    SC.draw(c, level.peril, { p: pDisp, t: scn.t, mode: scn.mode, mt: scn.mt, cat: level.cat, saved: scn.saved, reduce: reduceMotion }, SX, SY, SW, true);
+    SC.drawHeap(c, level.peril, heapShown, x, y + SH, w, PB, T, BIT, scn.t, reduceMotion);
+    // a soft line where the scene's floor meets the heap
+    c.save(); c.beginPath(); c.moveTo(x, y + SH); c.lineTo(x + w, y + SH); c.strokeStyle = 'rgba(42,35,64,.25)'; c.lineWidth = 2; c.stroke(); c.restore();
+    c.save(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(outline); c.restore();
+  }
+
   var last = performance.now();
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000) * SPEED; last = now;
@@ -883,7 +898,7 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
     c.lineJoin = 'round'; c.lineCap = 'round';
     if (st) {
-      SC.draw(c, level.peril, { p: pDisp, t: scn.t, mode: scn.mode, mt: scn.mt, cat: level.cat, saved: scn.saved, reduce: reduceMotion }, SX, SY, SW);
+      drawPicture(c);
       drawBoard(c, dt, scn.t);
       c.save(); c.clip(boardPath()); drawFx(c, dt); c.restore();
       drawParts(c, dt);

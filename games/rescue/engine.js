@@ -16,12 +16,16 @@
    animate: 'nope' | 'swap' | 'pass' (things cleared, boxes hit, yarn off, specials made) | 'fall' (each piece's
    path, one cell per tick) | 'down' (cushion kittens reaching the bottom) | 'shuffle'.
    Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
-   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion. */
+   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion.
+   The heap (def.pile: how many bits of it rest on top of each column) sits on the top of the board, under the
+   rescue scene. Every piece cleared in a column knocks one bit of that column's heap down into the board
+   (logged as pass.drain); clearing the whole heap is the 'pile' goal. */
 (function () {
   'use strict';
 
   var SPECIAL = { zh: 1, zv: 1, nip: 1, rain: 1 };
-  var GOALS = ['kittens', 'boxes', 'yarn', 'down'];
+  var DRAIN_ROWS = 3;   // only pieces cleared this near the top of a column (where the heap rests) knock bits down
+  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'pile'];
 
   function rnd(st) {
     st.seed = (st.seed + 0x6D2B79F5) | 0;
@@ -42,10 +46,12 @@
     colours.sort();
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
-      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0 },
-      moves: def.moves, used: 0, extra: 0, top: [], bottom: []
+      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 },
+      moves: def.moves, used: 0, extra: 0, top: [], bottom: [], pile: []
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
+    for (var pc = 0; pc < C; pc++) st.pile.push(Math.max(0, (def.pile && def.pile[pc]) | 0));
+    st.goal.pile = st.pile.reduce(function (a, b) { return a + b; }, 0);
     var randomCells = [];
     for (var r = 0; r < R; r++) {
       st.mask.push([]); st.g.push([]); st.box.push([]);
@@ -86,7 +92,8 @@
     for (k in st) o[k] = st[k];
     o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours;
     o.goal = st.goal;
-    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down };
+    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, pile: st.got.pile };
+    o.pile = st.pile.slice();
     o.g = []; o.box = [];
     for (var r = 0; r < st.R; r++) {
       var gr = [], br = [];
@@ -181,7 +188,7 @@
   function movesLeft(st) { return st.moves + st.extra - st.used; }
 
   /* ---------- one clearing pass ---------- */
-  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], chain: 0 }; }
+  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], drain: [], chain: 0 }; }
 
   function damageBox(st, ev, r, c, d) {
     var b = st.box[r][c];
@@ -265,6 +272,10 @@
       ev.removed.push({ id: p.id, r: r, c: c, k: p.k, sp: p.sp, d: d });
       if (SPECIAL[p.sp]) fire(st, ev, p, r, c, d, q);
     }
+    // each piece cleared knocks a bit of the heap above its column down into the board
+    ev.removed.forEach(function (rm) {
+      if (st.pile[rm.c] > 0 && rm.r - st.top[rm.c] < DRAIN_ROWS) { st.pile[rm.c]--; st.got.pile++; ev.drain.push({ c: rm.c, r: rm.r, d: rm.d, left: st.pile[rm.c] }); }
+    });
     made.forEach(function (m) {
       var p = st.g[m.r][m.c];
       if (!p) return;
@@ -454,7 +465,8 @@
   function need(st, k) { return st.got[k] < st.goal[k]; }
   function score(before, after) {
     var s = 0;
-    var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
+    var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down, dp = after.got.pile - before.got.pile;
+    s += dp * (need(before, 'pile') ? 14 : 0);
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);
