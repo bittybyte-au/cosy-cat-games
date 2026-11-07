@@ -221,22 +221,13 @@
   }
 
   /* ================= drawing ================= */
+  /* a tiled bathroom with a tiled floor, and a shelf of bottles (shared/scene.js) */
   function drawRoom(c) {
-    c.fillStyle = '#DDF3FF'; c.fillRect(0, 0, W, H);
-    // tiles
-    c.strokeStyle = '#BFE3F5'; c.lineWidth = 3;
-    for (var x = 0; x < W; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
-    for (var y = 0; y < H; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
-    // floor
-    var fy = tub().y + 24; c.fillStyle = D.tone(c, '#C9E7F5', fy, H); c.fillRect(0, fy, W, H - fy); c.beginPath(); c.moveTo(-5, fy); c.lineTo(W + 5, fy); D.ink(c, LW.mid);
-    // a shelf with bottles standing on it (each cap tucks into its bottle, which covers the join)
-    var sx = W < 700 ? 60 : 110, sy = W < 700 ? 90 : 120;
-    D.shape(c, D.rrPath(sx - 60, sy, 150, 14, 5), D.tone(c, '#E6B98A', sy, sy + 14), { lw: LW.fine, depth: 4 });
-    [['#FF8FAB', -36], ['#B48CFF', 4], ['#7BD389', 44]].forEach(function (b) {
-      var bx = sx + b[1];
-      D.shape(c, D.rrPath(bx - 6, sy - 64, 14, 18, 4), '#FFFFFF', { lw: LW.fine, depth: 0 });
-      D.shape(c, D.rrPath(bx - 12, sy - 52, 26, 52, 8), D.tone(c, b[0], sy - 52, sy), { lw: LW.fine, depth: 5, shine: [bx - 5, sy - 40, 3, 8, 0, 0.5] });
-    });
+    var G = GGScene, fy = tub().y + 24, sx = W < 700 ? 60 : 110, sy = W < 700 ? 90 : 120;
+    G.wall(c, 0, 0, W, fy, { pattern: 'tiles', col: '#DDF3FF', col2: '#BFE3F5', size: 64 });
+    G.floor(c, 0, fy, W, H - fy, { kind: 'tiles', col: '#C9E7F5' });
+    G.shelf(c, sx - 60, sx + 90, sy, { kind: 'plain', thick: 14 });
+    G.bottles(c, sx + 5, sy, { cols: ['#FF8FAB', '#B48CFF', '#7BD389'] });
   }
 
   /* The tub, seen from the front: the back of the rim, the water inside it, and the front (body, feet and the

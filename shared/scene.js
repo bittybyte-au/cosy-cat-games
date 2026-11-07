@@ -47,6 +47,8 @@
      GGScene.picture(c, x, y, w, h, { view: 'hills' | 'sea' | 'night', frame, string })   a framed picture on the wall
      GGScene.bunting(c, x0, y0, x1, y1, { sag, cols: [...], flag (width) })
      GGScene.plant(c, x, y, { kind: 'leafy' | 'flowers' | 'cactus', size (height), pot, leaf, flower })
+     Added for rooms with windows (documented in their block at the end of this file): wall pattern 'panels',
+     shelf kind 'pegs', table kind 'top', GGScene.bottles(c, x, y, { cols, size })
    SVG twins (pages built from SVG, like the games home), from the same shape definitions:
      GGScene.svg.cloud({ x, y, size, kind: 'puff' | 'cat', col, face })   an SVG <g>
      GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h */
@@ -703,4 +705,53 @@
     picture: picture, bunting: bunting, plant: plant,
     svg: { cloud: svgCloud, hills: svgHills }
   };
+
+  /* ================= added variants: rooms with windows (Feed, Cosy Home, Pottery, Bath) =================
+     Each wraps the kind it adds to, so the existing variants are untouched:
+     GGScene.wall(..., { pattern: 'panels', col, col2 (line colour), size (panel width), edge })
+         tongue-and-groove boarding (a dado under a rail): soft vertical lines, the fill toned top to bottom
+     GGScene.shelf(..., { kind: 'pegs', col, thick, on })   a board on two small tapered pegs
+     GGScene.table(c, x0, x1, y, floorY, { kind: 'top', col, grain (colour), size (grain spacing) })
+         a table top seen across it, filling from its front edge (y) down to floorY (things sit on it)
+     GGScene.bottles(c, x, y, { cols: [...], size (height), gap })   a row of bottles standing on y, centred on x */
+  (function (G) {
+    VARIANTS.wall.push('panels'); VARIANTS.shelf.push('pegs'); VARIANTS.table.push('top'); VARIANTS.bottles = ['row'];
+    var wallWas = G.wall, shelfWas = G.shelf, tableWas = G.table;
+    G.wall = function (c, x, y, w, h, o) {
+      if (!o || o.pattern !== 'panels') return wallWas.apply(this, arguments);
+      var col = o.col || '#E9C9A9', s = o.size || 44;
+      c.fillStyle = D.tone(c, col, y, y + h); c.fillRect(x, y, w, h);
+      c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+      c.strokeStyle = o.col2 || 'rgba(42,35,64,.08)'; c.lineWidth = W(o, 2);
+      for (var px = x + s * 0.45; px < x + w; px += s) { c.beginPath(); c.moveTo(px, y + 8); c.lineTo(px, y + h); c.stroke(); }
+      c.restore();
+      if (o.edge === 'top') { c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); D.ink(c, W(o, LW.fine)); }
+    };
+    G.shelf = function (c, x0, x1, y, o) {
+      if (!o || o.kind !== 'pegs') return shelfWas.apply(this, arguments);
+      var th = o.thick || 12, col = o.col || WOOD, peg = D.darker(col, 0.2), ph = th + 14;
+      // the pegs start under the board, which is drawn over their tops
+      [x0 + 14, x1 - 14].forEach(function (bx) {
+        sh(c, pth(function (p) { p.moveTo(bx - 4, y + th - 4); p.lineTo(bx + 4, y + th - 4); p.lineTo(bx + 2, y + ph); p.lineTo(bx - 2, y + ph); p.closePath(); }), peg, o, LW.fine, { depth: 0 });
+      });
+      sh(c, D.rrPath(x0, y, x1 - x0, th, Math.min(5, th / 2)), D.tone(c, col, y, y + th), o, LW.mid, { depth: 3, inside: o.on });
+    };
+    G.table = function (c, x0, x1, y, fy, o) {
+      if (!o || o.kind !== 'top') return tableWas.apply(this, arguments);
+      var col = o.col || WOOD, s = o.size || 70;
+      c.fillStyle = D.tone(c, col, y, fy); c.fillRect(x0, y, x1 - x0, fy - y);
+      c.fillStyle = o.grain || D.darker(col, 0.05);
+      for (var gy = y + s * 0.72; gy < fy; gy += s) c.fillRect(x0, gy, x1 - x0, W(o, 4));
+      c.beginPath(); c.moveTo(x0 - 5, y); c.lineTo(x1 + 5, y); D.ink(c, W(o, LW.big));
+    };
+    G.bottles = function (c, x, y, o) {
+      o = opt(o); var cols = o.cols || ['#FF8FAB', '#B48CFF', '#7BD389'], k = (o.size || 64) / 64, gap = o.gap || 40 * k;
+      cols.forEach(function (col, i) {
+        var bx = x + (i - (cols.length - 1) / 2) * gap;
+        // the cap tucks into the bottle, which covers the join
+        sh(c, D.rrPath(bx - 7 * k, y - 64 * k, 14 * k, 18 * k, 4 * k), '#FFFFFF', o, LW.fine, { depth: 0 });
+        sh(c, D.rrPath(bx - 13 * k, y - 52 * k, 26 * k, 52 * k, 8 * k), D.tone(c, col, y - 52 * k, y), o, LW.fine, { depth: 5 * k, shine: [bx - 6 * k, y - 40 * k, 3 * k, 8 * k, 0, 0.5] });
+      });
+    };
+  })(window.GGScene);
 })();

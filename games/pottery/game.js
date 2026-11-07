@@ -505,41 +505,21 @@
     ];
     return shelfCache;
   }
+  /* a warm studio: dotty wall over panelling, a window on the garden with a sill, a wooden floor (shared/scene.js) */
   function drawRoom(c) {
-    // a warm studio wall with a dado, and a wooden floor
-    c.fillStyle = D.tone(c, '#F6E4D2', L.top - 40, L.floorY); c.fillRect(0, 0, W, L.floorY);
-    c.fillStyle = 'rgba(255,255,255,.35)';
-    for (var y = L.top + 10, row = 0; y < L.floorY - 30; y += 34, row++) for (var x = (row % 2) * 17; x < W; x += 34) { c.beginPath(); c.arc(x, y, 3, 0, TAU); c.fill(); }
-    var dado = L.floorY - Math.min(90, L.aH * 0.16);
-    c.fillStyle = D.tone(c, '#E9C9A9', dado, L.floorY); c.fillRect(0, dado, W, L.floorY - dado);
-    c.strokeStyle = 'rgba(42,35,64,.08)'; c.lineWidth = 2;
-    for (var px = 20; px < W; px += 44) { c.beginPath(); c.moveTo(px, dado + 8); c.lineTo(px, L.floorY); c.stroke(); }
-    c.beginPath(); c.moveTo(0, dado); c.lineTo(W, dado); D.ink(c, 3);
-    // a window looking out on the garden, with a sill
-    var wn = L.win;
-    D.shape(c, D.rrPath(wn.x - 10, wn.y - 10, wn.w + 20, wn.h + 20, 16), '#FFF8EC', { lw: 4, depth: 4 });
-    D.shape(c, D.rrPath(wn.x, wn.y, wn.w, wn.h, 10), D.tone(c, '#9EDCFF', wn.y, wn.y + wn.h), { lw: 3.5, depth: 0, inside: function (c) {
-      var cx0 = wn.x + wn.w * (0.3 + 0.05 * Math.sin(time * 0.05)), cy0 = wn.y + wn.h * 0.3, cr = Math.min(wn.w, wn.h) * 0.11;
-      var cloud = new Path2D(); cloud.arc(cx0, cy0, cr, 0, TAU); cloud.moveTo(cx0 + cr * 2.2, cy0); cloud.arc(cx0 + cr * 1.2, cy0 - cr * 0.4, cr * 1.1, 0, TAU); cloud.moveTo(cx0 + cr * 3, cy0); cloud.arc(cx0 + cr * 2.2, cy0, cr * 0.85, 0, TAU);
-      c.fillStyle = '#FFFFFF'; c.fill(cloud);
-      var hill = new Path2D(); hill.moveTo(wn.x - 5, wn.y + wn.h * 0.78); hill.quadraticCurveTo(wn.x + wn.w * 0.4, wn.y + wn.h * 0.55, wn.x + wn.w + 5, wn.y + wn.h * 0.74); hill.lineTo(wn.x + wn.w + 5, wn.y + wn.h + 5); hill.lineTo(wn.x - 5, wn.y + wn.h + 5); hill.closePath();
-      D.shape(c, hill, D.tone(c, '#8FD88F', wn.y + wn.h * 0.55, wn.y + wn.h), { lw: 3, depth: 0 });
-    } });
-    c.beginPath(); c.moveTo(wn.x + wn.w / 2, wn.y); c.lineTo(wn.x + wn.w / 2, wn.y + wn.h); c.moveTo(wn.x, wn.y + wn.h / 2); c.lineTo(wn.x + wn.w, wn.y + wn.h / 2);
-    c.lineWidth = 11; c.strokeStyle = INK; c.stroke(); c.lineWidth = 5; c.strokeStyle = '#FFF8EC'; c.stroke();
-    D.shape(c, D.rrPath(wn.x - 18, wn.y + wn.h + 6, wn.w + 36, 12, 5), D.tone(c, '#E6B98A', wn.y + wn.h + 6, wn.y + wn.h + 18), { lw: 3.5, depth: 3 });
-    c.fillStyle = D.tone(c, '#C9965F', L.floorY, H); c.fillRect(0, L.floorY, W, H - L.floorY);
-    c.strokeStyle = 'rgba(42,35,64,.12)'; c.lineWidth = 2;
-    for (var fy = L.floorY + 18; fy < L.bot; fy += 20) { c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); c.stroke(); }
-    c.beginPath(); c.moveTo(0, L.floorY); c.lineTo(W, L.floorY); D.ink(c, 4);
+    var G = GGScene, dado = L.floorY - Math.min(90, L.aH * 0.16), wn = L.win;
+    G.wall(c, 0, 0, W, dado, { pattern: 'dots', col: '#F6E4D2', col2: 'rgba(255,255,255,.35)', size: 34 });
+    G.wall(c, 0, dado, W, L.floorY - dado, { pattern: 'panels', col: '#E9C9A9', edge: 'top' });
+    G.window(c, wn.x, wn.y, wn.w, wn.h, { view: 'garden', frame: '#FFF8EC', bars: 'cross', barCol: '#FFF8EC', sill: '#E6B98A', r: 10,
+      sun: false, cloud: 0.07 + 0.02 * Math.sin(time * 0.05), hill: '#8FD88F' });
+    G.floor(c, 0, L.floorY, W, H - L.floorY, { kind: 'planks', col: '#C9965F', col2: 'rgba(42,35,64,.12)', size: 20 });
   }
   function drawShelf(c, x0, x1, y, pots, fit) {
     // the pots stand on the board, so their shadows go on it first
     var n = pots.length, gap = (x1 - x0) / n;
-    D.shape(c, D.rrPath(x0, y, x1 - x0, 12, 4), D.tone(c, '#E6B98A', y, y + 12), { lw: 3.5, depth: 3, inside: function (c) {
+    GGScene.shelf(c, x0, x1, y, { kind: 'pegs', col: '#E6B98A', thick: 12, on: function (c) {
       pots.forEach(function (d, i) { var s = PO.size(d, fit, fit * 1.1); D.shadow(c, x0 + gap * (i + 0.5) + 2, y + 1, s.w * 0.45, 3.5); });
     } });
-    [x0 + 14, x1 - 14].forEach(function (bx) { D.shape(c, function (p) { p.moveTo(bx - 4, y + 12); p.lineTo(bx + 4, y + 12); p.lineTo(bx + 2, y + 26); p.lineTo(bx - 2, y + 26); p.closePath(); }, '#B57F4B', { lw: 3, depth: 0 }); });
     pots.forEach(function (d, i) { c.save(); c.translate(x0 + gap * (i + 0.5), y + 1); PO.draw(c, d, { w: fit, h: fit * 1.1, lw: 3 }); c.restore(); });
   }
   function drawWheel(c, spinning) {

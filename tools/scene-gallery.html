@@ -109,6 +109,11 @@ figcaption { padding: 6px 10px 8px; border-top: 2px solid #EEE8F3; font-family: 
     { name: "bunting {sag, cols}", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'stripes', col: '#FFF1DC', col2: '#FFE4C4' }); S.bunting(c, 0, 30, CW, 30, { sag: 24 }); S.bunting(c, 20, 110, 220, 140, { sag: 14, flag: 22 }); } },
     { name: "plant leafy / flowers / cactus", draw: function (c) { S.wall(c, 0, 0, CW, 130, { col: '#FFF1DC' }); S.shelf(c, 0, CW, 130, { kind: 'plain', thick: 70 }); S.plant(c, 44, 134, { size: 110, pot: '#7CC4FF' }); S.plant(c, 122, 134, { kind: 'flowers', size: 110 }); S.plant(c, 198, 134, { kind: 'cactus', size: 100, pot: '#FF9EC4', flower: '#FF6B57' }); } }
   ]);
+  section('Added for rooms with windows', [
+    { name: "wall {pattern:'panels', edge:'top'}", draw: function (c) { S.wall(c, 0, 0, CW, 110, { pattern: 'dots', col: '#F6E4D2', col2: 'rgba(255,255,255,.35)', size: 34 }); S.wall(c, 0, 110, CW, 60, { pattern: 'panels', col: '#E9C9A9', edge: 'top' }); S.floor(c, 0, 170, CW, 30, { col: '#C9965F', col2: 'rgba(42,35,64,.12)', size: 20 }); } },
+    { name: "shelf {kind:'pegs', on} + bottles", draw: function (c) { S.wall(c, 0, 0, CW, CH, { pattern: 'tiles', col: '#DDF3FF', col2: '#BFE3F5', size: 64 }); S.shelf(c, 30, 210, 70, { kind: 'pegs', on: function (c) { GGDraw.shadow(c, 120, 71, 30, 3.5); } }); S.shelf(c, 45, 195, 160, { kind: 'plain', thick: 14 }); S.bottles(c, 120, 160, {}); } },
+    { name: "table {kind:'top'}", draw: function (c) { S.wall(c, 0, 0, CW, 90, { pattern: 'dots', col: '#FFF1DC', col2: '#FFE4C4', size: 70 }); S.table(c, 0, CW, 90, CH, { kind: 'top', grain: '#DDAE7C' }); } }
+  ]);
   section('SVG twins', [
     { name: "svg.cloud cat + svg.hills two", draw: function (c) {
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" width="240" height="200"><rect width="240" height="200" fill="#BFE6FF"/>' + S.svg.hills({ w: 240, h: 200, kind: 'two', top: 0.5, col: '#7BD389', back: '#4FB868' }) + S.svg.cloud({ x: 120, y: 70, size: 150, kind: 'cat', face: 'open' }) + '</svg>';

@@ -163,68 +163,18 @@
   }
   var partyDone = false;
 
-  /* ---------- curtains for the window: two tied-back curtains on a rod (copied into each game that has a window) ---------- */
-  var curtainTiles = {};
-  function curtainTile(st) {
-    var key = st.pat + st.col + st.col2;
-    if (curtainTiles[key]) return curtainTiles[key];
-    var cv = document.createElement('canvas'); cv.width = cv.height = 28;
-    var c = cv.getContext('2d');
-    c.fillStyle = st.col; c.fillRect(0, 0, 28, 28);
-    c.fillStyle = st.col2;
-    if (st.pat === 'gingham') { c.globalAlpha = 0.55; c.fillRect(0, 0, 14, 28); c.fillRect(0, 0, 28, 14); c.globalAlpha = 1; }
-    else if (st.pat === 'stripes') { c.fillRect(0, 0, 10, 28); }
-    else if (st.pat === 'dots') { c.beginPath(); c.arc(7, 7, 4, 0, Math.PI * 2); c.arc(21, 21, 4, 0, Math.PI * 2); c.fill(); }
-    else if (st.pat === 'stars') {
-      [[7, 8], [21, 22]].forEach(function (q) { c.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, r = i % 2 ? 2.4 : 5.5; c.lineTo(q[0] + Math.cos(a) * r, q[1] + Math.sin(a) * r); } c.closePath(); c.fill(); });
-    }
-    return (curtainTiles[key] = cv);
-  }
-  function drawCurtains(c, x, y, w, h, st) {
-    var pad = Math.min(26, w * 0.12), top = y - 12, bot = y + h + 14, cwid = w * 0.28 + pad;
-    var tile = curtainTile(st), fill = tile.pat || (tile.pat = c.createPattern(tile, 'repeat'));
-    [-1, 1].forEach(function (side) {
-      var xo = side < 0 ? x - pad : x + w + pad;           // the outer edge
-      var xi = xo - side * cwid;                           // the inner edge at the top
-      var tieX = xo - side * cwid * 0.38, tieY = y + h * 0.6;
-      // the curtain, with a couple of soft folds inside it, outline last
-      D.shape(c, function (p) {
-        p.moveTo(xo, top); p.lineTo(xi, top);
-        p.quadraticCurveTo(xi, y + h * 0.4, tieX, tieY);
-        p.quadraticCurveTo(xo - side * cwid * 0.5, tieY + (bot - tieY) * 0.5, xo - side * cwid * 0.72, bot);
-        p.lineTo(xo, bot); p.closePath();
-      }, fill, { lw: LW.mid, depth: 6, dx: side * 4, inside: function (c) {
-        c.strokeStyle = 'rgba(42,35,64,.22)'; c.lineWidth = 3;
-        [0.3, 0.62].forEach(function (f) { var fx = xo - side * cwid * f; c.beginPath(); c.moveTo(fx, top + 4); c.quadraticCurveTo(fx + side * cwid * 0.12, y + h * 0.35, tieX + side * cwid * (f - 0.3) * 0.4, tieY - 4); c.stroke(); });
-      } });
-      // the tie
-      c.save(); c.translate(tieX + side * cwid * 0.18, tieY); c.rotate(side * 0.25);
-      D.shape(c, D.rrPath(-cwid * 0.3, -6, cwid * 0.6, 12, 6), st.tie, { lw: LW.fine, depth: 3 });
-      c.restore();
-    });
-    // the rod with round ends
-    D.shape(c, D.rrPath(x - pad - 14, top - 9, w + pad * 2 + 28, 10, 5), st.rod, { lw: LW.fine, depth: 0 });
-    [x - pad - 16, x + w + pad + 16].forEach(function (rx) { D.shape(c, D.ellPath(rx, top - 4, 8, 8), st.rod, { lw: LW.fine, depth: 3 }); });
-  }
-
   /* ================= drawing ================= */
+  /* the kitchen: a dotty wall, a sunny window on phones (where there's room above the cats), and the table top
+     the mats sit on; all scenery from shared/scene.js */
   function drawRoom(c) {
-    var W = L.W, H = L.H, T = L.tableY;
-    c.fillStyle = '#FFF1DC'; c.fillRect(0, 0, W, T);
-    c.fillStyle = '#FFE4C4'; for (var x = 30; x < W; x += 70) for (var y = 30; y < T; y += 70) { circle(c, x + ((y / 70) % 2 ? 35 : 0), y, 7); c.fill(); }
-    // a window with a sunny sky
-    var wx = W / 2 - 110, wy = L.W < 700 ? Math.max(40, T - 480) : 26, ww = 220, wh = L.W < 700 ? 220 : 120;
+    var G = GGScene, W = L.W, H = L.H, T = L.tableY;
+    G.wall(c, 0, 0, W, T, { pattern: 'dots', col: '#FFF1DC', col2: '#FFE4C4', size: 70 });
     if (L.W < 700) {
-      // sky, sun and the glazing bar all inside the frame, outline last
-      D.shape(c, D.rrPath(wx, wy, ww, wh, 16), D.tone(c, '#9EDCFF', wy, wy + wh), { lw: LW.big, depth: 0, inside: function (c) {
-        circle(c, wx + 170, wy + 50, 24); c.fillStyle = '#FFE14D'; c.fill();
-        c.fillStyle = '#FFFFFF'; c.fillRect(wx + ww / 2 - 3.5, wy - 5, 7, wh + 10);
-      } });
-      drawCurtains(c, wx, wy, ww, wh, { pat: 'gingham', col: '#FFD23F', col2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' }); }
-    // the table
-    c.fillStyle = D.tone(c, '#E6B98A', T, H); c.fillRect(0, T, W, H - T);
-    c.fillStyle = '#DDAE7C'; for (var yy = T + 50; yy < H; yy += 70) c.fillRect(0, yy, W, 4);
-    c.beginPath(); c.moveTo(-5, T); c.lineTo(W + 5, T); ink(c, LW.big);
+      var wx = W / 2 - 110, wy = Math.max(40, T - 480), ww = 220, wh = 220;
+      G.window(c, wx, wy, ww, wh, { view: 'day', bars: 'mid', sill: false, cloud: false, r: 16, sun: { x: 170 / 220, y: 50 / 220, size: 48 },
+        curtains: { pattern: 'gingham', colour: '#FFD23F', colour2: '#FFFFFF', tie: '#FF8FAB', rod: '#C98B5B' } });
+    }
+    G.table(c, 0, W, T, H, { kind: 'top', col: '#E6B98A', grain: '#DDAE7C' });
   }
   function drawMat(c, i) {
     var m = matXY(i), col = cats[i].col;

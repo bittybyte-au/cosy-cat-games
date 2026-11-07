@@ -469,82 +469,25 @@
     { col: '#C98B5B', kind: 'planks' }, { col: '#E6C08F', kind: 'planks' }, { col: '#8E6A4E', kind: 'planks' },
     { col: '#F2B8C6', kind: 'tiles' }, { col: '#BFE0FF', kind: 'tiles' }, { col: '#9FD8A8', kind: 'carpet' }, { col: '#C9B8EE', kind: 'carpet' }
   ];
-  function drawWindow(c, w, t, i) {
-    D.shape(c, D.rrPath(w.x - 10, w.y - 10, w.w + 20, w.h + 20, 18), D.tone(c, '#FFFFFF', w.y - 10, w.y + w.h + 10), { lw: 4, depth: 0 });
-    rr(c, w.x, w.y, w.w, w.h, 10); c.fillStyle = '#9EDCFF'; c.fill();
-    c.save(); rr(c, w.x, w.y, w.w, w.h, 10); c.clip();
-    if (!i) { circle(c, w.x + w.w * 0.78, w.y + w.h * 0.26, 26); c.fillStyle = '#FFE14D'; c.fill(); }
-    var cx = ((t * 8 + i * 90) % (w.w + 160)) - 80;
-    [[cx, 0.45, 1], [cx - 140, 0.25, 0.8]].forEach(function (cl) {
-      c.fillStyle = '#fff'; var bx = w.x + cl[0], by = w.y + w.h * cl[1], k2 = cl[2];
-      circle(c, bx, by, 18 * k2); c.fill(); circle(c, bx + 20 * k2, by - 8 * k2, 22 * k2); c.fill(); circle(c, bx + 42 * k2, by, 17 * k2); c.fill();
-    });
-    c.fillStyle = i ? '#5CCB75' : '#7BD389'; c.beginPath(); c.ellipse(w.x + w.w * (i ? 0.7 : 0.3), w.y + w.h + 30, w.w * 0.7, 60, 0, 0, TAU); c.fill();
-    c.restore();
-    c.strokeStyle = '#fff'; c.lineWidth = 8;
-    c.beginPath(); c.moveTo(w.x + w.w / 2, w.y); c.lineTo(w.x + w.w / 2, w.y + w.h); c.moveTo(w.x, w.y + w.h / 2); c.lineTo(w.x + w.w, w.y + w.h / 2); c.stroke();
-    rr(c, w.x, w.y, w.w, w.h, 10); ink(c, 3);
-    [-1, 1].forEach(function (side) {
-      var x0 = side < 0 ? w.x - 34 : w.x + w.w + 34;
-      c.beginPath(); c.moveTo(x0, w.y - 22); c.quadraticCurveTo(x0 - side * 30, w.y + w.h * 0.5, x0 + side * 6, w.y + w.h + 18); c.lineTo(x0 + side * 34, w.y + w.h + 18); c.quadraticCurveTo(x0 + side * 8, w.y + w.h * 0.5, x0 + side * 30, w.y - 22); c.closePath();
-      var col = i ? '#B48CFF' : '#FF9EC4';
-      c.fillStyle = D.tone(c, col, w.y - 22, w.y + w.h + 18); c.fill(); ink(c, 3);
-    });
-    D.shape(c, D.rrPath(w.x - 50, w.y - 30, w.w + 100, 12, 6), '#E6B98A', { lw: 3, depth: 3 });
-  }
+  /* the room: patterned wall, two windows with drapes, sills, shelves, the floor and skirting, then (after the things
+     on the wall) the table and sideboard; all scenery from shared/scene.js, the colours from WALLS and FLOORS */
   function drawRoom(c, t) {
-    var L = LAY, W = WALLS[S.wall] || WALLS[0], F = FLOORS[S.floor || 0] || FLOORS[0];
-    // wall with a soft pattern (only the part on screen is drawn)
-    var x0 = Math.max(0, SX - 60), x1 = Math.min(L.W, SX + VIEW_W + 60);
-    c.fillStyle = W.wall; c.fillRect(0, 0, L.W, L.wallH);
-    c.fillStyle = W.pat;
-    for (var y = 30; y < L.wallH; y += 60) for (var x = 30 + (y / 60 % 2) * 30; x < x1; x += 60) {
-      if (x < x0) continue;
-      c.beginPath(); c.arc(x, y, 6, 0, TAU); c.fill();
-    }
-    L.wins.forEach(function (w, i) { drawWindow(c, w, t, i); });
-    L.sills.forEach(function (sl) { D.shape(c, D.rrPath(sl.x0, sl.y, sl.x1 - sl.x0, 16, 6), D.tone(c, '#FFFFFF', sl.y, sl.y + 16), { lw: 3.5, depth: 4 }); });
-    L.shelves.forEach(function (s) {
-      // the brackets start under the board, which is drawn over their tops
-      [s.x0 + 26, s.x1 - 26].forEach(function (bx) {
-        D.shape(c, function (p) { p.moveTo(bx - 10, s.y + 8); p.lineTo(bx + 10, s.y + 8); p.lineTo(bx - 10, s.y + 40); p.closePath(); }, '#C9965F', { lw: 3, depth: 4 });
-      });
-      D.shape(c, D.rrPath(s.x0, s.y, s.x1 - s.x0, 16, 5), D.tone(c, '#E6B98A', s.y, s.y + 16), { lw: 3.5, depth: 4 });
+    var G = GGScene, L = LAY, W = WALLS[S.wall] || WALLS[0], F = FLOORS[S.floor || 0] || FLOORS[0];
+    G.wall(c, 0, 0, L.W, L.wallH, { pattern: 'dots', col: W.wall, col2: W.pat, size: 60 });
+    L.wins.forEach(function (w, i) {
+      G.window(c, w.x, w.y, w.w, w.h, { view: 'garden', frame: '#FFFFFF', bars: 'cross', sill: false, r: 10,
+        sun: i ? false : { x: 0.78, y: 0.26, size: 52 }, cloud: ((t * 8 + i * 90) / (w.w + 160)) % 1, hill: i ? '#5CCB75' : '#7BD389',
+        curtains: { kind: 'drape', colour: i ? '#B48CFF' : '#FF9EC4', rod: '#E6B98A' } });
     });
-    // floor
-    c.fillStyle = F.col; c.fillRect(0, L.wallH, L.W, L.H - L.wallH);
-    c.strokeStyle = 'rgba(42,35,64,.18)'; c.lineWidth = 3;
-    if (F.kind === 'planks') {
-      for (var fy = L.wallH + 22; fy < L.H; fy += 26) { c.beginPath(); c.moveTo(0, fy); c.lineTo(L.W, fy); c.stroke(); }
-      for (var i = 0; i < L.W / 80; i++) { var px = (i * 173) % L.W, py = L.wallH + 22 + (i % 4) * 26; c.beginPath(); c.moveTo(px, py); c.lineTo(px, py + 26); c.stroke(); }
-    } else if (F.kind === 'tiles') {
-      c.strokeStyle = 'rgba(255,255,255,.7)';
-      for (var ty = L.wallH + 30; ty < L.H; ty += 30) { c.beginPath(); c.moveTo(0, ty); c.lineTo(L.W, ty); c.stroke(); }
-      for (var tx = 0; tx < L.W; tx += 50) { c.beginPath(); c.moveTo(tx, L.wallH); c.lineTo(tx, L.H); c.stroke(); }
-    } else {
-      c.fillStyle = 'rgba(255,255,255,.35)';
-      for (var cy = L.wallH + 18; cy < L.H; cy += 22) for (var cx2 = (cy % 44) ? 10 : 30; cx2 < L.W; cx2 += 40) { c.beginPath(); c.arc(cx2, cy, 2.5, 0, TAU); c.fill(); }
-    }
-    c.fillStyle = '#fff'; c.fillRect(0, L.wallH - 14, L.W, 16);
-    c.beginPath(); c.moveTo(0, L.wallH - 14); c.lineTo(L.W, L.wallH - 14); c.moveTo(0, L.wallH + 2); c.lineTo(L.W, L.wallH + 2); ink(c, 3);
+    L.sills.forEach(function (sl) { G.shelf(c, sl.x0, sl.x1, sl.y, { kind: 'sill', thick: 16 }); });
+    L.shelves.forEach(function (s) { G.shelf(c, s.x0, s.x1, s.y, { kind: 'brackets', col: '#E6B98A', thick: 16 }); });
+    G.floor(c, 0, L.wallH, L.W, L.H - L.wallH, { kind: F.kind, col: F.col, col2: F.kind === 'planks' ? 'rgba(42,35,64,.18)' : undefined, size: F.kind === 'planks' ? 26 : undefined, skirting: true });
   }
   function drawFurniture(c) {
     var fy = LAY.floorY;
     LAY.tables.forEach(function (tb) {
-      if (tb.kind === 'sideboard') {
-        var mid = (tb.x0 + tb.x1) / 2;
-        D.shape(c, D.rrPath(tb.x0 + 10, tb.y + 10, tb.x1 - tb.x0 - 20, fy - tb.y - 10, 8), D.tone(c, '#F2C38E', tb.y, fy), { lw: 3.5, depth: 8, inside: function (c) {
-          [[tb.x0 + 24, mid - tb.x0 - 32], [mid + 8, tb.x1 - mid - 32]].forEach(function (d) {
-            D.shape(c, D.rrPath(d[0], tb.y + 30, d[1], fy - tb.y - 50, 6), D.tone(c, '#FFD9A8', tb.y + 30, fy - 20), { lw: 2.5, depth: 5 });
-          });
-          [mid - 16, mid + 16].forEach(function (kx) { D.shape(c, D.ellPath(kx, tb.y + 80, 5, 5), '#E6B98A', { lw: 2, depth: 0 }); });
-        } });
-        D.shape(c, D.rrPath(tb.x0, tb.y, tb.x1 - tb.x0, 18, 8), D.tone(c, '#E6B98A', tb.y, tb.y + 18), { lw: 3.5, depth: 4 });
-        return;
-      }
-      [tb.x0 + 24, tb.x1 - 24].forEach(function (lx) { D.shape(c, D.rrPath(lx - 8, tb.y + 10, 16, fy - tb.y - 10, 5), '#C9965F', { lw: 3, depth: 4 }); });
-      D.shape(c, D.rrPath(tb.x0 + 12, tb.y + 12, tb.x1 - tb.x0 - 24, 22, 4), '#FFD3E4', { lw: 2.5, depth: 4 });
-      D.shape(c, D.rrPath(tb.x0, tb.y, tb.x1 - tb.x0, 20, 8), D.tone(c, '#E6B98A', tb.y, tb.y + 20), { lw: 3.5, depth: 4 });
+      if (tb.kind === 'sideboard') GGScene.table(c, tb.x0, tb.x1, tb.y, fy, { kind: 'cabinet', front: '#F2C38E', col: '#E6B98A' });
+      else GGScene.table(c, tb.x0, tb.x1, tb.y, fy, { kind: 'legs', col: '#E6B98A', legs: '#C9965F', apron: '#FFD3E4', thick: 14 });
     });
   }
   function isTableSurface(id) { return LAY.tables && LAY.tables.some(function (t) { return t.id === id; }); }
