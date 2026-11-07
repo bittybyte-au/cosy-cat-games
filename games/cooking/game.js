@@ -1860,10 +1860,11 @@
     syrup: GGDish.icons.syrup,
     butter: GGDish.icons.butter,
     strawberry: GGDish.icons.strawberry,
+    blueberry: GGDish.icons.blueberry,
     banana: GGDish.icons.banana,
     sugar: GGDish.icons.sugar
   };
-  var PAN_TOOL_SAY = { syrup: 'Drag to pour syrup', butter: 'Tap to add butter', strawberry: 'Tap to add strawberries', banana: 'Tap to add banana', sugar: 'Drag to dust icing sugar' };
+  var PAN_TOOL_SAY = { syrup: 'Drag to pour syrup', butter: 'Tap to add butter', strawberry: 'Tap to add strawberries', blueberry: 'Tap to add blueberries', banana: 'Tap to add banana', sugar: 'Drag to dust icing sugar' };
 
   function DecorateScene() {
     // the same decorating works for the pancake stack and the cat waffle: only the shape on the plate differs
@@ -1903,8 +1904,8 @@
     }
     return {
       enter: function () {
-        toolsEl.innerHTML = ['plate', 'syrup', 'butter', 'strawberry', 'banana', 'sugar'].map(function (t) {
-          var lbl = { plate: 'Plate', syrup: 'Syrup', butter: 'Butter', strawberry: 'Berry', banana: 'Banana', sugar: 'Sugar' }[t];
+        toolsEl.innerHTML = ['plate', 'syrup', 'butter', 'strawberry', 'blueberry', 'banana', 'sugar'].map(function (t) {
+          var lbl = { plate: 'Plate', syrup: 'Syrup', butter: 'Butter', strawberry: 'Berry', blueberry: 'Blueberry', banana: 'Banana', sugar: 'Sugar' }[t];
           return '<button class="tool" type="button" data-tool="' + t + '"' + (t === 'plate' ? '' : ' aria-pressed="false"') + '>' + PAN_TOOL_ICONS[t] + '<span>' + lbl + '</span></button>';
         }).join('');
         toolsEl.querySelectorAll('.tool').forEach(function (b) {
@@ -1931,6 +1932,7 @@
         if (tool === 'syrup') addSyrup(p);
         if (tool === 'butter' && place('butter', p, 3)) { Sound.plop(); countAction(); }
         if (tool === 'strawberry' && place('strawberry', p, 16)) { Sound.pop(); countAction(); }
+        if (tool === 'blueberry' && place('blueberry', p, 30)) { Sound.pop(); countAction(); }
         if (tool === 'banana' && place('banana', p, 16)) { Sound.pop(); countAction(); }
       },
       move: function (p) { pointer = p; if (down && tool === 'syrup') addSyrup(p); },

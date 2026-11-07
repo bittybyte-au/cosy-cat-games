@@ -32,6 +32,11 @@
       path: (function () { var p = new Path2D(); strawberryPath(p); return p; })(), fill: '#FF5A6A',
       inside: function (c) { c.save(); c.scale(0.55, 0.55); c.beginPath(); strawberryPath(c); c.fillStyle = '#FFD0D6'; c.fill(); c.restore(); dots(c, '#FFF2A8', [[-6, 2], [5, 3], [0, -6], [-2, 8]], [1.3, 2]); }
     },
+    // a blueberry: round, with its little star-shaped crown and a shine
+    blueberry: { path: circ(9), fill: '#5468D8', inside: function (c) {
+      c.beginPath(); for (var j = 0; j < 10; j++) { var a = j * Math.PI / 5 - Math.PI / 2, q = j % 2 ? 1.4 : 3.2; c.lineTo(Math.cos(a) * q, -2 + Math.sin(a) * q); } c.closePath(); c.fillStyle = '#2E3A8C'; c.fill();
+      c.beginPath(); c.ellipse(-4, -4, 2.4, 1.6, -0.6, 0, TAU); c.fillStyle = 'rgba(255,255,255,.55)'; c.fill();
+    } },
     salmon: { path: D.rrPath(-15, -9, 30, 18, 4), fill: '#FF8A5B', inside: function (c) { c.beginPath(); c.moveTo(-8, -9); c.lineTo(0, 9); c.moveTo(4, -9); c.lineTo(11, 9); c.strokeStyle = '#FFD3BD'; c.lineWidth = 3; c.stroke(); } }
   };
   function drawMini(c, kind, x, y, rot, sx, sy) {
@@ -545,6 +550,7 @@
     syrup: '<svg viewBox="0 0 40 40"><path d="M14 4 H26 V10 Q34 14 33 24 V34 Q33 37 30 37 H10 Q7 37 7 34 V24 Q6 14 14 10 Z" fill="#C8721F" stroke="#2A2340" stroke-width="3"/><rect x="12" y="2" width="16" height="6" rx="2" fill="#FF7EB6" stroke="#2A2340" stroke-width="2.5"/><path d="M13 22 Q20 17 27 22 Q20 30 13 22 Z" fill="#FFE29A"/></svg>',
     butter: '<svg viewBox="0 0 40 40"><path d="M6 18 L6 26 L20 34 L34 26 L34 18 L20 26 Z" fill="#F2D66B" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M6 18 L20 10 L34 18 L20 26 Z" fill="#FFF3A6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg>',
     strawberry: '<svg viewBox="0 0 40 40"><path d="M20 36 Q4 22 9 13 Q20 6 31 13 Q36 22 20 36 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="3"/><path d="M20 30 Q11 22 14 17 Q20 13 26 17 Q29 22 20 30 Z" fill="#FFD0D6"/><path d="M12 11 Q20 2 28 11 Q20 8 12 11 Z" fill="#5CC46B" stroke="#2A2340" stroke-width="2"/></svg>',
+    blueberry: '<svg viewBox="0 0 40 40"><circle cx="13" cy="24" r="9" fill="#5468D8" stroke="#2A2340" stroke-width="2.6"/><circle cx="27" cy="24" r="9" fill="#5468D8" stroke="#2A2340" stroke-width="2.6"/><circle cx="20" cy="12" r="9" fill="#5468D8" stroke="#2A2340" stroke-width="2.6"/><path d="M20 8.5 L21 11 L23.5 11 L21.5 12.5 L22.2 15 L20 13.5 L17.8 15 L18.5 12.5 L16.5 11 L19 11 Z" fill="#2E3A8C"/><circle cx="13" cy="23" r="2.2" fill="#2E3A8C"/><circle cx="27" cy="23" r="2.2" fill="#2E3A8C"/></svg>',
     banana: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#FFF4C2" stroke="#2A2340" stroke-width="3"/><circle cx="20" cy="20" r="5" fill="#F3E2A0"/><circle cx="18" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="22" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="20" cy="22.5" r="1.4" fill="#8A5A2B"/></svg>',
     sugar: '<svg viewBox="0 0 40 40"><rect x="10" y="12" width="20" height="24" rx="6" fill="#FFFFFF" stroke="#2A2340" stroke-width="3"/><path d="M12 12 Q20 2 28 12 Z" fill="#9EDCFF" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><g fill="#9AA6B2"><circle cx="16" cy="9" r="1.2"/><circle cx="20" cy="7" r="1.2"/><circle cx="24" cy="9" r="1.2"/></g></svg>',
     grate: '<svg viewBox="0 0 24 24"><path d="M6 21 L7 5 H17 L18 21 Z" fill="#D5DBE3" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="2" fill="#FF6B57" stroke="#2A2340" stroke-width="1.4"/><g fill="#8A93A0"><circle cx="10" cy="10" r="1"/><circle cx="14" cy="10" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="10" cy="18" r="1"/><circle cx="14" cy="18" r="1"/></g></svg>',

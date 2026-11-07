@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-57117d93d4';
+const VERSION = 'ccg-965a943e1d';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -20,7 +20,7 @@ const FILES = {
   "./manifest.webmanifest": "4ae50003e2",
   "./shared/avatar.js": "800d1be63f",
   "./shared/cat.js": "31eaf8e051",
-  "./shared/dishes.js": "cc03caa667",
+  "./shared/dishes.js": "1f04f839e4",
   "./shared/draw.js": "6af1578083",
   "./shared/game.css": "c916f187bf",
   "./shared/games.js": "d1381c1db0",
@@ -48,7 +48,7 @@ const FILES = {
   "./games/colour/": "0ebe0713f6",
   "./games/colour/index.html": "0ebe0713f6",
   "./games/colour/pages.js": "f7ede1b9b9",
-  "./games/cooking/game.js": "f270217fe8",
+  "./games/cooking/game.js": "b7bc39ea6b",
   "./games/cooking/": "806f497544",
   "./games/cooking/index.html": "806f497544",
   "./games/crossing/game.js": "9d636258ee",
@@ -67,15 +67,15 @@ const FILES = {
   "./games/home/game.js": "e6f9f07664",
   "./games/home/": "a54b98aed3",
   "./games/home/index.html": "a54b98aed3",
-  "./games/hotpaws/engine.js": "f5b6b0888d",
-  "./games/hotpaws/game.js": "ecf151dd88",
-  "./games/hotpaws/": "cd92826b72",
-  "./games/hotpaws/index.html": "cd92826b72",
-  "./games/hotpaws/levels.js": "760045423c",
+  "./games/hotpaws/engine.js": "405d05a898",
+  "./games/hotpaws/game.js": "1dcb8ffae0",
+  "./games/hotpaws/": "ad0a39c412",
+  "./games/hotpaws/index.html": "ad0a39c412",
+  "./games/hotpaws/levels.js": "cf57cb1f29",
   "./games/kitten-box/game.js": "eec60791fd",
   "./games/kitten-box/": "debe614824",
   "./games/kitten-box/index.html": "debe614824",
-  "./games/kitten-kitchen/game.js": "5aa76350eb",
+  "./games/kitten-kitchen/game.js": "2b5144abd1",
   "./games/kitten-kitchen/": "88a06d0349",
   "./games/kitten-kitchen/index.html": "88a06d0349",
   "./games/kitty-pop/game.js": "df83dc2c55",

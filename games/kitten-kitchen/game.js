@@ -46,7 +46,7 @@
     sauce: { food: 'pizza', how: 'paint', gap: 18 }, cheese: { food: 'pizza', how: 'shreds', gap: 22 },
     pepperoni: { food: 'pizza', how: 'pz' }, mushroom: { food: 'pizza', how: 'pz' }, olive: { food: 'pizza', how: 'pz', gap: 34 }, basil: { food: 'pizza', how: 'pz' },
     syrup: { food: 'pancakes', how: 'syrup' }, butter: { food: 'pancakes', how: 'piece', gap: 60 }, strawberry: { food: 'pancakes', how: 'piece', gap: 30 },
-    banana: { food: 'pancakes', how: 'piece', gap: 26 }, sugar: { food: 'pancakes', how: 'sugar', gap: 18 },
+    blueberry: { food: 'pancakes', how: 'piece', gap: 22 }, banana: { food: 'pancakes', how: 'piece', gap: 26 }, sugar: { food: 'pancakes', how: 'sugar', gap: 18 },
     candle: { candle: true, gap: 999, draw: function (c, t) {
       var col = CANDLE_COLS[t.v % CANDLE_COLS.length];
       rr(c, -8, -72, 16, 72, 5); fillInk(c, col, 3.5);
@@ -75,7 +75,7 @@
   // frame: where the shared dish sits in its own drawing space and how wide it is (the same frames Cosy Kitchen uses)
   var FOODS = {
     pizza: { tops: ['sauce', 'cheese', 'pepperoni', 'mushroom', 'olive', 'basil'], h: [-88, 86], frame: { x: 320, y: 440, span: 560 } },
-    pancakes: { tops: ['syrup', 'butter', 'strawberry', 'banana', 'sugar'], h: [-112, 112], frame: { x: 320, y: 420, span: 556 } },
+    pancakes: { tops: ['syrup', 'butter', 'strawberry', 'blueberry', 'banana', 'sugar'], h: [-112, 112], frame: { x: 320, y: 420, span: 556 } },
     cake: { tops: ['candle', 'sprinkles', 'cakeberry', 'cherry', 'star', 'heart'], h: [-170, 150], frame: { x: 0, y: 0, span: 400 } }
   };
   var ORDER = ['pizza', 'pancakes', 'cake'];
@@ -192,7 +192,7 @@
     TOPS[id].draw(c, t); return cv.toDataURL();
   }
   var IMG = {}; Object.keys(TOPS).forEach(function (id) { IMG[id] = topImg(id); });
-  var TOP_NAMES = { sauce: 'Tomato sauce', cheese: 'Cheese', pepperoni: 'Pepperoni', mushroom: 'Mushrooms', olive: 'Olives', basil: 'Basil leaves', syrup: 'Syrup', butter: 'Butter', strawberry: 'Strawberries', banana: 'Banana', sugar: 'Sugar', candle: 'Candles', sprinkles: 'Sprinkles', cakeberry: 'Strawberries', cherry: 'Cherries', star: 'Stars', heart: 'Hearts' };
+  var TOP_NAMES = { sauce: 'Tomato sauce', cheese: 'Cheese', pepperoni: 'Pepperoni', mushroom: 'Mushrooms', olive: 'Olives', basil: 'Basil leaves', syrup: 'Syrup', butter: 'Butter', strawberry: 'Strawberries', blueberry: 'Blueberries', banana: 'Banana', sugar: 'Sugar', candle: 'Candles', sprinkles: 'Sprinkles', cakeberry: 'Strawberries', cherry: 'Cherries', star: 'Stars', heart: 'Hearts' };
   var tray = $('tray'), bell = $('bell'), foodsBtn = $('foodsBtn'), topbar = $('topbar');
   var sel = null;
   function renderTray() {
@@ -273,7 +273,7 @@
   var SAMPLES = {
     pizza: [['sauce', -60, -10], ['sauce', 60, 10], ['sauce', 0, -40], ['sauce', 0, 40], ['sauce', -120, 10], ['sauce', 120, -10], ['sauce', -40, 50], ['sauce', 50, -40],
       ['cheese', -60, -5], ['cheese', 50, 5], ['cheese', 0, 30], ['cheese', 10, -30], ['pepperoni', -80, -10], ['pepperoni', 70, 20], ['pepperoni', -10, 38], ['pepperoni', 30, -30], ['basil', 0, 0]],
-    pancakes: [['syrup', 0, -60], ['butter', 0, -64], ['strawberry', -70, -62], ['strawberry', 60, -58], ['banana', -20, -46], ['banana', 30, -74]],
+    pancakes: [['syrup', 0, -60], ['butter', 0, -64], ['strawberry', -70, -62], ['strawberry', 60, -58], ['banana', -20, -46], ['banana', 30, -74], ['blueberry', 70, -78], ['blueberry', -40, -80], ['blueberry', 10, -50]],
     cake: [['candle', -60, -50], ['candle', 0, -66], ['candle', 60, -48], ['sprinkles', -70, 40], ['sprinkles', 70, 50], ['heart', 0, 60]]
   };
   function makeSample(kind) {
