@@ -1,7 +1,7 @@
 /* Cat Rescue: the little rescue scene above the board, one per peril, the filling that rises in it, and the wall of
    bricks between it and the board. Drawn in a 400 × 240 space.
    Each scene is a function of time, so nothing here keeps state:
-     S = { p: how far the peril has crept (0..1), t: seconds, mode: 'play' | 'win' | 'fail', mt: seconds in that mode,
+     S = { p: how full of its filling the scene is (0..1; it starts full and empties as the filling drains away), t: seconds, mode: 'play' | 'win' | 'fail', mt: seconds in that mode,
            cat: { name, preset }, saved: [kitten presets sitting safe by the basket], reduce: reduced motion }
    The cat in peril is always rescued into the basket on the right, where the freed kittens wait.
    Not in time is gentle and comic: a splash and a shake, a soft landing in leaves, a sock on the head. */
@@ -188,12 +188,13 @@
     D.shape(c, D.rrPath(22, 94, 236, 10, 5), '#FFFFFF', { lw: 3.5, depth: 2 });
     drawCat();
     if (yw < 136) water(0.72);
-    // tap: a pipe on the wall and running water while the peril creeps
+    // tap: a pipe on the wall; it drips while you drain the bath, and gushes when the splash comes
     D.shape(c, D.rrPath(14, 52, 10, 46, 4), '#C9C2D6', { lw: 3, depth: 0 });
     D.shape(c, D.rrPath(14, 52, 48, 10, 5), '#C9C2D6', { lw: 3, depth: 2 });
     D.shape(c, D.rrPath(52, 58, 12, 14, 4), '#C9C2D6', { lw: 3, depth: 2 });
     D.shape(c, D.rrPath(28, 42, 14, 8, 4), '#FF8FAB', { lw: 2.5, depth: 0 });
-    var running = S.mode === 'play' || (S.mode === 'fail' && mt < 0.6);
+    var running = S.mode === 'fail' && mt < 0.6;
+    if (S.mode === 'play' && p > 0.05) drop(c, 58, 76 + ((S.t * 40) % Math.max(10, yw - 80)), 2.6, 0.9);
     if (running) {
       c.save(); c.beginPath(); c.rect(0, 0, W, yw + 2); c.clip();
       var sp = new Path2D(); sp.moveTo(58, 72); for (var sy = 72; sy < yw + 4; sy += 6) sp.lineTo(58 + Math.sin(sy * 0.3 + S.t * 14) * (S.reduce ? 0 : 1.2), sy);
@@ -420,10 +421,10 @@
   var SCENES = { bath: bath, tree: tree, rain: rain, tide: tide, laundry: laundry };
 
   /* ================= the filling and the wall =================
-     The peril fills up the scene where the cat is: bath water and the tide do it in their own scenes, and here the
-     leaves pile up under the tree, rainwater rises in the garden and the washing piles up as socks. Along the top
-     of the board runs a wall of bricks between the scene and the board; every brick knocked out is a gap the
-     filling pours down through, so it drops again. */
+     The peril's filling fills the scene where the cat is: bath water and the sea do it in their own scenes, and here
+     the leaves heap up under the tree, rainwater floods the garden and the washing spills out as socks. Along the
+     top of the board runs a wall of bricks between the scene and the board; every brick knocked out is a gap the
+     filling pours down through into the board, as pieces of it (fillTile), so the scene empties as it drains. */
   var FILL = {
     bath: { word: 'water', col: '#8FD3FF', kind: 'own' },
     tree: { word: 'leaves', col: '#F0A35A', kind: 'pile', top: 176 },
@@ -435,8 +436,8 @@
   var SOCK = ['#FF8FAB', '#7CC4FF', '#FFD23F', '#B48CFF', '#7BD389', '#FFFFFF'];
   function leafPath(r) { var p = new Path2D(); p.moveTo(-r, 0); p.quadraticCurveTo(-r * 0.2, -r * 0.9, r, 0); p.quadraticCurveTo(-r * 0.2, r * 0.9, -r, 0); p.closePath(); return p; }
   /* one bit of a heap, centred at (0, 0), about r across the middle; i picks its colour and turn */
-  function chunk(c, name, r, i) {
-    var lw = Math.max(1.6, r * 0.16), rot = ((i * 2.399) % TAU) - Math.PI;
+  function chunk(c, name, r, i, lwk, turn) {
+    var lw = lwk || Math.max(1.6, r * 0.16), rot = turn !== undefined ? turn / 0.45 : ((i * 2.399) % TAU) - Math.PI;
     if (name === 'bath') {
       D.shape(c, D.ellPath(0, 0, r, r), D.tone(c, i % 3 ? '#FFFFFF' : '#E6F6FF', -r, r), { lw: lw, depth: r * 0.18 });
       c.fillStyle = 'rgba(255,255,255,.95)'; c.beginPath(); c.ellipse(-r * 0.35, -r * 0.4, r * 0.28, r * 0.18, -0.6, 0, TAU); c.fill();
@@ -465,6 +466,34 @@
       c.restore();
     }
   }
+  /* a bit of the filling as a piece on the board, in a 100-unit cell centred on (0, 0): a drop of water (bath,
+     rain, sea), a bunch of leaves, or a pair of odd socks. i (0..2) picks a variation; lw is the board's line weight */
+  var WATER = { bath: '#8FD3FF', rain: '#9CCFF5', tide: '#7CC4FF' };
+  function fillTile(c, name, i, lw) {
+    var F = FILL[name] || FILL.bath; lw = lw || 5;
+    // a soft wash of the filling's colour over the cell, so it reads as the filling spreading into the board
+    c.save(); c.globalAlpha = 0.5; c.fillStyle = D.lighter(F.kind === 'pile' ? F.col : (WATER[name] || F.col), 0.45); c.fill(D.rrPath(-47, -47, 94, 94, 22)); c.restore();
+    if (F.kind !== 'pile') {
+      var col = WATER[name] || '#8FD3FF', tilt = (i - 1) * 0.12;
+      c.save(); c.rotate(tilt);
+      var p = new Path2D();
+      p.moveTo(0, -42); p.bezierCurveTo(10, -26, 34, -6, 34, 12); p.bezierCurveTo(34, 32, 18, 42, 0, 42); p.bezierCurveTo(-18, 42, -34, 32, -34, 12); p.bezierCurveTo(-34, -6, -10, -26, 0, -42); p.closePath();
+      D.shape(c, p, D.tone(c, col, -42, 42), { lw: lw, depth: 7, shine: [-15, -2, 6, 12, 0.35, 0.75], inside: function (c) {
+        // a ripple across the middle, and a bubble or two
+        c.fillStyle = D.lighter(col, 0.35); c.beginPath(); c.moveTo(-40, 14); for (var x = -40; x <= 40; x += 10) c.quadraticCurveTo(x + 5, 8 + (x / 10 % 2 ? 4 : -4), x + 10, 14); c.lineTo(40, 50); c.lineTo(-40, 50); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = lw * 0.6; c.beginPath(); c.moveTo(-26, 14); for (var x2 = -26; x2 < 26; x2 += 13) c.quadraticCurveTo(x2 + 6.5, 8, x2 + 13, 14); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(12 - i * 4, 26, 4.5, 0, TAU); c.arc(20 - i * 3, 18 + i * 2, 2.6, 0, TAU); c.fill();
+        if (name === 'tide') { c.fillStyle = '#FFE3A3'; c.beginPath(); c.ellipse(-8 + i * 6, 34, 7, 3.5, 0.2, 0, TAU); c.fill(); }
+        if (name === 'bath') { c.fillStyle = '#FFFFFF'; [[-14, -12, 6], [-6, -18, 4.5]].forEach(function (b) { c.beginPath(); c.arc(b[0] + i * 3, b[1], b[2], 0, TAU); c.fill(); }); }
+      } });
+      c.restore();
+      return;
+    }
+    // leaves or socks: a little bunch of the same bits that heap in the scene, drawn back to front
+    var spots = name === 'tree' ? [[-17, 15, 27], [18, 13, 27], [0, -14, 29]] : [[-15, -3, 28, -0.12], [14, 4, 28, 0.1]];
+    spots.forEach(function (q, k) { c.save(); c.translate(q[0], q[1]); chunk(c, name, q[2], name === 'tree' ? i * 5 + k * 2 + 1 : i * 2 + k * 3, lw * 0.85, q[3]); c.restore(); });
+  }
+
   /* the filling rising over the bottom of the scene (scene units): p is how full, 0..1 */
   function drawFill(c, name, p, t, reduce) {
     var F = FILL[name]; if (!F || F.kind === 'own' || p <= 0.001) return;
@@ -538,5 +567,5 @@
   /* where the next freed kitten will sit, in page pixels for a scene drawn at (x, y, w) */
   function slotAt(i, x, y, w) { var s = slot(i), k = w / W; return { x: x + s.x * k, y: y + s.y * k, k: k }; }
 
-  window.RescueScenes = { draw: draw, slotAt: slotAt, KSIZE: KSIZE, WIN: 3.4, FAIL: 2.7, catAt: catAt, heart: heart, FILL: FILL, chunk: chunk, drawWall: drawWall };
+  window.RescueScenes = { draw: draw, slotAt: slotAt, KSIZE: KSIZE, WIN: 3.4, FAIL: 2.7, catAt: catAt, heart: heart, FILL: FILL, chunk: chunk, fillTile: fillTile, drawWall: drawWall };
 })();

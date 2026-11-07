@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-4e3069156f';
+const VERSION = 'ccg-31297cacd2';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -25,7 +25,7 @@ const FILES = {
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "196bc4e3d1",
   "./shared/games.js": "0923fb11cc",
-  "./shared/help.js": "2a6206f950",
+  "./shared/help.js": "57039aba34",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
   "./shared/scene.js": "fa19214ef0",
@@ -111,12 +111,12 @@ const FILES = {
   "./games/puzzle/game.js": "28abf5b08e",
   "./games/puzzle/": "2f80841582",
   "./games/puzzle/index.html": "2f80841582",
-  "./games/rescue/engine.js": "f4a5f17401",
-  "./games/rescue/game.js": "87c1c08400",
+  "./games/rescue/engine.js": "ce880b916a",
+  "./games/rescue/game.js": "df33635e6e",
   "./games/rescue/": "83657c5823",
   "./games/rescue/index.html": "83657c5823",
-  "./games/rescue/levels.js": "31f97842ea",
-  "./games/rescue/scenes.js": "70c809b9a5",
+  "./games/rescue/levels.js": "0147e89e61",
+  "./games/rescue/scenes.js": "4599b3882c",
   "./games/rooftop/game.js": "4029e2d402",
   "./games/rooftop/": "467c466b12",
   "./games/rooftop/index.html": "467c466b12",

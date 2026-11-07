@@ -1,9 +1,11 @@
 /* Cat Rescue (ages 10+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
    matches break the cardboard boxes next to them, and kittens hiding in boxes pop out and scamper up to safety.
-   Above the board a cat is in a little cosy peril that fills up the scene with each move (bath water, the tide,
-   leaves, rainwater, socks). A wall of bricks runs along the top of the board: matching in the top row knocks out
-   the brick above, and the filling pours down through every gap, so it creeps up more slowly. Scene, wall and
-   board are one picture. Knock down the wall and finish the goal in time and the cat leaps into a basket. Not in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
+   Above the board a cat is in a little cosy peril, with the scene full of its filling (bath water, the sea, leaves,
+   rainwater, socks). A wall of bricks runs along the top of the board: matching in the top row knocks out the brick
+   above, and the filling pours down through the gap into the board as pieces of it, which fall like pieces, trickle
+   down a cell after each move, and drain away out of the bottom of the board. The scene empties as it goes. Scene,
+   wall and board are one picture. Drain it all and finish the goal in time and the cat leaps into a basket. Not in
+   time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
    No stars, scores, lives, timers or rewards: the rescuing is the point.
    The rules live in engine.js (shared with the test bot), levels in levels.js, the scenes in scenes.js.
    Saves GG.setProgress('rescue', { done: [level numbers rescued], last }). */
@@ -80,7 +82,9 @@
       splash: function () { noise({ type: 'lowpass', freq: 2200, to: 400, q: 0.6, attack: 0.01, dur: 0.5, gain: 0.2 }); },
       flump: function () { noise({ type: 'lowpass', freq: 320, q: 0.8, attack: 0.01, dur: 0.3, gain: 0.25 }); tone({ f: 240, to: 120, dur: 0.25, gain: 0.08, slide: 0.2, delay: 0.05 }); },
       rustle: function () { for (var i = 0; i < 6; i++) noise({ freq: 3000 + i * 200, q: 1.5, dur: 0.05, gain: 0.07, delay: i * 0.05 }); },
-      boing: function (delay) { tone({ f: 300, to: 520, dur: 0.18, gain: 0.07, slide: 0.15, delay: delay }); }
+      boing: function (delay) { tone({ f: 300, to: 520, dur: 0.18, gain: 0.07, slide: 0.15, delay: delay }); },
+      pour: function () { noise({ type: 'lowpass', freq: 1400, to: 500, q: 0.7, attack: 0.02, dur: 0.22, gain: 0.08 }); },
+      gulp: function () { tone({ f: 520, to: 260, dur: 0.14, gain: 0.07, type: 'triangle', slide: 0.12 }); noise({ type: 'lowpass', freq: 900, to: 300, q: 0.8, dur: 0.12, gain: 0.07 }); }
     };
   })();
 
@@ -241,13 +245,16 @@
     if (rot || sx !== undefined) { c.save(); c.translate(x, y); if (rot) c.rotate(rot); c.scale(sx || 1, sy || sx || 1); c.drawImage(cv, -w / 2, -w / 2, w, w); c.restore(); }
     else c.drawImage(cv, x - w / 2, y - w / 2, w, w);
   }
-  function pieceSprite(v) { return sprite('p' + v.k + (v.sp || '') + (v.sp === 'cush' ? v.kit : ''), function (c) { if (v.sp === 'cush') drawCushion(c, v.kit); else drawPiece(c, v.k, v.sp); }); }
+  function pieceSprite(v) {
+    if (v.sp === 'fill') { var n = v.id % 3; return sprite('fill' + level.peril + n, function (c) { SC.fillTile(c, level.peril, n, lw(5)); }); }
+    return sprite('p' + v.k + (v.sp || '') + (v.sp === 'cush' ? v.kit : ''), function (c) { if (v.sp === 'cush') drawCushion(c, v.kit); else drawPiece(c, v.k, v.sp); });
+  }
 
   /* ================= layout ================= */
   var canvas = $('stage'), ctx = canvas.getContext('2d'), dpr = 1, W = 0, H = 0;
   var T = 40, BX = 0, BY = 0, SX = 0, SY = 0, SW = 300, SH = 180, side = false;
   var R = 8, C = 8;
-  var WB = 24, wallShown = [], wallMax = [], wallShake = [], pour = [];
+  var WB = 24, wallShown = [], wallMax = [], wallShake = [], pour = [], gush = [];
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2.5); W = innerWidth; H = innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -308,7 +315,7 @@
   var V = {}, boxes = {};                 // what's on screen: pieces by id, boxes by cell
   var parts = [], fx = [], actors = [];   // particles, specials' effects, kittens running to safety
   var scn = { mode: 'play', mt: 0, t: 0, saved: [], reserved: 0 };
-  var shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, wall: 0 };
+  var shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, fill: 0 };
   var pDisp = 0, busy = false, phase = 'list', sel = null, cursor = null, idle = 0, hint = null, hintT = 0, plusUsed = false;
   var PG = (function () { var p = {}; try { p = GG.getProgress('rescue') || {}; } catch (e) {} if (!Array.isArray(p.done)) p.done = []; p.done = p.done.filter(function (n) { return n >= 1 && n <= LEVELS.length; }); return p; })();
   function save() { try { GG.setProgress('rescue', PG); } catch (e) {} }
@@ -316,7 +323,7 @@
   function nextLevel() { for (var i = 1; i <= LEVELS.length; i++) if (PG.done.indexOf(i) < 0) return Math.min(i, maxDone() + 1); return LEVELS.length; }
   function unlocked(n) { return n <= maxDone() + 1; }
 
-  function newV(id, k, sp, r, c) { return { id: id, k: k, sp: sp, tg: false, kit: 0, x: c, y: r, path: null, pt: 0, pop: null, land: 1, made: 1, rot: 0 }; }
+  function newV(id, k, sp, r, c) { return { id: id, k: k, sp: sp, tg: false, kit: 0, x: c, y: r, path: null, pt: 0, pop: null, out: null, land: 1, made: 1, rot: 0 }; }
   function syncView() {
     var seen = {};
     for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) {
@@ -331,13 +338,21 @@
       if (b) { var vb = boxes[key]; if (!vb || vb.id !== b.id) boxes[key] = { id: b.id, hp: b.hp, kit: b.kit, shake: 0 }; else vb.hp = b.hp; }
       else delete boxes[key];
     }
-    for (var id in V) if (!seen[id] && !V[id].pop) delete V[id];
+    for (var id in V) if (!seen[id] && !V[id].pop && V[id].out === null) delete V[id];
   }
 
   /* ================= starting a rescue ================= */
+  /* the filling, in words, for each peril: the goal, what the goal counts, and how it comes in */
+  var FILLTXT = {
+    bath: { goal: 'drain the bath water', count: 'bits of bath water drained', tip: 'The water pours in through the gap and trickles down. Clear the pieces under it to drain it out of the bottom faster.' },
+    tree: { goal: 'clear the fallen leaves', count: 'leaves cleared', tip: 'The leaves tumble in through the gap and drift down. Clear the pieces under them to sweep them out of the bottom faster.' },
+    rain: { goal: 'drain the rainwater', count: 'bits of rainwater drained', tip: 'The rainwater pours in through the gap and trickles down. Clear the pieces under it to drain it out of the bottom faster.' },
+    tide: { goal: 'drain the seawater', count: 'bits of seawater drained', tip: 'The seawater pours in through the gap and trickles down. Clear the pieces under it to drain it out of the bottom faster.' },
+    laundry: { goal: 'clear the socks', count: 'socks cleared', tip: 'The socks tumble in through the gap and drift down. Clear the pieces under them to sweep them out of the bottom faster.' }
+  };
   function goalText(g) {
     var parts = [];
-    if (st && st.goal.wall) parts.push('knock down the wall');
+    if (st && st.goal.fill) parts.push(FILLTXT[level.peril].goal);
     if (g.boxes) parts.push('break ' + g.boxes + ' boxes');
     if (g.yarn) parts.push('untangle ' + g.yarn + ' yarn' + (g.yarn > 1 ? 's' : ''));
     if (g.kittens) parts.push(g.kittens === 1 ? 'free the kitten' : 'free ' + g.kittens + ' kittens');
@@ -345,16 +360,17 @@
     var s = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-  var BEFORE = { bath: 'before the bath fills up', tree: 'before the branch bends down', rain: 'before the rain cloud arrives', tide: 'before the tide comes in', laundry: 'before the washing topples' };
+  var BEFORE = { bath: 'gets splashed', tree: 'tumbles into the leaves', rain: 'gets rained on', tide: 'gets soaked by a wave', laundry: 'gets buried in socks' };
+  function fillTip() { return 'Match in the top row to knock out a brick. ' + FILLTXT[level.peril].tip; }
   function start(n, quiet) {
     lvN = clamp(n | 0, 1, LEVELS.length); level = LEVELS[lvN - 1];
     st = E.make(level, Math.floor(Math.random() * 2147483647));
     R = st.R; C = st.C;
     V = {}; boxes = {}; parts = []; fx = []; actors = []; tasks = [];
     scn = { mode: 'play', mt: 0, t: scn.t || 0, saved: [], reserved: 0 };
-    shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, wall: 0 };
-    wallShown = st.wall.slice(); wallMax = st.wall.slice(); wallShake = st.wall.map(function () { return 0; }); pour = st.wall.map(function () { return 0; });
-    pDisp = 0; busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
+    shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, fill: 0 };
+    wallShown = st.wall.slice(); wallMax = st.wall.slice(); wallShake = st.wall.map(function () { return 0; }); pour = st.wall.map(function () { return 0; }); gush = pour.slice();
+    pDisp = fillShare(); busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
     syncView();
     // the board arrives with a little drop
     for (var id in V) { var v = V[id]; v.path = [[0, v.y - R - 1 + (reduceMotion ? R : 0), v.x], [R + 1 - v.y * 0.3, v.y, v.x]]; v.pt = -v.x * 0.02; }
@@ -362,7 +378,7 @@
     $('levelLabel').textContent = 'Rescue ' + lvN;
     $('win').hidden = true; $('fail').hidden = true; $('hud').hidden = false;
     renderHud(true);
-    say(goalText(level.goal) + ' ' + BEFORE[level.peril] + '!', 'Match in the top row to knock out the brick above.' + (level.tip ? ' ' + level.tip : ''), 5);
+    say(goalText(level.goal) + ' before ' + level.cat.name + ' ' + BEFORE[level.peril] + '!', fillTip() + (level.tip ? ' ' + level.tip : ''), level.tip ? 9 : 7);
     if (!quiet && window.GG && GG.track) GG.track('Start level', { game: 'rescue', level: lvN });
     layout();
   }
@@ -381,18 +397,18 @@
     boxes: function (c) { drawBox(c, 1, -1); },
     yarn: function (c) { c.scale(0.9, 0.9); PIECES[3](c); drawTangle(c); },
     down: function (c) { drawCushion(c, 1); },
-    wall: function (c) { c.translate(-42, -22); SC.drawWall(c, '', [1, 1], [1, 1], 0, 0, 84, 44, 42, 0, null); }
+    fill: function (c) { SC.fillTile(c, level.peril, 0, lw(5)); }
   };
-  var GOAL_WORDS = { kittens: 'kittens freed', boxes: 'boxes broken', yarn: 'yarns untangled', down: 'cushion kittens brought down', wall: 'bricks knocked out' };
+  var GOAL_WORDS = { kittens: 'kittens freed', boxes: 'boxes broken', yarn: 'yarns untangled', down: 'cushion kittens brought down' };
   var goalEls = {};
   function renderHud(rebuild) {
     var box = $('goals');
     if (rebuild) {
       box.innerHTML = ''; goalEls = {};
-      ['wall', 'kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
+      ['fill', 'kittens', 'boxes', 'yarn', 'down'].forEach(function (k) {
         if (!st.goal[k]) return;
         var d = document.createElement('div'); d.className = 'goal';
-        d.innerHTML = '<img alt="" src="' + icon(k, GOAL_ICONS[k]) + '"><b></b><small></small>';
+        d.innerHTML = '<img alt="" src="' + icon(k === 'fill' ? 'fill' + level.peril : k, GOAL_ICONS[k]) + '"><b></b><small></small>';
         box.appendChild(d); goalEls[k] = d;
       });
     }
@@ -400,7 +416,7 @@
       var d = goalEls[k], got = Math.min(shown[k], st.goal[k]);
       d.querySelector('b').textContent = got; d.querySelector('small').textContent = '/' + st.goal[k];
       d.classList.toggle('done', got >= st.goal[k]);
-      d.setAttribute('aria-label', got + ' of ' + st.goal[k] + ' ' + GOAL_WORDS[k]);
+      d.setAttribute('aria-label', got + ' of ' + st.goal[k] + ' ' + (k === 'fill' ? FILLTXT[level.peril].count : GOAL_WORDS[k]));
     });
     var left = Math.max(0, Math.ceil(E.movesLeft(st) - 1e-6));
     if (lastLeft >= 0 && left > lastLeft && phase === 'play' && !reduceMotion) { var mv = $('moves'); mv.classList.remove('plus'); void mv.offsetWidth; mv.classList.add('plus'); setTimeout(function () { mv.classList.remove('plus'); }, 900); }
@@ -524,7 +540,7 @@
     var x = cx(wb.c), y = BY - WB / 2;
     wallShown[wb.c] = wb.hp; wallShake[wb.c] = 0.3;
     if (!wb.broke) { Sound.thud(); buzz(8); burst(x, y, '#E58F74', 4, 'dot', 0.6); return; }
-    Sound.crunch(); buzz(14); count('wall');
+    Sound.crunch(); buzz(14);
     for (var i = 0; i < (reduceMotion ? 3 : 7); i++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-WB * 0.3, WB * 0.3), vx: rand(-160, 160) * (T / 60), vy: rand(-300, -100) * (T / 60), life: 0, max: rand(0.6, 0.9), r: T * rand(0.06, 0.1), col: '#E58F74', shape: 'brick', rot: rand(0, TAU), vr: rand(-10, 10), g: 900 });
     pour[wb.c] = 1;
   }
@@ -578,13 +594,17 @@
         Sound.swap(); buzz(6);
         renderHud(false);
         await tween(reduceMotion ? 0.08 : 0.17, function (p) { var k = ease(p); va.x = lerp(ev.a[1], ev.b[1], k); va.y = lerp(ev.a[0], ev.b[0], k); vb.x = lerp(ev.b[1], ev.a[1], k); vb.y = lerp(ev.b[0], ev.a[0], k); });
-      } else if (ev.type === 'drain') { renderHud(false); }
-      else if (ev.type === 'pass') await playPass(ev);
+      } else if (ev.type === 'pass') await playPass(ev);
       else if (ev.type === 'fall') await playFall(ev);
       else if (ev.type === 'down') {
         ev.list.forEach(function (d) { delete V[d.id]; burst(cx(d.c), cy(d.r), '#FF8FAB', 8, 'star', 0.8); freeKitten(KITTENS[d.kit], d.r, d.c, 'down'); });
         Sound.chime();
         await wait(0.25);
+      } else if (ev.type === 'drainout') {
+        // the filling slips out of the bottom of the board
+        ev.list.forEach(function (d) { var v = V[d.id]; if (v) { v.out = 0; v.x = d.c; v.y = d.r; } burst(cx(d.c), BY + (d.r + 1) * T, FILLCOL[level.peril] || '#8FD3FF', reduceMotion ? 2 : 6, 'dot', 0.6); count('fill'); });
+        Sound.gulp(); buzz(8);
+        await wait(0.12);
       } else if (ev.type === 'shuffle') {
         say('No swaps left, so the pieces mix themselves up', null, 2);
         var from = {};
@@ -625,7 +645,10 @@
     if (ev.made.length) { Sound.made(); buzz(10); await wait(0.12); }
   }
   async function playFall(ev) {
-    ev.spawned.forEach(function (s) { V[s.id] = newV(s.id, s.k, null, -1, 0); });
+    ev.spawned.forEach(function (s) {
+      V[s.id] = newV(s.id, s.k, s.sp || null, -1, 0);
+      if (s.fill) later(Math.max(0, (ev.paths[s.id] ? ev.paths[s.id][0][0] : 0) * TK - 0.12), function () { gush[s.c] = 1; Sound.pour(); });
+    });
     var moving = [];
     for (var id in ev.paths) { var v = V[id]; if (!v) continue; v.path = ev.paths[id]; v.pt = 0; moving.push(v); }
     await until(function () { for (var i = 0; i < moving.length; i++) if (moving[i].path) return false; return true; });
@@ -750,7 +773,7 @@
     if (r < 0 || c < 0 || r >= R || c >= C || !st.mask[r][c]) return null;
     return [r, c];
   }
-  function canPick(rc) { var p = st.g[rc[0]][rc[1]]; return !!p && !p.tg && p.sp !== 'cush'; }
+  function canPick(rc) { var p = st.g[rc[0]][rc[1]]; return !!p && !p.tg && !E.fixed(p); }
   var drag = null;
   canvas.addEventListener('pointerdown', function (e) {
     Sound.init();
@@ -836,10 +859,13 @@
       var sx = b.shake > 0 && !reduceMotion ? Math.sin(b.shake * 60) * T * 0.05 : 0;
       blit(c, sprite('b' + b.hp + ':' + b.kit, function (cc) { drawBox(cc, b.hp, b.kit); }), cx(bc) + sx, cy(br2), T);
     }
-    // pieces
-    var hintIds = hint ? [hint.a, hint.b] : [];
-    for (var id in V) {
-      var v = V[id], x = cx(v.x), y = cy(v.y), s = T, rot = 0, sxk = 1, syk = 1;
+    // pieces, then the filling over them (so a piece bobbing up through it passes behind)
+    var hintIds = hint ? [hint.a, hint.b] : [], order = [];
+    for (var id0 in V) if (V[id0].sp !== 'fill') order.push(id0);
+    for (var id1 in V) if (V[id1].sp === 'fill') order.push(id1);
+    for (var oi = 0; oi < order.length; oi++) {
+      var id = order[oi], v = V[id]; if (!v) continue;
+      var x = cx(v.x), y = cy(v.y), s = T, rot = 0, sxk = 1, syk = 1;
       if (v.pop !== null) {
         v.pop += dt;
         if (v.pop >= 0.26) { delete V[id]; continue; }
@@ -849,6 +875,11 @@
           var u = v.pop / 0.26; s = T * (u < 0.35 ? lerp(1, 1.2, u / 0.35) : lerp(1.2, 0, (u - 0.35) / 0.65));
           if (v.merge) { x = lerp(x, cx(v.merge[1]), u); y = lerp(y, cy(v.merge[0]), u); }
         }
+      }
+      if (v.out !== null) {
+        // draining out: it slides down through the bottom edge (the board's clip hides it as it goes)
+        v.out += dt; if (v.out >= 0.32) { delete V[id]; continue; }
+        var uo = v.out / 0.32; y += T * 1.05 * uo * uo; syk = 1 + uo * 0.25; sxk = 1 - uo * 0.2;
       }
       if (v.land < 1) { var l = Math.sin(v.land * Math.PI); syk = 1 - l * 0.12; sxk = 1 + l * 0.08; y += l * T * 0.05; }
       if (v.made < 1) s *= back(v.made);
@@ -878,22 +909,39 @@
     SC.draw(c, level.peril, { p: pDisp, t: scn.t, mode: scn.mode, mt: scn.mt, cat: level.cat, saved: scn.saved, reduce: reduceMotion }, SX, SY, SW, true, SV);
     for (var k = 0; k < C; k++) if (wallShake[k] > 0) wallShake[k] -= dt;
     SC.drawWall(c, level.peril, wallShown, wallMax, x, BY - WB, w, WB, T, scn.t, wallShake);
-    // the filling pours down through each gap, into the top of the board, while there's any left to drain
-    var col = FILLCOL[level.peril] || '#8FD3FF', flowing = pDisp > 0.01 && scn.mode === 'play';
+    // the filling trickles through each gap while there's any left behind the wall, and gushes into the top cell
+    // as each bit of it pours in (gush). Water is a stream; leaves and socks tumble through as little bits.
+    var col = FILLCOL[level.peril] || '#8FD3FF', flowing = st.res > 0 && scn.mode === 'play', bits = SC.FILL[level.peril].kind === 'pile';
     for (var g2 = 0; g2 < C; g2++) {
+      gush[g2] = Math.max(0, gush[g2] - dt * 2.2);
       if (!wallMax[g2] || wallShown[g2] > 0) continue;
       pour[g2] = Math.max(0, Math.min(1, pour[g2] + (flowing ? dt * 2 : -dt)));
-      if (pour[g2] <= 0) continue;
-      var px = cx(g2), wid = T * 0.34 * pour[g2], y0 = BY - WB - 2, y1 = BY + T * 0.35;
-      c.save(); c.globalAlpha = 0.85 * pour[g2];
-      c.beginPath(); c.moveTo(px - wid / 2, y0); c.quadraticCurveTo(px - wid * 0.6, (y0 + y1) / 2, px - wid * 0.3, y1); c.lineTo(px + wid * 0.3, y1); c.quadraticCurveTo(px + wid * 0.6, (y0 + y1) / 2, px + wid / 2, y0); c.closePath();
-      c.fillStyle = col; c.fill(); c.lineWidth = 2; c.strokeStyle = 'rgba(42,35,64,.35)'; c.stroke();
-      for (var dI = 0; dI < 3; dI++) { var ph = (scn.t * 1.6 + dI / 3 + g2 * 0.13) % 1; c.beginPath(); c.arc(px + Math.sin(ph * 9 + g2) * wid * 0.3, lerp(y0, y1 + T * 0.2, ph), Math.max(1.5, T * 0.05), 0, TAU); c.fillStyle = '#FFFFFF'; c.globalAlpha = 0.7 * pour[g2] * (1 - ph); c.fill(); }
+      var gp = eout(gush[g2]), amt = Math.max(pour[g2] * 0.55, gp);
+      if (amt <= 0.01) continue;
+      var px = cx(g2), wid = T * (0.2 + 0.34 * gp) * amt, y0 = BY - WB - 2, y1 = BY + T * (0.2 + 0.55 * gp);
+      c.save(); c.beginPath(); c.rect(px - T / 2, y0, T, y1 - y0 + T * 0.3); c.clip();
+      if (!bits) {
+        c.globalAlpha = 0.9 * Math.min(1, amt * 1.4);
+        c.beginPath(); c.moveTo(px - wid / 2, y0); c.quadraticCurveTo(px - wid * 0.62, (y0 + y1) / 2, px - wid * 0.32, y1); c.quadraticCurveTo(px, y1 + wid * 0.35, px + wid * 0.32, y1); c.quadraticCurveTo(px + wid * 0.62, (y0 + y1) / 2, px + wid / 2, y0); c.closePath();
+        c.fillStyle = col; c.fill(); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = Math.max(1.5, wid * 0.14); c.beginPath(); c.moveTo(px - wid * 0.2, y0 + 3); c.quadraticCurveTo(px - wid * 0.3, (y0 + y1) / 2, px - wid * 0.14, y1 - 4); c.stroke();
+        for (var dI = 0; dI < 3; dI++) { var ph = (scn.t * 1.6 + dI / 3 + g2 * 0.13) % 1; c.beginPath(); c.arc(px + Math.sin(ph * 9 + g2) * wid * 0.25, lerp(y0, y1 + T * 0.15, ph), Math.max(1.5, T * 0.045), 0, TAU); c.fillStyle = '#FFFFFF'; c.globalAlpha = 0.8 * amt * (1 - ph); c.fill(); }
+      } else {
+        var nb = gp > 0.05 ? 5 : 2;
+        for (var bI = 0; bI < nb; bI++) {
+          var ph2 = (scn.t * (gp > 0.05 ? 2.4 : 1.3) + bI / nb + g2 * 0.17) % 1;
+          c.save(); c.globalAlpha = Math.min(1, amt * 1.6) * (ph2 < 0.8 ? 1 : (1 - ph2) * 5);
+          c.translate(px + Math.sin(ph2 * 7 + bI + g2) * T * 0.12, lerp(y0 - T * 0.1, y1 + T * 0.2, ph2)); c.rotate(ph2 * 4 + bI);
+          var ks = T / 100; c.scale(ks, ks); SC.chunk(c, level.peril, gp > 0.05 ? 20 : 15, g2 * 3 + bI, lw(4)); c.restore();
+        }
+      }
       c.restore();
     }
     c.save(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(outline); c.restore();
   }
 
+  /* how full the scene looks: mostly the filling still behind the wall, and a little for what's still in the board */
+  function fillShare() { var n = st.fillN; return n ? clamp(0.85 * st.res / n + 0.15 * (n - st.got.fill) / n, 0, 1) : 0; }
   var last = performance.now();
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000) * SPEED; last = now;
@@ -903,7 +951,7 @@
     if (freeze) { scn.mode = freeze.mode; scn.mt = freeze.mt; if (freeze.p !== undefined) pDisp = freeze.p; }
     if (sayTimer > 0) { sayTimer -= dt; if (sayTimer <= 0) $('say').classList.add('hide'); }
     if (st) {
-      var target = clamp((st.used - st.drained) / (st.moves + st.extra), 0, 1);
+      var target = fillShare();
       if (!freeze) pDisp += (target - pDisp) * Math.min(1, dt * 3);
       if (phase === 'play' && !busy) {
         idle += dt;
@@ -937,7 +985,8 @@
   /* ================= test hook ================= */
   window.__rescue = {
     state: function () {
-      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, saved: scn.saved.filter(Boolean).length, progress: JSON.parse(JSON.stringify(PG)) };
+      var fill = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) if (st.g[r][c] && st.g[r][c].sp === 'fill') fill++;
+      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, saved: scn.saved.filter(Boolean).length, res: st.res, fillIn: fill, gaps: E.gaps(st), progress: JSON.parse(JSON.stringify(PG)) };
     },
     jump: function (n) { $('listWrap').hidden = true; start(n); return until(function () { for (var id in V) if (V[id].path) return false; return true; }); },
     swap: function (r1, c1, r2, c2) { return doSwap(r1, c1, r2, c2); },

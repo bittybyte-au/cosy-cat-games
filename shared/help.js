@@ -106,6 +106,7 @@
     rescue: { name: 'Cat Rescue', lines: [
       'Swap two pieces next to each other to make a line of three.',
       'Match three next to a box to break it open and free the kitten.',
+      'Match in the top row to knock out a brick. The water (or leaves, or socks) pours in through the gap: clear the pieces under it to drain it out of the bottom.',
       'Reach the goal before the moves run out to save the cat.',
       'Four in a row, an L or T shape, or five in a row make special pieces.'] },
     hotpaws: { name: 'Hot Paws', lines: [
