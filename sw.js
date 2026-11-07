@@ -5,12 +5,12 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-2f15b7ccf7';
+const VERSION = 'ccg-1452b1a4b1';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
-  "./play/": "2cb16b88da",
-  "./play/index.html": "2cb16b88da",
+  "./play/": "285737f6ed",
+  "./play/index.html": "285737f6ed",
   "./about/": "57a9f2a762",
   "./about/index.html": "57a9f2a762",
   "./faq/": "a3dc412a35",
@@ -27,6 +27,7 @@ const FILES = {
   "./shared/games.js": "2721390ddc",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
+  "./shared/scene.js": "d8f3af58f0",
   "./shared/site.css": "be553f2b0e",
   "./shared/store.js": "e38fa9fa84",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
@@ -65,9 +66,9 @@ const FILES = {
   "./games/feed/game.js": "78cfa78093",
   "./games/feed/": "3457483eab",
   "./games/feed/index.html": "3457483eab",
-  "./games/grow/game.js": "8f0e30630d",
-  "./games/grow/": "122dccd943",
-  "./games/grow/index.html": "122dccd943",
+  "./games/grow/game.js": "b492603746",
+  "./games/grow/": "74c42e3180",
+  "./games/grow/index.html": "74c42e3180",
   "./games/grow/plants.js": "04798ad177",
   "./games/home/game.js": "2d4a31bc5b",
   "./games/home/": "85a035942a",
@@ -111,9 +112,9 @@ const FILES = {
   "./games/rooftop/game.js": "e551103935",
   "./games/rooftop/": "d7b6e10f5b",
   "./games/rooftop/index.html": "d7b6e10f5b",
-  "./games/seek/game.js": "e3217528f5",
-  "./games/seek/": "eea616cf33",
-  "./games/seek/index.html": "eea616cf33",
+  "./games/seek/game.js": "86675d7a5a",
+  "./games/seek/": "3015503f5b",
+  "./games/seek/index.html": "3015503f5b",
   "./games/slide/game.js": "1c7b05868b",
   "./games/slide/": "05a6b8e255",
   "./games/slide/index.html": "05a6b8e255",
