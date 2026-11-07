@@ -7,33 +7,36 @@
      'rain'       rainbow yarn (k -1): swapped with a piece, clears every piece of that kind   (made by 5 in a line)
      'cush'       a kitten on a cushion (k -1): never matches or swaps; it falls as pieces under it clear,
                   and is rescued when it reaches the bottom of its column
-     'pile'       a cell of the heap (k -1): the peril's filling (bubble foam, leaves, mud, wet sand, socks) heaped
-                  up in the board like sand. It never matches or swaps; a blast that reaches it clears it. It moves
-                  before anything else as the board settles: down into an empty cell below, or else diagonally down
-                  into an empty cell beside that, so the heap slumps into every space cleared under it. A column's
-                  top cell under the heap's reservoir takes more heap instead of a new piece while the reservoir
-                  lasts. Heap in a column's bottom cell pours out of the board through the drain (one cell per
-                  column each time the board settles). Cleared and poured-out heap both count in got.pile.
    p.tg = a yarn tangle round the piece: it can't be swapped and doesn't fall. Anything that would clear the
    piece (a match it is part of, or a blast) takes the yarn off instead, and the piece stays.
    Boxes (hp 1, or 2 when taped) take one hit from each match made next to them, and from any blast that reaches
    them. Some hold a kitten (kit >= 0), which is freed when the box breaks.
 
+   The heap: the peril's filling (bubble foam, leaves, mud, wet sand, socks), st.heap units of it, heaped up in the
+   rescue scene above the board, and more of it (st.src units) still to come from the peril's source at the top of
+   the scene (the tap, the tree, the rain cloud, the washing, the waves): after each move up to def.feed units fall
+   in from the top onto the heap, until the source runs dry. Some of the board's top cells start open ('o' in the map, st.open): cut out of the
+   board for good, a hole the heap can tumble into. A cell that's emptied with an open cell straight above it opens
+   too, as nothing can ever fall into it again; so clearing the pieces under a hole (or clearing anything next to
+   the piece at the bottom of a hole, which digs that piece out too) digs it down as a channel (boxes,
+   tangles and cushions are in the way until they've gone), and cells only ever open downwards, in the columns that
+   started open. No piece ever goes into an open cell. The heap fills the open cells from the lowest up (that's all
+   drawing: it doesn't block anything), and once a channel reaches the bottom of the board, the heap pours out
+   through it: after each move DRAIN units per open bottom cell. Pouring all of it out, the heap and everything the
+   source still had to give, is the 'pile' goal.
+
    swap(state, r1, c1, r2, c2) plays a move and returns a log of what happened, step by step, for the game to
-   animate: 'nope' | 'swap' | 'pass' (things cleared, heap blasted, boxes hit, yarn off, specials made) | 'fall'
-   (each piece's path, one cell per tick; spawned heap cells have pile: true, poured down from the reservoir) |
-   'down' (cushion kittens reaching the bottom) | 'drainout' (heap pouring out of the bottom) | 'shuffle'.
-   Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
-   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'p' a cell of the heap.
-   The heap's reservoir (def.res cells of it, st.res) sits above the board, in the rescue scene, over the columns
-   whose top cell starts as heap (st.pour). Clearing the whole heap, the cells in the board and the reservoir, is
-   the 'pile' goal. */
+   animate: 'nope' | 'swap' | 'pass' (things cleared, boxes hit, yarn off, specials made) | 'fall' (each piece's
+   path, one cell per tick, and the cells that opened: opened [[r, c, tick]]) | 'down' (cushion kittens reaching
+   the bottom) | 'drainout' (heap pouring out: n units, through the columns cols) | 'feed' (n units falling in
+   from the source) | 'shuffle'.
+   Level map characters: '.' piece, '#' no cell, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
+   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'o' an open cell (a hole for the heap). */
 (function () {
   'use strict';
 
   var SPECIAL = { zh: 1, zv: 1, nip: 1, rain: 1 };
-  var PILE_CAP = 0.4;   // the reservoir stops pouring while this much of the board's open cells is heap already (so it can't clog)
-  var ADJ = true;   // a match sweeps away the heap next to it
+  var DRAIN = 2;   // units of heap pouring out of each open bottom cell after every move
   var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'pile'];
 
   function rnd(st) {
@@ -56,24 +59,22 @@
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
       goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 },
-      moves: def.moves, used: 0, extra: 0, res: def.res | 0, top: [], bottom: [], pour: [], cells: 0
+      moves: def.moves, used: 0, extra: 0, heap: def.heap | 0, src: def.src | 0, feed: def.feed || 1, open: [], top: [], bottom: []
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
-    st.goal.pile = st.res;
+    st.goal.pile = st.heap + st.src;
     var randomCells = [];
     for (var r = 0; r < R; r++) {
-      st.mask.push([]); st.g.push([]); st.box.push([]);
+      st.mask.push([]); st.g.push([]); st.box.push([]); st.open.push([]);
       for (var c = 0; c < C; c++) {
         var ch = def.map[r].charAt(c) || '#';
         st.mask[r].push(ch !== '#' && ch !== ' ');
-        st.g[r].push(null); st.box[r].push(null);
+        st.g[r].push(null); st.box[r].push(null); st.open[r].push(ch === 'o');
         if (ch === 'b' || ch === 'B' || ch === 'k' || ch === 'K') {
           var kit = ch === 'k' || ch === 'K';
           st.box[r][c] = { id: st.nid++, hp: ch === 'B' || ch === 'K' ? 2 : 1, kit: kit ? (st.kitN++ % 6) : -1 };
         } else if (ch === 'c') {
           var cu = piece(st, -1, 'cush'); cu.kit = st.kitN++ % 6; st.g[r][c] = cu;
-        } else if (ch === 'p') {
-          st.g[r][c] = piece(st, -1, 'pile'); st.goal.pile++;
         } else if (ch === '.' || ch === 't') {
           var p = piece(st, 0); p.tg = ch === 't'; st.g[r][c] = p; randomCells.push([r, c]);
         }
@@ -81,9 +82,7 @@
     }
     for (var cc = 0; cc < C; cc++) {
       st.top[cc] = -1; st.bottom[cc] = -1;
-      for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; if (!st.box[rr][cc]) st.cells++; }
-      // the reservoir pours into the columns whose top cell starts as heap
-      st.pour[cc] = st.top[cc] >= 0 && def.map[st.top[cc]].charAt(cc) === 'p';
+      for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; }
     }
     // colour the pieces with no ready-made lines, and at least one move
     for (var tries = 0; tries < 200; tries++) {
@@ -102,7 +101,8 @@
   function clone(st) {
     var o = {}, k;
     for (k in st) o[k] = st[k];
-    o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours; o.pour = st.pour;
+    o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours;
+    o.open = st.open.map(function (row) { return row.slice(); });
     o.goal = st.goal;
     o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, pile: st.got.pile };
     o.g = []; o.box = [];
@@ -119,9 +119,10 @@
   }
 
   /* ---------- looking at the board ---------- */
-  function inside(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c]; }
+  function inside(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c] && !st.open[r][c]; }
+  function isOpen(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c] && st.open[r][c]; }
   function kindAt(st, r, c) { if (!inside(st, r, c)) return -1; var p = st.g[r][c]; return p ? p.k : -1; }
-  function fixed(p) { return p.sp === 'cush' || p.sp === 'pile'; }   // pieces that never swap or match
+  function fixed(p) { return p.sp === 'cush'; }   // pieces that never swap or match
   function swappable(st, r, c) { if (!inside(st, r, c)) return false; var p = st.g[r][c]; return !!p && !p.tg && !fixed(p); }
   function isSp(p) { return !!(p && SPECIAL[p.sp]); }
 
@@ -198,7 +199,9 @@
   }
   function won(st) { for (var i = 0; i < GOALS.length; i++) if (st.got[GOALS[i]] < st.goal[GOALS[i]]) return false; return true; }
   function movesLeft(st) { return st.moves + st.extra - st.used; }
-  function pileN(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'pile') n++; } return n; }
+  function openN(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) if (isOpen(st, r, c)) n++; return n; }
+  /* the channels: columns whose bottom cell is open, so the heap pours out through them */
+  function channels(st) { var n = 0; for (var c = 0; c < st.C; c++) if (st.bottom[c] >= 0 && st.open[st.bottom[c]][c]) n++; return n; }
 
   /* ---------- one clearing pass ---------- */
   function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], chain: 0 }; }
@@ -254,7 +257,7 @@
       keep[at[0] * 64 + at[1]] = 1;
       made.push({ r: at[0], c: at[1], sp: sp, k: g.k });
     });
-    // a match breaks one layer off each box next to it
+    // a match breaks one layer off each box next to it, and digs out the floor of a hole next to it
     groups.forEach(function (g) {
       var seen = {};
       g.cells.forEach(function (p) {
@@ -262,7 +265,7 @@
           var r = p[0] + o[0], c = p[1] + o[1];
           if (!inside(st, r, c) || seen[r * 64 + c]) return;
           if (st.box[r][c]) { seen[r * 64 + c] = 1; q.push([r, c, 0.05, 1]); }
-          else if (ADJ && isPile(st, r, c)) { seen[r * 64 + c] = 1; q.push([r, c, 0.08]); }
+          else if (isOpen(st, r - 1, c)) { seen[r * 64 + c] = 1; q.push([r, c, 0.06]); }   // the floor of a hole: dug out
         });
       });
       g.cells.forEach(function (p) { q.push([p[0], p[1], 0]); });
@@ -281,10 +284,11 @@
       if (!p) continue;
       if (p.tg) { p.tg = false; st.got.yarn++; ev.untangled.push({ id: p.id, r: r, c: c, d: d }); continue; }
       if (p.sp === 'cush') continue;
-      if (p.sp === 'pile') st.got.pile++;   // (only a blast gets here: a match never holds heap)
       st.g[r][c] = null;
       ev.removed.push({ id: p.id, r: r, c: c, k: p.k, sp: p.sp, d: d });
       if (SPECIAL[p.sp]) fire(st, ev, p, r, c, d, q);
+      // anything cleared next to the floor of a hole digs that out too
+      [[1, 0], [0, 1], [0, -1]].forEach(function (o) { var y = r + o[0], x = c + o[1]; if (inside(st, y, x) && !st.box[y][x] && st.g[y][x] && isOpen(st, y - 1, x)) q.push([y, x, d + 0.06]); });
     }
     made.forEach(function (m) {
       var p = st.g[m.r][m.c];
@@ -298,7 +302,7 @@
   /* ---------- falling, one cell per tick ---------- */
   function supplied(st, r, c) {
     for (var y = r - 1; y >= st.top[c]; y--) {
-      if (!st.mask[y][c] || st.box[y][c]) return false;
+      if (!inside(st, y, c) || st.box[y][c]) return false;
       var p = st.g[y][c];
       if (p) return !p.tg;
     }
@@ -310,56 +314,42 @@
     else if (p[p.length - 1][0] < t) p.push([t, r0, c0]);
     p.push([t + 1, r1, c1]);
   }
-  function open(st, r, c) { return inside(st, r, c) && !st.box[r][c] && !st.g[r][c]; }
-  function isPile(st, r, c) { var p = inside(st, r, c) && st.g[r][c]; return !!p && p.sp === 'pile'; }
-  /* the reservoir pours into a top cell while there's any left (and the board isn't too full of heap already) */
-  function pours(st, c) { return st.pour[c] && st.res > 0 && pileN(st) < st.cells * PILE_CAP; }
-  /* One tick, in this order, so the heap always gets first go at a space:
-     1. heap falls straight down; 2. pieces fall straight down; 3. heap that couldn't fall slides diagonally down
-     into a space nothing above it can fill (under a box, a tangle or a hole), so it flows round them; 4. empty top cells get heap from the reservoir, or else a new piece;
-     5. cells nothing can fall into from above take a piece sliding down from the side. */
-  function tick(st, t, paths, spawned) {
-    var moved = false, did = {}, r, c, p;
-    for (r = st.R - 2; r >= 0; r--) for (c = 0; c < st.C; c++) {
-      p = st.g[r][c];
-      if (p && p.sp === 'pile' && !did[p.id] && open(st, r + 1, c)) { st.g[r + 1][c] = p; st.g[r][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r, c, r + 1, c); moved = true; }
+  function empty(st, r, c) { return inside(st, r, c) && !st.box[r][c] && !st.g[r][c]; }
+  /* an empty cell with an open cell straight above it opens: nothing can ever fall into it again */
+  function dig(st, t, opened) {
+    var any = false;
+    for (var r = 1; r < st.R; r++) for (var c = 0; c < st.C; c++) {
+      if (empty(st, r, c) && isOpen(st, r - 1, c)) { st.open[r][c] = true; opened.push([r, c, t]); any = true; }
     }
+    return any;
+  }
+  /* One tick: open what's been dug out, pieces fall straight down, empty top cells get a new piece, open again (a
+     piece that just fell out from under a hole leaves a cell nothing can reach), then cells nothing can fall into
+     take a piece sliding down from the side. */
+  function tick(st, t, paths, spawned, opened) {
+    var moved = dig(st, t, opened), did = {}, r, c, p;
     for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
-      if (!open(st, r, c) || r <= st.top[c] || !st.mask[r - 1][c] || st.box[r - 1][c]) continue;
+      if (!empty(st, r, c) || r <= st.top[c] || !inside(st, r - 1, c) || st.box[r - 1][c]) continue;
       p = st.g[r - 1][c];
-      if (p && !p.tg && p.sp !== 'pile' && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
-    }
-    for (r = st.R - 2; r >= 0; r--) for (c = 0; c < st.C; c++) {
-      p = st.g[r][c];
-      if (!p || p.sp !== 'pile' || did[p.id] || open(st, r + 1, c)) continue;
-      var sides = (r + c + t) & 1 ? [-1, 1] : [1, -1];
-      for (var i = 0; i < 2; i++) {
-        var sc = c + sides[i];
-        if (!open(st, r + 1, sc) || supplied(st, r + 1, sc)) continue;
-        st.g[r + 1][sc] = p; st.g[r][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r, c, r + 1, sc); moved = true;
-        break;
-      }
+      if (p && !p.tg && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
     }
     for (c = 0; c < st.C; c++) {
       r = st.top[c];
-      if (r < 0 || !open(st, r, c)) continue;
-      var heap = pours(st, c);
-      p = heap ? piece(st, -1, 'pile') : piece(st, randomKind(st));
-      if (heap) st.res--;
-      st.g[r][c] = p; did[p.id] = 1;
-      spawned.push(heap ? { id: p.id, k: -1, sp: 'pile', pile: true, c: c } : { id: p.id, k: p.k });
-      paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
+      if (r < 0 || !empty(st, r, c)) continue;
+      p = piece(st, randomKind(st)); st.g[r][c] = p; did[p.id] = 1;
+      spawned.push({ id: p.id, k: p.k }); paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
     }
+    if (dig(st, t, opened)) moved = true;
     for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
-      if (!open(st, r, c) || supplied(st, r, c)) continue;
+      if (!empty(st, r, c) || supplied(st, r, c)) continue;
       var order = (t + r + c) & 1 ? [-1, 1] : [1, -1];
       for (var j = 0; j < 2; j++) {
-        var sc2 = c + order[j];
-        if (!inside(st, r - 1, sc2) || st.box[r - 1][sc2]) continue;
-        p = st.g[r - 1][sc2];
-        if (!p || p.tg || p.sp === 'pile' || did[p.id]) continue;
-        if (open(st, r, sc2)) continue; // it would rather fall straight down
-        st.g[r][c] = p; st.g[r - 1][sc2] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, sc2, r, c); moved = true;
+        var sc = c + order[j];
+        if (!inside(st, r - 1, sc) || st.box[r - 1][sc]) continue;
+        p = st.g[r - 1][sc];
+        if (!p || p.tg || did[p.id]) continue;
+        if (empty(st, r, sc)) continue; // it would rather fall straight down
+        st.g[r][c] = p; st.g[r - 1][sc] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, sc, r, c); moved = true;
         break;
       }
     }
@@ -374,34 +364,29 @@
     for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) if (st.g[r][c]) at[st.g[r][c].id] = [r, c];
     spawned.forEach(function (s) {
       var pos = at[s.id];
-      if (s.pile || !pos || rnd(st) < LUCKY) return;
+      if (!pos || rnd(st) < LUCKY) return;
       var p = st.g[pos[0]][pos[1]];
       if (!lineAt(st, pos[0], pos[1], p.k)) return;
       var opts = st.colours.filter(function (k) { return !lineAt(st, pos[0], pos[1], k); });
       if (opts.length) { p.k = pick(st, opts); s.k = p.k; }
     });
   }
-  /* the board settles; cushion kittens reaching the bottom are rescued, and heap in a bottom cell pours out
-     (each column pours up to DRAIN cells of it each time the board settles, so it streams out over a few moves) */
-  var DRAIN = 2;
+  /* the board settles; cushion kittens reaching the bottom are rescued */
   function fall(st, log) {
-    var poured = {};
     for (var loop = 0; loop < 30; loop++) {
-      var paths = {}, spawned = [], t = 0;
-      while (t < 300 && tick(st, t, paths, spawned)) t++;
+      var paths = {}, spawned = [], opened = [], t = 0;
+      while (t < 300 && tick(st, t, paths, spawned, opened)) t++;
       settleKinds(st, spawned);
-      if (t) log.push({ type: 'fall', paths: paths, spawned: spawned, ticks: t });
-      var downs = [], outs = [];
+      if (t) log.push({ type: 'fall', paths: paths, spawned: spawned, opened: opened, ticks: t });
+      var downs = [];
       for (var c = 0; c < st.C; c++) {
         var r = st.bottom[c];
         if (r < 0) continue;
         var p = st.g[r][c];
         if (p && p.sp === 'cush') { st.g[r][c] = null; st.got.down++; downs.push({ id: p.id, r: r, c: c, kit: p.kit }); }
-        else if (p && p.sp === 'pile' && (poured[c] | 0) < DRAIN) { st.g[r][c] = null; st.got.pile++; poured[c] = (poured[c] | 0) + 1; outs.push({ id: p.id, r: r, c: c }); }
       }
-      if (downs.length) log.push({ type: 'down', list: downs });
-      if (outs.length) log.push({ type: 'drainout', list: outs });
-      if (!downs.length && !outs.length) return;
+      if (!downs.length) return;
+      log.push({ type: 'down', list: downs });
     }
   }
 
@@ -489,6 +474,14 @@
       if (isSp(b)) seed.hits.push([r1, c1, 0]);
     }
     cascade(st, log, seed, [[r2, c2], [r1, c1]]);
+    // the heap pours out through every channel that's through to the bottom
+    var cols = [];
+    for (c = 0; c < st.C; c++) if (st.bottom[c] >= 0 && st.open[st.bottom[c]][c]) cols.push(c);
+    var n = Math.min(st.heap, cols.length * DRAIN);
+    if (n > 0) { st.heap -= n; st.got.pile += n; log.push({ type: 'drainout', n: n, cols: cols }); }
+    // and more falls in from the top while the source lasts
+    var f = Math.min(st.src, st.feed);
+    if (f > 0) { st.src -= f; st.heap += f; log.push({ type: 'feed', n: f }); }
     return log;
   }
 
@@ -506,37 +499,48 @@
   function depth(st, sp) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === sp) n += r; } return n; }
   function specials(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (isSp(p)) n += p.sp === 'rain' ? 2 : 1; } return n; }
   function need(st, k) { return st.got[k] < st.goal[k]; }
-  /* how much is still in the heap's way: for each cell of heap, the pieces under it in its column (more for a box
-     or a tangle), which have to go before it can pour out; the reservoir counts as a column's worth a cell */
-  function pileCost(st) {
-    var n = st.res * st.R;
-    for (var c = 0; c < st.C; c++) for (var r = 0; r < st.R; r++) {
-      var p = st.g[r][c]; if (!p || p.sp !== 'pile') continue;
-      for (var y = r + 1; y <= st.bottom[c]; y++) {
-        if (!st.mask[y][c]) continue;
-        var q = st.g[y][c];
-        if (st.box[y][c]) n += 3 * st.box[y][c].hp; else if (q && q.tg) n += 3; else if (q && q.sp !== 'pile') n += 1;
+  /* how much is still in the way of the channels: for each column that's open at the top and not through yet, the
+     cells under its hole (more for a box or a tangle); and the least of those, for the first channel through */
+  function digCost(st) {
+    var sum = 0, least = 99;
+    for (var c = 0; c < st.C; c++) {
+      var top = st.top[c];
+      if (top < 0 || !st.open[top][c]) continue;
+      if (st.open[st.bottom[c]][c]) { least = 0; continue; }
+      var n = 0;
+      for (var r = top; r <= st.bottom[c]; r++) {
+        if (!st.mask[r][c] || st.open[r][c]) continue;
+        var q = st.g[r][c];
+        n += st.box[r][c] ? 1 + 2 * st.box[r][c].hp : q && q.tg ? 3 : 1;
       }
+      sum += n; least = Math.min(least, n);
     }
-    return n;
+    return { sum: sum, least: least === 99 ? 0 : least };
   }
-  /* how much heap the specials on the board would clear if they went off */
-  function flush(st) {
-    var n = 0, r, c, y, x;
+  /* how much digging the specials on the board would do if they went off: any piece cleared under a hole digs it a
+     cell deeper (the pieces above it fall and leave the top cell with nothing to fill it) */
+  function digPotential(st) {
+    var n = 0, r, c, y, x, col = [];
+    for (c = 0; c < st.C; c++) col.push(st.top[c] >= 0 && st.open[st.top[c]][c] && !st.open[st.bottom[c]][c]);
+    var dug = function (y, x) { return x >= 0 && x < st.C && col[x] && inside(st, y, x) ? 1 : 0; };
     for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) {
       var p = st.g[r][c]; if (!isSp(p)) continue;
-      if (p.sp === 'zv') { for (y = 0; y < st.R; y++) if (isPile(st, y, c)) n++; }
-      else if (p.sp === 'zh') { for (x = 0; x < st.C; x++) if (isPile(st, r, x)) n++; }
-      else if (p.sp === 'nip') { for (y = r - 1; y <= r + 1; y++) for (x = c - 1; x <= c + 1; x++) if (isPile(st, y, x)) n++; }
+      if (p.sp === 'zh') { for (x = 0; x < st.C; x++) n += dug(r, x); }
+      else if (p.sp === 'zv') { for (y = 0; y < st.R; y++) n += dug(y, c); }
+      else if (p.sp === 'nip') { for (y = r - 1; y <= r + 1; y++) for (x = c - 1; x <= c + 1; x++) n += dug(y, x); }
     }
     return n;
   }
   function score(before, after) {
     var s = 0;
     var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
-    // the heap: clear it, and clear what's under it so it slumps down and pours out
+    // the heap: dig channels down under it to the bottom, so it pours out (the first one through matters most)
     var np = need(before, 'pile');
-    if (np) s += (after.got.pile - before.got.pile) * 30 + (pileCost(before) - pileCost(after)) * 6;
+    if (np) {
+      var d0 = digCost(before), d1 = digCost(after);
+      s += (d0.sum - d1.sum) * 10 + (d0.least - d1.least) * 14 + (channels(after) - channels(before)) * 40 + (after.got.pile - before.got.pile) * 6;
+      s += (digPotential(after) - digPotential(before)) * 5;
+    }
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);
@@ -544,7 +548,6 @@
     s += (boxHp(before) - boxHp(after)) * 6 + (boxHp(before, true) - boxHp(after, true)) * (need(before, 'kittens') ? 24 : 0);
     if (need(before, 'down')) s += (depth(after, 'cush') - depth(before, 'cush') + dd * 2) * 22;
     s += (specials(after) - specials(before)) * 7;
-    if (np) s += (flush(after) - flush(before)) * 12;
     return s;
   }
   function bestMove(st, rand) {
@@ -562,6 +565,6 @@
 
   window.RescueEngine = {
     make: make, clone: clone, swap: swap, blast: blast, swapWorks: swapWorks, allMoves: allMoves, hasMove: hasMove,
-    findGroups: findGroups, won: won, movesLeft: movesLeft, pileN: pileN, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, fixed: fixed
+    findGroups: findGroups, won: won, movesLeft: movesLeft, openN: openN, channels: channels, isOpen: isOpen, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, fixed: fixed
   };
 })();

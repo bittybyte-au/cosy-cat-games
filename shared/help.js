@@ -106,7 +106,7 @@
     rescue: { name: 'Cat Rescue', lines: [
       'Swap two pieces next to each other to make a line of three.',
       'Match three next to a box to break it open and free the kitten.',
-      'A heap of leaves (or bubbles, mud, sand or socks) spills into the board. Clear the tiles under it: it slides down into the space and pours out of the drain at the bottom. A match next to it sweeps some away.',
+      'Leaves (or bubbles, mud, sand or socks) keep falling in from the top. Clear the tiles under the hole to dig it down through the board: reach the bottom and they pour out!',
       'Reach the goal before the moves run out to save the cat.',
       'Four in a row, an L or T shape, or five in a row make special pieces.'] },
     hotpaws: { name: 'Hot Paws', lines: [

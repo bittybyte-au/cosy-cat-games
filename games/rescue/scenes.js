@@ -421,11 +421,10 @@
   var SCENES = { bath: bath, tree: tree, rain: rain, tide: tide, laundry: laundry };
 
   /* ================= the heap =================
-     Each peril's filling is heaped up over the cat and spills down into the board as one heap of sand-like stuff:
+     Each peril's filling heaps up round the cat and tumbles down through the holes dug in the board:
      bubble foam from the bath, autumn leaves under the tree, mud after the rain, wet sand with shells on the beach,
-     and odd socks from the washing. The game draws the heap's shape (one mass, one outline round its outer edge);
-     what's here is its material: a colour (col, and a lighter top, hi), and the bits it's made of (chunk), drawn
-     as a texture tile that the game lays over the heap. */
+     and odd socks from the washing. It's always loose bits, each its own little shape (chunk); heapTexture packs a
+     cell's worth of them, for the holes. */
   var HEAP = {
     bath: { word: 'bubbles', col: '#CFEAFF', hi: '#F4FBFF' },
     tree: { word: 'leaves', col: '#F0A35A', hi: '#FFC98A' },
@@ -483,14 +482,11 @@
       c.save(); c.translate(gx, gy); chunk(c, name, size * (0.85 + r() * 0.35), Math.floor(r() * 1000), lw); c.restore();
     }
   }
-  /* a little heap for the goal's icon, in a 100-unit box */
+  /* a little heap for the goal's icon, in a 100-unit box: loose bits piled up */
   function heapIcon(c, name, lw) {
-    var H0 = HEAP[name] || HEAP.bath;
-    var m = new Path2D(); m.moveTo(-44, 34); m.quadraticCurveTo(-46, 4, -22, -2); m.quadraticCurveTo(-14, -30, 6, -26); m.quadraticCurveTo(30, -30, 34, -2); m.quadraticCurveTo(48, 6, 44, 34); m.closePath();
-    D.shape(c, m, D.tone(c, H0.col, -30, 34), { lw: lw, depth: 6, inside: function (c) {
-      [[-24, 14, 15, 3], [4, 16, 15, 8], [28, 16, 13, 5], [-8, -8, 15, 1], [18, -10, 13, 7]].forEach(function (q) { c.save(); c.translate(q[0], q[1]); chunk(c, name, q[2], q[3], lw * 0.7); c.restore(); });
-    } });
+    [[-26, 22, 17, 3], [0, 24, 17, 8], [26, 22, 17, 5], [-13, 0, 17, 1], [13, 0, 17, 7], [0, -22, 17, 2]].forEach(function (q) { c.save(); c.translate(q[0], q[1]); chunk(c, name, q[2], q[3], lw * 0.8); c.restore(); });
   }
+
 
   /* draw a scene into the box (x, y, w); the height is w * 0.6 */
   function draw(c, name, S, x, y, w, joined, vis) {

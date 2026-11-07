@@ -1,10 +1,10 @@
 /* Cat Rescue (ages 10+): a match-3 where every level is a rescue. Swap neighbouring pieces to make lines of three;
    matches break the cardboard boxes next to them, and kittens hiding in boxes pop out and scamper up to safety.
-   Above the board a cat is in a little cosy peril, half buried in a heap (bubble foam, leaves, mud, sand, socks)
-   that spills down into the board. The heap is drawn as one mass (drawHeap), with its reservoir up in the scene:
-   clear the tiles under it and it slumps down into the spaces like sand, more pouring in from above, until it
-   pours out through the drain along the bottom of the board; a match next to it, or a blast, sweeps some away.
-   Scene and board are one picture. Clear the heap and finish the goal in time and the cat leaps into a basket. Not
+   Above the board a cat is in a little cosy peril: a heap (bubble foam, leaves, mud, sand, socks) builds up round
+   it as more falls in from the top of the scene each move. Some cells at the top of the board are cut out: clearing
+   the tiles under a hole digs it down as a channel (the board's border always hugs the holes, and they never fill
+   back in), and the heap tumbles down into it as loose bits; once a channel reaches the bottom, the heap pours out
+   through the drain there. Scene and board are one picture. Clear the heap and finish the goal in time and the cat leaps into a basket. Not
    in time is gentle and comic, with Try again and (once per go) 5 more moves, both free.
    No stars, scores, lives, timers or rewards: the rescuing is the point.
    The rules live in engine.js (shared with the test bot), levels in levels.js, the scenes in scenes.js.
@@ -343,12 +343,13 @@
   /* ================= starting a rescue ================= */
   /* the heap, in words, for each peril: the goal (with the cat's name), what the goal counts, and how it works */
   var HEAPTXT = {
-    bath: { goal: 'clear the bubbles off %', count: 'bubbles cleared', tip: 'Clear the tiles under the bubbles: they slide down into the space and pour out of the drain at the bottom.' },
-    tree: { goal: 'clear away the leaf pile under %', count: 'leaves cleared', tip: 'Clear the tiles under the leaves: they tumble down into the space and pour out of the drain at the bottom.' },
-    rain: { goal: 'clear the mud off %', count: 'bits of mud cleared', tip: 'Clear the tiles under the mud: it slides down into the space and pours out of the drain at the bottom.' },
-    tide: { goal: 'dig % out of the sand', count: 'bits of sand cleared', tip: 'Clear the tiles under the sand: it slides down into the space and pours out of the drain at the bottom.' },
-    laundry: { goal: 'clear the socks off %', count: 'socks cleared', tip: 'Clear the tiles under the socks: they tumble down into the space and pour out of the drain at the bottom.' }
+    bath: { goal: 'clear the bubbles off %', count: 'bubbles cleared', word: 'bubbles', verb: 'pour' },
+    tree: { goal: 'clear the leaves off %', count: 'leaves cleared', word: 'leaves', verb: 'pour' },
+    rain: { goal: 'clear the mud off %', count: 'bits of mud cleared', word: 'mud', verb: 'pours' },
+    tide: { goal: 'dig % out of the sand', count: 'bits of sand cleared', word: 'sand', verb: 'pours' },
+    laundry: { goal: 'clear the socks off %', count: 'socks cleared', word: 'socks', verb: 'pour' }
   };
+
   function goalText(g) {
     var parts = [];
     if (st && st.goal.pile) parts.push(HEAPTXT[level.peril].goal.replace('%', level.cat.name));
@@ -359,7 +360,7 @@
     var s = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0];
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-  function heapTip() { return HEAPTXT[level.peril].tip + ' A match right next to the ' + SC.HEAP[level.peril].word + ' sweeps some away too.'; }
+  function heapTip() { var h = HEAPTXT[level.peril]; return 'Clear the tiles under the ' + h.word + ' to dig a hole down through the board. Reach the bottom and the ' + h.word + ' ' + h.verb + ' out! More keeps falling in, so dig fast.'; }
   function start(n, quiet) {
     lvN = clamp(n | 0, 1, LEVELS.length); level = LEVELS[lvN - 1];
     st = E.make(level, Math.floor(Math.random() * 2147483647));
@@ -367,7 +368,7 @@
     V = {}; boxes = {}; parts = []; fx = []; actors = []; tasks = [];
     scn = { mode: 'play', mt: 0, t: scn.t || 0, saved: [], reserved: 0 };
     shown = { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 };
-    resDisp = st.res; pDisp = heapShare(); busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
+    openShown = st.open.map(function (row) { return row.slice(); }); heapDisp = st.heap; mound.key = ''; pDisp = sceneShare(); busy = false; sel = null; hint = null; idle = 0; plusUsed = false; phase = 'play';
     syncView();
     // the board arrives with a little drop
     for (var id in V) { var v = V[id]; v.path = [[0, v.y - R - 1 + (reduceMotion ? R : 0), v.x], [R + 1 - v.y * 0.3, v.y, v.x]]; v.pt = -v.x * 0.02; }
@@ -589,11 +590,15 @@
         Sound.chime();
         await wait(0.25);
       } else if (ev.type === 'drainout') {
-        // the filling slips out of the bottom of the board
-        // the heap pours out through the drain, bits tumbling out under the board
-        ev.list.forEach(function (d) { var v = V[d.id]; if (v) { v.out = 0; v.x = d.c; v.y = d.r; } tumble(cx(d.c), BY + (d.r + 1) * T + GB * 0.5, reduceMotion ? 1 : 4, 1); count('pile'); });
+        // the heap pours out through the drain under every channel, bits tumbling out under the board
+        for (var dn = 0; dn < ev.n; dn++) later(dn * 0.08, function () { count('pile'); });
+        ev.cols.forEach(function (k) { tumble(cx(k), BY + (st.bottom[k] + 1) * T + GB * 0.5, reduceMotion ? 2 : 3 + ev.n, 1); });
         Sound.gulp(); buzz(8);
         await wait(0.12);
+      } else if (ev.type === 'feed') {
+        // more of it falls in from the top of the scene onto the heap
+        feedBits(ev.n);
+        Sound.pour();
       } else if (ev.type === 'shuffle') {
         say('No swaps left, so the pieces mix themselves up', null, 2);
         var from = {};
@@ -624,7 +629,6 @@
         for (var i = 0; i < (reduceMotion ? 2 : 5); i++) parts.push({ x: cx(u.c), y: cy(u.r), vx: rand(-160, 160) * (T / 60), vy: rand(-260, -80) * (T / 60), life: 0, max: 0.7, r: T * 0.08, shape: 'yarn', rot: rand(0, TAU), vr: rand(-8, 8), g: 700 });
       });
     });
-    ev.removed.forEach(function (rm) { if (rm.sp === 'pile') later(Math.max(0, rm.d), function () { tumble(cx(rm.c), cy(rm.r), reduceMotion ? 1 : 4, -1); count('pile'); }); });
     if (ev.removed.length >= 5 || ev.chain >= 2) Sound.purr(0.12);
     await wait(maxD + 0.27);
     ev.made.forEach(function (m) { var v = V[m.id]; if (v) { v.sp = m.sp; v.k = m.k; v.made = 0; burst(cx(m.c), cy(m.r), '#FFE680', 8, 'star', 0.8); } });
@@ -633,8 +637,9 @@
   async function playFall(ev) {
     ev.spawned.forEach(function (s) {
       V[s.id] = newV(s.id, s.k, s.sp || null, -1, 0);
-      if (s.pile) later(Math.max(0, (ev.paths[s.id] ? ev.paths[s.id][0][0] : 0) * TK), function () { Sound.pour(); });
     });
+    // cells dug out open as the pieces fall away from them, and bits of the heap tumble down into them
+    (ev.opened || []).forEach(function (q) { later(q[2] * TK, function () { openShown[q[0]][q[1]] = true; if (heapDisp > 0.5) tumble(cx(q[1]), cy(q[0]) - T * 0.4, reduceMotion ? 1 : 3, 1, true); }); });
     var moving = [];
     for (var id in ev.paths) { var v = V[id]; if (!v) continue; v.path = ev.paths[id]; v.pt = 0; moving.push(v); }
     await until(function () { for (var i = 0; i < moving.length; i++) if (moving[i].path) return false; return true; });
@@ -756,7 +761,7 @@
   /* ================= input: tap or drag to swap; arrows and space/enter on a keyboard ================= */
   function cellAt(x, y) {
     var c = Math.floor((x - BX) / T), r = Math.floor((y - BY) / T);
-    if (r < 0 || c < 0 || r >= R || c >= C || !st.mask[r][c]) return null;
+    if (r < 0 || c < 0 || r >= R || c >= C || !st.mask[r][c] || st.open[r][c]) return null;
     return [r, c];
   }
   function canPick(rc) { var p = st.g[rc[0]][rc[1]]; return !!p && !p.tg && !E.fixed(p); }
@@ -799,19 +804,19 @@
     }
     if (busy) return;
     if (sel && sel[0] === cursor[0] && sel[1] === cursor[1]) sel = null;
-    else if (st.mask[cursor[0]][cursor[1]] && canPick(cursor)) { sel = cursor.slice(); Sound.swap(); }
+    else if (st.mask[cursor[0]][cursor[1]] && !st.open[cursor[0]][cursor[1]] && canPick(cursor)) { sel = cursor.slice(); Sound.swap(); }
     else nudge(cursor);
   });
 
   /* ================= drawing ================= */
   function boardPath() {
     var p = new Path2D();
-    for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) if (st.mask[r][c]) p.rect(BX + c * T, BY + r * T, T, T);
+    for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) if (tileCell(r, c)) p.rect(BX + c * T, BY + r * T, T, T);
     return p;
   }
   /* just the board's outer edge (every cell side with no cell beyond it) */
   function edgePath() {
-    var p = new Path2D(), m = function (r, c) { return r >= 0 && c >= 0 && r < R && c < C && st.mask[r][c]; };
+    var p = new Path2D(), m = tileCell;
     for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) {
       if (!m(r, c)) continue;
       var x = BX + c * T, y = BY + r * T;
@@ -825,10 +830,11 @@
   function drawBoard(c, dt, now) {
     var bp = boardPath(), ep = edgePath();
     D.shadow(c, BX + C * T / 2, BY + R * T + 6, C * T * 0.5, 10);
+    drawHoles(c, dt);
     c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 9; c.stroke(ep);
     c.fillStyle = '#FFF8EC'; c.fill(bp);
     c.fillStyle = '#F6E8D2';
-    for (var r = 0; r < R; r++) for (var q = 0; q < C; q++) if (st.mask[r][q] && (r + q) % 2) c.fillRect(BX + q * T, BY + r * T, T, T);
+    for (var r = 0; r < R; r++) for (var q = 0; q < C; q++) if (tileCell(r, q) && (r + q) % 2) c.fillRect(BX + q * T, BY + r * T, T, T);
     // where the cushion kittens are going: soft arrows in the bottom row
     if (st.goal.down) {
       c.save(); c.fillStyle = 'rgba(255,143,171,.35)';
@@ -845,11 +851,10 @@
       var sx = b.shake > 0 && !reduceMotion ? Math.sin(b.shake * 60) * T * 0.05 : 0;
       blit(c, sprite('b' + b.hp + ':' + b.kit, function (cc) { drawBox(cc, b.hp, b.kit); }), cx(bc) + sx, cy(br2), T);
     }
-    // pieces (the heap is drawn over them all, as one mass, by drawHeap)
+    // pieces
     var hintIds = hint ? [hint.a, hint.b] : [];
     for (var id in V) {
       var v = V[id];
-      if (v.sp === 'pile') continue;
       var x = cx(v.x), y = cy(v.y), s = T, rot = 0, sxk = 1, syk = 1;
       if (v.pop !== null) {
         v.pop += dt;
@@ -903,83 +908,81 @@
     }
   }
   /* bits of the heap tumbling loose: dir 1 falls out under the drain, -1 flies up and off (a blast or a sweep) */
-  function tumble(x, y, n, dir) {
-    for (var i = 0; i < n; i++) parts.push({ x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.1, T * 0.1), vx: rand(-60, 60) * (T / 60), vy: (dir > 0 ? rand(20, 120) : rand(-300, -120)) * (T / 60), life: 0, max: dir > 0 ? rand(0.45, 0.7) : rand(0.5, 0.8), r: T * rand(0.1, 0.14), shape: 'chunk', i: Math.floor(rand(0, 99)), rot: rand(0, TAU), vr: rand(-6, 6), g: 900 });
+  function tumble(x, y, n, dir, short) {
+    for (var i = 0; i < n; i++) parts.push({ short: short, x: x + rand(-T * 0.3, T * 0.3), y: y + rand(-T * 0.1, T * 0.1), vx: rand(-60, 60) * (T / 60), vy: (dir > 0 ? rand(20, 120) : rand(-300, -120)) * (T / 60), life: 0, max: short ? rand(0.2, 0.3) : dir > 0 ? rand(0.45, 0.7) : rand(0.5, 0.8), r: T * rand(0.1, 0.14), shape: 'chunk', i: Math.floor(rand(0, 99)), rot: rand(0, TAU), vr: rand(-6, 6), g: 900 });
   }
 
   /* ================= the heap =================
-     One mass: every cell of heap in the board (where its piece is right now, so it slides as it falls) and the
-     reservoir up in the scene over the columns it pours into, as a mound that shrinks as it empties. They're joined
-     into one shape: an ink line is stroked round every part, then the shape is filled over it, which leaves the line
-     only round the outside. Lumps along the top, and its bits (SC.heapTexture tiles, clipped to the shape) on it. */
-  var resDisp = 0;
-  function heapTex(v) { return sprite('heap' + level.peril + v, function (c) { SC.heapTexture(c, level.peril, 46, v, lw(4.2)); }); }
-  function drawHeap(c, dt) {
-    var HP = SC.HEAP[level.peril], blobs = [], at = {}, id, v;
-    resDisp += (st.res - resDisp) * Math.min(1, dt * 5);
-    for (id in V) {
-      v = V[id]; if (v.sp !== 'pile') continue;
-      var s = 1, y = v.y;
-      if (v.pop !== null) {
-        v.pop += dt;
-        if (v.pop >= 0.3) { delete V[id]; continue; }
-        if (v.pop > 0) s = 1 - eout(v.pop / 0.3);
-      }
-      if (v.out !== null) {
-        // pouring out: it slides down through the drain (the board's clip hides it as it goes)
-        v.out += dt; if (v.out >= 0.35) { delete V[id]; continue; }
-        y += 1.1 * Math.pow(v.out / 0.35, 2);
-      }
-      if (v.path && !reduceMotion && Math.random() < dt * 3) tumble(cx(v.x), cy(y) + T * 0.3, 1, 1);
-      blobs.push({ x: v.x, y: y, s: s, id: v.id });
-      at[Math.round(y) * 64 + Math.round(v.x)] = 1;
-    }
-    // the reservoir: a mound over the columns it pours into, taller while there's more of it (up to about two cells)
-    var cols = []; for (var k = 0; k < C; k++) if (st.pour[k]) cols.push(k);
-    var mound = null;
-    if (cols.length && resDisp > 0.05) {
-      var hTop = Math.min(2.5, 0.8 + resDisp / cols.length * 0.5) * T, x0 = cx(cols[0]) - T * 0.75, x1 = cx(cols[cols.length - 1]) + T * 0.75, yb = BY + T * 0.5;
-      // its foot spreads a little either side on the floor of the scene, and it runs down into its columns' top cells
-      mound = new Path2D(); mound.moveTo(cx(cols[0]) - T * 0.5, yb); mound.lineTo(cx(cols[0]) - T * 0.5, BY + 1); mound.lineTo(x0, BY + 1);
-      var n = cols.length * 2 + 2;
-      for (var q = 0; q <= n; q++) {
-        var u = q / n, xx = lerp(x0, x1, u), hh = hTop * Math.pow(Math.sin(u * Math.PI), 0.6) + Math.sin(q * 2.1 + lvN) * T * 0.06;
-        if (q === 0) mound.lineTo(xx, BY - hh); else mound.quadraticCurveTo(xx - (x1 - x0) / n / 2, BY - hh - T * 0.12, xx, BY - hh);
-      }
-      mound.lineTo(x1, BY + 1); mound.lineTo(cx(cols[cols.length - 1]) + T * 0.5, BY + 1); mound.lineTo(cx(cols[cols.length - 1]) + T * 0.5, yb); mound.closePath();
-      cols.forEach(function (k) { at[-64 + k] = 1; });
-    }
-    if (!blobs.length && !mound) return;
-    var inf = T * 0.07, U = new Path2D(), top = BY;
-    if (mound) U.addPath(mound);
-    blobs.forEach(function (b) {
-      var x = cx(b.x), y = cy(b.y), h = T / 2 * b.s + inf;
-      U.addPath(D.rrPath(x - h, y - h, h * 2, h * 2, T * 0.24 * b.s));
-      if (!at[(Math.round(b.y) - 1) * 64 + Math.round(b.x)]) {
-        // a lumpy top where nothing of the heap is on it
-        [-0.28, 0.02, 0.3].forEach(function (o, i) { var rr = T * (0.2 + 0.05 * ((b.id + i) % 2)) * b.s; U.addPath(D.ellPath(x + o * T * b.s, y - h + rr * 0.55, rr, rr)); });
-      }
-      top = Math.min(top, y - h - T * 0.2);
+     The heap is loose stuff, not a block: lots of little bits (SC.chunk), each its own little shape. What's up in the
+     scene is a mound over the holes (drawMound); the rest fills the holes cut in the board, from the lowest open cell
+     up (drawHoles). heapDisp eases towards st.heap, so it builds and drains smoothly; openShown is which cells look
+     open right now (a cell opens as the pieces fall away from it). */
+  var heapDisp = 0, openShown = [], mound = { key: '', cv: null, x: 0, y: 0 };
+  function tileCell(r, c) { return r >= 0 && c >= 0 && r < R && c < C && st.mask[r][c] && !(openShown[r] && openShown[r][c]); }
+  function holeCells() { var list = []; for (var r = R - 1; r >= 0; r--) for (var c = 0; c < C; c++) if (st.mask[r][c] && openShown[r] && openShown[r][c]) list.push([r, c]); return list; }
+  function holeMid() { var a = 0, n = 0; for (var c = 0; c < C; c++) { var t = st.top[c]; if (t >= 0 && st.open[t][c]) { a += c; n++; } } return n ? cx(a / n) : BX + C * T / 2; }
+  function inHoles() { return Math.min(heapDisp, holeCells().length); }
+  /* how worried the scene looks: how big the heap in the scene is */
+  function sceneShare() { var n = st.goal.pile || 1; return clamp((heapDisp - inHoles()) / Math.max(6, n * 0.45), 0, 1); }
+  function heapBits(v) { return sprite('heap' + level.peril + v, function (c) { SC.heapTexture(c, level.peril, 40, v, lw(4)); }); }
+  function bit(c, x, y, i, size) { c.save(); c.translate(x, y); c.scale(T / 100, T / 100); SC.chunk(c, level.peril, size || 15, i, lw(4)); c.restore(); }
+
+  /* the holes: what's behind the board (a deep soft shade, shadowed under the board's edge), filled with heap */
+  function drawHoles(c, dt) {
+    var cells = holeCells(); if (!cells.length) return;
+    var hp = new Path2D(); cells.forEach(function (q) { hp.rect(BX + q[1] * T - 0.5, BY + q[0] * T - 0.5, T + 1, T + 1); });
+    c.save(); c.clip(hp);
+    c.fillStyle = D.tone(c, '#5E5072', BY, BY + R * T); c.fillRect(BX, BY, C * T, R * T);
+    c.fillStyle = 'rgba(20,14,34,.32)';
+    cells.forEach(function (q) { var x = BX + q[1] * T, y = BY + q[0] * T; if (tileCell(q[0], q[1] - 1)) c.fillRect(x, y, T * 0.14, T); if (tileCell(q[0] - 1, q[1])) c.fillRect(x, y, T, T * 0.14); });
+    var vol = inHoles();
+    cells.forEach(function (q, i) {
+      var f = clamp(vol - i, 0, 1); if (f <= 0.02) return;
+      blit(c, heapBits((q[0] * 7 + q[1] * 3) % 4), cx(q[1]), cy(q[0]) + (1 - f) * T * 0.85, T);
     });
-    if (mound) top = Math.min(top, BY - 2.6 * T);
-    // only inside the picture: the scene above the board, and the board itself
-    var clip = boardPath(); clip.rect(SX, SY + SH - SV, SW, BY - (SY + SH - SV) + 1);
-    var LW = clamp(T * 0.075, 2.5, 4.6);
-    c.save(); c.clip(clip);
-    c.lineJoin = 'round'; c.lineWidth = LW * 2; c.strokeStyle = INK; c.stroke(U);
-    c.fillStyle = D.tone(c, HP.col, top, BY + R * T); c.fill(U);
-    c.save(); c.clip(U);
-    var tex = function (x, y, vv) { blit(c, heapTex(vv), x, y, T * 1.02); };
-    blobs.forEach(function (b) { if (b.s > 0.05) tex(cx(b.x), cy(b.y), b.id % 4); });
-    if (mound) for (var mx = cx(cols[0]) - T * 0.6; mx < cx(cols[cols.length - 1]) + T * 0.8; mx += T * 0.6) for (var rr = 0; rr < 3; rr++) tex(mx, BY - (rr + 0.35) * T, (Math.round(mx) + rr * 3) % 4);
-    // light from the top left: a soft shine along the top of the heap
-    c.globalAlpha = 0.18; c.fillStyle = '#FFFFFF'; c.fillRect(SX, top, SW, T * 0.35); c.globalAlpha = 1;
     c.restore();
+    // pouring out of every channel while there's heap to go, and trickling in from the top while the source lasts
+    if (phase === 'play' && !reduceMotion) {
+      if (heapDisp > 0.3) for (var k = 0; k < C; k++) { var b = st.bottom[k]; if (b >= 0 && openShown[b][k] && Math.random() < dt * 7) tumble(cx(k), BY + (b + 1) * T + GB * 0.3, 1, 1); }
+    }
+  }
+  /* the mound up in the scene: loose bits piled up over the holes, as many as there's heap up there (drawn to a
+     canvas of its own, again only when it changes) */
+  function drawMound(c) {
+    var n = Math.min(110, Math.round((heapDisp - inHoles()) * 3));
+    if (phase === 'play' && st.src > 0 && !reduceMotion && Math.random() < 0.03) feedBits(0.3);
+    if (n <= 0) return;
+    var key = level.peril + ':' + n + ':' + T + ':' + lvN + ':' + dpr;
+    if (mound.key !== key) {
+      var s = T * 0.36, w = Math.min(SW * 0.9, T * 1.6 + n * s * 0.1), hgt = T * 3.2, cv = mound.cv || document.createElement('canvas');
+      cv.width = Math.ceil(w + T) * dpr; cv.height = Math.ceil(hgt + T) * dpr;
+      var m = cv.getContext('2d'); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.clearRect(0, 0, cv.width, cv.height); m.lineJoin = 'round'; m.lineCap = 'round';
+      var rr = D.seeded(lvN * 31 + 7), placed = 0, base = hgt + T * 0.15, mid = (w + T) / 2;
+      // rows from the bottom up, each a little narrower, like a heap settles
+      for (var row = 0; placed < n && row < 40; row++) {
+        var half = w / 2 - row * s * 0.75; if (half < s * 0.6) half = s * 0.6;
+        var k = Math.max(1, Math.round(half * 2 / s)), y = base - row * s * 0.62;
+        for (var j = 0; j < k && placed < n; j++, placed++) {
+          var x = mid - half + (j + 0.5) * (half * 2 / k) + (rr() - 0.5) * s * 0.5;
+          m.save(); m.translate(x, y + (rr() - 0.5) * s * 0.3); m.scale(T / 100, T / 100); SC.chunk(m, level.peril, 21 + rr() * 7, Math.floor(rr() * 997), lw(4.5)); m.restore();
+        }
+      }
+      mound.cv = cv; mound.key = key; mound.w = w + T; mound.h = hgt + T;
+    }
+    var x0 = clamp(holeMid() - mound.w / 2, SX - T * 0.3, SX + SW - mound.w + T * 0.3);
+    c.save(); c.beginPath(); c.rect(SX, SY + SH - SV, SW, SV + T * 0.25); c.clip();
+    c.drawImage(mound.cv, x0, BY + T * 0.2 - mound.h, mound.w, mound.h);
     c.restore();
   }
+  /* more of the heap falling in from the top of the scene: n units, as a shower of bits onto the mound */
+  function feedBits(n) {
+    var top = SY + SH - SV + 6, d = Math.max(20, BY - T * 0.8 - top), x = holeMid(), cnt = reduceMotion ? 1 : Math.max(1, Math.round(n * 4));
+    for (var i = 0; i < cnt; i++) {
+      var g = 900, t = Math.sqrt(2 * d / g);
+      parts.push({ x: x + rand(-T * 0.9, T * 0.9), y: top - rand(0, T * 0.6), vx: rand(-20, 20), vy: rand(0, 40), life: -rand(0, 0.35), max: t, r: T * rand(0.11, 0.15), shape: 'chunk', i: Math.floor(rand(0, 99)), rot: rand(0, TAU), vr: rand(-5, 5), g: g });
+    }
+  }
 
-  /* how much of the heap is left, for the scene: the reservoir and what's still in the board */
-  function heapShare() { var n = st.goal.pile; return n ? clamp((st.res + E.pileN(st)) / n, 0, 1) : 0; }
   var last = performance.now();
   function frame(now) {
     var dt = Math.min(0.05, (now - last) / 1000) * SPEED; last = now;
@@ -989,7 +992,8 @@
     if (freeze) { scn.mode = freeze.mode; scn.mt = freeze.mt; if (freeze.p !== undefined) pDisp = freeze.p; }
     if (sayTimer > 0) { sayTimer -= dt; if (sayTimer <= 0) $('say').classList.add('hide'); }
     if (st) {
-      var target = heapShare();
+      var target = sceneShare();
+      heapDisp += (st.heap - heapDisp) * Math.min(1, dt * 2.5);
       if (!freeze) pDisp += (target - pDisp) * Math.min(1, dt * 3);
       if (phase === 'play' && !busy) {
         idle += dt;
@@ -1003,8 +1007,8 @@
     if (st) {
       drawPicture(c);
       drawDrain(c);
+      drawMound(c);
       drawBoard(c, dt, scn.t);
-      drawHeap(c, dt);
       c.save(); c.clip(boardPath()); drawFx(c, dt); c.restore();
       drawParts(c, dt);
       drawActors(c, dt);
@@ -1025,8 +1029,8 @@
   /* ================= test hook ================= */
   window.__rescue = {
     state: function () {
-      var pileIn = E.pileN(st);
-      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, saved: scn.saved.filter(Boolean).length, res: st.res, pileIn: pileIn, progress: JSON.parse(JSON.stringify(PG)) };
+      var open = E.openN(st), channels = E.channels(st);
+      return { level: lvN, phase: phase, busy: busy, moves: st.moves, used: st.used, extra: st.extra, left: E.movesLeft(st), goal: st.goal, got: st.got, shown: shown, won: E.won(st), actors: actors.length, saved: scn.saved.filter(Boolean).length, heap: st.heap, src: st.src, open: open, channels: channels, progress: JSON.parse(JSON.stringify(PG)) };
     },
     jump: function (n) { $('listWrap').hidden = true; start(n); return until(function () { for (var id in V) if (V[id].path) return false; return true; }); },
     swap: function (r1, c1, r2, c2) { return doSwap(r1, c1, r2, c2); },

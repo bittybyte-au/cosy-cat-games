@@ -291,8 +291,8 @@
     })(),
 
     rescue: svg(
-      // the game as it looks: the bath scene on top with a cat on a stool, a heap of bubble foam spilling out of the
-      // scene down into the board, where it has slumped into the spaces cleared under it; pieces and a kitten box
+      // the game as it looks: the bath scene on top with a cat on a stool, bubble foam heaping up and tumbling down a
+      // channel dug through the board (pieces and a kitten box either side)
       sh(R(0, 0, 240, 150, 0), '#D4EEFF', { lw: 0, k: 0 }) +
       ln('M0 18h240M0 36h240M30 0v58M60 0v58M90 0v58M120 0v58M150 0v58M180 0v58M210 0v58', 1.5, 'rgba(255,255,255,.8)') +
       sh(R(0, 52, 240, 12, 0), '#FFE3C2', { lw: 0, k: 0 }) +
@@ -307,14 +307,15 @@
       sh(R(84, 82, 32, 26, 4), '#E2A866', { lw: 2.5, k: 2, in: '<rect x="96" y="82" width="8" height="26" fill="#C98B5B"/>' }) +
       [[20, 95, '#5DB6F5'], [140, 132, '#5DB6F5']].map(function (q) { return sh(P(q[0] - 11, q[1], 'q7 -8 14 -3l6 -4v14l-6 -4q-7 5 -14 -3z'), q[2], { lw: 2.5, k: 0 }); }).join('') +
       [[60, 95], [220, 132], [100, 132]].map(function (q) { return sh(E(q[0], q[1], 10, 10), '#FF7EB6', { lw: 2.5, k: 2, in: ln('M' + (q[0] - 10) + ' ' + (q[1] - 2) + 'q10 -6 20 0M' + (q[0] - 10) + ' ' + (q[1] + 4) + 'q10 -6 20 0', 1.5, 'rgba(42,35,64,.35)') }); }).join('') +
-      [[20, 132], [220, 95]].map(function (q) { return sh(E(q[0], q[1] + 3, 7, 6), '#A77BFF', { lw: 2.2, k: 0 }) + el(q[0] - 7, q[1] - 6, 3, 3, '#A77BFF') + el(q[0], q[1] - 9, 3, 3, '#A77BFF') + el(q[0] + 7, q[1] - 6, 3, 3, '#A77BFF'); }).join('') +
+      [[140, 95], [20, 132], [220, 95]].map(function (q) { return sh(E(q[0], q[1] + 3, 7, 6), '#A77BFF', { lw: 2.2, k: 0 }) + el(q[0] - 7, q[1] - 6, 3, 3, '#A77BFF') + el(q[0], q[1] - 9, 3, 3, '#A77BFF') + el(q[0] + 7, q[1] - 6, 3, 3, '#A77BFF'); }).join('') +
       [[60, 132]].map(function (q) { return sh(P(q[0] - 9, q[1] + 8, 'q0 -18 9 -18q9 0 9 18z'), '#FFC93C', { lw: 2.5, k: 0 }); }).join('') +
-      ln('M0 76h240', 3) +
-      // the heap: one mass of foam, from the scene down into the board
-      sh(P(108, 76, 'q2 -22 20 -28q8 -16 26 -12q16 -6 26 8q20 2 20 24v82h-40v-37h-40v-37z'), '#CFEAFF', { lw: 3, k: 3, in:
-        [[118, 70, 7], [132, 60, 8], [148, 48, 8], [164, 52, 7], [178, 64, 8], [196, 70, 6], [126, 88, 8], [144, 82, 7], [142, 100, 8], [124, 106, 7],
-         [170, 86, 8], [188, 92, 7], [176, 106, 8], [194, 116, 7], [172, 126, 8], [190, 138, 8], [168, 144, 6], [158, 66, 8], [138, 72, 6], [186, 80, 6]]
-          .map(function (b) { return sh(E(b[0], b[1], b[2], b[2]), '#FFFFFF', { lw: 1.8, k: 0 }) + el(b[0] - b[2] * 0.35, b[1] - b[2] * 0.4, b[2] * 0.3, b[2] * 0.2, '#fff'); }).join('') })),
+      // a channel dug down through the board (the border goes round it), bubble foam tumbling down it and out
+      '<rect x="160" y="76" width="40" height="74" fill="#5E5072"/><rect x="160" y="76" width="6" height="74" fill="rgba(20,14,34,.35)"/>' +
+      [[170, 142, 7], [188, 140, 8], [178, 126, 7], [192, 118, 6], [168, 112, 6], [182, 100, 7], [172, 88, 6], [190, 82, 6],
+       [150, 70, 7], [166, 66, 8], [182, 62, 8], [198, 68, 7], [212, 72, 6], [158, 56, 6], [174, 50, 7], [190, 50, 6], [204, 58, 6], [182, 38, 6],
+       [130, 20, 4], [186, 14, 4], [220, 26, 4]]
+        .map(function (b) { return sh(E(b[0], b[1], b[2], b[2]), '#FFFFFF', { lw: 1.8, k: 0 }) + el(b[0] - b[2] * 0.35, b[1] - b[2] * 0.4, b[2] * 0.3, b[2] * 0.2, '#E6F6FF'); }).join('') +
+      ln('M0 76h160M200 76h40M160 76V150M200 76V150', 3)),
     hotpaws: (function () {
       // a little light-up floor from above: green and dark tiles are safe, blue ones are diamonds, orange warns, red is lava
       var K = { on: ['#5FE08B', '#C4FFD3'], off: ['#3A3262', '#4E4579'], d: ['#5DB6F5', '#D7F0FF'], warn: ['#FFB547', '#FFEBA8'], lava: ['#FF5B3A', '#FFB14A'] };
