@@ -26,6 +26,8 @@
      GGThings.catnip(c, x, y, { size (1 = about 40 tall), glow (0..1), ls })   a sprig of catnip, centred
      GGThings.yarnBall(c, x, y, { r, col, gold, spin, end (a loose end), shadow, ls })   centred
      GGThings.fish(c, x, y, { size (1 = 34 long), col, gold (a soft glow), a (turn), ls })   centred, facing left
+    GGThings.umbrella(c, x, y, { size (1 = about 60 across, 70 tall), col, open (0 furled .. 1 open), a (tilt), ls })
+        (x, y) is the hook of the handle, where a paw holds it
    More at the end of this file: the dog walking (and turned in its bed) from above, a pet bowl, a squeaky toy. */
 (function () {
   'use strict';
@@ -234,9 +236,24 @@
     c.restore();
   }
 
+  /* ================= umbrella (a kitten's brolly) ================= */
+  function umbrella(c, x, y, o) {
+    o = o || {};
+    var s = pick(o.size, 1), col = o.col || '#7CC4FF', op = clamp(pick(o.open, 1), 0, 1), lf = W(o, LW.fine, s), lm = W(o, LW.mid, s);
+    c.save(); c.translate(x, y); if (o.a) c.rotate(o.a); c.scale(s, s);
+    // the handle: (x, y) is the hook a paw holds
+    c.beginPath(); c.moveTo(0, -40); c.lineTo(0, -3); c.arc(-4, -3, 4, 0, Math.PI); c.strokeStyle = INK; c.lineWidth = 3 + lf * 2; c.lineCap = 'round'; c.stroke(); c.strokeStyle = '#A86B3C'; c.lineWidth = 3; c.stroke();
+    var rw = lerp(6, 30, op), rh = lerp(26, 18, op);
+    var p = new Path2D(); p.moveTo(-rw, -38); p.quadraticCurveTo(-rw, -38 - rh * 1.2, 0, -38 - rh * 1.1); p.quadraticCurveTo(rw, -38 - rh * 1.2, rw, -38);
+    var n = 4; for (var i = n; i > 0; i--) { var x0 = -rw + (i / n) * rw * 2, x1 = -rw + ((i - 1) / n) * rw * 2; p.quadraticCurveTo((x0 + x1) / 2, -38 - lerp(2, 7, op), x1, -38); } p.closePath();
+    D.shape(c, p, col, { lw: lm, depth: 4, inside: function (c) { c.strokeStyle = D.darker(col, 0.2); c.lineWidth = lf * 0.8; c.beginPath(); for (var k = 1; k < n; k++) { var xx = -rw + (k / n) * rw * 2; c.moveTo(0, -38 - rh * 1.1); c.lineTo(xx, -38); } c.stroke(); } });
+    c.beginPath(); c.arc(0, -38 - rh * 1.1 - 2, 2.5, 0, TAU); c.fillStyle = INK; c.fill();
+    c.restore();
+  }
+
   window.GGThings = {
-    VARIANTS: { mouse: ['top', 'side'], dog: ['side', 'top', 'face'], yarnBall: ['plain', 'gold'], fish: ['plain', 'gold'], catnip: ['sprig'] },
-    mouse: mouse, dog: dog, yarnBall: yarnBall, fish: fish, catnip: catnip, star: star
+    VARIANTS: { mouse: ['top', 'side'], dog: ['side', 'top', 'face'], yarnBall: ['plain', 'gold'], fish: ['plain', 'gold'], catnip: ['sprig'], umbrella: ['open', 'closed'] },
+    mouse: mouse, dog: dog, yarnBall: yarnBall, fish: fish, catnip: catnip, umbrella: umbrella, star: star
   };
 })();
 

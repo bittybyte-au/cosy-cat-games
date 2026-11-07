@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-4be2d8e480';
+const VERSION = 'ccg-95fbca644d';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -24,14 +24,14 @@ const FILES = {
   "./shared/draw.js": "6af1578083",
   "./shared/fashion.js": "1c643f2828",
   "./shared/game.css": "196bc4e3d1",
-  "./shared/games.js": "14b15cf1f6",
+  "./shared/games.js": "0923fb11cc",
   "./shared/help.js": "2a6206f950",
   "./shared/install.js": "1c67ffafad",
   "./shared/pots.js": "068f16575f",
-  "./shared/scene.js": "efcd653282",
+  "./shared/scene.js": "fa19214ef0",
   "./shared/site.css": "7f9619cffc",
   "./shared/store.js": "12a8ec5516",
-  "./shared/things.js": "f039f0c1d7",
+  "./shared/things.js": "5672cc6b84",
   "./fonts/baloo-2-latin-600-normal.woff2": "0bc5672ad8",
   "./fonts/baloo-2-latin-800-normal.woff2": "694f2e10bb",
   "./fonts/fonts.css": "e52febfe7d",
@@ -99,6 +99,9 @@ const FILES = {
   "./games/mouse-pop/game.js": "ec6e32dd5e",
   "./games/mouse-pop/": "6f2fb5b86f",
   "./games/mouse-pop/index.html": "6f2fb5b86f",
+  "./games/parade/game.js": "5028e193b2",
+  "./games/parade/": "ff8aa7d8ca",
+  "./games/parade/index.html": "ff8aa7d8ca",
   "./games/peekaboo/game.js": "161702425c",
   "./games/peekaboo/": "b6fde1f7df",
   "./games/peekaboo/index.html": "b6fde1f7df",

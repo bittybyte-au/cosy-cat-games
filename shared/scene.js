@@ -1301,4 +1301,80 @@
     };
   })(window.GGScene);
   /* ================= end of batch F ================= */
+  /* ================= batch G: ground you can dig through, and the cat house (Kitten Parade) =================
+     GGScene.terrain(c, pieces, holes, { steps, ls, seed })   side-on ground for a dig-and-build level:
+         pieces: [{ x, y, w, h, kind: 'soil' | 'stone' | 'wood' }] (soil has grass on top; stone can't be dug);
+         holes:  [{ x0, y0, x1, y1, r }] round-ended burrows dug out of the soil (a capsule from (x0, y0) to (x1, y1));
+         steps:  [{ x, y, w, h }] little yarn-wrapped planks a kitten has laid.
+         The burrows show a dark earthy inside with an ink rim; anything outside the pieces stays see-through.
+     GGScene.catHouse(c, x, y, { view: 'front' | 'top', w, col (walls), roof, door (the flap's swing, 0..1), glow })
+         a little wooden cat house with a round flap door; front: (x, y) the middle of its base, about w * 1.05 tall;
+         top: the roof seen from above, (x, y) its middle */
+  (function (G) {
+    var V = G.VARIANTS;
+    V.terrain = ['soil', 'stone', 'wood']; V.catHouse = ['front', 'top'];
+    var COL = { soil: '#C48A5A', stone: '#B4AFC8', wood: '#D9A066' };
+    function cap(h) { var x = Math.min(h.x0, h.x1), y = Math.min(h.y0, h.y1); return D.rrPath(x - h.r, y - h.r, Math.abs(h.x1 - h.x0) + h.r * 2, Math.abs(h.y1 - h.y0) + h.r * 2, h.r); }
+    G.terrain = function (c, pieces, holes, o) {
+      o = opt(o); holes = holes || [];
+      var lw = W(o, LW.mid), r = D.seeded(o.seed || 5);
+      pieces.forEach(function (pc) {
+        var kind = pc.kind || 'soil', col = pc.col || COL[kind] || COL.soil, rad = Math.min(10, pc.w / 2, pc.h / 2);
+        D.shape(c, D.rrPath(pc.x, pc.y, pc.w, pc.h, rad), col, { lw: lw, depth: 6, inside: function (c) {
+          if (kind === 'soil') {
+            c.fillStyle = D.darker(col, 0.12);
+            for (var i = 0; i < pc.w * pc.h / 500; i++) { c.beginPath(); c.ellipse(pc.x + r() * pc.w, pc.y + 12 + r() * (pc.h - 12), 2.5 + r() * 3, 1.8 + r() * 2, r() * 3, 0, TAU); c.fill(); }
+            c.fillStyle = '#7BD389'; c.fillRect(pc.x - 2, pc.y - 2, pc.w + 4, 9);
+            c.beginPath(); for (var gx = pc.x; gx < pc.x + pc.w + 8; gx += 8) { c.moveTo(gx, pc.y + 6); c.lineTo(gx + 4, pc.y + 11); c.lineTo(gx + 8, pc.y + 6); } c.fill();
+            c.strokeStyle = INK; c.lineWidth = W(o, 2.5); c.beginPath(); c.moveTo(pc.x, pc.y + 6);
+            for (var gx2 = pc.x; gx2 < pc.x + pc.w + 8; gx2 += 8) { c.lineTo(gx2 + 4, pc.y + 11); c.lineTo(gx2 + 8, pc.y + 6); } c.stroke();
+          } else if (kind === 'stone') {
+            c.strokeStyle = D.darker(col, 0.22); c.lineWidth = W(o, 2.5);
+            for (var by = pc.y + 16, row = 0; by < pc.y + pc.h; by += 16, row++) { c.beginPath(); c.moveTo(pc.x, by); c.lineTo(pc.x + pc.w, by); c.stroke(); }
+            for (var ry = pc.y, row2 = 0; ry < pc.y + pc.h; ry += 16, row2++) for (var bx = pc.x + (row2 % 2 ? 12 : 24); bx < pc.x + pc.w; bx += 24) { c.beginPath(); c.moveTo(bx, ry); c.lineTo(bx, ry + 16); c.stroke(); }
+          } else {
+            c.strokeStyle = D.darker(col, 0.18); c.lineWidth = W(o, 2);
+            for (var wy = pc.y + 9; wy < pc.y + pc.h; wy += 9) { c.beginPath(); c.moveTo(pc.x, wy); c.lineTo(pc.x + pc.w, wy); c.stroke(); }
+          }
+        } });
+      });
+      if (holes.length) {
+        c.save();
+        var clip = new Path2D(); pieces.forEach(function (pc) { if ((pc.kind || 'soil') === 'soil') clip.addPath(D.rrPath(pc.x - 1, pc.y - 1, pc.w + 2, pc.h + 2, Math.min(10, pc.w / 2, pc.h / 2))); });
+        c.clip(clip);
+        c.strokeStyle = INK; c.lineWidth = lw * 2; holes.forEach(function (h) { c.stroke(cap(h)); });
+        c.fillStyle = '#6B4631'; holes.forEach(function (h) { c.fill(cap(h)); });
+        c.fillStyle = 'rgba(42,35,64,.22)'; holes.forEach(function (h) { var q = { x0: h.x0, y0: h.y0 - h.r * 0.35, x1: h.x1, y1: h.y1 - h.r * 0.35, r: h.r * 0.7 }; c.fill(cap(q)); });
+        c.restore();
+      }
+      (o.steps || []).forEach(function (st, i) {
+        D.shape(c, D.rrPath(st.x, st.y, st.w, st.h, Math.min(2, st.h / 2)), i % 2 ? '#FF8FAB' : '#FFB3C7', { lw: W(o, 2), depth: 0, inside: function (c) { c.strokeStyle = '#D9577C'; c.lineWidth = W(o, 1.5); c.beginPath(); for (var k = st.x + 3; k < st.x + st.w; k += 4) { c.moveTo(k, st.y); c.lineTo(k - 2, st.y + st.h); } c.stroke(); } });
+      });
+    };
+    G.catHouse = function (c, x, y, o) {
+      o = opt(o);
+      var w = o.w || 80, s = w / 80, col = o.col || '#F2C27B', roof = o.roof || '#E9837A';
+      c.save(); c.translate(x, y); c.scale(s, s);
+      var ow = Object.create(o); ow.ls = (o.ls || 1) * s;
+      if (o.view === 'top') {
+        sh(c, D.rrPath(-46, -40, 92, 80, 10), roof, ow, LW.big, { depth: 6, inside: function (c) { c.strokeStyle = D.darker(roof, 0.18); c.lineWidth = W(ow, 2.5); for (var ty = -28; ty < 40; ty += 12) { c.beginPath(); c.moveTo(-46, ty); c.lineTo(46, ty); c.stroke(); } } });
+        c.beginPath(); c.moveTo(0, -40); c.lineTo(0, 40); D.ink(c, W(ow, LW.mid));
+        c.restore(); return;
+      }
+      D.shadow(c, 0, 0, 44, 7);
+      sh(c, D.rrPath(-36, -54, 72, 54, 6), col, ow, LW.big, { depth: 6, inside: function (c) { c.strokeStyle = D.darker(col, 0.15); c.lineWidth = W(ow, 2); for (var py = -44; py < 0; py += 11) { c.beginPath(); c.moveTo(-36, py); c.lineTo(36, py); c.stroke(); } } });
+      if (o.glow) { c.save(); c.globalAlpha = Math.min(1, o.glow); var g = c.createRadialGradient(0, -20, 2, 0, -20, 30); g.addColorStop(0, 'rgba(255,226,140,.9)'); g.addColorStop(1, 'rgba(255,226,140,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, -20, 30, 0, TAU); c.fill(); c.restore(); }
+      var door = pth(function (p) { p.moveTo(-15, 0); p.lineTo(-15, -22); p.arc(0, -22, 15, Math.PI, 0); p.lineTo(15, 0); p.closePath(); });
+      sh(c, door, '#4A3656', ow, LW.mid, { depth: 0 });
+      // the flap swings in as a kitten goes through
+      var sw = Math.max(0, Math.min(1, o.door || 0));
+      c.save(); c.clip(door); c.translate(0, -37); c.scale(1, 1 - sw * 0.8);
+      sh(c, pth(function (p) { p.moveTo(-15, 15); p.arc(0, 15, 15, Math.PI, 0); p.lineTo(15, 37); p.lineTo(-15, 37); p.closePath(); }), '#FFD98A', ow, LW.fine, { depth: 0 });
+      c.restore();
+      sh(c, door, null, ow, LW.mid, { depth: 0 });
+      sh(c, pth(function (p) { p.moveTo(-50, -48); p.lineTo(0, -86); p.lineTo(50, -48); p.quadraticCurveTo(52, -42, 46, -42); p.lineTo(-46, -42); p.quadraticCurveTo(-52, -42, -50, -48); p.closePath(); }), roof, ow, LW.big, { depth: 6 });
+      sh(c, D.ellPath(0, -60, 7, 7), '#FFF1C9', ow, LW.fine, { depth: 0 });
+      c.restore();
+    };
+  })(window.GGScene);
 })();

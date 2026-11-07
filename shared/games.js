@@ -393,6 +393,19 @@
       sh(E(58, 103, 17, 14), '#C98B5B', { lw: 3, k: 2 }) + sh(E(43, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) + sh(E(73, 103, 6, 10), '#7E4E30', { lw: 2.5, k: 0 }) +
       el(52, 100, 2.4, 2.4, '#2A2340') + el(64, 100, 2.4, 2.4, '#2A2340') + el(58, 107, 3, 2.2, '#2A2340') +
       cat({ preset: 'ginger', pose: 'head', face: 'open', x: 58, y: 40, size: 34 })),
+    parade: svg(
+      sh(R(0, 0, 240, 150, 0), '#BFE6FF', { lw: 0, k: 0 }) +
+      '<path d="M0 104q60 -22 120 -6t120 -4v56H0z" fill="#A8E0A0"/>' + ln('M0 104q60 -22 120 -6t120 -4', 2.5) +
+      sh(R(-6, 60, 96, 26, 6), '#C48A5A', { lw: 3.5, k: 3, in: '<path d="M-6 60h96v6H-6z" fill="#7BD389"/>' }) +
+      sh(R(-6, 122, 252, 40, 4), '#C48A5A', { lw: 3.5, k: 3, in: '<path d="M-6 122h252v6H-6z" fill="#7BD389"/>' }) +
+      sh(P(14, 60, 'v-18h26v18z'), '#DDA86F', { lw: 3, k: 2 }) + ln('M14 42l-8 -8M40 42l8 -8', 3) +
+      cat({ preset: 'pink', pose: 'walk', face: 'happy', x: 66, y: 50, size: 18, step: 1, moving: true, dir: 1 }) +
+      ln('M104 70v18', 2.5) + sh(P(90, 72, 'q0 -14 14 -14t14 14q-3.5 -3 -7 0q-3.5 -3 -7 0q-3.5 -3 -7 0q-3.5 -3 -7 0z'), '#7CC4FF', { lw: 2.5, k: 0 }) +
+      cat({ preset: 'blue', pose: 'walk', face: 'happy', x: 106, y: 94, size: 18, dir: 1 }) +
+      cat({ preset: 'ginger', pose: 'walk', face: 'happy', x: 66, y: 112, size: 18, step: 2, moving: true, dir: 1 }) +
+      cat({ preset: 'purple', pose: 'walk', face: 'happy', x: 140, y: 112, size: 18, step: 0.5, moving: true, dir: 1 }) +
+      shadow(204, 122, 26, 4) + sh(R(186, 94, 36, 28, 3), '#F2C27B', { lw: 3, k: 3 }) +
+      sh(P(180, 97, 'l24 -20l24 20z'), '#E9837A', { lw: 3, k: 2 }) + sh(P(197, 122, 'v-10a7 7 0 0 1 14 0v10z'), '#4A3656', { lw: 2.5, k: 0 })),
     fashion: svg(
       sh(R(0, 0, 240, 150, 0), '#FFD3E4', { lw: 0, k: 0 }) +
       el(120, 70, 80, 66, '#FFFFFF', 0.5) + el(120, 138, 84, 10, '#FFFFFF', 0.45) +
@@ -559,6 +572,11 @@
       id: 'fishmaze', save: 'fishmaze', name: 'Fish Maze', blurb: 'Munch the fish, dodge the puppies',
       ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#C6EBB5',
       badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.fishmaze
+    },
+    {
+      id: 'parade', save: 'parade', name: 'Kitten Parade', blurb: 'Give the kittens jobs to get them all home',
+      ages: ['10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#BFE6FF',
+      badge: function (p) { return p && p.best > 1 ? 'Level ' + p.best : ''; }, art: ART.parade
     },
     {
       id: 'fashion', save: 'fashion', name: 'Cat Fashion Studio', blurb: 'Dress up your cat, then strike a pose',
