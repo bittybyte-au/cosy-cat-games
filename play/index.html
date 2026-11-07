@@ -61,23 +61,19 @@ h1 a { color: inherit; text-decoration: none; }
 #sumIn { text-align: center; }
 .confirm-text { text-align: center; font: 800 1.3rem var(--body); }
 
-/* your own cat (your avatar) says hello */
-/* suggested-age filter: just a suggestion, any kid can play anything outside toddler mode */
-.ages { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 4px auto 22px; background: var(--cream); border: 3px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 0 3px 0 var(--ink), var(--soft); width: max-content; max-width: 100%; }
-.ages .lab { font: 800 .85rem var(--body); color: var(--muted); padding: 0 6px 0 8px; }
-.ages button { border: 0; background: transparent; border-radius: 999px; padding: 7px 13px 5px; font: 800 1rem/1 var(--display); color: var(--ink); cursor: pointer; min-height: 38px; }
-.ages button[aria-pressed="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
-body.toddler .ages { display: none; }
-@media (max-width: 420px) { .ages .lab { display: none; } .ages button { padding: 7px 10px 5px; font-size: .92rem; } }
-.hello { display: flex; align-items: center; gap: 4px; margin-block: -6px -4px; }
-.mascot { width: 96px; flex: none; animation: bob 2.6s ease-in-out infinite; }
-.mascot svg { display: block; width: 100%; height: auto; }
-.greeting {
-  position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 22px; padding: 10px 18px;
-  font: 800 1.3rem/1.2 var(--body); box-shadow: 0 4px 0 var(--ink), var(--soft); min-width: 0;
-}
-.greeting::before { content: ""; position: absolute; left: -15px; top: 50%; margin-top: -9px; border: 9px solid transparent; border-right: 14px solid var(--ink); border-left: 0; }
-.greeting::after { content: ""; position: absolute; left: -9px; top: 50%; margin-top: -6px; border: 6px solid transparent; border-right: 10px solid #fff; border-left: 0; }
+/* suggested-age filter: a round button in the header that opens a small menu. Ages are only a suggestion:
+   any kid can play anything outside toddler mode. */
+.age-pick { position: relative; }
+.age-pick > .round { position: relative; }
+.age-pick > .round[aria-pressed="true"] { background: var(--sun); }
+.age-pick .now { position: absolute; right: -8px; bottom: -6px; background: #fff; border: 2.5px solid var(--ink); border-radius: 999px; padding: 1px 6px; font: 800 .72rem/1.2 var(--body); white-space: nowrap; }
+.age-menu { position: absolute; top: calc(100% + 10px); right: 0; z-index: 20; background: var(--cream); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 4px 0 var(--ink), var(--soft); padding: 8px; display: flex; flex-direction: column; gap: 4px; min-width: 170px; }
+.age-menu[hidden] { display: none; }
+.age-menu .lab { font: 800 .8rem var(--body); color: var(--muted); padding: 2px 8px 4px; }
+.age-menu button { border: 0; background: transparent; border-radius: 14px; padding: 9px 12px 7px; font: 800 1.05rem/1 var(--display); color: var(--ink); cursor: pointer; text-align: left; min-height: 42px; }
+.age-menu button[aria-checked="true"] { background: var(--sun); box-shadow: inset 0 0 0 3px var(--ink); }
+.age-menu button:hover { background: rgba(255, 210, 63, .35); }
+body.toddler .age-pick { display: none; }
 
 /* game tiles */
 .tiles { margin-top: 50px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 54px 18px; }
@@ -176,7 +172,7 @@ body.toddler .tile .age-tag { display: none; }
 .site-foot { margin-top: auto; padding-top: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud1, .cloud2, .mascot, .av-sq.shake { animation: none; }
+  .cloud1, .cloud2, .av-sq.shake { animation: none; }
   .toddler-chip .knob::after { transition: none; }
 }
 </style>
@@ -195,11 +191,10 @@ body.toddler .tile .age-tag { display: none; }
     <div class="head-btns">
       <button class="chip player-chip" id="playerChip" type="button" aria-label="Change your nickname or cat"></button>
       <a class="round" id="homeBtn" href="../games/home/index.html" aria-label="My cosy home" hidden><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 5l11 10" fill="none" stroke="#2A2340" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13v13h16V13" fill="#FFC93C" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><path d="M13.5 26v-6.5h5V26" fill="#FF6B57" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg></a>
+      <div class="age-pick"><button class="round" id="ageBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="ageMenu" aria-label="Suggested age: all ages"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7 H27 L19 17 V25 L13 28 V17 Z" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.8" stroke-linejoin="round"/><path d="M9.5 9.5 H17" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/></svg></button><div class="age-menu" id="ageMenu" role="menu" aria-label="Suggested age" hidden></div></div>
     </div>
   </header>
-  <div class="hello"><span class="mascot" id="mascot" aria-hidden="true"></span><p class="greeting" id="greeting"></p></div>
 
-  <div class="ages" id="ages" role="group" aria-label="Suggested age"></div>
   <div id="installBanner" hidden></div>
   <main class="tiles" id="tiles">
     <div class="tile more" aria-label="More games coming soon">
@@ -231,18 +226,6 @@ body.toddler .tile .age-tag { display: none; }
   document.querySelector('.sky .cloud2').innerHTML = cloud;
   document.querySelector('.sky .hill').innerHTML = GGScene.svg.hills({ w: 1000, h: 300, kind: 'two', col: '#7BD389', back: '#4FB868' });
   var chip = document.getElementById('playerChip');
-  var greet = document.getElementById('greeting');
-  var mascot = document.getElementById('mascot');
-  var mascotKey = '';
-  /* the cat saying hello is the player's own avatar; before there's a player, a plain waving cat */
-  function renderMascot(p) {
-    var av = p ? GGAvatar.normalise(p.avatar, p.color) : null;
-    var key = av ? JSON.stringify(av) : 'none';
-    if (key === mascotKey) return;
-    mascotKey = key;
-    if (av) mascot.innerHTML = GGAvatar.svg(av, 96);
-    else if (window.GGCat && GGCat.svg) mascot.innerHTML = GGCat.svg({ preset: 'ginger', pose: 'wave', size: 96 });
-  }
   var overlay = document.getElementById('overlay');
   var panel = document.getElementById('panel');
 
@@ -254,16 +237,12 @@ body.toddler .tile .age-tag { display: none; }
 
   function renderHeader() {
     var p = GG.current();
-    renderMascot(p);
     if (p) {
       var fresh = newItems(p);
       chip.innerHTML = GGAvatar.svg(GGAvatar.normalise(p.avatar, p.color), 46) + '<span>' + esc(p.name) + '</span>' + (toddlerOn() ? '<span class="tod-dot" title="Toddler profile">' + RATTLE + '</span>' : '') + (fresh.length ? '<span class="new-dot" aria-label="New things to wear"></span>' : '');
-      greet.textContent = fresh.length
-        ? 'You earned ' + (fresh.length > 1 ? fresh.length + ' new things' : article(GGAvatar.item(fresh[0]).name + (GGAvatar.TYPES.some(function (t) { return t.id === fresh[0]; }) ? ' cat' : ''))) + '! Tap your picture to try ' + (fresh.length > 1 ? 'them' : 'it') + ' on.'
-        : 'Hi ' + p.name + '! Pick a game.';
+      chip.setAttribute('aria-label', 'Change your nickname or cat' + (fresh.length ? ' (new things to wear)' : ''));
     } else {
       chip.innerHTML = '<span class="plus">+</span><span>Add your name</span>';
-      greet.textContent = 'Pick a game.';
     }
     GGGames.all.forEach(function (g) {
       var b = document.querySelector('.tile[data-game="' + g.id + '"] .badge');
@@ -281,7 +260,6 @@ body.toddler .tile .age-tag { display: none; }
 
   /* earned avatar items the player hasn't seen yet */
   function newItems(p) { var seen = p.seen || []; return GGAvatar.unlocked(GG).filter(function (id) { return seen.indexOf(id) < 0; }); }
-  function article(name) { var n = name.charAt(0).toLowerCase() + name.slice(1); return (/^[aeiou]/.test(n) ? 'an ' : 'a ') + n; }
 
   /* one player per device: the first visit asks for a name and builds a cat; the chip changes them later */
   /* the avatar screen, from Lily's sketch: category buttons down the side, a list of things to wear,
@@ -386,19 +364,32 @@ body.toddler .tile .age-tag { display: none; }
   function toddlerOn() { return toddlerReady() && !!GG.getSetting('toddler', false); }
   /* the suggested-age filter above the tiles ('' = all ages); remembered on this device */
   function ageFilter() { var a = GG.getSetting('ageFilter', ''); return GGGames.AGES.some(function (x) { return x.id === a; }) ? a : ''; }
+  var ageBtn = document.getElementById('ageBtn'), ageMenu = document.getElementById('ageMenu');
   function renderAges(tod) {
-    var box = document.getElementById('ages'); if (tod) { box.innerHTML = ''; return; }
-    var cur = ageFilter();
-    box.innerHTML = '<span class="lab">Suggested age</span>' + [{ id: '', label: 'All' }].concat(GGGames.AGES).map(function (a) {
-      return '<button type="button" data-age="' + a.id + '" aria-pressed="' + (a.id === cur) + '">' + a.label + '</button>';
+    if (tod) { ageMenu.hidden = true; return; }
+    var cur = ageFilter(), lab = cur ? GGGames.AGES.filter(function (a) { return a.id === cur; })[0].label : '';
+    ageBtn.setAttribute('aria-pressed', !!cur);
+    ageBtn.setAttribute('aria-label', 'Suggested age: ' + (cur ? lab : 'all ages'));
+    var tag = ageBtn.querySelector('.now'); if (tag) tag.remove();
+    if (cur) ageBtn.insertAdjacentHTML('beforeend', '<span class="now" aria-hidden="true">' + lab + '</span>');
+    ageMenu.innerHTML = '<span class="lab">Suggested age</span>' + [{ id: '', label: 'All ages' }].concat(GGGames.AGES).map(function (a) {
+      return '<button type="button" role="menuitemradio" data-age="' + a.id + '" aria-checked="' + (a.id === cur) + '">' + a.label + '</button>';
     }).join('');
   }
-  document.getElementById('ages').addEventListener('click', function (e) {
+  function ageOpen(on) {
+    ageMenu.hidden = !on; ageBtn.setAttribute('aria-expanded', on);
+    if (on) { var b = ageMenu.querySelector('[aria-checked="true"]') || ageMenu.querySelector('button'); b && b.focus(); }
+  }
+  ageBtn.addEventListener('click', function (e) { e.stopPropagation(); ageOpen(ageMenu.hidden); });
+  ageMenu.addEventListener('click', function (e) {
     var b = e.target.closest('[data-age]'); if (!b) return;
     GG.setSetting('ageFilter', b.dataset.age);
     if (GG.track) GG.track('Age filter', { age: b.dataset.age || 'all' });
-    renderTiles(); if (typeof renderHeader === 'function') renderHeader();
+    ageOpen(false); ageBtn.focus();
+    renderTiles(); renderHeader();
   });
+  document.addEventListener('click', function (e) { if (!ageMenu.hidden && !e.target.closest('.age-pick')) ageOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !ageMenu.hidden) { ageOpen(false); ageBtn.focus(); } });
   function renderTiles() {
     var box = document.getElementById('tiles'), sleepy = box.querySelector('.tile.more');
     box.querySelectorAll('.tile[data-game]').forEach(function (t) { t.remove(); });

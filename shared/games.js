@@ -454,7 +454,7 @@
     },
     {
       id: 'slide', save: 'slide', name: 'Slide Puzzle', blurb: 'Slide the squares to fix the picture',
-      ages: ['5-10'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
+      ages: ['5-10', '10+'], toddler: false, free: 'all', status: 'live', season: null, colour: '#CDE8FF',
       art: ART.slide
     },
     {
