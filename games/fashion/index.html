@@ -34,6 +34,12 @@ body { background: #FFE3EE; }
 .pick { flex: none; width: 70px; height: 70px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink); }
 .pick img { width: 62px; height: 62px; pointer-events: none; }
 .pick[aria-pressed="true"] { background: #FFE58A; transform: translateY(-2px); box-shadow: 0 5px 0 var(--ink); }
+/* backdrop picks: the picture fills the button right up to its outline */
+.pick.bg { overflow: hidden; background: var(--ink); }
+.pick.bg img { width: 100%; height: 100%; display: block; border-radius: 13px; }
+.pick.bg img { box-sizing: border-box; }
+.pick.bg[aria-pressed="true"] { background: var(--ink); }
+.pick.bg[aria-pressed="true"] img { border: 4px solid var(--sun); }
 .pick.none { font: 800 .8rem/1.1 var(--body); color: var(--muted); text-align: center; }
 .sw { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--ink); cursor: pointer; padding: 0; }
 .sw[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--cream), 0 0 0 6px var(--ink); }
@@ -56,7 +62,7 @@ body { background: #FFE3EE; }
 .say.hide { opacity: 0; transform: translateX(-50%) translateY(8px); }
 @media (max-width: 440px) { .title { font-size: .95rem; padding: 7px 10px 5px; } }
 @media (max-width: 370px) { .title { display: none; } }
-@media (max-width: 400px) { .tab { padding: 5px 9px 3px; font-size: .85rem; } .tab svg { display: none; } .pick { width: 62px; height: 62px; } .pick img { width: 54px; height: 54px; } }
+@media (max-width: 400px) { .tab { padding: 5px 9px 3px; font-size: .85rem; } .tab svg { display: none; } .pick { width: 62px; height: 62px; } .pick img { width: 54px; height: 54px; } .pick.bg img { width: 100%; height: 100%; } }
 </style>
 </head>
 <body class="game">

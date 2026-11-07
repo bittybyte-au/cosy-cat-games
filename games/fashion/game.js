@@ -81,7 +81,7 @@
     document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === tab)); });
     var r1 = '', r2 = '';
     if (tab === 'photo') {
-      r1 = F.BACKDROPS.map(function (b) { return '<button class="pick" type="button" data-bg="' + b.id + '" aria-label="' + b.name + '" aria-pressed="' + (S.bg === b.id) + '"><img alt="" src="' + bgThumb(b.id) + '"></button>'; }).join('');
+      r1 = F.BACKDROPS.map(function (b) { return '<button class="pick bg" type="button" data-bg="' + b.id + '" aria-label="' + b.name + '" aria-pressed="' + (S.bg === b.id) + '"><img alt="" src="' + bgThumb(b.id) + '"></button>'; }).join('');
       r2 = '<button class="snap" type="button" id="snapBtn"><svg viewBox="0 0 32 32"><rect x="3" y="9" width="26" height="18" rx="5" fill="#FFFFFF" stroke="#2A2340" stroke-width="2.6"/><path d="M11 9 L13 5 H19 L21 9" fill="#FFFFFF" stroke="#2A2340" stroke-width="2.6" stroke-linejoin="round"/><circle cx="16" cy="18" r="5.5" fill="#BFE6FF" stroke="#2A2340" stroke-width="2.6"/></svg>Snap!</button><span class="sep"></span>' +
         ['sit', 'wave'].map(function (p) { return '<button class="chip" type="button" data-pose="' + p + '" aria-pressed="' + (S.pose === p) + '">' + (p === 'sit' ? 'Sit' : 'Wave') + '</button>'; }).join('') +
         '<span class="sep"></span>' + FACES.map(function (f) { return '<button class="chip" type="button" data-face="' + f.id + '" aria-pressed="' + (S.face === f.id) + '">' + f.name + '</button>'; }).join('') +
