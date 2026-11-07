@@ -291,8 +291,8 @@
     })(),
 
     rescue: svg(
-      // the game as it looks: the bath scene on top, the water rising round a cat on a stool, a brick wall with a
-      // gap the water pours through, and the board of pieces (with a kitten box) underneath
+      // the game as it looks: the bath scene on top with a cat on a stool, a heap of bubble foam spilling out of the
+      // scene down into the board, where it has slumped into the spaces cleared under it; pieces and a kitten box
       sh(R(0, 0, 240, 150, 0), '#D4EEFF', { lw: 0, k: 0 }) +
       ln('M0 18h240M0 36h240M30 0v58M60 0v58M90 0v58M120 0v58M150 0v58M180 0v58M210 0v58', 1.5, 'rgba(255,255,255,.8)') +
       sh(R(0, 52, 240, 12, 0), '#FFE3C2', { lw: 0, k: 0 }) +
@@ -301,19 +301,20 @@
       sh(R(76, 36, 26, 5, 2), '#E6B98A', { lw: 2.5, k: 0 }) + ln('M80 41v12M98 41v12', 3, '#C98B5B') +
       cat({ preset: 'ginger', pose: 'sit', face: 'surprised', x: 89, y: 17, size: 23 }) +
       sh(P(186, 46, 'h40l-4 12q-16 3 -32 0z'), '#E6B477', { lw: 2.5, k: 0 }) +
-      // the wall, with one brick knocked out and the water pouring through
-      [0, 1, 2, 4, 5].map(function (i) { return sh(R(i * 40 + 2, 64, 36, 12, 3), '#E58F74', { lw: 2.5, k: 2, in: ln('M' + (i * 40) + ' 70h40M' + (i * 40 + 20) + ' 64v6', 1.5, 'rgba(42,35,64,.3)') }); }).join('') +
-      '<rect x="120" y="64" width="40" height="12" fill="#3A3046"/>' +
-      '<path d="M133 62q-2 14 1 26h12q3 -12 1 -26z" fill="#8FD3FF"' + stroke(2) + '/>' +
       // the board
       sh(R(0, 76, 240, 74, 0), '#FFF8EC', { lw: 0, k: 0 }) +
       '<path d="M40 76h40v37H40zM120 76h40v37h-40zM0 113h40v37H0zM80 113h40v37H80zM160 113h40v37h-40z" fill="#F6E8D2"/>' +
       sh(R(84, 82, 32, 26, 4), '#E2A866', { lw: 2.5, k: 2, in: '<rect x="96" y="82" width="8" height="26" fill="#C98B5B"/>' }) +
-      [[20, 95, '#5DB6F5'], [180, 95, '#5DB6F5'], [140, 132, '#5DB6F5']].map(function (q) { return sh(P(q[0] - 11, q[1], 'q7 -8 14 -3l6 -4v14l-6 -4q-7 5 -14 -3z'), q[2], { lw: 2.5, k: 0 }); }).join('') +
+      [[20, 95, '#5DB6F5'], [140, 132, '#5DB6F5']].map(function (q) { return sh(P(q[0] - 11, q[1], 'q7 -8 14 -3l6 -4v14l-6 -4q-7 5 -14 -3z'), q[2], { lw: 2.5, k: 0 }); }).join('') +
       [[60, 95], [220, 132], [100, 132]].map(function (q) { return sh(E(q[0], q[1], 10, 10), '#FF7EB6', { lw: 2.5, k: 2, in: ln('M' + (q[0] - 10) + ' ' + (q[1] - 2) + 'q10 -6 20 0M' + (q[0] - 10) + ' ' + (q[1] + 4) + 'q10 -6 20 0', 1.5, 'rgba(42,35,64,.35)') }); }).join('') +
-      [[140, 95], [20, 132], [220, 95]].map(function (q) { return sh(E(q[0], q[1] + 3, 7, 6), '#A77BFF', { lw: 2.2, k: 0 }) + el(q[0] - 7, q[1] - 6, 3, 3, '#A77BFF') + el(q[0], q[1] - 9, 3, 3, '#A77BFF') + el(q[0] + 7, q[1] - 6, 3, 3, '#A77BFF'); }).join('') +
-      [[180, 132], [60, 132]].map(function (q) { return sh(P(q[0] - 9, q[1] + 8, 'q0 -18 9 -18q9 0 9 18z'), '#FFC93C', { lw: 2.5, k: 0 }); }).join('') +
-      ln('M0 76h240', 3)),
+      [[20, 132], [220, 95]].map(function (q) { return sh(E(q[0], q[1] + 3, 7, 6), '#A77BFF', { lw: 2.2, k: 0 }) + el(q[0] - 7, q[1] - 6, 3, 3, '#A77BFF') + el(q[0], q[1] - 9, 3, 3, '#A77BFF') + el(q[0] + 7, q[1] - 6, 3, 3, '#A77BFF'); }).join('') +
+      [[60, 132]].map(function (q) { return sh(P(q[0] - 9, q[1] + 8, 'q0 -18 9 -18q9 0 9 18z'), '#FFC93C', { lw: 2.5, k: 0 }); }).join('') +
+      ln('M0 76h240', 3) +
+      // the heap: one mass of foam, from the scene down into the board
+      sh(P(108, 76, 'q2 -22 20 -28q8 -16 26 -12q16 -6 26 8q20 2 20 24v82h-40v-37h-40v-37z'), '#CFEAFF', { lw: 3, k: 3, in:
+        [[118, 70, 7], [132, 60, 8], [148, 48, 8], [164, 52, 7], [178, 64, 8], [196, 70, 6], [126, 88, 8], [144, 82, 7], [142, 100, 8], [124, 106, 7],
+         [170, 86, 8], [188, 92, 7], [176, 106, 8], [194, 116, 7], [172, 126, 8], [190, 138, 8], [168, 144, 6], [158, 66, 8], [138, 72, 6], [186, 80, 6]]
+          .map(function (b) { return sh(E(b[0], b[1], b[2], b[2]), '#FFFFFF', { lw: 1.8, k: 0 }) + el(b[0] - b[2] * 0.35, b[1] - b[2] * 0.4, b[2] * 0.3, b[2] * 0.2, '#fff'); }).join('') })),
     hotpaws: (function () {
       // a little light-up floor from above: green and dark tiles are safe, blue ones are diamonds, orange warns, red is lava
       var K = { on: ['#5FE08B', '#C4FFD3'], off: ['#3A3262', '#4E4579'], d: ['#5DB6F5', '#D7F0FF'], warn: ['#FFB547', '#FFEBA8'], lava: ['#FF5B3A', '#FFB14A'] };

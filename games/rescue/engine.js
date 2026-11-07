@@ -7,35 +7,34 @@
      'rain'       rainbow yarn (k -1): swapped with a piece, clears every piece of that kind   (made by 5 in a line)
      'cush'       a kitten on a cushion (k -1): never matches or swaps; it falls as pieces under it clear,
                   and is rescued when it reaches the bottom of its column
-     'fill'       a bit of the peril's filling (k -1: bath water, leaves, rainwater, sea, socks): like a cushion it
-                  never matches or swaps and no match or blast clears it; it falls as pieces under it clear, trickles
-                  down a cell after every move (seep), and drains out of the board when it reaches the bottom of its
-                  column (counted in got.fill)
+     'pile'       a cell of the heap (k -1): the peril's filling (bubble foam, leaves, mud, wet sand, socks) heaped
+                  up in the board like sand. It never matches or swaps; a blast that reaches it clears it. It moves
+                  before anything else as the board settles: down into an empty cell below, or else diagonally down
+                  into an empty cell beside that, so the heap slumps into every space cleared under it. A column's
+                  top cell under the heap's reservoir takes more heap instead of a new piece while the reservoir
+                  lasts. Heap in a column's bottom cell pours out of the board through the drain (one cell per
+                  column each time the board settles). Cleared and poured-out heap both count in got.pile.
    p.tg = a yarn tangle round the piece: it can't be swapped and doesn't fall. Anything that would clear the
    piece (a match it is part of, or a blast) takes the yarn off instead, and the piece stays.
    Boxes (hp 1, or 2 when taped) take one hit from each match made next to them, and from any blast that reaches
    them. Some hold a kitten (kit >= 0), which is freed when the box breaks.
 
    swap(state, r1, c1, r2, c2) plays a move and returns a log of what happened, step by step, for the game to
-   animate: 'nope' | 'swap' | 'pass' (things cleared, boxes hit, yarn off, specials made, bricks knocked) | 'fall'
-   (each piece's path, one cell per tick; spawned pieces with fill: true poured in through a gap; seep: true is the
-   filling trickling down after a move) | 'down' (cushion kittens reaching the bottom) | 'drainout' (filling
-   draining out of the bottom) | 'shuffle'.
+   animate: 'nope' | 'swap' | 'pass' (things cleared, heap blasted, boxes hit, yarn off, specials made) | 'fall'
+   (each piece's path, one cell per tick; spawned heap cells have pile: true, poured down from the reservoir) |
+   'down' (cushion kittens reaching the bottom) | 'drainout' (heap pouring out of the bottom) | 'shuffle'.
    Level map characters: '.' piece, '#' hole, 'b' box, 'B' taped box, 'k' box with a kitten, 'K' taped box with
-   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion.
-   The wall: a row of bricks along the top of the board, one on each column (def.wall: each brick's strength, 1 or 2;
-   0 = none), between the board and the rescue scene, where the peril's filling is held back (st.res pieces of it,
-   def.fill). Clearing a piece (or breaking a box) in a column's top row knocks the brick above it (logged as
-   pass.wall). Every brick knocked out is a gap the filling pours through: while any is left, a gap column's top
-   cell takes a 'fill' piece instead of a new random one (at most one per gap each time the board settles, and not
-   while the open stretch of that column is FILL_CAP filling already: see pours(), so it can't clog the board).
-   Draining every bit of it out of the bottom of the board is the 'fill' goal. */
+   a kitten, 't' a piece in a yarn tangle, 'c' a kitten on a cushion, 'p' a cell of the heap.
+   The heap's reservoir (def.res cells of it, st.res) sits above the board, in the rescue scene, over the columns
+   whose top cell starts as heap (st.pour). Clearing the whole heap, the cells in the board and the reservoir, is
+   the 'pile' goal. */
 (function () {
   'use strict';
 
   var SPECIAL = { zh: 1, zv: 1, nip: 1, rain: 1 };
-  var FILL_CAP = 0.5;   // a gap stops pouring while its column is this full of filling already
-  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'fill'];
+  var PILE_CAP = 0.4;   // the reservoir stops pouring while this much of the board's open cells is heap already (so it can't clog)
+  var ADJ = true;   // a match sweeps away the heap next to it
+  var GOALS = ['kittens', 'boxes', 'yarn', 'down', 'pile'];
 
   function rnd(st) {
     st.seed = (st.seed + 0x6D2B79F5) | 0;
@@ -56,11 +55,11 @@
     colours.sort();
     var st = {
       R: R, C: C, mask: [], g: [], box: [], colours: colours, seed: (seed | 0) || 1, nid: 1, kitN: 0,
-      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, fill: 0, wall: 0 },
-      moves: def.moves, used: 0, extra: 0, res: def.fill | 0, fillN: def.fill | 0, top: [], bottom: [], wall: [], brick: []
+      goal: {}, got: { kittens: 0, boxes: 0, yarn: 0, down: 0, pile: 0 },
+      moves: def.moves, used: 0, extra: 0, res: def.res | 0, top: [], bottom: [], pour: [], cells: 0
     };
     GOALS.forEach(function (k) { st.goal[k] = (def.goal && def.goal[k]) || 0; });
-    st.goal.fill = st.res;
+    st.goal.pile = st.res;
     var randomCells = [];
     for (var r = 0; r < R; r++) {
       st.mask.push([]); st.g.push([]); st.box.push([]);
@@ -73,6 +72,8 @@
           st.box[r][c] = { id: st.nid++, hp: ch === 'B' || ch === 'K' ? 2 : 1, kit: kit ? (st.kitN++ % 6) : -1 };
         } else if (ch === 'c') {
           var cu = piece(st, -1, 'cush'); cu.kit = st.kitN++ % 6; st.g[r][c] = cu;
+        } else if (ch === 'p') {
+          st.g[r][c] = piece(st, -1, 'pile'); st.goal.pile++;
         } else if (ch === '.' || ch === 't') {
           var p = piece(st, 0); p.tg = ch === 't'; st.g[r][c] = p; randomCells.push([r, c]);
         }
@@ -80,14 +81,11 @@
     }
     for (var cc = 0; cc < C; cc++) {
       st.top[cc] = -1; st.bottom[cc] = -1;
-      for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; }
+      for (var rr = 0; rr < R; rr++) if (st.mask[rr][cc]) { if (st.top[cc] < 0) st.top[cc] = rr; st.bottom[cc] = rr; if (!st.box[rr][cc]) st.cells++; }
+      // the reservoir pours into the columns whose top cell starts as heap
+      st.pour[cc] = st.top[cc] >= 0 && def.map[st.top[cc]].charAt(cc) === 'p';
     }
-    // the wall: one brick on top of each column that has cells (def.wall gives each one's strength)
-    for (var wc = 0; wc < C; wc++) {
-      var hp = st.top[wc] < 0 ? 0 : (def.wall ? (def.wall[wc] | 0) : 1);
-      st.wall.push(hp); st.brick.push(hp > 0);
-    }
-    // fill the pieces with no ready-made lines, and at least one move
+    // colour the pieces with no ready-made lines, and at least one move
     for (var tries = 0; tries < 200; tries++) {
       randomCells.forEach(function (q) {
         var p = st.g[q[0]][q[1]], guard = 0;
@@ -104,10 +102,9 @@
   function clone(st) {
     var o = {}, k;
     for (k in st) o[k] = st[k];
-    o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours;
+    o.mask = st.mask; o.top = st.top; o.bottom = st.bottom; o.colours = st.colours; o.pour = st.pour;
     o.goal = st.goal;
-    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, fill: st.got.fill, wall: st.got.wall };
-    o.wall = st.wall.slice(); o.brick = st.brick;
+    o.got = { kittens: st.got.kittens, boxes: st.got.boxes, yarn: st.got.yarn, down: st.got.down, pile: st.got.pile };
     o.g = []; o.box = [];
     for (var r = 0; r < st.R; r++) {
       var gr = [], br = [];
@@ -124,7 +121,7 @@
   /* ---------- looking at the board ---------- */
   function inside(st, r, c) { return r >= 0 && c >= 0 && r < st.R && c < st.C && st.mask[r][c]; }
   function kindAt(st, r, c) { if (!inside(st, r, c)) return -1; var p = st.g[r][c]; return p ? p.k : -1; }
-  function fixed(p) { return p.sp === 'cush' || p.sp === 'fill'; }   // pieces that never swap, match or clear
+  function fixed(p) { return p.sp === 'cush' || p.sp === 'pile'; }   // pieces that never swap or match
   function swappable(st, r, c) { if (!inside(st, r, c)) return false; var p = st.g[r][c]; return !!p && !p.tg && !fixed(p); }
   function isSp(p) { return !!(p && SPECIAL[p.sp]); }
 
@@ -201,10 +198,10 @@
   }
   function won(st) { for (var i = 0; i < GOALS.length; i++) if (st.got[GOALS[i]] < st.goal[GOALS[i]]) return false; return true; }
   function movesLeft(st) { return st.moves + st.extra - st.used; }
-  function gaps(st) { var n = 0; for (var c = 0; c < st.C; c++) if (st.brick[c] && st.wall[c] <= 0) n++; return n; }
+  function pileN(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === 'pile') n++; } return n; }
 
   /* ---------- one clearing pass ---------- */
-  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], wall: [], chain: 0 }; }
+  function newPass() { return { type: 'pass', removed: [], boxes: [], untangled: [], made: [], convert: [], fx: [], chain: 0 }; }
 
   function damageBox(st, ev, r, c, d) {
     var b = st.box[r][c];
@@ -263,9 +260,9 @@
       g.cells.forEach(function (p) {
         [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) {
           var r = p[0] + o[0], c = p[1] + o[1];
-          if (!inside(st, r, c) || !st.box[r][c] || seen[r * 64 + c]) return;
-          seen[r * 64 + c] = 1;
-          q.push([r, c, 0.05, 1]);
+          if (!inside(st, r, c) || seen[r * 64 + c]) return;
+          if (st.box[r][c]) { seen[r * 64 + c] = 1; q.push([r, c, 0.05, 1]); }
+          else if (ADJ && isPile(st, r, c)) { seen[r * 64 + c] = 1; q.push([r, c, 0.08]); }
         });
       });
       g.cells.forEach(function (p) { q.push([p[0], p[1], 0]); });
@@ -283,20 +280,12 @@
       var p = st.g[r][c];
       if (!p) continue;
       if (p.tg) { p.tg = false; st.got.yarn++; ev.untangled.push({ id: p.id, r: r, c: c, d: d }); continue; }
-      if (fixed(p)) continue;
+      if (p.sp === 'cush') continue;
+      if (p.sp === 'pile') st.got.pile++;   // (only a blast gets here: a match never holds heap)
       st.g[r][c] = null;
       ev.removed.push({ id: p.id, r: r, c: c, k: p.k, sp: p.sp, d: d });
       if (SPECIAL[p.sp]) fire(st, ev, p, r, c, d, q);
     }
-    // anything cleared in a column's top row knocks the brick above it (once a pass)
-    var knocked = {};
-    ev.removed.concat(ev.boxes).forEach(function (it) {
-      var c = it.c;
-      if (it.r !== st.top[c] || knocked[c] || !(st.wall[c] > 0)) return;
-      knocked[c] = 1; st.wall[c]--;
-      if (st.wall[c] <= 0) st.got.wall++;
-      ev.wall.push({ c: c, hp: st.wall[c], broke: st.wall[c] <= 0, d: it.d || 0 });
-    });
     made.forEach(function (m) {
       var p = st.g[m.r][m.c];
       if (!p) return;
@@ -321,46 +310,56 @@
     else if (p[p.length - 1][0] < t) p.push([t, r0, c0]);
     p.push([t + 1, r1, c1]);
   }
-  /* A gap pours while there's filling left, once each time the board settles (poured: the columns that have), and
-     only while the open stretch of its column (from the top down to a box, a tangle or a hole) is less than FILL_CAP
-     full of filling and keeps two cells free of it: so filling never piles up on a box or a tangle it can't get past,
-     and the board can't clog. */
-  function pours(st, c, poured) {
-    if (st.res <= 0 || !st.brick[c] || st.wall[c] > 0 || poured[c]) return false;
-    var len = 0, n = 0;
-    for (var r = st.top[c]; r < st.R && st.mask[r][c] && !st.box[r][c]; r++) {
-      var p = st.g[r][c];
-      if (p && p.tg) break;
-      len++; if (p && p.sp === 'fill') n++;
-    }
-    return n < Math.min(Math.floor(len * FILL_CAP), len - 2);
-  }
-  function tick(st, t, paths, spawned, poured) {
+  function open(st, r, c) { return inside(st, r, c) && !st.box[r][c] && !st.g[r][c]; }
+  function isPile(st, r, c) { var p = inside(st, r, c) && st.g[r][c]; return !!p && p.sp === 'pile'; }
+  /* the reservoir pours into a top cell while there's any left (and the board isn't too full of heap already) */
+  function pours(st, c) { return st.pour[c] && st.res > 0 && pileN(st) < st.cells * PILE_CAP; }
+  /* One tick, in this order, so the heap always gets first go at a space:
+     1. heap falls straight down; 2. pieces fall straight down; 3. heap that couldn't fall slides diagonally down
+     into a space nothing above it can fill (under a box, a tangle or a hole), so it flows round them; 4. empty top cells get heap from the reservoir, or else a new piece;
+     5. cells nothing can fall into from above take a piece sliding down from the side. */
+  function tick(st, t, paths, spawned) {
     var moved = false, did = {}, r, c, p;
-    for (r = st.R - 1; r >= 0; r--) for (c = 0; c < st.C; c++) {
-      if (!st.mask[r][c] || st.box[r][c] || st.g[r][c]) continue;
-      if (r === st.top[c]) {
-        var f = pours(st, c, poured);
-        p = f ? piece(st, -1, 'fill') : piece(st, randomKind(st));
-        if (f) { st.res--; poured[c] = 1; }
-        st.g[r][c] = p; did[p.id] = 1;
-        spawned.push(f ? { id: p.id, k: -1, sp: 'fill', fill: true, c: c } : { id: p.id, k: p.k }); paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
-      } else if (r > st.top[c] && st.mask[r - 1][c] && !st.box[r - 1][c]) {
-        p = st.g[r - 1][c];
-        if (p && !p.tg && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
+    for (r = st.R - 2; r >= 0; r--) for (c = 0; c < st.C; c++) {
+      p = st.g[r][c];
+      if (p && p.sp === 'pile' && !did[p.id] && open(st, r + 1, c)) { st.g[r + 1][c] = p; st.g[r][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r, c, r + 1, c); moved = true; }
+    }
+    for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
+      if (!open(st, r, c) || r <= st.top[c] || !st.mask[r - 1][c] || st.box[r - 1][c]) continue;
+      p = st.g[r - 1][c];
+      if (p && !p.tg && p.sp !== 'pile' && !did[p.id]) { st.g[r][c] = p; st.g[r - 1][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, c, r, c); moved = true; }
+    }
+    for (r = st.R - 2; r >= 0; r--) for (c = 0; c < st.C; c++) {
+      p = st.g[r][c];
+      if (!p || p.sp !== 'pile' || did[p.id] || open(st, r + 1, c)) continue;
+      var sides = (r + c + t) & 1 ? [-1, 1] : [1, -1];
+      for (var i = 0; i < 2; i++) {
+        var sc = c + sides[i];
+        if (!open(st, r + 1, sc) || supplied(st, r + 1, sc)) continue;
+        st.g[r + 1][sc] = p; st.g[r][c] = null; did[p.id] = 1; addPath(paths, p.id, t, r, c, r + 1, sc); moved = true;
+        break;
       }
     }
-    // cells nothing can fall into from above take a piece sliding down from the side
+    for (c = 0; c < st.C; c++) {
+      r = st.top[c];
+      if (r < 0 || !open(st, r, c)) continue;
+      var heap = pours(st, c);
+      p = heap ? piece(st, -1, 'pile') : piece(st, randomKind(st));
+      if (heap) st.res--;
+      st.g[r][c] = p; did[p.id] = 1;
+      spawned.push(heap ? { id: p.id, k: -1, sp: 'pile', pile: true, c: c } : { id: p.id, k: p.k });
+      paths[p.id] = [[t, r - 1, c], [t + 1, r, c]]; moved = true;
+    }
     for (r = st.R - 1; r > 0; r--) for (c = 0; c < st.C; c++) {
-      if (!st.mask[r][c] || st.box[r][c] || st.g[r][c] || supplied(st, r, c)) continue;
+      if (!open(st, r, c) || supplied(st, r, c)) continue;
       var order = (t + r + c) & 1 ? [-1, 1] : [1, -1];
-      for (var i = 0; i < 2; i++) {
-        var sc = c + order[i];
-        if (!inside(st, r - 1, sc) || st.box[r - 1][sc]) continue;
-        p = st.g[r - 1][sc];
-        if (!p || p.tg || did[p.id]) continue;
-        if (st.mask[r][sc] && !st.box[r][sc] && !st.g[r][sc]) continue; // it would rather fall straight down
-        st.g[r][c] = p; st.g[r - 1][sc] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, sc, r, c); moved = true;
+      for (var j = 0; j < 2; j++) {
+        var sc2 = c + order[j];
+        if (!inside(st, r - 1, sc2) || st.box[r - 1][sc2]) continue;
+        p = st.g[r - 1][sc2];
+        if (!p || p.tg || p.sp === 'pile' || did[p.id]) continue;
+        if (open(st, r, sc2)) continue; // it would rather fall straight down
+        st.g[r][c] = p; st.g[r - 1][sc2] = null; did[p.id] = 1; addPath(paths, p.id, t, r - 1, sc2, r, c); moved = true;
         break;
       }
     }
@@ -375,18 +374,21 @@
     for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) if (st.g[r][c]) at[st.g[r][c].id] = [r, c];
     spawned.forEach(function (s) {
       var pos = at[s.id];
-      if (s.fill || !pos || rnd(st) < LUCKY) return;
+      if (s.pile || !pos || rnd(st) < LUCKY) return;
       var p = st.g[pos[0]][pos[1]];
       if (!lineAt(st, pos[0], pos[1], p.k)) return;
       var opts = st.colours.filter(function (k) { return !lineAt(st, pos[0], pos[1], k); });
       if (opts.length) { p.k = pick(st, opts); s.k = p.k; }
     });
   }
+  /* the board settles; cushion kittens reaching the bottom are rescued, and heap in a bottom cell pours out
+     (each column pours up to DRAIN cells of it each time the board settles, so it streams out over a few moves) */
+  var DRAIN = 2;
   function fall(st, log) {
-    var poured = {};   // each gap pours at most one bit of filling in each time the board settles
+    var poured = {};
     for (var loop = 0; loop < 30; loop++) {
       var paths = {}, spawned = [], t = 0;
-      while (t < 300 && tick(st, t, paths, spawned, poured)) t++;
+      while (t < 300 && tick(st, t, paths, spawned)) t++;
       settleKinds(st, spawned);
       if (t) log.push({ type: 'fall', paths: paths, spawned: spawned, ticks: t });
       var downs = [], outs = [];
@@ -395,43 +397,12 @@
         if (r < 0) continue;
         var p = st.g[r][c];
         if (p && p.sp === 'cush') { st.g[r][c] = null; st.got.down++; downs.push({ id: p.id, r: r, c: c, kit: p.kit }); }
-        else if (p && p.sp === 'fill') { st.g[r][c] = null; st.got.fill++; outs.push({ id: p.id, r: r, c: c }); }
+        else if (p && p.sp === 'pile' && (poured[c] | 0) < DRAIN) { st.g[r][c] = null; st.got.pile++; poured[c] = (poured[c] | 0) + 1; outs.push({ id: p.id, r: r, c: c }); }
       }
       if (downs.length) log.push({ type: 'down', list: downs });
       if (outs.length) log.push({ type: 'drainout', list: outs });
       if (!downs.length && !outs.length) return;
     }
-  }
-
-  /* after each move the filling trickles down a cell: each run of it resting on a plain piece sinks into that
-     piece's cell, and the piece bobs up to sit on top of the run; a bit resting on a box, a tangle or a cushion
-     trickles round it instead, swapping with a plain piece diagonally below. So filling never sits stuck for good. */
-  var SEEP = 3;   // ticks the trickle takes, so it reads as a slow sink
-  function plain(st, r, c) { if (!inside(st, r, c) || st.box[r][c]) return false; var q = st.g[r][c]; return !!q && !q.tg && !fixed(q); }
-  function seep(st, log) {
-    var paths = {}, any = false, moved = {};
-    for (var r = st.R - 2; r >= 0; r--) for (var c = 0; c < st.C; c++) {
-      var p = st.g[r][c];
-      if (!p || p.sp !== 'fill' || moved[p.id] || r >= st.bottom[c]) continue;
-      if (plain(st, r + 1, c)) {
-        var q = st.g[r + 1][c], a = r;
-        while (a - 1 >= 0 && st.mask[a - 1][c] && !st.box[a - 1][c] && st.g[a - 1][c] && st.g[a - 1][c].sp === 'fill') a--;
-        for (var y = r; y >= a; y--) { var f = st.g[y][c]; st.g[y + 1][c] = f; moved[f.id] = 1; paths[f.id] = [[0, y, c], [SEEP, y + 1, c]]; }
-        st.g[a][c] = q; moved[q.id] = 1; paths[q.id] = [[0, r + 1, c], [SEEP, a, c]];
-        any = true;
-      } else if (inside(st, r + 1, c) && !(st.g[r + 1][c] && st.g[r + 1][c].sp === 'fill')) {
-        var sides = (r + c + st.used) & 1 ? [-1, 1] : [1, -1];
-        for (var i = 0; i < 2; i++) {
-          var sc = c + sides[i];
-          if (!plain(st, r + 1, sc) || moved[st.g[r + 1][sc].id]) continue;
-          var d = st.g[r + 1][sc]; st.g[r + 1][sc] = p; st.g[r][c] = d; moved[p.id] = moved[d.id] = 1;
-          paths[p.id] = [[0, r, c], [SEEP, r + 1, sc]]; paths[d.id] = [[0, r + 1, sc], [SEEP, r, c]];
-          any = true; break;
-        }
-      }
-    }
-    if (any) log.push({ type: 'fall', paths: paths, spawned: [], ticks: SEEP, seep: true });
-    return any;
   }
 
   function shuffle(st, log) {
@@ -518,7 +489,6 @@
       if (isSp(b)) seed.hits.push([r1, c1, 0]);
     }
     cascade(st, log, seed, [[r2, c2], [r1, c1]]);
-    if (seep(st, log)) { fall(st, log); cascade(st, log, null, null); }
     return log;
   }
 
@@ -536,36 +506,37 @@
   function depth(st, sp) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (p && p.sp === sp) n += r; } return n; }
   function specials(st) { var n = 0; for (var r = 0; r < st.R; r++) for (var c = 0; c < st.C; c++) { var p = st.g[r][c]; if (isSp(p)) n += p.sp === 'rain' ? 2 : 1; } return n; }
   function need(st, k) { return st.got[k] < st.goal[k]; }
-  /* how far the filling still has to go: each bit's cells to the bottom, and more for each box or tangle in its way;
-     filling still behind the wall counts as a whole column and a bit */
-  function fillCost(st) {
-    var n = st.res * (st.R + 2);
+  /* how much is still in the heap's way: for each cell of heap, the pieces under it in its column (more for a box
+     or a tangle), which have to go before it can pour out; the reservoir counts as a column's worth a cell */
+  function pileCost(st) {
+    var n = st.res * st.R;
     for (var c = 0; c < st.C; c++) for (var r = 0; r < st.R; r++) {
-      var p = st.g[r][c]; if (!p || p.sp !== 'fill') continue;
-      n += st.bottom[c] - r;
-      for (var y = r + 1; y <= st.bottom[c]; y++) { if (st.box[y][c]) n += 4 * st.box[y][c].hp; else if (st.g[y][c] && st.g[y][c].tg) n += 4; }
+      var p = st.g[r][c]; if (!p || p.sp !== 'pile') continue;
+      for (var y = r + 1; y <= st.bottom[c]; y++) {
+        if (!st.mask[y][c]) continue;
+        var q = st.g[y][c];
+        if (st.box[y][c]) n += 3 * st.box[y][c].hp; else if (q && q.tg) n += 3; else if (q && q.sp !== 'pile') n += 1;
+      }
     }
     return n;
   }
-  /* how much filling the specials on the board would bring down if they went off: a vertical zoomies under some
-     filling drops all of it at once, a horizontal one or catnip below it a cell or so */
+  /* how much heap the specials on the board would clear if they went off */
   function flush(st) {
-    var n = 0, r, c, y;
+    var n = 0, r, c, y, x;
     for (r = 0; r < st.R; r++) for (c = 0; c < st.C; c++) {
       var p = st.g[r][c]; if (!isSp(p)) continue;
-      if (p.sp === 'zv' || p.sp === 'rain') for (y = 0; y < st.R; y++) { var q = st.g[y][c]; if (q && q.sp === 'fill') n += 2; }
-      else for (var x = (p.sp === 'nip' ? c - 1 : 0); x <= (p.sp === 'nip' ? c + 1 : st.C - 1); x++) for (y = 0; y < r; y++) { if (!inside(st, y, x)) continue; var f = st.g[y][x]; if (f && f.sp === 'fill') n += 1; }
+      if (p.sp === 'zv') { for (y = 0; y < st.R; y++) if (isPile(st, y, c)) n++; }
+      else if (p.sp === 'zh') { for (x = 0; x < st.C; x++) if (isPile(st, r, x)) n++; }
+      else if (p.sp === 'nip') { for (y = r - 1; y <= r + 1; y++) for (x = c - 1; x <= c + 1; x++) if (isPile(st, y, x)) n++; }
     }
     return n;
   }
   function score(before, after) {
     var s = 0;
     var dk = after.got.kittens - before.got.kittens, db = after.got.boxes - before.got.boxes, dy = after.got.yarn - before.got.yarn, dd = after.got.down - before.got.down;
-    var hits = 0; for (var wc = 0; wc < before.C; wc++) hits += Math.max(0, before.wall[wc] - after.wall[wc]);
-    // the filling: knock bricks while there's filling to let in (most while few gaps are open), bring it down, drain it
-    var nf = need(before, 'fill'), df = after.got.fill - before.got.fill, open = gaps(before);
-    if (nf && before.res > 0) s += hits * (open < 2 ? 34 : open < 4 ? 16 : 6) + (gaps(after) - open) * (open < 3 ? 24 : 8);
-    if (nf) s += df * 30 + (fillCost(before) - fillCost(after)) * 18;
+    // the heap: clear it, and clear what's under it so it slumps down and pours out
+    var np = need(before, 'pile');
+    if (np) s += (after.got.pile - before.got.pile) * 30 + (pileCost(before) - pileCost(after)) * 6;
     s += dk * (need(before, 'kittens') ? 100 : 5);
     s += db * (need(before, 'boxes') ? 30 : 4);
     s += dy * (need(before, 'yarn') ? 30 : 6);
@@ -573,7 +544,7 @@
     s += (boxHp(before) - boxHp(after)) * 6 + (boxHp(before, true) - boxHp(after, true)) * (need(before, 'kittens') ? 24 : 0);
     if (need(before, 'down')) s += (depth(after, 'cush') - depth(before, 'cush') + dd * 2) * 22;
     s += (specials(after) - specials(before)) * 7;
-    if (nf) s += (flush(after) - flush(before)) * 20;
+    if (np) s += (flush(after) - flush(before)) * 12;
     return s;
   }
   function bestMove(st, rand) {
@@ -591,6 +562,6 @@
 
   window.RescueEngine = {
     make: make, clone: clone, swap: swap, blast: blast, swapWorks: swapWorks, allMoves: allMoves, hasMove: hasMove,
-    findGroups: findGroups, won: won, movesLeft: movesLeft, gaps: gaps, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, fixed: fixed
+    findGroups: findGroups, won: won, movesLeft: movesLeft, pileN: pileN, bestMove: bestMove, score: score, GOALS: GOALS, isSp: isSp, fixed: fixed
   };
 })();
