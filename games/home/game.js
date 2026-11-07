@@ -721,7 +721,7 @@
 
   /* ---------- dragging from the drawer ----------
      Touches on a tile are ours (touch-action: none), so the browser can't grab the gesture half-way: once the finger
-     has moved 8px we decide. Mostly up: the item lifts out into the room. Mostly sideways: we scroll the drawer
+     has moved 8px we decide. Upward, diagonals included: the item lifts out into the room. Nearly flat: we scroll the drawer
      ourselves, with a little glide after letting go. A mouse lifts the item with any drag (the drawer has a scrollbar). */
   var press = null, glide = 0, lastSwipe = 0;
   var itemsEl = $('items');
@@ -743,7 +743,9 @@
       var dx = e.clientX - press.x, dy = e.clientY - press.y;
       if (!press.dir) {
         if (press.mouse) { if (Math.hypot(dx, dy) > 8) press.dir = press.placed ? 'none' : 'up'; }
-        else if (Math.hypot(dx, dy) > 8) press.dir = (dy < 0 && -dy > Math.abs(dx) * 0.7) ? (press.placed ? 'none' : 'up') : (Math.abs(dx) >= Math.abs(dy) ? 'x' : 'none');
+        // anything noticeably upward (steeper than about 20 degrees, so diagonals count) lifts it out; only a
+        // nearly flat drag scrolls the drawer
+        else if (Math.hypot(dx, dy) > 8) press.dir = (dy < 0 && -dy > Math.abs(dx) * 0.36) ? (press.placed ? 'x' : 'up') : (Math.abs(dx) >= Math.abs(dy) ? 'x' : 'none');
         if (press.dir === 'up') { liftOut(e); press = null; return; }
       }
       if (press.dir === 'x') {
@@ -751,7 +753,7 @@
         var now = performance.now(), dtm = Math.max(1, now - press.lt);
         press.v = press.v * 0.6 + ((e.clientX - press.lx) / dtm) * 0.4; press.lx = e.clientX; press.lt = now;
         // changed their mind half-way and pushed up instead: lift it out after all
-        if (!press.placed && dy < -45 && -dy > Math.abs(dx) * 0.9) { liftOut(e); press = null; }
+        if (!press.placed && dy < -32) { liftOut(e); press = null; }
       }
       e.preventDefault();
       return;
