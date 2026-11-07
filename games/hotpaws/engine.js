@@ -9,7 +9,9 @@
    Items sit on tiles of their own: blue diamonds ('d', worth 1), golden diamonds ('g', worth 3) and the freeze
    square ('f', stops the lava for a few seconds). They only appear on tiles that are cool now and stay cool for a
    while, and every wave planned for later leaves item tiles out, so a diamond is never on lava.
-   Ice tiles (st.ice) never get hot; stepping onto one slides the cat one tile further the same way.
+   Green tiles (st.safe, a fixed layout per round) are always safe: no lava, no warnings and no items ever go on
+   them, and they stay put for the whole round. The cat starts on the green tile nearest the middle.
+   Ice tiles (st.ice) never get hot either; stepping onto one slides the cat one tile further the same way.
 
    The cat moves one tile at a time (move(st, dir), dir 0 up, 1 right, 2 down, 3 left; one move can be queued).
    Lava under the cat, whether it stepped there or the lava came to it, is "hot paws": it hops up, lands on the
@@ -36,7 +38,7 @@
     var keep = [];
     for (var i = 0; i < cells.length; i++) {
       var k = cells[i];
-      if (st.ice[k] || itemAt(st, k)) continue;
+      if (st.ice[k] || st.safe[k] || itemAt(st, k)) continue;
       if (keep.indexOf(k) < 0) keep.push(k);
     }
     if (keep.length) st.waves.push({ cells: keep, s: s, w: w, h: h });
@@ -232,7 +234,7 @@
   function dist(st, a, b) { return Math.abs(Math.floor(a / st.C) - Math.floor(b / st.C)) + Math.abs(a % st.C - b % st.C); }
   function catK(st) { return idx(st, st.cat.r, st.cat.c); }
   /* a tile an item can go on: cool now and for a while, not ice, no item, not under the cat */
-  function goodSpot(st, k, clear) { return !st.ice[k] && !itemAt(st, k) && st.heat[k] === 0 && !busy(st, k, st.t, st.t + clear) && k !== catK(st); }
+  function goodSpot(st, k, clear) { return !st.ice[k] && !st.safe[k] && !itemAt(st, k) && st.heat[k] === 0 && !busy(st, k, st.t, st.t + clear) && k !== catK(st); }
   function spot(st, near, minD, maxD, clear) {
     var good = [], ok = [];
     for (var k = 0; k < st.N; k++) {
@@ -370,17 +372,28 @@
     var N = C * R;
     var st = {
       L: L, C: C, R: R, N: N, seed: seed | 0, t: 0, rt: 0, uid: 0,
-      waves: [], heat: new Uint8Array(N), ice: new Uint8Array(N), items: [],
+      waves: [], heat: new Uint8Array(N), ice: new Uint8Array(N), safe: new Uint8Array(N), items: [],
       tracks: [{ list: L.patterns, i: 0, next: L.calm || 2.5, shuffle: !!L.shuffle }],
       itemT: 1.2, freezeT: (L.freeze || 0) * 0.6, freeze: 0, got: 0, goal: L.goal, hits: 0, moves: 0, freezes: 0, done: false, ev: [],
       cat: { r: Math.floor(R / 2), c: Math.floor(C / 2), dir: 1, m: null, q: null, hop: null, inv: 0 }
     };
     if (L.overlay) st.tracks.push({ list: L.overlay, i: 0, next: (L.calm || 2.5) + 1.5, shuffle: true, params: L.overlayParams || null });
+    // the green tiles: the round's map is drawn upright (7 wide, 9 tall) and turned on its side for a wide screen
+    var map = L.safe || [], best = -1, bestD = 1e9;
+    for (var sr = 0; sr < R; sr++) for (var sc = 0; sc < C; sc++) {
+      var mr = C > R ? sc : sr, mc = C > R ? sr : sc;
+      if (map[mr] && map[mr].charAt(mc) === 'G') {
+        var sk = idx(st, sr, sc), dd = Math.abs(sr - (R - 1) / 2) + Math.abs(sc - (C - 1) / 2);
+        st.safe[sk] = 1;
+        if (dd < bestD) { bestD = dd; best = sk; }
+      }
+    }
+    if (best >= 0) { st.cat.r = Math.floor(best / C); st.cat.c = best % C; }
     // ice: away from the edges and from each other, never where the cat starts
     var tries = 0, placed = 0;
     while (placed < (L.ice || 0) && tries++ < 500) {
       var r = 1 + ri(st, R - 2), c = 1 + ri(st, C - 2), k = idx(st, r, c), near = false;
-      if (r === st.cat.r && c === st.cat.c) continue;
+      if ((r === st.cat.r && c === st.cat.c) || st.safe[k]) continue;
       for (var j = 0; j < N; j++) if (st.ice[j] && dist(st, j, k) < 3) near = true;
       if (near) continue;
       st.ice[k] = 1; placed++;

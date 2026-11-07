@@ -1,8 +1,9 @@
-/* Hot Paws (ages 5-10 and 11+): a light-up floor, like the one at the games arcade, seen from above. Tiles glow
-   green or sit dark (both safe), blue squares are diamonds to collect, orange warns that lava is coming and red is
-   lava. Your cat walks one tile at a time: swipe (hold to keep walking), tap a tile, or use the arrow keys / WASD.
-   Lava under the paws is "Hot paws!": the cat hops up and lands on the nearest safe tile, dropping a diamond on the
-   floor nearby. No lives, no game over, no timers or scores; the patterns set the pace.
+/* Hot Paws (ages 5-10 and 11+): a light-up floor, like the one at the games arcade, seen from above. Each round
+   has its own fixed green tiles, always safe; the other tiles sit dark until a pattern lights them: blue squares
+   are diamonds to collect, orange warns that lava is coming and red is lava. Your cat walks one tile at a time:
+   swipe (hold to keep walking), tap a tile, or use the arrow keys / WASD. Lava under the paws is "Hot paws!": the
+   cat hops up and lands on the nearest safe tile, dropping a diamond on the floor nearby. No lives, no game over,
+   no timers or scores; the patterns set the pace.
    The rules live in engine.js (shared with the test bot), the rounds in levels.js.
    Saves GG.setProgress('hotpaws', { done: [round numbers finished], last }). */
 (function () {
@@ -393,20 +394,14 @@
   }
 
   /* ================= how each tile looks right now ================= */
-  function glowOn(r, c, t) {
-    if (reduceMotion) t = 0;
-    var kind = level ? level.glow : 'stripes';
-    if (kind === 'checks') return (r + c + Math.floor(t / 2.6)) % 2 === 0;
-    if (kind === 'rings') { var d = Math.max(Math.abs(r - (R - 1) / 2), Math.abs(c - (C - 1) / 2)); return (Math.floor(d) + Math.floor(t / 2.2)) % 3 === 0; }
-    return (r + Math.floor(t / 2.4)) % 3 === 0;
-  }
   function keyFor(k) {
     if (st.heat[k] === 2) return 'lava';
     if (st.heat[k] === 1) return 'warn';
     var it = E.itemAt(st, k);
     if (it && !hidden[it.id]) return it.kind;
+    if (st.safe[k]) return 'on';
     if (st.ice[k]) return 'ice';
-    return glowOn(Math.floor(k / C), k % C, st.rt) ? 'on' : 'off';
+    return 'off';
   }
   var FADE = 0.22;
   function drawFloor(c, now) {

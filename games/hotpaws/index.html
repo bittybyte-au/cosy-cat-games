@@ -65,7 +65,7 @@ body { background: #231C3D; }
 </style>
 </head>
 <body class="game">
-<canvas id="stage" tabindex="0" aria-label="The light-up floor. Swipe, tap a tile next to the cat, or use the arrow keys or W A S D to move one tile. Step on blue diamond tiles to collect them. Orange tiles are about to turn to lava; red tiles are lava."></canvas>
+<canvas id="stage" tabindex="0" aria-label="The light-up floor. Swipe, tap a tile next to the cat, or use the arrow keys or W A S D to move one tile. Step on blue diamond tiles to collect them. Green tiles are always safe. Orange tiles are about to turn to lava; red tiles are lava."></canvas>
 <div class="topbar" id="topbar">
   <a class="round" id="homeBtn" href="../../play/index.html" aria-label="Back to all games">
     <svg viewBox="0 0 32 32"><rect x="5" y="5" width="9.5" height="9.5" rx="3" fill="#FF8FAB" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="5" width="9.5" height="9.5" rx="3" fill="#FFD23F" stroke="#2A2340" stroke-width="2.6"/><rect x="5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7CC4FF" stroke="#2A2340" stroke-width="2.6"/><rect x="17.5" y="17.5" width="9.5" height="9.5" rx="3" fill="#7BD389" stroke="#2A2340" stroke-width="2.6"/></svg>
@@ -103,7 +103,7 @@ body { background: #231C3D; }
       <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5DB6F5" stroke="#2A2340" stroke-width="2.2"/><path d="M9 7.5H15L17.5 10.5L12 18L6.5 10.5Z" fill="#E8F6FF" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/></svg>collect</span>
       <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#FFB547" stroke="#2A2340" stroke-width="2.2"/><path d="M12 6.5L18 17H6Z" fill="#FFF6D8" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10.5V13" stroke="#2A2340" stroke-width="2" stroke-linecap="round"/></svg>lava soon</span>
       <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#FF5B3A" stroke="#2A2340" stroke-width="2.2"/><path d="M3 11Q7.5 7 12 11T21 11M3 16Q7.5 12 12 16T21 16" fill="none" stroke="#FFB14A" stroke-width="2.2" stroke-linecap="round"/></svg>lava</span>
-      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5FE08B" stroke="#2A2340" stroke-width="2.2"/></svg><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#3A3262" stroke="#2A2340" stroke-width="2.2"/></svg>safe</span>
+      <span><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5FE08B" stroke="#2A2340" stroke-width="2.2"/></svg>always safe</span>
     </div>
     <div class="levels" id="levels"></div>
     <button class="big plain" id="listClose" type="button" hidden>Back to the round</button>
