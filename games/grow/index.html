@@ -41,6 +41,9 @@ body.toddler .steprow { min-height: 58px; }
 .choice img { width: 64px; height: 64px; pointer-events: none; }
 .choice.swatch { width: 60px; height: 60px; border-radius: 50%; }
 .choice:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink), var(--soft); }
+/* the player's own pots from Pottery, after the built-in ones */
+.mylabel { flex: none; font: 800 .8rem/1.05 var(--display); color: var(--muted); text-align: center; padding: 0 2px 0 6px; border-left: 3px dashed #D9CFE8; align-self: stretch; display: flex; align-items: center; }
+body.toddler .mylabel { font-size: 0; padding: 0 0 0 4px; }
 .choice.locked { cursor: default; background: #EEE8F3; border-style: dashed; box-shadow: none; }
 .choice.locked img { filter: grayscale(1) brightness(1.25); opacity: .4; }
 .choice .lock { position: absolute; bottom: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 2.5px solid var(--ink); display: grid; place-items: center; }
@@ -99,6 +102,7 @@ body.toddler #grownCount { display: none; }
 <script src="../../shared/store.js"></script>
 <script src="../../shared/cat.js"></script>
 <script src="../../shared/draw.js"></script>
+<script src="../../shared/pots.js"></script>
 <script src="plants.js"></script>
 <script src="game.js"></script>
 </body>

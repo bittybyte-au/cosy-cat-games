@@ -1,7 +1,11 @@
 /* Cosy Cat Games: plants – the pots, seeds and plant drawings, and the player's grown plants.
    Shared by the Grow game (games/grow/, where plants are grown) and Cosy Home (where they're displayed).
-   Plants are saved by the Grow game: GG.getProgress('grow') = { plants: [{ id, t, pot, col }], next, grown }.
-   Drawings are bottom centre at (0,0), about 92 units wide for the pot. */
+   Plants are saved by the Grow game: GG.getProgress('grow') = { plants: [{ id, t, pot, col, cpot? }], next, grown }.
+   A plant in a pot made in the Pottery game keeps its own copy of the pot (cpot, GGPot.pack data, plus cuid, the
+   collection item it came from), so it still draws if that pot is deleted from the collection; pot is then a built-in
+   pot to fall back on (and is used wherever shared/pots.js isn't loaded).
+   Drawings are bottom centre at (0,0), about 92 units wide for the pot. Wherever a pot is asked for, it can be a
+   built-in pot's number or a pot from Pottery (its packed data). */
 (function () {
   'use strict';
   var D = window.GGDraw;   // needs shared/draw.js first
@@ -35,12 +39,29 @@
   ];
   /* Things: some to start with, the rest earned in the other games (read from their saves). */
 
+  /* ---------- pots made in the Pottery game (shared/pots.js) ---------- */
+  function cpot(pot) { return pot && typeof pot === 'object' && window.GGPot && GGPot.unpack(pot) ? pot : null; }
+  function potOf(pl) { return (pl && cpot(pl.cpot)) || (pl ? pl.pot : 0); }
+  /* a made pot is fitted into a box a little wider and up to half again taller than a built-in pot, so a tall vase
+     doesn't tower over its plant and a wide bowl doesn't spill off a shelf */
+  function cfit(w) { return { w: w * 1.1, h: w * 0.95, lw: Math.max(2, w * 0.04) }; }
+  /* where the plant stands: on the soil in the opening, scaled down for a narrow neck */
+  function base(pot, w) {
+    w = w || 92;
+    var cp = cpot(pot);
+    if (!cp) return { y: -w * 0.62 * 0.9, k: 1 };
+    var m = GGPot.size(cp, cfit(w).w, cfit(w).h).mouth;
+    return { y: m.y + m.ry * 0.3, k: clamp((m.rx * 2) / (w * 0.78), 0.5, 1) };
+  }
+
   /* the pot's rim, a little lighter at the top (drawn whole behind the plant, and again as the front lip over it) */
   function rim(c, P, w, h) {
     var lw = Math.max(2, w * 0.04);
     D.shape(c, D.rrPath(-w * 0.56, -h, w * 1.12, h * 0.22, h * 0.08), D.tone(c, P.fill, -h, -h * 0.78), { lw: lw, depth: h * 0.05 });
   }
   function drawPot(c, pot, w) {
+    var cp = cpot(pot);
+    if (cp) { var sz = GGPot.draw(c, cp, cfit(w)); return sz ? sz.h : w * 0.62; }
     var P = POTS[pot] || POTS[0];
     var h = w * 0.62, top = -h;
     c.save();
@@ -70,14 +91,25 @@
   }
   function stem(c, x0, y0, x1, y1, w) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + (x1 - x0) * 0.3, (y0 + y1) / 2, x1, y1); c.lineWidth = (w || 5) + 3; c.strokeStyle = INK; c.lineCap = 'round'; c.stroke(); c.lineWidth = w || 5; c.strokeStyle = '#4FB868'; c.stroke(); }
   /* the soil showing in the mouth of the pot (drawn after the pot, before the plant) */
-  function soil(c, w, amount) {
+  function soil(c, w, amount, pot) {
     var h = w * 0.62; amount = amount === undefined ? 1 : amount;
     if (amount <= 0) return;
+    var cp = cpot(pot);
+    if (cp) {
+      var m = GGPot.size(cp, cfit(w).w, cfit(w).h).mouth, sy = m.y + m.ry * (0.95 - 0.6 * amount);
+      c.save(); GGPot.clipMouth(c, cp, cfit(w));
+      ell(c, 0, sy + m.ry * 0.25, m.rx * 1.05, m.ry * 1.1); c.fillStyle = '#7A4E2D'; c.fill();
+      c.fillStyle = '#5E3A1F'; circle(c, -m.rx * 0.4, sy + m.ry * 0.2, Math.max(1, m.rx * 0.06)); c.fill(); circle(c, m.rx * 0.3, sy + m.ry * 0.45, Math.max(1, m.rx * 0.05)); c.fill();
+      c.restore();
+      return;
+    }
     ell(c, 0, -h + h * 0.08, w * 0.5 * (0.55 + 0.45 * amount), h * 0.1); c.fillStyle = '#7A4E2D'; c.fill();
     c.fillStyle = '#5E3A1F'; circle(c, -w * 0.18, -h + h * 0.07, w * 0.025); c.fill(); circle(c, w * 0.14, -h + h * 0.1, w * 0.02); c.fill();
   }
   /* the front half of the pot's rim, drawn over the bottom of the plant so the stems go into the soil */
   function potLip(c, pot, w) {
+    var cp = cpot(pot);
+    if (cp) { GGPot.lip(c, cp, cfit(w)); return; }
     var P = POTS[pot] || POTS[0], h = w * 0.62;
     c.save();
     c.beginPath(); c.rect(-w, -h + h * 0.12, w * 2, h * 0.3); c.clip();
@@ -85,10 +117,11 @@
     c.restore();
   }
   function drawPotted(c, pl, g, t, soilAmount) {
-    drawPot(c, pl.pot, 92);
-    soil(c, 92, soilAmount);
+    var pot = potOf(pl);
+    drawPot(c, pot, 92);
+    soil(c, 92, soilAmount, pot);
     drawPlant(c, pl, g, t);
-    potLip(c, pl.pot, 92);
+    potLip(c, pot, 92);
   }
 
   /* A potted plant, bottom centre at (0,0). g = how grown it is (0 nothing, 1 full). */
@@ -98,11 +131,11 @@
     var col = FLOWER[pl.col || 0];
     g = g === undefined ? 1 : g;
     t = t || 0;
-    var potH = w * 0.62;
+    var B = base(potOf(pl), w);
     c.save();
     // plants drawn first, pot rim drawn over their base
     c.save();
-    c.translate(0, -potH + potH * 0.1);
+    c.translate(0, B.y); if (B.k !== 1) c.scale(B.k, B.k);
     var sway = Math.sin(t * 1.3 + (pl.id || 0)) * 0.03;
     c.rotate(sway);
     var gg = easeOut(g);
@@ -178,7 +211,7 @@
     }
     c.restore();
     // seed sprout before it grows
-    if (g <= 0.01 && pl.seed) { c.save(); c.translate(0, -potH + potH * 0.1); leaf(c, 0, 0, 14, -2.3, '#7BD389'); leaf(c, 0, 0, 14, -0.8, '#7BD389'); c.restore(); }
+    if (g <= 0.01 && pl.seed) { c.save(); c.translate(0, B.y); leaf(c, 0, 0, 14, -2.3, '#7BD389'); leaf(c, 0, 0, 14, -0.8, '#7BD389'); c.restore(); }
     c.restore();
   }
   /* ---------- the player's plants (saved by the Grow game) ---------- */
@@ -204,6 +237,15 @@
     FLOWER: FLOWER, POTS: POTS, PLANTS: PLANTS,
     def: function (id) { return findDef(PLANTS, id); },
     drawPot: drawPot, drawPlant: drawPlant, drawPotted: drawPotted, soil: soil, potLip: potLip, leaf: leaf,
+    /* pots from Pottery: potOf(plant) is what to pass as a pot; base(pot) is where its plant stands ({ y, k: plant scale });
+       extraH(plant) is how much taller (or shorter) the potted plant is than in a built-in pot */
+    potOf: potOf, base: base, isCustom: function (pot) { return !!cpot(pot); },
+    extraH: function (pl) {
+      var pot = potOf(pl); if (!cpot(pot)) return 0;
+      var b = base(pot, 92), d = findDef(PLANTS, pl.t) || PLANTS[0], top0 = 92 * 0.62 * 0.9;
+      var potTop = GGPot.size(pot, cfit(92).w, cfit(92).h).h;
+      return Math.round(Math.max(potTop, -b.y + (d.h - top0) * b.k) - d.h);
+    },
     load: load,
     save: function (p) { try { GG.setProgress('grow', p); } catch (e) {} },
     list: function () { return load().plants; },

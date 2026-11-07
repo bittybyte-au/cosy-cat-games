@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-7d9177cfed';
+const VERSION = 'ccg-28c8161992';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -61,13 +61,13 @@ const FILES = {
   "./games/feed/game.js": "78cfa78093",
   "./games/feed/": "3457483eab",
   "./games/feed/index.html": "3457483eab",
-  "./games/grow/game.js": "5869742823",
-  "./games/grow/": "bb6a1d8036",
-  "./games/grow/index.html": "bb6a1d8036",
-  "./games/grow/plants.js": "2927a6ed16",
-  "./games/home/game.js": "e6f9f07664",
-  "./games/home/": "a54b98aed3",
-  "./games/home/index.html": "a54b98aed3",
+  "./games/grow/game.js": "8f0e30630d",
+  "./games/grow/": "122dccd943",
+  "./games/grow/index.html": "122dccd943",
+  "./games/grow/plants.js": "04798ad177",
+  "./games/home/game.js": "3c98694aae",
+  "./games/home/": "2105a36e51",
+  "./games/home/index.html": "2105a36e51",
   "./games/hotpaws/engine.js": "f5b6b0888d",
   "./games/hotpaws/game.js": "ecf151dd88",
   "./games/hotpaws/": "cd92826b72",

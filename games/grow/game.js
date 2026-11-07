@@ -1,6 +1,8 @@
 /* Grow – a little potting shed. Pick a pot and a seed, scoop in soil, plant it, water it, pick a flower colour
    and tap the sun to grow it. Grown plants are saved (games/grow/plants.js) and show up in Cosy Home to display.
-   More seeds unlock as you grow more plants. Nothing to win or lose. */
+   More seeds unlock as you grow more plants. Nothing to win or lose.
+   Pots made in the Pottery game (GG.collection({ type: 'pot' }), drawn by shared/pots.js) are offered after the
+   built-in pots; a plant grown in one keeps a copy of it (see plants.js). */
 (function () {
   'use strict';
 
@@ -163,7 +165,7 @@
     water: 'Drag the watering can over the pot', colour: 'Pick a flower colour', sun: 'Tap the sun to help it grow!', done: 'Ta-da!'
   };
   function startGrow() {
-    grow = { step: 'pot', pot: -1, t: null, col: Math.floor(Math.random() * FLOWER.length), soil: 0, seed: false, water: 0, g: 0, anim: 0, can: null, canHeld: false, scoops: [], drops: [] };
+    grow = { step: 'pot', pot: -1, cpot: null, cuid: null, t: null, col: Math.floor(Math.random() * FLOWER.length), soil: 0, seed: false, water: 0, g: 0, anim: 0, can: null, canHeld: false, scoops: [], drops: [] };
     $('cardWrap').hidden = true;
     setStep('pot');
   }
@@ -174,7 +176,13 @@
     grow.step = step;
     $('stepLabel').textContent = STEPS[step];
     var box = $('choices'), html = '';
-    if (step === 'pot') POTS.forEach(function (p, i) { html += '<button class="choice" type="button" data-pot="' + i + '" aria-label="Pot ' + (i + 1) + '"><img alt="" src="' + potThumb(i) + '"></button>'; });
+    if (step === 'pot') {
+      POTS.forEach(function (p, i) { html += '<button class="choice" type="button" data-pot="' + i + '" aria-label="Pot ' + (i + 1) + '"><img alt="" src="' + potThumb(i) + '"></button>'; });
+      // then the player's own pots from Pottery, newest first
+      var mine = myPots();
+      if (mine.length) html += '<span class="mylabel" aria-hidden="true">Your<br>pots</span>';
+      mine.forEach(function (it, i) { html += '<button class="choice mine" type="button" data-cpot="' + it.uid + '" aria-label="Your pot ' + (i + 1) + '"><img alt="" src="' + myPotThumb(it) + '"></button>'; });
+    }
     else if (step === 'seed') PLANTS.forEach(function (p) {
       var ok = P.grown >= p.grown;
       if (TODDLER && !ok) return;
@@ -193,7 +201,7 @@
     if (!grow || !BACK[grow.step]) return;
     var to = BACK[grow.step];
     if (to === 'colour' && !(findDef(PLANTS, grow.t) || {}).colour) to = 'water';   // this plant had no colour to pick
-    if (to === 'pot') { grow.pot = -1; grow.t = null; }
+    if (to === 'pot') { grow.pot = -1; grow.cpot = null; grow.cuid = null; grow.t = null; }
     if (to === 'seed') { grow.t = null; grow.soil = 0; grow.scoops = []; }
     if (to === 'soil') { grow.soil = 0; grow.scoops = []; grow.seed = false; }
     if (to === 'plant') { grow.seed = false; grow.water = 0; grow.can = null; grow.canHeld = false; grow.drops = []; }
@@ -203,6 +211,18 @@
     setStep(to);
   }
   $('backBtn').addEventListener('click', goBack);
+  /* pots made in Pottery: only those that can be drawn here */
+  function myPots() {
+    if (!window.GGPot || typeof GG.collection !== 'function') return [];
+    var list = [];
+    try { list = GG.collection({ type: 'pot' }) || []; } catch (e) { return []; }
+    return list.filter(function (it) { return GGPot.unpack(it.data); }).reverse();
+  }
+  function myPotThumb(it) {
+    var k = 'cpot' + it.uid;
+    if (!thumbCache[k]) { var data = GGPot.pack(it.data), sz = GGPot.size(data, 92 * 1.1, 92 * 0.95); thumbCache[k] = thumb(function (c) { drawPot(c, data, 92); }, 104, Math.max(60, sz.h + 6)); }
+    return thumbCache[k];
+  }
   function potThumb(i) { var k = 'pot' + i; if (!thumbCache[k]) thumbCache[k] = thumb(function (c) { drawPot(c, i, 92); }, 104, 60); return thumbCache[k]; }
   function seedThumb(id) {
     var k = 'seed' + id;
@@ -217,7 +237,12 @@
   $('choices').addEventListener('click', function (e) {
     var b = e.target.closest('.choice'); if (!b || !grow) return;
     Sound.init();
-    if (b.dataset.pot !== undefined) { grow.pot = +b.dataset.pot; grow.anim = 0; Sound.place(); setStep('seed'); }
+    if (b.dataset.pot !== undefined) { grow.pot = +b.dataset.pot; grow.cpot = null; grow.cuid = null; grow.anim = 0; Sound.place(); setStep('seed'); }
+    else if (b.dataset.cpot) {
+      var it = myPots().filter(function (x) { return x.uid === b.dataset.cpot; })[0]; if (!it) return;
+      // the plant keeps its own copy of the pot; pot 0 is the built-in pot to fall back on
+      grow.pot = 0; grow.cpot = GGPot.pack(it.data); grow.cuid = it.uid; grow.anim = 0; Sound.place(); setStep('seed');
+    }
     else if (b.dataset.seed) {
       var p = findDef(PLANTS, b.dataset.seed);
       if (P.grown < p.grown) { Sound.mrrp(); var n = p.grown - P.grown; say('Grow ' + n + ' more plant' + (n > 1 ? 's' : '') + ' to unlock this!', 2); return; }
@@ -301,6 +326,7 @@
     P = GP.load();
     var before = seedsUnlocked().length;
     var pl = { id: P.next++, t: grow.t, pot: grow.pot, col: grow.col };
+    if (grow.cpot) { pl.cpot = grow.cpot; pl.cuid = grow.cuid; }
     P.plants.push(pl);
     if (P.plants.length > 60) P.plants.shift();
     P.grown++;
@@ -312,7 +338,7 @@
     var unlocked = seedsUnlocked();
     var gotNew = unlocked.length > before ? unlocked[unlocked.length - 1] : null;
     setTimeout(function () {
-      $('cardImg').src = thumb(function (c) { GP.drawPotted(c, pl, 1, 0); }, 110, d.h + 64, 400);
+      $('cardImg').src = thumb(function (c) { GP.drawPotted(c, pl, 1, 0); }, 110, d.h + GP.extraH(pl) + 64, 400);
       $('cardTitle').textContent = 'You grew ' + d.grew + '!';
       $('cardNote').textContent = (gotNew ? 'New seed unlocked: ' + gotNew.name + '! ' : '') + 'It\u2019s waiting in your Cosy Home.';
       $('cardWrap').hidden = false;
@@ -431,13 +457,13 @@
       c.save(); c.translate(B.pot.x, lerp(B.pot.y - 160, B.pot.y, grow.step === 'seed' || grow.step === 'pot' ? drop : 1));
       var sq = grow.poke > 0 ? Math.sin(grow.poke / 0.5 * Math.PI) * 0.08 : 0;
       c.scale(1.35 + sq, 1.35 - sq);
-      var pl = { t: grow.t || 'catnip', pot: grow.pot, col: grow.col, id: 1, seed: grow.seed };
-      var potH = 92 * 0.62;
-      drawPot(c, grow.pot, 92);
-      soil(c, 92, Math.min(3, grow.soil) / 3);
-      if (grow.seed && grow.g <= 0) { ell(c, 0, -potH + potH * 0.08, 5, 3.5); c.fillStyle = '#4A2E1A'; c.fill(); }
+      var pl = { t: grow.t || 'catnip', pot: grow.pot, cpot: grow.cpot, col: grow.col, id: 1, seed: grow.seed };
+      var pot = GP.potOf(pl);
+      drawPot(c, pot, 92);
+      soil(c, 92, Math.min(3, grow.soil) / 3, pot);
+      if (grow.seed && grow.g <= 0) { ell(c, 0, GP.base(pot).y + 1, 5, 3.5); c.fillStyle = '#4A2E1A'; c.fill(); }
       if (grow.g > 0 || grow.seed) drawPlant(c, pl, grow.g, time);
-      potLip(c, grow.pot, 92);
+      potLip(c, pot, 92);
       c.restore();
       // a dotted target where the pot wants tapping
       if (grow.step === 'plant') { c.save(); c.setLineDash([8, 7]); c.lineDashOffset = -time * 20; circle(c, B.pot.x, B.pot.y - 56, 60); c.lineWidth = 4; c.strokeStyle = '#FFFFFF'; c.stroke(); c.restore(); }

@@ -92,7 +92,7 @@
       var pls = plants();
       for (var i = 0; i < pls.length; i++) if ('p' + pls[i].id === u) {
         var pl = pls[i], d = findDef(PLANTS, pl.t);
-        if (d) return { u: u, kind: 'plant', def: d, data: pl, w: 100, h: d.h };
+        if (d) return { u: u, kind: 'plant', def: d, data: pl, w: 100, h: d.h + (GP.extraH ? GP.extraH(pl) : 0) };
       }
       return null;
     }
