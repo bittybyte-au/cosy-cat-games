@@ -52,7 +52,8 @@
      shelf kind 'pegs', table kind 'top', GGScene.bottles(c, x, y, { cols, size })
    SVG twins (pages built from SVG, like the games home), from the same shape definitions:
      GGScene.svg.cloud({ x, y, size, kind: 'puff' | 'cat', col, face })   an SVG <g>
-     GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h */
+     GGScene.svg.hills({ w, h, kind, col, back })                          SVG <path>s for a viewBox of w x h
+   More kinds (night rooms, rooms seen from above, mats, lights): see the batch D block near the end of this file. */
 (function () {
   'use strict';
   var D = window.GGDraw, INK = D.INK, LW = D.LW, TAU = Math.PI * 2;
@@ -800,5 +801,138 @@
       } else { c.fillStyle = D.tone(c, col, y, fy); c.fillRect(x0, y, w, h); }
       if (o.edge !== false) { c.beginPath(); c.moveTo(x0 - 5, y); c.lineTo(x1 + 5, y); D.ink(c, W(o, LW.big)); }
     };
+  })(window.GGScene);
+
+  /* ================= added in phase 2, batch D: night rooms, rooms seen from above, mats and lights =================
+     (kept in their own block; they add kinds and variants, and leave every look above as it was)
+     GGScene.floor(c, x, y, w, h, { kind: 'boards', col, col2 (seams), size (row height), grow (each row this much
+                    taller, for a floor going back into the room), len (board length), seed, skirting, skirtH, edge: false })
+         long boards in rows, every other row a little darker. The joints are counted from x = 0, so a floor that
+         scrolls (drawn at a moving x) keeps its boards still.
+     GGScene.wall(c, x, y, w, h, { ..., top: colour })   any wall pattern, its colour fading from `top` down to `col`
+     GGScene.rug(c, x, y, rx, ry, { kind: 'mat', col, col2 (stitching), on: fn(c) drawn on the mat })
+         a long rounded mat on its ink base, with a stitched edge; (x, y) is its middle, rx and ry half its size
+     GGScene.plant(c, x, y, { kind: 'sprout', size, pot, leaf })   three plump leaves in a pot (reads well when small)
+     GGScene.skirting(c, x, y, w, h, { kind: 'around', size (thickness), col, r (inner corners), outer (corner radius
+                    of an outlined outside edge, or none: the frame runs to the box edge) })
+         the skirting boards round a room seen from above: (x, y, w, h) is the outside, the floor shows inside
+     GGScene.door(c, x, y, { kind: 'frame', w, h, col, col2 (the top), post (width) })   an open door frame on the floor
+     GGScene.light(c, x, y, w, h, { kind: 'pool' | 'beam', at: [fx, fy] (pool: where the lamp is, 0..1), dir (beam: -1 | 1) })
+         soft light laid over a room: a pool of lamplight darkening to the corners, or moonlight falling from a window
+         (the beam's top edge is (x, y) to (x + w, y), and it reaches down h)
+     GGScene.lights(c, x0, y0, x1, y1, { kind: 'fairy', cols: [...], gap, wave, first (which colour first), wire })
+         a string of glowing fairy lights from one point to the other, gently waving */
+  (function (G) {
+    G.VARIANTS.floor = G.VARIANTS.floor.concat(['boards']);
+    G.VARIANTS.rug = G.VARIANTS.rug.concat(['mat']);
+    G.VARIANTS.skirting = ['around']; G.VARIANTS.door = ['frame']; G.VARIANTS.light = ['pool', 'beam']; G.VARIANTS.lights = ['fairy'];
+    function copy(o) { var r = {}; for (var k in o) r[k] = o[k]; return r; }
+
+    function boards(c, x, y, w, h, o) {
+      var col = o.col || '#6B4F57', bh = o.size || 36, grow = o.grow || 0, len0 = o.len || bh * 4.4, r = D.seeded(o.seed || 5);
+      c.fillStyle = D.tone(c, col, y, y + h); c.fillRect(x, y, w, h);
+      c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+      c.strokeStyle = o.col2 || 'rgba(42,35,64,.35)'; c.lineWidth = W(o, 2);
+      for (var i = 0, ry = y; ry < y + h; i++) {
+        var k = Math.pow(1 + grow, i), rh = bh * k, len = len0 * k, off = r() * len;
+        if (i % 2) { c.fillStyle = 'rgba(42,35,64,.07)'; c.fillRect(x, ry, w, rh); }
+        c.beginPath(); c.moveTo(x, ry); c.lineTo(x + w, ry);
+        for (var jx = Math.floor((x - off) / len) * len + off; jx < x + w; jx += len) { c.moveTo(jx, ry); c.lineTo(jx, ry + rh); }
+        c.stroke(); ry += rh;
+      }
+      c.restore();
+      if (o.skirting) {
+        var sk = o.skirtH || 16, scol = o.skirting === true ? '#FFFFFF' : o.skirting;
+        sh(c, D.rrPath(x - 10, y - sk, w + 20, sk + 2, 0), scol, o, LW.fine, { depth: 3 });
+      } else if (o.edge !== false) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); D.ink(c, W(o, LW.mid)); }
+    }
+    var floorBase = G.floor;
+    G.floor = function (c, x, y, w, h, o) { return o && o.kind === 'boards' ? boards(c, x, y, w, h, o) : floorBase(c, x, y, w, h, o); };
+
+    var wallBase = G.wall;
+    G.wall = function (c, x, y, w, h, o) {
+      if (!o || !o.top) return wallBase(c, x, y, w, h, o);
+      var q = copy(o), g = c.createLinearGradient(0, y, 0, y + h);
+      g.addColorStop(0, o.top); g.addColorStop(1, o.col || '#FFF1DC'); q.col = g;
+      if (!q.col2 && o.pattern === 'stripes') q.col2 = 'rgba(255,255,255,.06)';
+      return wallBase(c, x, y, w, h, q);
+    };
+
+    var rugBase = G.rug;
+    G.rug = function (c, x, y, rx, ry, o) {
+      if (!o || o.kind !== 'mat') return rugBase(c, x, y, rx, ry, o);
+      var col = o.col || '#D8F0D5', x0 = x - rx, y0 = y - ry, w = rx * 2, h = ry * 2, m = Math.min(7, ry * 0.5);
+      c.fillStyle = INK; c.fill(D.rrPath(x0, y0 + 4, w, h, ry));
+      sh(c, D.rrPath(x0, y0, w, h, ry), D.tone(c, col, y0, y0 + h), o, LW.fine, { depth: h * 0.1, inside: function (c) {
+        c.save(); c.setLineDash([6, 6]); c.lineWidth = W(o, 2); c.strokeStyle = o.col2 || 'rgba(42,35,64,.3)';
+        c.stroke(D.rrPath(x0 + m, y0 + m, w - m * 2, h - m * 2, ry - m)); c.restore();
+        if (o.on) o.on(c);
+      } });
+    };
+
+    /* a sprout: three plump leaves in a flowerpot, for small sizes where the leafy plant's thin leaves would clog */
+    var plantBase = G.plant;
+    G.plant = function (c, x, y, o) {
+      if (!o || o.kind !== 'sprout') return plantBase(c, x, y, o);
+      var k = (o.size || 180) / 180, so = sub(o, k), leaf = o.leaf || STEM;
+      at(c, x, y, k);
+      // the leaves first, their feet tucked into the pot, which is drawn over them
+      [[-34, -126, -0.6], [34, -126, 0.6], [0, -144, 0]].forEach(function (l) {
+        sh(c, D.ellPath(l[0], l[1], 21, 48, l[2]), D.tone(c, leaf, l[1] - 48, l[1] + 48), so, LW.mid, { depth: 5, inside: function (c) {
+          c.save(); c.translate(l[0], l[1]); c.rotate(l[2]); c.beginPath(); c.moveTo(0, 30); c.lineTo(0, -30);
+          c.strokeStyle = 'rgba(42,35,64,.2)'; c.lineWidth = W(so, 2); c.lineCap = 'round'; c.stroke(); c.restore();
+        } });
+      });
+      flowerpot(c, o.pot || '#E8875A', so);
+      c.restore();
+    };
+    G.VARIANTS.plant = G.VARIANTS.plant.concat(['sprout']);
+
+    G.skirting = function (c, x, y, w, h, o) {
+      o = opt(o); var t = o.size || 34, col = o.col || '#FFF1DC', ri = pick(o.r, 10);
+      var room = D.rrPath(x + t, y + t, w - t * 2, h - t * 2, ri), outer = new Path2D();
+      if (o.outer) D.rrPath(x, y, w, h, o.outer, outer); else outer.rect(x, y, w, h);
+      var frame = new Path2D(); frame.addPath(outer); frame.addPath(room);
+      c.fillStyle = D.tone(c, col, y, y + h); c.fill(frame, 'evenodd');
+      // a soft shade along the floor where it meets the boards, then the outlines last
+      c.save(); c.clip(room); c.lineWidth = W(o, 14); c.strokeStyle = 'rgba(42,35,64,.08)'; c.stroke(room); c.restore();
+      c.save(); c.lineJoin = 'round'; c.lineWidth = W(o, LW.mid); c.strokeStyle = INK; c.stroke(room); if (o.outer) c.stroke(outer); c.restore();
+    };
+
+    G.door = function (c, x, y, o) {
+      o = opt(o); var w = o.w || 120, h = o.h || 320, col = o.col || '#C98B5B', pw = o.post || 22;
+      [x - w / 2, x + w / 2 - pw].forEach(function (px) { sh(c, D.rrPath(px, y - h + 20, pw, h - 20, 3), col, o, LW.mid, { depth: 4 }); });
+      sh(c, D.rrPath(x - w / 2 - 6, y - h, w + 12, 26, 4), o.col2 || D.lighter(col, 0.1), o, LW.mid, { depth: 4 });
+    };
+
+    G.light = function (c, x, y, w, h, o) {
+      o = opt(o);
+      if (o.kind === 'beam') {
+        var d = o.dir || 1, s = w * 0.5 * d;
+        c.save(); c.fillStyle = 'rgba(255,240,200,' + pick(o.a, 0.07) + ')'; c.beginPath();
+        c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w + s + w * 0.07, y + h); c.lineTo(x + s - w * 0.07, y + h); c.closePath(); c.fill(); c.restore();
+        return;
+      }
+      var at = o.at || [0.3, 0.25], gx = x + w * at[0], gy = y + h * at[1], g = c.createRadialGradient(gx, gy, 10, gx, gy, Math.max(w, h) * 0.8);
+      g.addColorStop(0, 'rgba(255,214,150,.22)'); g.addColorStop(1, 'rgba(20,16,40,.25)');
+      c.fillStyle = g; c.fillRect(x, y, w, h);
+    };
+
+    G.lights = function (c, x0, y0, x1, y1, o) {
+      o = opt(o); var cols = o.cols || ['#FFD23F', '#FF8FAB', '#7CC4FF', '#7BD389'], gap = o.gap || 46, wave = pick(o.wave, 6), first = o.first || 0;
+      var len = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+      function pt(d) { var s = Math.sin(d / 30) * wave; return [x0 + ux * d - uy * s, y0 + uy * d + ux * s]; }
+      // the wire first, then the bulbs hanging on it, each in its own glow
+      c.save(); c.beginPath();
+      for (var d = 0; d <= len; d += 4) { var p = pt(d); if (d) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }
+      c.strokeStyle = o.wire || 'rgba(255,255,255,.18)'; c.lineWidth = W(o, 2); c.stroke(); c.restore();
+      for (var i = 0, e = 18; e < len - 20; e += gap, i++) {
+        var b = pt(e), col = cols[(i + first) % cols.length], gr = 16;
+        var hg = c.createRadialGradient(b[0], b[1], 0, b[0], b[1], gr); hg.addColorStop(0, rgba(col, 0.45)); hg.addColorStop(1, rgba(col, 0));
+        c.fillStyle = hg; c.beginPath(); c.arc(b[0], b[1], gr, 0, TAU); c.fill();
+        D.shape(c, D.ellPath(b[0], b[1] + 3, 4.5, 6), col, { lw: W(o, 2), depth: 0 });
+      }
+    };
+    function rgba(hex, a) { var v = parseInt(String(hex).slice(1), 16); return 'rgba(' + ((v >> 16) & 255) + ',' + ((v >> 8) & 255) + ',' + (v & 255) + ',' + a + ')'; }
   })(window.GGScene);
 })();

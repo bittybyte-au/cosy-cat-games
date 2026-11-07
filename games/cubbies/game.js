@@ -763,11 +763,8 @@
     var w = L.spotGap * MAT_SPOTS + L.catS * 0.3, h = L.matH * 0.62;
     var x = (L.beltX0 + L.beltX1) / 2 - w / 2, y = L.matY - h / 2 + L.catS * 0.22;
     var full = matCount();
-    rr(c, x, y + 4, w, h, h / 2); c.fillStyle = INK; c.fill();
-    D.shape(c, D.rrPath(x, y, w, h, h / 2), D.tone(c, full >= MAT_SPOTS - 1 ? '#FFD2C8' : '#D8F0D5', y, y + h), { lw: LW.fine, depth: h * 0.1, inside: function (c) {
-      // a stitched edge, and soft dents where the cats go
-      c.save(); c.setLineDash([6, 6]); c.lineWidth = 2; c.strokeStyle = 'rgba(42,35,64,.3)';
-      rr(c, x + 7, y + 7, w - 14, h - 14, (h - 14) / 2); c.stroke(); c.restore();
+    // the stitched mat from the shared scenery kit (pink when nearly full), with soft dents where the cats go
+    GGScene.rug(c, x + w / 2, y + h / 2, w / 2, h / 2, { kind: 'mat', col: full >= MAT_SPOTS - 1 ? '#FFD2C8' : '#D8F0D5', on: function (c) {
       for (var i = 0; i < MAT_SPOTS; i++) {
         if (mat[i]) continue;
         c.beginPath(); c.ellipse(L.matX[i], L.matY + L.catS * 0.22, L.catS * 0.3, L.catS * 0.12, 0, 0, TAU);
@@ -880,6 +877,8 @@
     if (level) update(dt);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cw, ch);
+    // the bedroom wall: soft blue stripes (shared scenery kit)
+    GGScene.wall(ctx, 0, 0, cw, ch, { pattern: 'stripes', col: '#E4F1FF', col2: '#D3E7FC', size: 56 });
     if (level) {
       cubbies.forEach(function (cb) { drawCubby(ctx, cb); });
       cubbies.forEach(function (cb) { drawCubbyCats(ctx, cb); });

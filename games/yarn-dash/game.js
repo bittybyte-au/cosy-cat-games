@@ -328,21 +328,13 @@
     c.drawImage(floorCv, 0, 0, W, H);
   }
   function paintFloor(c) {
-    c.fillStyle = D.tone(c, '#E8C9A0', EDGE, H - EDGE); c.fillRect(0, 0, W, H);
-    c.strokeStyle = '#D9B68A'; c.lineWidth = 3; c.lineCap = 'butt';
-    for (var y = EDGE; y < H; y += 56) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); var off = ((y / 56) % 2) * 120; for (var x = off; x < W; x += 240) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 56); c.stroke(); } }
-    // a big round rug in the middle, its stitching inside the edge
+    // floorboards, a big round stitched rug in the middle and the skirting boards round the room (seen from above),
+    // all from the shared scenery kit
+    GGScene.floor(c, EDGE, EDGE, W - EDGE * 2, H - EDGE * 2, { kind: 'planks', col: '#E8C9A0', col2: '#D9B68A', size: 56 });
     var rx = Math.min(W, H) * 0.34, ry = Math.min(W, H) * 0.26;
     D.shadow(c, W / 2 + 4, H / 2 + 8, rx, ry);
-    D.shape(c, D.ellPath(W / 2, H / 2, rx, ry), D.tone(c, '#C7EBD2', H / 2 - ry, H / 2 + ry), { lw: D.LW.mid, depth: 12, inside: function (c) {
-      c.beginPath(); c.ellipse(W / 2, H / 2, rx * 0.8, ry * 0.73, 0, 0, TAU); c.strokeStyle = '#9FD8B2'; c.lineWidth = 6; c.lineCap = 'round'; c.setLineDash([16, 12]); c.stroke(); c.setLineDash([]);
-    } });
-    // skirting boards, with a soft shade where they meet the floor
-    var room = D.rrPath(EDGE, EDGE, W - EDGE * 2, H - EDGE * 2, 10);
-    var frame = new Path2D(); frame.rect(0, 0, W, H); frame.addPath(room);
-    c.fillStyle = D.tone(c, '#FFF1DC', 0, H); c.fill(frame, 'evenodd');
-    c.save(); c.clip(room); c.lineWidth = 14; c.strokeStyle = 'rgba(42,35,64,.08)'; c.stroke(room); c.restore();
-    c.lineWidth = D.LW.mid; c.strokeStyle = INK; c.lineJoin = 'round'; c.stroke(room);
+    GGScene.rug(c, W / 2, H / 2, rx, ry, { kind: 'stitch', col: '#C7EBD2', col2: '#9FD8B2' });
+    GGScene.skirting(c, 0, 0, W, H, { kind: 'around', size: EDGE, col: '#FFF1DC', r: 10 });
   }
   function drawYarnBall(c, x, y, r, col, gold, spin) {
     c.save(); c.translate(x, y);

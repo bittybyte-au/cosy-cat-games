@@ -384,32 +384,19 @@
   var CAT_LOOKS = [{ preset: 'ginger' }, { color: '#7C7A8C', markings: 'tabby' }, { color: '#FFFFFF', markings: 'calico' }, { color: '#3D3650', markings: 'tuxedo' }, { color: '#E9D8C4' }];
   function catLook(i) { var b = CAT_LOOKS[i % CAT_LOOKS.length], o = {}; for (var k in b) o[k] = b[k]; return o; }
   function floor(c, x, y, w, h, cs) {
-    // floorboards at night, with a soft pool of lamplight
-    c.fillStyle = '#6B4F57'; c.fillRect(x, y, w, h);
-    var R = D.seeded(5);
-    var bh = cs / 2;
-    for (var r = 0; r * bh < h; r++) {
-      var off = (r % 2) * cs * 0.9 + R() * cs;
-      c.fillStyle = r % 2 ? '#705360' : '#674B55'; c.fillRect(x, y + r * bh, w, bh);
-      c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 1.5;
-      c.beginPath(); c.moveTo(x, y + r * bh); c.lineTo(x + w, y + r * bh); c.stroke();
-      for (var j = -off; j < w; j += cs * 2.2) { c.beginPath(); c.moveTo(x + j, y + r * bh); c.lineTo(x + j, y + (r + 1) * bh); c.stroke(); }
-    }
-    var gl = c.createRadialGradient(x + w * 0.3, y + h * 0.25, 10, x + w * 0.3, y + h * 0.25, Math.max(w, h) * 0.8);
-    gl.addColorStop(0, 'rgba(255,214,150,.22)'); gl.addColorStop(1, 'rgba(20,16,40,.25)');
-    c.fillStyle = gl; c.fillRect(x, y, w, h);
+    // floorboards at night, with a soft pool of lamplight (shared scenery kit)
+    GGScene.floor(c, x, y, w, h, { kind: 'boards', col: '#6B4F57', size: cs / 2, len: cs * 2.2, edge: false });
+    GGScene.light(c, x, y, w, h, { kind: 'pool' });
   }
   function drawBoard(c) {
     var n = L.n, size = CS * n;
-    // the room: a dark wall all round, then the floor
-    D.rr(c, BX - 10, BY - 10, size + 20, size + 20, 18); c.fillStyle = '#3B3360'; c.fill(); D.ink(c, 4);
-    c.save(); c.beginPath(); c.rect(BX, BY, size, size); c.clip();
+    // the floor, faint tile marks so you can see the squares, then the dark skirting all round the room
     floor(c, BX, BY, size, size, CS);
-    // faint tile marks so you can see the squares
+    c.save(); c.beginPath(); c.rect(BX, BY, size, size); c.clip();
     c.strokeStyle = 'rgba(255,255,255,.06)'; c.lineWidth = 1;
     for (var i = 1; i < n; i++) { c.beginPath(); c.moveTo(BX + i * CS, BY); c.lineTo(BX + i * CS, BY + size); c.moveTo(BX, BY + i * CS); c.lineTo(BX + size, BY + i * CS); c.stroke(); }
     c.restore();
-    c.beginPath(); c.rect(BX, BY, size, size); D.ink(c, 3);
+    GGScene.skirting(c, BX - 10, BY - 10, size + 20, size + 20, { kind: 'around', size: 10, col: '#3B3360', r: 0, outer: 18 });
   }
   function drawLaser(c, s, d) {
     c.save(); c.rotate(Math.atan2(d[1], d[0]));
@@ -441,9 +428,8 @@
   }
   function drawBlock(c, s, k) {
     D.shadow(c, 0, s * 0.3, s * 0.36, s * 0.1);
-    if (k === 0) { // a plant pot
-      D.shape(c, function (p) { p.moveTo(-s * 0.22, -s * 0.02); p.lineTo(s * 0.22, -s * 0.02); p.lineTo(s * 0.16, s * 0.3); p.lineTo(-s * 0.16, s * 0.3); p.closePath(); }, '#E58B5E', { lw: D.LW.mid, depth: 4 });
-      [[-0.16, -0.2, -0.6], [0, -0.3, 0], [0.16, -0.2, 0.6]].forEach(function (l) { D.shape(c, D.ellPath(l[0] * s, l[1] * s, s * 0.09, s * 0.2, l[2]), '#5DBB72', { lw: D.LW.fine, depth: 2 }); });
+    if (k === 0) { // a house plant (shared scenery kit)
+      GGScene.plant(c, 0, s * 0.3, { kind: 'sprout', size: s * 0.64, pot: '#E58B5E', leaf: '#5DBB72' });
     } else if (k === 1) { // a pile of books
       ['#7CC4FF', '#FF8FAB', '#FFD23F'].forEach(function (col, i) { D.shape(c, D.rrPath(-s * 0.3 + i * 3, s * 0.16 - i * s * 0.15, s * 0.58 - i * 6, s * 0.15, 4), col, { lw: D.LW.fine, depth: 2 }); });
     } else if (k === 2) { // a yarn basket

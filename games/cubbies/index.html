@@ -14,10 +14,9 @@
 <link rel="stylesheet" href="../../shared/site.css">
 <link rel="stylesheet" href="../../shared/game.css">
 <style>
-/* Layout: a calm blue bedroom wall; slim top bar with the level and how many cats are tucked in;
+/* Layout: a calm blue bedroom wall (striped, drawn on the canvas by the shared scenery kit); slim top bar with the level and how many cats are tucked in;
    the canvas holds the cubbies, the waiting mat and the conveyor belt. Single bright look by design. */
-:root { --wall: #E4F1FF; --wall2: #D3E7FC; }
-body { background: var(--wall) linear-gradient(90deg, transparent 0 46px, var(--wall2) 46px 56px) 0 0 / 56px 100%; }
+body { background: #E4F1FF; }
 .middle { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .tally {
   display: flex; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--ink); border-radius: 999px;
@@ -79,6 +78,7 @@ body { background: var(--wall) linear-gradient(90deg, transparent 0 46px, var(--
 <script src="../../shared/store.js"></script>
 <script src="../../shared/draw.js"></script>
 <script src="../../shared/cat.js"></script>
+<script src="../../shared/scene.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

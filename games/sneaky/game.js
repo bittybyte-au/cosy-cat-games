@@ -366,70 +366,42 @@
   function onScreen(x) { return x > camX - 100 && x < camX + VW + 100; }
   function at(c, x, y) { c.save(); c.translate(wx(x), wy(y)); c.scale(K, K); }
 
+  /* the room at night, all from the shared scenery kit, drawn in world units (at(c, 0, 0) is the world) */
   function drawRoom(c) {
-    // walls: a different colour per room, with door frames between
-    var roomW = 1100, r0 = Math.floor(camX / roomW), r1 = Math.floor((camX + VW) / roomW);
+    var S = GGScene, roomW = 1100, r0 = Math.floor(camX / roomW), r1 = Math.floor((camX + VW) / roomW);
+    var top = FLOOR - FS / K, bottom = FLOOR + (ch - FS) / K;
+    at(c, 0, 0);
+    // walls: a different colour per room, darker up high, with faint stripes
     for (var r = r0; r <= r1; r++) {
-      var x0 = Math.max(wx(r * roomW), 0), x1 = Math.min(wx((r + 1) * roomW), cw);
-      var g = c.createLinearGradient(0, 0, 0, wy(FLOOR));
       var col = WALLS[((r % WALLS.length) + WALLS.length) % WALLS.length];
-      g.addColorStop(0, D.darker(col, 0.25)); g.addColorStop(1, col);
-      c.fillStyle = g; c.fillRect(x0, 0, x1 - x0 + 1, wy(FLOOR) + 1);
-      // wallpaper stripes
-      c.fillStyle = 'rgba(255,255,255,.035)';
-      for (var sx = r * roomW; sx < (r + 1) * roomW; sx += 60) { var a = wx(sx); if (a > -30 && a < cw) c.fillRect(a, 0, 26 * K, wy(FLOOR)); }
+      S.wall(c, r * roomW, top, roomW, FLOOR - top, { pattern: 'stripes', col: col, top: D.darker(col, 0.25), col2: 'rgba(255,255,255,.035)', size: 56 });
     }
+    // moonlight from each window falls down the wall and on across the floor (the floor's part is laid on it after)
+    var wins = L.deco.filter(function (o) { return o.kind === 'window' && onScreen(o.x); });
+    function moonlight() { wins.forEach(function (o) { S.light(c, o.x - 70, FLOOR - 170, 140, 300, { kind: 'beam' }); }); }
+    moonlight();
+    // the floor: boards going back into the room, the skirting along the wall
+    S.floor(c, camX - 40, FLOOR, VW + 80, bottom - FLOOR, { kind: 'boards', col: '#74515C', size: 38, grow: 0.12, len: 150, skirting: '#E9DCC8', skirtH: 18 });
+    c.save(); c.beginPath(); c.rect(camX - 40, FLOOR + 4, VW + 80, bottom - FLOOR); c.clip(); moonlight(); c.restore();
+    // door frames between the rooms
     for (var d = r0; d <= r1 + 1; d++) {
       var fx = d * roomW; if (fx <= 0 || !onScreen(fx)) continue;
-      at(c, fx, FLOOR);
-      D.shape(c, D.rrPath(-60, -300, 22, 300, 3), '#7A5C6E', { lw: D.LW.mid, depth: 4 });
-      D.shape(c, D.rrPath(38, -300, 22, 300, 3), '#7A5C6E', { lw: D.LW.mid, depth: 4 });
-      D.shape(c, D.rrPath(-66, -320, 132, 26, 4), '#8C6B7E', { lw: D.LW.mid, depth: 4 });
-      c.restore();
+      S.door(c, fx, FLOOR, { kind: 'frame', w: 120, h: 320, col: '#7A5C6E', col2: '#8C6B7E' });
     }
-    // windows (with the moon), pictures and lamps
+    // windows (with the moon), pictures and lamps on side tables
     L.deco.forEach(function (o) {
       if (!onScreen(o.x)) return;
-      at(c, o.x, FLOOR);
+      var x = o.x, y = FLOOR;
       if (o.kind === 'window') {
-        var g2 = c.createLinearGradient(0, -330, 0, -170); g2.addColorStop(0, '#1C1838'); g2.addColorStop(1, '#3D3170');
-        D.shape(c, D.rrPath(-70, -340, 140, 170, 8), g2, { lw: D.LW.big, depth: 0, inside: function (c) {
-          c.fillStyle = '#FFF6D8'; [[-40, -310, 1.6], [30, -300, 1.2], [10, -230, 1.4], [-20, -260, 1]].forEach(function (s) { c.beginPath(); c.arc(s[0], s[1], s[2], 0, TAU); c.fill(); });
-          if (o.seed < 0.5) { c.beginPath(); c.arc(28, -300, 18, 0, TAU); c.fillStyle = '#FFF1C9'; c.fill(); D.ink(c, 2.5); }
-        } });
-        c.beginPath(); c.moveTo(0, -340); c.lineTo(0, -170); c.moveTo(-70, -255); c.lineTo(70, -255); D.ink(c, 4);
-        D.shape(c, D.rrPath(-82, -176, 164, 14, 4), '#E9DCC8', { lw: D.LW.mid, depth: 3 });
-        // moonlight on the floor
-        c.fillStyle = 'rgba(255,240,200,.07)'; c.beginPath(); c.moveTo(-70, -170); c.lineTo(70, -170); c.lineTo(150, 130); c.lineTo(-10, 130); c.closePath(); c.fill();
+        S.window(c, x - 70, y - 340, 140, 170, { view: 'night', bars: 'cross', barCol: '#E9DCC8', sill: '#E9DCC8', r: 8, seed: Math.round(o.seed * 1000) });
       } else if (o.kind === 'picture') {
-        D.shape(c, D.rrPath(-46, -320, 92, 72, 4), '#C9A15B', { lw: D.LW.mid, depth: 3, inside: function (c) {
-          c.fillStyle = o.seed < 0.75 ? '#9ED9C0' : '#FFB4A2'; c.fillRect(-36, -310, 72, 52);
-          c.beginPath(); c.moveTo(-36, -266); c.quadraticCurveTo(-10, -300, 14, -272); c.quadraticCurveTo(24, -290, 36, -276); c.lineTo(36, -258); c.lineTo(-36, -258); c.closePath(); c.fillStyle = '#5EA47E'; c.fill();
-          c.beginPath(); c.arc(20, -296, 7, 0, TAU); c.fillStyle = '#FFF1C9'; c.fill();
-        } });
+        S.picture(c, x - 46, y - 320, 92, 72, { view: o.seed < 0.75 ? 'hills' : 'sea', frame: '#C9A15B', string: false });
       } else {
-        // a little table lamp (switched off) on a side table
-        D.shape(c, D.rrPath(-34, -80, 68, 10, 3), '#A07A5E', { lw: D.LW.mid, depth: 2 });
-        D.shape(c, D.rrPath(-26, -70, 8, 70, 3), '#8A6650', { lw: D.LW.fine, depth: 0 });
-        D.shape(c, D.rrPath(18, -70, 8, 70, 3), '#8A6650', { lw: D.LW.fine, depth: 0 });
-        D.shape(c, D.rrPath(-4, -120, 8, 40, 3), '#C3CBD4', { lw: D.LW.fine, depth: 0 });
-        D.shape(c, function (p) { p.moveTo(-28, -118); p.lineTo(28, -118); p.lineTo(18, -158); p.lineTo(-18, -158); p.closePath(); }, '#E9B8C8', { lw: D.LW.mid, depth: 4 });
+        S.table(c, x - 34, x + 34, y - 80, y, { kind: 'legs', col: '#A07A5E', legs: '#8A6650', thick: 4 });
+        S.lamp(c, x, y - 80, { kind: 'table', size: 96, shade: '#E9B8C8', stand: '#8A6650' });
       }
-      c.restore();
     });
-    // skirting board and floor
-    var fy = wy(FLOOR);
-    c.fillStyle = '#E9DCC8'; c.fillRect(0, fy - 18 * K, cw, 18 * K);
-    c.fillStyle = '#7A5560'; c.fillRect(0, fy, cw, ch - fy);
-    var rows = [[FLOOR, FLOOR + 38, '#84606A'], [FLOOR + 38, FLOOR + 80, '#7A5560'], [FLOOR + 80, FLOOR + 130, '#704D58'], [FLOOR + 130, FLOOR + 400, '#664650']];
-    rows.forEach(function (row, i) {
-      c.fillStyle = row[2]; c.fillRect(0, wy(row[0]), cw, (row[1] - row[0]) * K + 1);
-      c.strokeStyle = 'rgba(42,35,64,.35)'; c.lineWidth = 2;
-      c.beginPath(); c.moveTo(0, wy(row[0])); c.lineTo(cw, wy(row[0])); c.stroke();
-      var len = 150 + i * 30, off = i * 57;
-      for (var bx = Math.floor((camX - off) / len) * len + off; bx < camX + VW + len; bx += len) { c.beginPath(); c.moveTo(wx(bx), wy(row[0])); c.lineTo(wx(bx), wy(row[1])); c.stroke(); }
-    });
-    c.beginPath(); c.moveTo(0, fy - 18 * K); c.lineTo(cw, fy - 18 * K); c.moveTo(0, fy); c.lineTo(cw, fy); c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
+    c.restore();
   }
   function drawBoard(c, b) {
     if (!onScreen(b.x)) return;
@@ -676,9 +648,8 @@
     var c = $('cardPic').getContext('2d');
     c.clearRect(0, 0, 440, 300);
     c.save(); D.rr(c, 6, 6, 428, 288, 26); c.clip();
-    var g = c.createLinearGradient(0, 0, 0, 300); g.addColorStop(0, '#2E2852'); g.addColorStop(1, '#4B4378'); c.fillStyle = g; c.fillRect(0, 0, 440, 300);
-    c.fillStyle = '#7A5560'; c.fillRect(0, 220, 440, 80); c.fillStyle = '#E9DCC8'; c.fillRect(0, 208, 440, 12);
-    c.beginPath(); c.moveTo(0, 220); c.lineTo(440, 220); D.ink(c, 3);
+    GGScene.wall(c, 0, 0, 440, 220, { pattern: 'stripes', col: WALLS[0], top: '#2E2852', col2: 'rgba(255,255,255,.035)', size: 56 });
+    GGScene.floor(c, -10, 220, 460, 80, { kind: 'boards', col: '#74515C', size: 30, grow: 0.12, len: 130, skirting: '#E9DCC8', skirtH: 14 });
     // a sleeping dog and a tiptoeing cat
     var fake = { x: 0, face: -1, col: DOG_COLS[0], st: stars ? 'sleep' : 'sleep', t: 0, dur: 1, seed: 0.3 };
     var saveK = K, saveCam = camX, saveFS = FS; K = 0.8; camX = -330 / K; FS = 210 + (FLOOR - DOG_Y) * 0.8 + 18;
@@ -689,7 +660,7 @@
     try { GGCat.draw(c, o); } catch (e) {} c.restore();
     if (stars) for (var i = 0; i < 3; i++) {
       c.save(); c.translate(150 + i * 70, 70 - (i === 1 ? 14 : 0)); starPath(c, 26); c.fillStyle = i < stars ? '#FFD23F' : 'rgba(255,255,255,.18)'; c.fill(); c.lineWidth = 4; c.strokeStyle = i < stars ? INK : 'rgba(255,246,216,.5)'; c.stroke(); c.restore();
-    } else { c.beginPath(); c.arc(360, 60, 24, 0, TAU); c.fillStyle = '#FFF1C9'; c.fill(); D.ink(c, 3); }
+    } else GGScene.moon(c, 360, 60, { size: 48, col: '#FFF1C9' });
     c.restore();
     D.rr(c, 6, 6, 428, 288, 26); D.ink(c, 5);
   }

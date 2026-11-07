@@ -152,15 +152,12 @@
     c.drawImage(floorCv, 0, 0, W, H);
   }
   function paintFloor(c) {
-    c.fillStyle = D.tone(c, '#F2DDC0', 0, H); c.fillRect(0, 0, W, H);
-    c.strokeStyle = '#E6CBA6'; c.lineWidth = 4; c.lineCap = 'butt';
-    for (var y = 0; y < H; y += 70) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); var off = ((y / 70) % 2) * 150; for (var x = off; x < W; x += 300) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 70); c.stroke(); } }
-    // a soft round rug, its dashed stitching inside the edge
+    // floorboards and a soft round rug with stitching, from the shared scenery kit (the floor's top edge sits just
+    // above the picture, so no line shows there)
+    GGScene.floor(c, 0, -4, W, H + 4, { kind: 'planks', col: '#F2DDC0', col2: '#E6CBA6', size: 70 });
     var rx = Math.min(W * 0.36, 420), ry = Math.min(H * 0.32, 260);
     D.shadow(c, W / 2 + 4, H / 2 + 8, rx, ry);
-    D.shape(c, D.ellPath(W / 2, H / 2, rx, ry), D.tone(c, '#FFE7F0', H / 2 - ry, H / 2 + ry), { lw: D.LW.mid, depth: 12, inside: function (c) {
-      c.beginPath(); c.ellipse(W / 2, H / 2, rx * 0.83, ry * 0.81, 0, 0, TAU); c.setLineDash([16, 12]); c.strokeStyle = '#FFC2DA'; c.lineWidth = 6; c.lineCap = 'round'; c.stroke(); c.setLineDash([]);
-    } });
+    GGScene.rug(c, W / 2, H / 2, rx, ry, { kind: 'stitch', col: '#FFE7F0', col2: '#FFC2DA' });
   }
   var MOUSE_BODY = new Path2D('M-32 0Q-30 -22 0 -21Q30 -18 38 0Q30 18 0 21Q-30 22 -32 0Z');
   function drawMouse(c, m, spin) {

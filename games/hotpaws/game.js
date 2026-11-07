@@ -231,24 +231,12 @@
   function buildRoom() {
     room = makeCanvas(1); room.width = canvas.width; room.height = canvas.height;
     var c = room.getContext('2d'); c.scale(dpr, dpr);
-    var g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#2C2350'); g.addColorStop(1, '#1D1734');
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    // soft wallpaper dots
-    c.fillStyle = 'rgba(255,255,255,.035)';
-    for (var y = 22; y < H; y += 44) for (var x = (y / 44) % 2 ? 22 : 0; x < W; x += 44) { c.beginPath(); c.arc(x, y, 4, 0, TAU); c.fill(); }
-    // a little string of warm fairy lights along each side wall, out of the way of the floor
+    // the wall with soft wallpaper dots, and a string of warm fairy lights along each side wall, out of the way of
+    // the floor (shared scenery kit)
+    GGScene.wall(c, 0, 0, W, H, { pattern: 'dots', col: '#1D1734', top: '#2C2350', col2: 'rgba(255,255,255,.035)', size: 44 });
     var gx = [Math.max(14, BX - PAD - 26), Math.min(W - 14, BX + C * T + PAD + 26)];
-    var cols = ['#FFD23F', '#FF8FAB', '#7CC4FF', '#7BD389'];
     if (BX - PAD > 40) gx.forEach(function (x0, side) {
-      c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2; c.beginPath();
-      for (var yy = BY - 10; yy < BY + R * T + 10; yy += 4) { var xx = x0 + Math.sin(yy / 30) * 6 * (side ? -1 : 1); if (yy === BY - 10) c.moveTo(xx, yy); else c.lineTo(xx, yy); }
-      c.stroke();
-      for (var i = 0, yb = BY + 8; yb < BY + R * T; yb += 46, i++) {
-        var xb = x0 + Math.sin(yb / 30) * 6 * (side ? -1 : 1), col = cols[(i + side) % 4];
-        var hg = c.createRadialGradient(xb, yb, 0, xb, yb, 16); hg.addColorStop(0, hexA(col, 0.45)); hg.addColorStop(1, hexA(col, 0));
-        c.fillStyle = hg; c.beginPath(); c.arc(xb, yb, 16, 0, TAU); c.fill();
-        D.shape(c, D.ellPath(xb, yb + 3, 4.5, 6), col, { lw: 2, depth: 0 });
-      }
+      GGScene.lights(c, x0, BY - 10, x0, BY + R * T + 10, { kind: 'fairy', wave: side ? 6 : -6, first: side });
     });
     // the floor's raised frame
     var fx = BX - PAD, fy = BY - PAD, fw = C * T + PAD * 2, fh = R * T + PAD * 2;

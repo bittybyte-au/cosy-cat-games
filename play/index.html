@@ -176,9 +176,9 @@ body.toddler .tile .age-tag { display: none; }
 </head>
 <body>
 <div class="sky" aria-hidden="true">
-  <svg class="cloud1" viewBox="0 -6 200 86"><g data-cat-ears='{"x":98,"y":30,"k":0.62}'></g><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
-  <svg class="cloud2" viewBox="0 -6 200 86"><g data-cat-ears='{"x":98,"y":30,"k":0.62}'></g><path d="M30 70 Q5 70 10 50 Q12 32 38 36 Q45 10 80 16 Q100 0 125 18 Q160 12 165 40 Q195 42 188 62 Q185 72 165 70 Z" fill="#fff" stroke="#2A2340" stroke-width="4" stroke-linejoin="round"/><path d="M92 46 Q96 50 100 46 Q104 50 108 46" fill="none" stroke="#2A2340" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="38" r="3" fill="#2A2340"/><circle cx="112" cy="38" r="3" fill="#2A2340"/></svg>
-  <svg class="hill" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="M0 120 Q250 20 520 110 Q760 190 1000 80 L1000 300 L0 300 Z" fill="#4FB868"/><path d="M0 190 Q300 90 600 170 Q820 230 1000 160 L1000 300 L0 300 Z" fill="#7BD389"/></svg>
+  <svg class="cloud1" viewBox="0 -6 200 86"></svg>
+  <svg class="cloud2" viewBox="0 -6 200 86"></svg>
+  <svg class="hill" viewBox="0 0 1000 300" preserveAspectRatio="none"></svg>
   <svg class="paws" aria-hidden="true"><defs><pattern id="pawTrail" width="180" height="130" patternUnits="userSpaceOnUse"><g fill="#3E9E57"><g transform="translate(40 88) rotate(80) scale(1.35)"><ellipse cx="0" cy="8" rx="10" ry="8.5"/><circle cx="-11" cy="-3" r="4.6"/><circle cx="-4" cy="-10" r="4.6"/><circle cx="4" cy="-10" r="4.6"/><circle cx="11" cy="-3" r="4.6"/></g><g transform="translate(130 46) rotate(95) scale(1.35)"><ellipse cx="0" cy="8" rx="10" ry="8.5"/><circle cx="-11" cy="-3" r="4.6"/><circle cx="-4" cy="-10" r="4.6"/><circle cx="4" cy="-10" r="4.6"/><circle cx="11" cy="-3" r="4.6"/></g></g></pattern></defs><rect width="100%" height="100%" fill="url(#pawTrail)" opacity=".5"/></svg>
 </div>
 
@@ -209,12 +209,19 @@ body.toddler .tile .age-tag { display: none; }
 </div>
 
 <script src="../shared/store.js"></script>
+<script src="../shared/draw.js"></script>
 <script src="../shared/cat.js"></script>
+<script src="../shared/scene.js"></script>
 <script src="../shared/games.js"></script>
 <script src="../shared/avatar.js"></script>
 <script src="../shared/install.js"></script>
 <script>
 (function () {
+  /* the sky's cat clouds and the grassy hills come from the shared scenery kit (its SVG twins) */
+  var cloud = GGScene.svg.cloud({ x: 98, y: 42, size: 180, kind: 'cat', face: 'open' });
+  document.querySelector('.sky .cloud1').innerHTML = cloud;
+  document.querySelector('.sky .cloud2').innerHTML = cloud;
+  document.querySelector('.sky .hill').innerHTML = GGScene.svg.hills({ w: 1000, h: 300, kind: 'two', col: '#7BD389', back: '#4FB868' });
   var chip = document.getElementById('playerChip');
   var greet = document.getElementById('greeting');
   var mascot = document.getElementById('mascot');
