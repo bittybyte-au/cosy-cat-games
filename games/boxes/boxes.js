@@ -129,14 +129,11 @@
   }
   function drawSurprise(c, s, x, y, w, t) { (SURPRISES[s.kind] || SURPRISES.kitten)(c, x, y, w, t, s); }
 
-  /* the room both games play in: striped wallpaper, a wooden floor (lighter at the back) */
+  /* the room both games play in: striped wallpaper and a wooden floor (scenery from shared/scene.js, loaded first) */
   function room(c, W, H) {
     var fy = H * 0.62;
-    c.fillStyle = '#FFF1DC'; c.fillRect(0, 0, W, fy);
-    c.fillStyle = '#FFE4C4'; for (var x = 20; x < W; x += 64) c.fillRect(x, 0, 30, fy);
-    c.fillStyle = D.tone(c, '#E6B98A', fy, H); c.fillRect(0, fy, W, H - fy);
-    c.strokeStyle = '#D9A877'; c.lineWidth = 3; for (var y = fy + 40; y < H; y += 50) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
-    c.beginPath(); c.moveTo(0, fy); c.lineTo(W, fy); D.ink(c, D.LW.mid);
+    GGScene.wall(c, 20 - 64, 0, W + 64, fy, { pattern: 'stripes', col: '#FFF1DC', col2: '#FFE4C4', size: 64 });
+    GGScene.floor(c, 0, fy, W, H - fy, { kind: 'planks', col: '#E6B98A', col2: '#D9A877', size: 50 });
   }
   /* sparkles and hearts: var fx = GGBoxes.bits(); fx.sparkle(...), fx.heart(...), then fx.update(dt) and fx.draw(c) each frame */
   function bits() {

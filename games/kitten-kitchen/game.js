@@ -64,8 +64,8 @@
       var R = seeded(t.seed);
       for (var i = 0; i < 10; i++) { var a = R() * TAU, d = R() * 30; c.save(); c.translate(Math.cos(a) * d, Math.sin(a) * d); c.rotate(R() * TAU); rr(c, -7, -2.6, 14, 5.2, 2.6); c.fillStyle = SPRINKLE_COLS[Math.floor(R() * SPRINKLE_COLS.length)]; c.fill(); c.lineWidth = 1.5; c.strokeStyle = INK; c.stroke(); c.restore(); }
     } },
-    // the same strawberry as on the pancakes, a bit bigger on the cake
-    cakeberry: { draw: function (c) { DP.drawMini(c, 'strawberry', 0, 0, 0, 2.2, 2); } },
+    // exactly the strawberry on the pancakes (shared/dishes.js, lying flat the same way), a bit bigger on the cake
+    cakeberry: { flat: true, draw: function (c, t) { c.scale(1.4, 1.4); DP.drawTopping(c, { kind: 'strawberry', x: 0, y: 0, a: t.rot || 0 }); } },
     cherry: { draw: function (c) { c.beginPath(); c.moveTo(0, -10); c.quadraticCurveTo(4, -28, 16, -32); ink(c, 3); ell(c, 14, -32, 7, 3.5, -0.4); fillInk(c, '#4DB36A', 2.5); circle(c, 0, 4, 16); fillInk(c, '#E2223C', 3.5); ell(c, -6, -2, 4, 6, 0.6); c.fillStyle = 'rgba(255,255,255,.6)'; c.fill(); } },
     star: { draw: function (c) { star(c, 24); fillInk(c, '#FFD23F', 3.5); } },
     heart: { draw: function (c) { heartPath(c, 22); fillInk(c, '#FF8FAB', 3.5); } }
@@ -92,7 +92,7 @@
       for (var x = -SAUCE_R; x <= SAUCE_R; x += SAUCE_STEP) for (var y = -SAUCE_R; y <= SAUCE_R; y += SAUCE_STEP) if (Math.hypot(x, y) < SAUCE_R - 8) f.cells.push({ x: x, y: y, on: false, t: 0 });
     } else if (kind === 'pancakes') {
       f.d = { plate: 0, cakes: [], syrup: [], drips: [], tops: [], sugar: [] };
-    }
+    } else f.icing = ICINGS[0].col;
     return f;
   }
   function toPizza(q) { return { x: q.x - ZX, y: (q.y - ZY) / ZSQ }; }
@@ -120,16 +120,31 @@
   }
 
   function drawPlate(c, y, rx, ry) { ell(c, 0, y, rx, ry); fillInk(c, '#FFFFFF', 4.5); ell(c, 0, y - 2, rx * 0.78, ry * 0.7); c.strokeStyle = '#E8E1EE'; c.lineWidth = 4; c.stroke(); }
-  function drawCake(c) {
+  // the icing colours to choose from (the big round swatches above the cake's toppings); vanilla is the first
+  var ICINGS = [
+    { col: '#FFF8FB', name: 'Vanilla icing' }, { col: '#FF86B6', name: 'Pink icing' }, { col: '#8A5A3C', name: 'Chocolate icing' },
+    { col: '#9BE3C0', name: 'Mint icing' }, { col: '#FFE27A', name: 'Lemon icing' }, { col: '#A8D8FF', name: 'Blue icing' }
+  ];
+  // the icing's edge down the front: soft round drips side by side, [middle x, half width, length]
+  var DRIPS = [[133, 17, 16], [99, 17, 30], [66, 16, 14], [34, 16, 36], [2, 16, 18], [-30, 16, 30], [-62, 16, 12], [-95, 17, 28], [-131, 19, 16]];
+  function cakeFront(x) { return -50 + 36 * Math.sqrt(Math.max(0, 1 - (x / 150) * (x / 150))); }
+  function icingPath(p) {
+    p.ellipse(0, -50, 150, 36, 0, Math.PI, 0);
+    DRIPS.forEach(function (d) {
+      var x0 = d[0] + d[1], x1 = d[0] - d[1], b0 = cakeFront(x0) + 4, b1 = cakeFront(x1) + 4, by = (b0 + b1) / 2 + d[2];
+      p.lineTo(x0, b0);
+      p.bezierCurveTo(x0, by - d[2] * 0.2, d[0] + d[1] * 0.6, by, d[0], by);
+      p.bezierCurveTo(d[0] - d[1] * 0.6, by, x1, by - d[2] * 0.2, x1, b1);
+    });
+    p.closePath();
+  }
+  function drawCake(c, icing) {
     drawPlate(c, 118, 205, 46);
     c.beginPath(); c.ellipse(0, -50, 150, 36, 0, Math.PI, 0); c.lineTo(150, 100); c.ellipse(0, 100, 150, 36, 0, 0, Math.PI); c.closePath(); fillInk(c, '#FFB3CB', 4.5);
     // a cream layer in the middle
     c.beginPath(); c.ellipse(0, 28, 150, 36, 0, 0, Math.PI); c.lineWidth = 12; c.strokeStyle = '#FFF4E6'; c.stroke();
-    // icing on top, dripping down the front
-    c.beginPath(); c.ellipse(0, -50, 150, 36, 0, Math.PI, 0);
-    var drips = [[150, 0], [118, 22], [86, 8], [52, 34], [16, 12], [-20, 30], [-58, 10], [-92, 26], [-124, 8], [-150, 0]];
-    drips.forEach(function (d) { var x = d[0], baseY = -50 + 36 * Math.sqrt(Math.max(0, 1 - (x / 150) * (x / 150))); c.lineTo(x, baseY + d[1]); });
-    c.closePath(); fillInk(c, '#FFF8FB', 4);
+    // icing on top, dripping down the front in round drips: shaded and shiny inside, outline last
+    GGDraw.shape(c, icingPath,icing || ICINGS[0].col, { lw: 4, depth: 5, shine: [-70, -66, 34, 7, -0.08, 0.45] });
   }
   function fixCandle(x, y) {
     var cx = clamp(x, -122, 122), dy = 36 * Math.sqrt(1 - (cx / 150) * (cx / 150)) * 0.72;
@@ -138,14 +153,14 @@
   }
   function pop(t) { return t.age === undefined ? 1 : easeBack(t.age / 0.3); }
   function drawCakeTop(c, t) {
-    c.save(); c.translate(t.x, t.y); if (!TOPS[t.id].candle) c.rotate(t.rot || 0); var s = pop(t); c.scale(s, s);
+    c.save(); c.translate(t.x, t.y); if (!TOPS[t.id].candle && !TOPS[t.id].flat) c.rotate(t.rot || 0); var s = pop(t); c.scale(s, s);
     TOPS[t.id].draw(c, t);
     c.restore();
   }
   // the whole food, in its own frame
   function drawDish(c, f) {
     if (f.kind === 'cake') {
-      drawCake(c);
+      drawCake(c, f.icing);
       f.tops.forEach(function (t) { if (!TOPS[t.id].candle) drawCakeTop(c, t); });
       f.tops.filter(function (t) { return TOPS[t.id].candle; }).sort(function (a, b) { return a.y - b.y; }).forEach(function (t) { drawCakeTop(c, t); });
       return;
@@ -183,6 +198,7 @@
     if (id === 'sauce') return svgImg(I.sauce);
     if (id === 'cheese') return svgImg(I.grate);
     if (TOPS[id].food === 'pancakes') return svgImg(I[id]);
+    if (id === 'cakeberry') return svgImg(I.strawberry);
     var cv = document.createElement('canvas'); cv.width = cv.height = 140;
     var c = cv.getContext('2d'); c.translate(70, 70); c.lineJoin = 'round'; c.lineCap = 'round';
     if (TOPS[id].how === 'pz') { c.scale(1.85, 2.8); DP.drawPizzaTopping(c, { k: id, x: 0, y: 0, r: 0 }); return cv.toDataURL(); }
@@ -198,11 +214,23 @@
   function renderTray() {
     if (!food) { tray.hidden = true; return; }
     tray.hidden = false;
-    tray.innerHTML = FOODS[food.kind].tops.map(function (id) {
+    // the cake gets a row of icing colours first: tap one and the icing changes
+    var swatches = food.kind !== 'cake' ? '' : '<div class="swatches">' + ICINGS.map(function (k) {
+      return '<button class="swatch" type="button" data-icing="' + k.col + '" aria-label="' + k.name + '" aria-pressed="' + (k.col === food.icing) + '" style="--c:' + k.col + '"></button>';
+    }).join('') + '</div>';
+    tray.innerHTML = swatches + FOODS[food.kind].tops.map(function (id) {
       return '<button class="top" type="button" data-top="' + id + '" aria-label="' + TOP_NAMES[id] + '" aria-pressed="' + (id === sel) + '"><img alt="" src="' + IMG[id] + '"></button>';
     }).join('');
   }
   tray.addEventListener('click', function (e) {
+    var sw = e.target.closest('[data-icing]');
+    if (sw && food && food.kind === 'cake' && mode === 'make') {
+      Sound.init(); Sound.plop(); buzz(8);
+      food.icing = sw.dataset.icing; cat.happy = Math.max(cat.happy, 0.5);
+      sparkle(L.fx, L.fy - 60 * L.fs, sw.dataset.icing === ICINGS[0].col ? '#FFD23F' : sw.dataset.icing, 6, 0.6);
+      tray.querySelectorAll('.swatch').forEach(function (x) { x.setAttribute('aria-pressed', String(x === sw)); });
+      return;
+    }
     var b = e.target.closest('[data-top]'); if (!b) return;
     Sound.init(); Sound.pop(); sel = b.dataset.top;
     tray.querySelectorAll('.top').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.top === sel)); });
@@ -498,23 +526,13 @@
   }
 
   /* ================= drawing ================= */
+  /* the kitchen: a tiled wall, bunting, the counter and (tall screens) the cat's shelf, all from shared/scene.js */
   function drawKitchen(c) {
-    c.fillStyle = '#FFF1E2'; c.fillRect(0, 0, W, H);
-    // tiles up the wall
-    c.strokeStyle = '#FBDCC0'; c.lineWidth = 3;
-    for (var y = 0; y < L.counter; y += 56) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); var off = (y / 56) % 2 ? 28 : 0; for (var x = off; x < W; x += 56) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 56); c.stroke(); } }
-    // bunting
-    var cols = ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'];
-    c.beginPath(); c.moveTo(0, 26); c.quadraticCurveTo(W / 2, 70, W, 26); c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
-    for (var i = 1; i < 12; i++) {
-      var tt = i / 12, bx = tt * W, by = 26 + 88 * tt * (1 - tt) - 1;   // on the string (the curve's height at tt)
-      c.beginPath(); c.moveTo(bx - 16, by); c.lineTo(bx + 16, by); c.lineTo(bx, by + 30); c.closePath(); fillInk(c, cols[i % cols.length], 3);
-    }
-    // counter
-    c.fillStyle = '#E6B98A'; c.fillRect(0, L.counter, W, H - L.counter);
-    c.beginPath(); c.moveTo(0, L.counter); c.lineTo(W, L.counter); ink(c, 4.5);
-    c.fillStyle = '#D9A574'; c.fillRect(0, L.counter + 18, W, 6);
-    if (L.shelf && mode !== 'pick') { rr(c, L.shelf.x0, L.shelf.y, L.shelf.x1 - L.shelf.x0, 16, 6); fillInk(c, '#E6B98A', 4); }
+    var S = GGScene;
+    S.wall(c, 0, 0, W, L.counter, { pattern: 'tiles', col: '#FFF1E2', col2: '#FBDCC0', size: 56, offset: true });
+    S.bunting(c, 0, 26, W, 26, { sag: 22, flag: 32, n: 11 });
+    S.table(c, 0, W, L.counter, H, { kind: 'counter', col: '#E6B98A', thick: 18 });
+    if (L.shelf && mode !== 'pick') S.shelf(c, L.shelf.x0, L.shelf.x1, L.shelf.y, { kind: 'plain', col: '#E6B98A', thick: 16 });
   }
   function drawCat(c) {
     var s = L.cat.s, k = s / 88;
@@ -674,7 +692,7 @@
 
   /* test hook */
   window.__kk = {
-    state: function () { return { mode: mode, kind: food && food.kind, tops: food ? food.n : 0, lit: food ? litCandles().length : 0, made: P.made, sel: sel }; },
+    state: function () { return { mode: mode, kind: food && food.kind, tops: food ? food.n : 0, lit: food ? litCandles().length : 0, made: P.made, sel: sel, icing: food ? food.icing : null }; },
     foodToScreen: function (x, y) { return { x: OX + (L.fx + x * L.fs) * K, y: OY + (L.fy + y * L.fs) * K }; },
     pickToScreen: function (i) { return { x: OX + L.picks[i].x * K, y: OY + L.picks[i].y * K }; },
     L: function () { return L; }

@@ -32,6 +32,10 @@ body { background: #FFE2C7; }
 }
 .top img { width: 70px; height: 70px; pointer-events: none; }
 .top[aria-pressed="true"] { background: var(--sun); transform: translateY(-4px); box-shadow: 0 9px 0 var(--ink); }
+/* the cake's icing colours: a row of big round swatches above its toppings */
+.swatches { flex-basis: 100%; display: flex; justify-content: center; gap: 14px; }
+.swatch { width: 58px; height: 58px; border-radius: 50%; border: 4px solid var(--ink); background: var(--c); box-shadow: 0 4px 0 var(--ink); cursor: pointer; padding: 0; }
+.swatch[aria-pressed="true"] { transform: translateY(-3px); box-shadow: 0 7px 0 var(--ink); outline: 4px solid var(--sun); outline-offset: 3px; }
 .bell {
   position: fixed; z-index: 8; width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--ink); background: var(--grass);
   box-shadow: 0 5px 0 var(--ink); cursor: pointer; padding: 0; display: grid; place-items: center; transition: transform .2s ease, opacity .2s ease;
@@ -45,6 +49,8 @@ body { background: #FFE2C7; }
   .tray { gap: 10px; }
   .top { width: 74px; height: 74px; border-radius: 20px; }
   .top img { width: 60px; height: 60px; }
+  .swatches { gap: 10px; }
+  .swatch { width: 46px; height: 46px; }
   .bell { width: 84px; height: 84px; }
   .bell svg { width: 56px; height: 56px; }
 }
@@ -74,6 +80,7 @@ body { background: #FFE2C7; }
 <script src="../../shared/cat.js"></script>
 <script src="../../shared/avatar.js"></script>
 <script src="../../shared/draw.js"></script>
+<script src="../../shared/scene.js"></script>
 <script src="../../shared/dishes.js"></script>
 <script src="game.js"></script>
 </body>

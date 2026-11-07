@@ -42,10 +42,11 @@
          y is the top of the board, where things stand
      GGScene.table(c, x0, x1, y, floorY, { kind: 'legs' | 'cabinet' | 'bench', col, legs, cloth (stripe colour), apron, front, on })
          y is the top surface, where things stand; floorY is where the legs reach
+         kind 'counter' (a kitchen worktop right across, no legs; planks: grain line spacing): see the batch C block at the end
      GGScene.rug(c, x, y, rx, ry, { kind: 'plain' | 'stitch' | 'rings', col, col2 })
      GGScene.lamp(c, x, y, { kind: 'floor' | 'table', size (height), shade, stand, on })
      GGScene.picture(c, x, y, w, h, { view: 'hills' | 'sea' | 'night', frame, string })   a framed picture on the wall
-     GGScene.bunting(c, x0, y0, x1, y1, { sag, cols: [...], flag (width) })
+     GGScene.bunting(c, x0, y0, x1, y1, { sag, cols: [...], flag (width), n (how many flags) })
      GGScene.plant(c, x, y, { kind: 'leafy' | 'flowers' | 'cactus', size (height), pot, leaf, flower })
      Added for rooms with windows (documented in their block at the end of this file): wall pattern 'panels',
      shelf kind 'pegs', table kind 'top', GGScene.bottles(c, x, y, { cols, size })
@@ -627,7 +628,7 @@
   }
   function bunting(c, x0, y0, x1, y1, o) {
     o = opt(o); var cols = o.cols || ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'], fw = o.flag || 28, sag = pick(o.sag, Math.abs(x1 - x0) * 0.08);
-    var n = Math.max(2, Math.floor(Math.abs(x1 - x0) / (fw * 1.5)));
+    var n = o.n || Math.max(2, Math.floor(Math.abs(x1 - x0) / (fw * 1.5)));   // o.n: how many flags (default: as many as fit)
     function on(t) { return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t + sag * 4 * t * (1 - t) }; }
     // the flags first, hanging from points on the string, then the string over their tops
     for (var i = 0; i < n; i++) {
@@ -696,6 +697,24 @@
     o = opt(o); var w = o.w || 1000, h = o.h || 300;
     return hillLayers(0, h * (o.top || 0.25), w, h * (1 - (o.top || 0.25)), o).map(function (L) { return '<path d="' + L.d + '" fill="' + L.col + '"' + (o.line ? ' stroke="' + INK + '" stroke-width="' + LW.mid + '" stroke-linejoin="round"' : '') + '/>'; }).join('');
   }
+
+  /* ================= added in phase 2, batch C (kitchens and counters) =================
+     GGScene.table(c, x0, x1, y, floorY, { kind: 'counter', col (worktop), front, thick, planks, on })
+         a kitchen worktop running right across, with no legs: the front (plain, or with a grain line every `planks`
+         px), then the worktop board over its top edge, outlined last. Café, Kitten Kitchen and Cosy Kitchen use it. */
+  VARIANTS.table.push('counter');
+  var tableBase = table;
+  function counterTable(c, x0, x1, y, fy, o) {
+    var col = o.col || WOOD, th = o.thick || 20, front = o.front || D.darker(col, 0.12);
+    c.fillStyle = D.tone(c, front, y + th, fy); c.fillRect(x0, y + th, x1 - x0, fy - y - th);
+    if (o.planks) {
+      var lw = W(o, LW.fine); c.fillStyle = D.darker(front, 0.07);
+      for (var py = y + o.planks; py < fy; py += o.planks) c.fillRect(x0, py - lw / 2, x1 - x0, lw);
+    }
+    sh(c, D.rrPath(x0 - 10, y, x1 - x0 + 20, th, Math.min(6, th / 2)), D.tone(c, col, y, y + th), o, LW.mid, { depth: Math.min(5, th * 0.3), inside: o.on });
+  }
+  table = function (c, x0, x1, y, fy, o) { return o && o.kind === 'counter' ? counterTable(c, x0, x1, y, fy, o) : tableBase(c, x0, x1, y, fy, o); };
+  /* ================= end of batch C additions ================= */
 
   window.GGScene = {
     VARIANTS: VARIANTS,

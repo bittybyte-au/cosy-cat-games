@@ -579,32 +579,25 @@
     GGCat.draw(c, catOpts(opts, { pose: 'peek', size: size }));
     c.restore();
   }
+  /* the room: striped wallpaper and bunting (scenery from shared/scene.js) */
   function drawWall(c) {
-    var W = L.W, H = L.H;
-    c.fillStyle = '#FFF1DC'; c.fillRect(0, 0, W, L.CY);
-    c.fillStyle = '#FFE4C4'; for (var x = 20; x < W; x += 64) c.fillRect(x, 0, 30, L.CY);
-    // bunting: the flags first, then the string over their tops.
-    // tall screens: two short strings either side of the hatch (clear of the queue and the order bubbles)
-    var runs = L.tall ? [[8, L.hatch.x - 34, L.hatch.y + 30], [L.hatch.x + L.hatch.w + 34, W - 8, L.hatch.y + 30]] : [[380, W - 20, 24]];
-    var cols = ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'];
-    runs.forEach(function (r, ri) {
-      var xs = r[0], xe = r[1], y0 = r[2], sag = L.tall ? 18 : 30;
-      var n = Math.max(2, Math.floor((xe - xs) / 46));
-      for (var i = 0; i <= n; i++) {
-        var t = (i + 0.5) / (n + 1), bx = lerp(xs, xe, t), by = y0 + sag * 2 * t * (1 - t);
-        D.shape(c, function (p) { p.moveTo(bx - 13, by - 1); p.lineTo(bx + 13, by - 1); p.lineTo(bx, by + 24); p.closePath(); }, cols[(i + ri * 2) % cols.length], { lw: LW.fine, depth: 4 });
-      }
-      c.beginPath(); c.moveTo(xs, y0); c.quadraticCurveTo((xs + xe) / 2, y0 + sag, xe, y0); D.ink(c, LW.fine);
-    });
+    var S = GGScene, cols = ['#FF8FAB', '#FFD23F', '#7CC4FF', '#7BD389', '#B48CFF'];
+    S.wall(c, 20 - 64, 0, L.W + 64, L.CY, { pattern: 'stripes', col: '#FFF1DC', col2: '#FFE4C4', size: 64 });
+    if (L.tall) {
+      // tall screens: two short strings either side of the hatch (clear of the queue and the order bubbles)
+      var y = L.hatch.y + 30;
+      S.bunting(c, 8, y, L.hatch.x - 34, y, { sag: 9, flag: 26, n: 3, cols: cols });
+      S.bunting(c, L.hatch.x + L.hatch.w + 34, y, L.W - 8, y, { sag: 9, flag: 26, n: 3, cols: cols.slice(2).concat(cols.slice(0, 2)) });
+    } else {
+      // wide screens: one string from behind the hatch's awning to just short of the queue in the top corner
+      S.bunting(c, L.hatch.x + L.hatch.w + 16, 24, L.queue.x - 76, 24, { sag: 15, flag: 26, n: 6, cols: cols });
+    }
   }
   function drawHatch(c) {
     var h = L.hatch, C = G ? G.chef : { state: 'idle', t: 0 };
-    // kitchen through the hatch
-    rr(c, h.x, h.y, h.w, h.h, 16); c.fillStyle = '#E3F1F6'; c.fill();
+    // kitchen through the hatch: a tiled wall (shared/scene.js)
     c.save(); rr(c, h.x, h.y, h.w, h.h, 16); c.clip();
-    c.strokeStyle = '#C8E2EC'; c.lineWidth = 3;
-    for (var x = h.x; x < h.x + h.w; x += 32) { c.beginPath(); c.moveTo(x, h.y); c.lineTo(x, h.y + h.h); c.stroke(); }
-    for (var y = h.y; y < h.y + h.h; y += 32) { c.beginPath(); c.moveTo(h.x, y); c.lineTo(h.x + h.w, y); c.stroke(); }
+    GGScene.wall(c, h.x, h.y, h.w, h.h, { pattern: 'tiles', col: '#E3F1F6', col2: '#C8E2EC', size: 32 });
     // pots hanging on hooks: the hook line and the side handles tuck in behind each pot
     [[h.x + 40, '#FF6B57'], [h.x + h.w - 44, '#7CC4FF']].forEach(function (p) {
       c.beginPath(); c.moveTo(p[0], h.y); c.lineTo(p[0], h.y + 34); D.ink(c, LW.fine);
@@ -647,8 +640,7 @@
       c.strokeStyle = INK; c.lineWidth = LW.fine; for (var s2 = 1; s2 < nS; s2++) { c.beginPath(); c.moveTo(ax + s2 * sw, ay); c.lineTo(ax + s2 * sw, ay + 26); c.stroke(); }
     } });
     // the pass: a ledge where finished dishes wait, on brackets that tuck in under it
-    [h.x + 10, h.x + h.w - 10].forEach(function (bx) { c.beginPath(); c.moveTo(bx, L.ledgeY + 10); c.lineTo(bx + (bx < h.x + h.w / 2 ? 18 : -18), L.ledgeY + 40); D.ink(c, LW.mid); });
-    D.shape(c, D.rrPath(h.x - 26, L.ledgeY, h.w + 52, 18, 6), D.tone(c, '#E6B98A', L.ledgeY, L.ledgeY + 18), { lw: LW.mid, depth: 5 });
+    GGScene.shelf(c, h.x - 26, h.x + h.w + 26, L.ledgeY, { kind: 'brackets', col: '#E6B98A', thick: 18 });
   }
   function drawPass(c) {
     if (!G) return;
@@ -666,11 +658,8 @@
     });
   }
   function drawCounter(c) {
-    var W = L.W, y = L.CY;
-    c.fillStyle = D.tone(c, '#C98B5B', y, L.H); c.fillRect(0, y, W, L.H - y);
-    c.strokeStyle = '#B57A4C'; c.lineWidth = 4;
-    for (var x = 60; x < W; x += 150) { rr(c, x, y + 34, 110, L.H - y - 50, 10); c.stroke(); }
-    D.shape(c, D.rrPath(-10, y - 4, W + 20, 26, 8), D.tone(c, '#E6B98A', y - 4, y + 22), { lw: LW.mid, depth: 6 });
+    // the counter, with cupboard doors (shared/scene.js); its top is just above the customers' paws
+    GGScene.table(c, 0, L.W, L.CY - 4, L.H, { kind: 'bench', col: '#E6B98A', front: '#C98B5B', doors: true });
     // bin for unwanted dishes: the lid sits on the bin, the slats are inside it
     var b = L.bin;
     c.save(); c.translate(b.x, b.y);

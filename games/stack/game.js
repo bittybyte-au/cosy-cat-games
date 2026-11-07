@@ -175,9 +175,9 @@
     } });
   }
   function frameScene(c) {
-    c.fillStyle = '#E8E0FF'; c.fillRect(0, 0, W, H);
-    c.fillStyle = '#DCD2FA'; for (var x = 0; x < W; x += 80) c.fillRect(x, 0, 40, floorY());
-    c.fillStyle = D.tone(c, '#E6B98A', floorY(), H); c.fillRect(0, floorY(), W, H - floorY()); c.beginPath(); c.moveTo(0, floorY()); c.lineTo(W, floorY()); D.ink(c, D.LW.mid);
+    // the room: striped wallpaper and a wooden floor (shared/scene.js)
+    GGScene.wall(c, 0, 0, W, floorY(), { pattern: 'stripes', col: '#E8E0FF', col2: '#DCD2FA', size: 80 });
+    GGScene.floor(c, 0, floorY(), W, H - floorY(), { kind: 'planks', col: '#E6B98A' });
     c.save(); c.translate(W / 2, floorY()); c.scale(zoom, zoom); c.translate(-W / 2, -floorY());
     drawRoom(c);
     // sway: the whole tower leans a little, more as it gets taller

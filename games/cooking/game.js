@@ -424,20 +424,13 @@
 
 
 
-  /* ---------- background: wall tiles + wooden counter, in screen space ---------- */
+  /* ---------- background: wall tiles + wooden counter (shared/scene.js), in screen space ---------- */
   function drawBackground(c) {
-    c.fillStyle = '#FFE3CC'; c.fillRect(0, 0, cw, ch);
-    var counterY = OY + 70 * S;
-    var t = Math.max(26, 54 * S);
-    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 3;
-    for (var x = (cw / 2) % t; x < cw; x += t) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, counterY); c.stroke(); }
-    for (var y = counterY % t; y < counterY; y += t) { c.beginPath(); c.moveTo(0, y); c.lineTo(cw, y); c.stroke(); }
-    c.fillStyle = '#E9B57F'; c.fillRect(0, counterY, cw, ch - counterY);
-    c.fillStyle = '#DDA36C';
-    var plank = Math.max(40, 120 * S);
-    for (var py = counterY + plank; py < ch; py += plank) c.fillRect(0, py, cw, 3);
-    c.fillStyle = '#F4C995'; c.fillRect(0, counterY, cw, 10);
-    c.fillStyle = INK; c.fillRect(0, counterY + 10, cw, 3);
+    var counterY = OY + 70 * S, t = Math.max(26, 54 * S);
+    // the tile grid lines up on the middle of the screen and on the counter's edge
+    var x0 = (cw / 2) % t - t, y0 = counterY % t - t;
+    GGScene.wall(c, x0, y0, cw - x0, counterY - y0, { pattern: 'tiles', col: '#FFE3CC', col2: 'rgba(255,255,255,.75)', size: t });
+    GGScene.table(c, 0, cw, counterY, ch, { kind: 'counter', col: '#F4C995', front: '#E9B57F', thick: 13, planks: Math.max(40, 120 * S) });
   }
 
   /* ---------- the dish being made ---------- */
