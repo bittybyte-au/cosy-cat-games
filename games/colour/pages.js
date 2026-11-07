@@ -310,8 +310,8 @@
   /* ---------- fills ---------- */
   var COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#B7E36B', '#5CCB75', '#33C9C1', '#7CC4FF', '#4D8BFF',
     '#A77BFF', '#FF8FC8', '#FFC7A0', '#A9714B', '#B9B4C7', '#4A4160', '#FFFFFF', '#FFF3D6'];
-  /* eight big, clearly different colours for toddler mode */
-  var TODDLER_COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF', '#FF8FC8', '#A9714B'];
+  /* ten big, clearly different colours for toddler mode (grey and a soft black last) */
+  var TODDLER_COLOURS = ['#FF5A5F', '#FF9F43', '#FFD93F', '#5CCB75', '#4D8BFF', '#A77BFF', '#FF8FC8', '#A9714B', '#B9B4C7', '#3A3546'];
   var SPECIALS = [
     { id: 'rainbow', name: 'Rainbow' }, { id: 'glitter', name: 'Gold glitter' }, { id: 'pinkglitter', name: 'Pink glitter' },
     { id: 'dots', name: 'Dots' }, { id: 'stripes', name: 'Stripes' }, { id: 'stars', name: 'Stars' }, { id: 'hearts', name: 'Hearts' },

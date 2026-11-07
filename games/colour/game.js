@@ -117,7 +117,7 @@
   var pic = null;                  // the picture being coloured
   var isNew = false;
   var tool = 'fill';
-  /* Toddler mode (set on the games page): only the simple pages, eight big colours, tap to fill and a big undo;
+  /* Toddler mode (set on the games page): only the simple pages, ten big colours, tap to fill and a big undo;
      Done hangs the picture straight away in a frame of its own. Same pictures and save as always. */
   var TODDLER = false;
   try { TODDLER = !!(GG.getSetting && GG.getSetting('toddler', false)); } catch (e) {}

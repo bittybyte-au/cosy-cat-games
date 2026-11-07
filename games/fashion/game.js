@@ -139,13 +139,14 @@
     track('Shuffle', { game: 'fashion' });
   });
 
-  // start again: take everything off (colours and patterns back to plain)
+  // start again: take everything off (colours and patterns back to plain) and the photo set back to the studio
   $('resetBtn').addEventListener('click', function () {
     Sound.init(); Sound.swish(); hop(); buzz(8);
     ['hat', 'glasses', 'neck', 'top'].forEach(function (k) { S.outfit[k] = { id: 'none', col: F.COLOURS[k === 'top' ? 5 : 0], pat: 'plain' }; });
+    S.bg = 'studio'; S.pose = 'sit'; S.face = 'happy'; S.fx = 0;
     sparkleAt(0.5, 0.45, 8);
     save(); renderPanel();
-    say('Back to just your cat!', 1.6);
+    say('All fresh: just your cat in the studio!', 1.8);
     track('Reset outfit', { game: 'fashion' });
   });
 
