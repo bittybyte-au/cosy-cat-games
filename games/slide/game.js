@@ -245,7 +245,7 @@
   }
   // easy: a short walk that never comes back to an arrangement it has already made
   function easyShuffle() {
-    var steps = n === 3 ? 5 : 8, minOut = n === 3 ? 3 : 4;
+    var steps = n === 3 ? 7 : 10, minOut = n === 3 ? 4 : 5;
     for (var tries = 0; tries < 60; tries++) {
       cells = []; for (var i = 0; i < n * n - 1; i++) cells.push(i); cells.push(-1); gap = n * n - 1;
       var seen = {}; seen[cells.join(',')] = 1;

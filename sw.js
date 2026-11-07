@@ -5,7 +5,7 @@
    the files whose hash changed. Online, pages are always fetched fresh (network first), with the cache as the
    offline fallback. */
 /* FILES:start (written by tools/update-sw.mjs, do not edit by hand) */
-const VERSION = 'ccg-09eb24b41c';
+const VERSION = 'ccg-5d79d8dc84';
 const FILES = {
   "./": "b6c1fb8b57",
   "./index.html": "b6c1fb8b57",
@@ -38,7 +38,7 @@ const FILES = {
   "./icons/icon-512.png": "29acc5c7a1",
   "./icons/icon-maskable-512.png": "73ec626eab",
   "./icons/icon.svg": "485b63acd2",
-  "./games/bath/game.js": "1afdbf19ad",
+  "./games/bath/game.js": "2334900250",
   "./games/bath/": "6f1c2f951d",
   "./games/bath/index.html": "6f1c2f951d",
   "./games/boxes/boxes.js": "69a6967691",
@@ -110,7 +110,7 @@ const FILES = {
   "./games/seek/game.js": "e3217528f5",
   "./games/seek/": "eea616cf33",
   "./games/seek/index.html": "eea616cf33",
-  "./games/slide/game.js": "b3687cd95b",
+  "./games/slide/game.js": "1c7b05868b",
   "./games/slide/": "05a6b8e255",
   "./games/slide/index.html": "05a6b8e255",
   "./games/sneaky/game.js": "89a9f8ec4e",

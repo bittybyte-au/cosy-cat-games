@@ -17,8 +17,27 @@
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
   function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.1, r), 0, TAU); }
   /* a round bubble: white, a soft shade low down, a shine, outline last */
-  function bubble(c, x, y, r) {
+  /* hundreds of bubbles: a fully grown bubble is drawn once per size into a small picture and reused */
+  var bubbleCache = {}, bubbleScale = 0;
+  function bubbleSprite(r) {
+    var sc = Math.min(dpr * K * 1.1, 3.5);
+    if (sc !== bubbleScale) { bubbleCache = {}; bubbleScale = sc; }
+    var key = Math.round(r * 2), s = bubbleCache[key];
+    if (s) return s;
+    var rr = key / 2, pad = Math.ceil(rr * 0.6 + 6), size = Math.ceil((rr + pad) * 2 * sc);
+    var cv = document.createElement('canvas'); cv.width = cv.height = size;
+    var g = cv.getContext('2d'); g.lineJoin = 'round'; g.lineCap = 'round';
+    g.setTransform(sc, 0, 0, sc, size / 2, size / 2);
+    bubbleShape(g, 0, 0, rr);
+    s = bubbleCache[key] = { cv: cv, half: size / 2 / sc };
+    return s;
+  }
+  function bubble(c, x, y, r, grown) {
     if (r < 1) return;
+    if (grown) { var s = bubbleSprite(r); c.drawImage(s.cv, x - s.half, y - s.half, s.half * 2, s.half * 2); return; }
+    bubbleShape(c, x, y, r);
+  }
+  function bubbleShape(c, x, y, r) {
     D.shape(c, D.ellPath(x, y, r, r), '#FFFFFF', { lw: LW.fine, depth: r * 0.3, shade: 'rgba(91,180,240,.22)', shine: [x - r * 0.38, y - r * 0.4, r * 0.24, r * 0.16, -0.6, 0.9] });
   }
 
@@ -129,10 +148,8 @@
         if (Math.hypot(m.x - lx, m.y - ly) < R + m.r) { m.amt = Math.max(0, m.amt - dist / 160); if (m.amt === 0) Sound.bubble(); }
       });
       // bubbles where you rub
-      // lots of bubbles is the fun part: up to two per rub, and plenty before it stops adding more
-      for (var b = 0; b < 2; b++) {
-        if (Math.random() < Math.min(1, dist / 14) && kit.suds.length < 240) kit.suds.push({ x: lx + rand(-30, 30), y: ly + rand(-26, 26), r: rand(9, 18), t: 0 });
-      }
+      // lots of bubbles is the fun part: they come at a steady pace, and keep coming for a long time
+      if (Math.random() < Math.min(1, dist / 18) && kit.suds.length < 600) kit.suds.push({ x: lx + rand(-26, 26), y: ly + rand(-22, 22), r: rand(9, 18), t: 0 });
       scrubT -= dist; if (scrubT < 0) { scrubT = 60; Sound.scrub(); }
     } else if (tool === 'shower') {
       // water falls from the shower head on to where you point
@@ -370,7 +387,7 @@
     drawMud(c, o, a);
     c.globalAlpha = a;
     // bubbles from the sponge
-    kit.suds.forEach(function (s) { bubble(c, s.x, s.y + Math.sin(time * 3 + s.x) * 1.5, s.r * easeOut(s.t / 0.25)); });
+    kit.suds.forEach(function (s) { var grown = s.t >= 0.25; bubble(c, s.x, s.y + Math.sin(time * 3 + s.x) * 1.5, grown ? s.r : s.r * easeOut(s.t / 0.25), grown); });
     c.restore();
     drawWater(c, G, true);
     // a ripple where the kitten meets the water
