@@ -419,7 +419,7 @@
     },
     {
       id: 'yarn', save: 'yarn', name: 'Yarn Sort', blurb: 'Sort the wool into tubes',
-      ages: ['5-10'], toddler: false, free: 0, status: 'live', season: null, colour: '#DCC8FF',
+      ages: ['5-10', '10+'], toddler: false, free: 0, status: 'live', season: null, colour: '#DCC8FF',
       badge: level, art: ART.yarn
     },
     {
