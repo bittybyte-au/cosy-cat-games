@@ -84,7 +84,9 @@
   function plan(lv) {
     return {
       n: lv <= 3 ? 5 : lv <= 9 ? 6 : lv <= 18 ? 7 : 8,
-      turns: lv === 1 ? 1 : Math.min(2 + Math.floor((lv - 1) / 3), 8),
+      turns: lv <= 3 ? lv : Math.min(3 + Math.floor((lv - 3) / 3), 8),
+      // how many mirrors start the wrong way: one more each of the first levels, then about half or more
+      flips: lv <= 3 ? lv : 3 + Math.floor((lv - 3) / 4),
       splits: lv >= 12 ? (lv >= 26 && lv % 2 === 0 ? 2 : 1) : 0,
       loose: lv >= 16 ? Math.min(1 + Math.floor((lv - 16) / 6), 3) : 0,
       decoys: Math.min(Math.floor(lv / 3), 6),
@@ -92,9 +94,19 @@
       fixed: lv >= 8 ? 0.3 : 0
     };
   }
+  /* can the level be solved by turning fewer than k of these mirrors? */
+  function quickerThan(L, turn, k) {
+    function rec(start, left) {
+      if (solved(L)) return true;
+      if (!left) return false;
+      for (var i = start; i < turn.length; i++) { turn[i].o ^= 1; var ok = rec(i + 1, left - 1); turn[i].o ^= 1; if (ok) return true; }
+      return false;
+    }
+    return rec(0, k - 1);
+  }
   function makeLevel(lv) {
     var pl = plan(lv);
-    for (var attempt = 0; attempt < 400; attempt++) {
+    for (var attempt = 0; attempt < 1500; attempt++) {
       var R = D.seeded(lv * 7919 + attempt * 104729 + 17);
       var L = tryLevel(pl, R, lv);
       if (L) return L;
@@ -195,10 +207,15 @@
     for (var y3 = 0; y3 < n; y3++) for (var x3 = 0; x3 < n; x3++) { var c3 = g[y3][x3]; if (c3 && (c3.t === 'mirror' || c3.t === 'split') && !c3.fixed) turn.push(c3); }
     var important = turn.filter(function (c4) { return !c4.decoy; });
     if (!important.length && !L.loose.length) return null;
-    var flips = 0;
-    important.forEach(function (c5) { if (R() < 0.7) { c5.o ^= 1; flips++; } });
-    if (important.length && flips < Math.ceil(important.length / 2)) { important.forEach(function (c6) { if (flips < Math.ceil(important.length / 2) && R() < 0.8) { c6.o ^= 1; flips++; } }); }
+    var want = Math.min(important.length, Math.max(pl.flips, Math.ceil(important.length * 0.55)));
+    if (pl.flips <= 3 && lv <= 3) want = Math.min(important.length, pl.flips);
+    if (important.length < Math.min(pl.flips, pl.turns + 2 * pl.splits)) return null;   // too few mirrors for this level's moves
+    var order = important.slice();
+    for (var s = order.length - 1; s > 0; s--) { var j = Math.floor(R() * (s + 1)), tmp = order[s]; order[s] = order[j]; order[j] = tmp; }
+    order.slice(0, want).forEach(function (c5) { c5.o ^= 1; });
     if (!L.loose.length && solved(L)) return null;
+    // no shortcuts: it mustn't be solvable by turning fewer mirrors than this level asks for
+    if (!L.loose.length && quickerThan(L, turn, Math.min(want, pl.flips))) return null;
     // remember the starting layout, for "start again"
     L.start = JSON.stringify({ g: g, loose: L.loose });
     return L;
@@ -617,6 +634,18 @@
     trayCentre: function () { return TRAY && { x: TRAY.x + TRAY.w / 2, y: TRAY.y + TRAY.h / 2 }; },
     grid: function () { return L.g; },
     // solve by brute force over the turnable mirrors (for testing: proves each level can be done)
+    minMoves: function (lv) {
+      var x = makeLevel(lv), turn = [];
+      if (x.loose.length) return -1;
+      for (var yy = 0; yy < x.n; yy++) for (var xx = 0; xx < x.n; xx++) { var c = x.g[yy][xx]; if (c && (c.t === 'mirror' || c.t === 'split') && !c.fixed) turn.push(c); }
+      var m = turn.length, o0 = turn.map(function (c) { return c.o; }), best = 99;
+      if (m > 18) return -2;
+      for (var mask = 0; mask < (1 << m); mask++) {
+        var pc = 0; for (var i = 0; i < m; i++) { var b = (mask >> i) & 1; turn[i].o = o0[i] ^ b; pc += b; }
+        if (pc < best && solved(x)) best = pc;
+      }
+      return best;
+    },
     canSolve: function (lv) {
       var x = makeLevel(lv), turn = [];
       for (var yy = 0; yy < x.n; yy++) for (var xx = 0; xx < x.n; xx++) { var c = x.g[yy][xx]; if (c && (c.t === 'mirror' || c.t === 'split') && !c.fixed) turn.push(c); }

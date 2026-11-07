@@ -1857,11 +1857,11 @@
   /* ---- Step: decorate the stack (or the waffle) ---- */
   var PAN_TOOL_ICONS = {
     plate: TOOL_ICONS.plate,
-    syrup: '<svg viewBox="0 0 40 40"><path d="M14 4 H26 V10 Q34 14 33 24 V34 Q33 37 30 37 H10 Q7 37 7 34 V24 Q6 14 14 10 Z" fill="#C8721F" stroke="#2A2340" stroke-width="3"/><rect x="12" y="2" width="16" height="6" rx="2" fill="#FF7EB6" stroke="#2A2340" stroke-width="2.5"/><path d="M13 22 Q20 17 27 22 Q20 30 13 22 Z" fill="#FFE29A"/></svg>',
-    butter: '<svg viewBox="0 0 40 40"><path d="M6 18 L6 26 L20 34 L34 26 L34 18 L20 26 Z" fill="#F2D66B" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M6 18 L20 10 L34 18 L20 26 Z" fill="#FFF3A6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg>',
-    strawberry: '<svg viewBox="0 0 40 40"><path d="M20 36 Q4 22 9 13 Q20 6 31 13 Q36 22 20 36 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="3"/><path d="M20 30 Q11 22 14 17 Q20 13 26 17 Q29 22 20 30 Z" fill="#FFD0D6"/><path d="M12 11 Q20 2 28 11 Q20 8 12 11 Z" fill="#5CC46B" stroke="#2A2340" stroke-width="2"/></svg>',
-    banana: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#FFF4C2" stroke="#2A2340" stroke-width="3"/><circle cx="20" cy="20" r="5" fill="#F3E2A0"/><circle cx="18" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="22" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="20" cy="22.5" r="1.4" fill="#8A5A2B"/></svg>',
-    sugar: '<svg viewBox="0 0 40 40"><rect x="10" y="12" width="20" height="24" rx="6" fill="#FFFFFF" stroke="#2A2340" stroke-width="3"/><path d="M12 12 Q20 2 28 12 Z" fill="#9EDCFF" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><g fill="#9AA6B2"><circle cx="16" cy="9" r="1.2"/><circle cx="20" cy="7" r="1.2"/><circle cx="24" cy="9" r="1.2"/></g></svg>'
+    syrup: GGDish.icons.syrup,
+    butter: GGDish.icons.butter,
+    strawberry: GGDish.icons.strawberry,
+    banana: GGDish.icons.banana,
+    sugar: GGDish.icons.sugar
   };
   var PAN_TOOL_SAY = { syrup: 'Drag to pour syrup', butter: 'Tap to add butter', strawberry: 'Tap to add strawberries', banana: 'Tap to add banana', sugar: 'Drag to dust icing sugar' };
 
@@ -1899,15 +1899,7 @@
     function addSyrup(p) {
       if (!onTop(p, 10)) { lastSyrup = null; return; }
       if (!lastSyrup) { lastSyrup = []; dish.syrup.push(lastSyrup); }
-      var last = lastSyrup[lastSyrup.length - 1];
-      if (last && dist(last, p) < 6) return;
-      if (dish.syrup.reduce(function (n, s) { return n + s.length; }, 0) > 500) return;
-      lastSyrup.push({ x: p.x, y: p.y }); changed = true;
-      var t = topOf(), nx = (p.x - t.x) / t.rx, ny = (p.y - t.y) / t.ry;
-      if (ny > 0.1 && nx * nx + ny * ny > 0.5 && dish.drips.length < 16 && Math.random() < 0.25) {
-        var ex = t.x + nx / Math.hypot(nx, ny) * t.rx * 0.98, ey = t.y + ny / Math.hypot(nx, ny) * t.ry * 0.98;
-        dish.drips.push({ x: ex, y: ey, len: 0, max: 25 + Math.random() * 45 });
-      }
+      if (GGDish.syrupStep(dish, lastSyrup, p, topOf())) changed = true;
     }
     return {
       enter: function () {
@@ -2975,10 +2967,10 @@
   };
   ICONS.dough = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="9" ry="6" fill="#F6E3BC" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="9" cy="11.5" rx="3" ry="1.2" fill="#fff"/></svg>';
   ICONS.rise = '<svg viewBox="0 0 24 24"><path d="M3 13 H21 Q20 21 12 21 Q4 21 3 13 Z" fill="#5EB7F0" stroke="#2A2340" stroke-width="1.8"/><path d="M4 13 Q12 2 20 13 Z" fill="#fff" stroke="#2A2340" stroke-width="1.8"/><path d="M8 9 V13 M12 6 V13 M16 9 V13" stroke="#FF6B57" stroke-width="2"/></svg>';
-  ICONS.grate = '<svg viewBox="0 0 24 24"><path d="M6 21 L7 5 H17 L18 21 Z" fill="#D5DBE3" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="2" fill="#FF6B57" stroke="#2A2340" stroke-width="1.4"/><g fill="#8A93A0"><circle cx="10" cy="10" r="1"/><circle cx="14" cy="10" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="10" cy="18" r="1"/><circle cx="14" cy="18" r="1"/></g></svg>';
+  ICONS.grate = GGDish.icons.grate;
   ICONS.slice = '<svg viewBox="0 0 24 24"><path d="M3 20 L12 3 L21 20 Z" fill="#FFD86A" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 20 Q12 23 21 20" fill="none" stroke="#C98A3E" stroke-width="3"/><circle cx="10" cy="13" r="1.8" fill="#D83A3A"/><circle cx="14" cy="16" r="1.8" fill="#D83A3A"/></svg>';
   ICONS.pin = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="9" ry="4" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><rect x="3" y="6" width="18" height="5" rx="2.5" fill="#F1C88E" stroke="#2A2340" stroke-width="1.6"/></svg>';
-  ICONS.sauce = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="10" ry="6" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="12" cy="13.5" rx="7" ry="3.8" fill="#E8362B"/></svg>';
+  ICONS.sauce = GGDish.icons.sauce;
   ICONS.toppings = '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="10" ry="6" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="12" cy="13.5" rx="7" ry="3.8" fill="#FFD86A"/><circle cx="9" cy="13" r="1.8" fill="#D83A3A"/><circle cx="14" cy="12" r="1.8" fill="#D83A3A"/><circle cx="13" cy="15.5" r="1.4" fill="#4FB868"/></svg>';
   ICONS.oven = '<svg viewBox="0 0 24 24"><path d="M2 20 Q2 3 12 3 Q22 3 22 20 Z" fill="#D9774F" stroke="#2A2340" stroke-width="1.8"/><path d="M7 20 V14 Q12 7 17 14 V20 Z" fill="#FF8A3D" stroke="#2A2340" stroke-width="1.6"/></svg>';
   RECIPE_DEFS.pizza = {

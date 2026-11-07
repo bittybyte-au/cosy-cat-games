@@ -540,6 +540,32 @@
     c.restore();
   }
 
+  /* ---- tool icons both kitchens use (Cosy Kitchen's tool tray and Kitten Kitchen's) ---- */
+  var ICONS = {
+    syrup: '<svg viewBox="0 0 40 40"><path d="M14 4 H26 V10 Q34 14 33 24 V34 Q33 37 30 37 H10 Q7 37 7 34 V24 Q6 14 14 10 Z" fill="#C8721F" stroke="#2A2340" stroke-width="3"/><rect x="12" y="2" width="16" height="6" rx="2" fill="#FF7EB6" stroke="#2A2340" stroke-width="2.5"/><path d="M13 22 Q20 17 27 22 Q20 30 13 22 Z" fill="#FFE29A"/></svg>',
+    butter: '<svg viewBox="0 0 40 40"><path d="M6 18 L6 26 L20 34 L34 26 L34 18 L20 26 Z" fill="#F2D66B" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/><path d="M6 18 L20 10 L34 18 L20 26 Z" fill="#FFF3A6" stroke="#2A2340" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+    strawberry: '<svg viewBox="0 0 40 40"><path d="M20 36 Q4 22 9 13 Q20 6 31 13 Q36 22 20 36 Z" fill="#FF5A6A" stroke="#2A2340" stroke-width="3"/><path d="M20 30 Q11 22 14 17 Q20 13 26 17 Q29 22 20 30 Z" fill="#FFD0D6"/><path d="M12 11 Q20 2 28 11 Q20 8 12 11 Z" fill="#5CC46B" stroke="#2A2340" stroke-width="2"/></svg>',
+    banana: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#FFF4C2" stroke="#2A2340" stroke-width="3"/><circle cx="20" cy="20" r="5" fill="#F3E2A0"/><circle cx="18" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="22" cy="19" r="1.4" fill="#8A5A2B"/><circle cx="20" cy="22.5" r="1.4" fill="#8A5A2B"/></svg>',
+    sugar: '<svg viewBox="0 0 40 40"><rect x="10" y="12" width="20" height="24" rx="6" fill="#FFFFFF" stroke="#2A2340" stroke-width="3"/><path d="M12 12 Q20 2 28 12 Z" fill="#9EDCFF" stroke="#2A2340" stroke-width="3" stroke-linejoin="round"/><g fill="#9AA6B2"><circle cx="16" cy="9" r="1.2"/><circle cx="20" cy="7" r="1.2"/><circle cx="24" cy="9" r="1.2"/></g></svg>',
+    grate: '<svg viewBox="0 0 24 24"><path d="M6 21 L7 5 H17 L18 21 Z" fill="#D5DBE3" stroke="#2A2340" stroke-width="1.8" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="2" fill="#FF6B57" stroke="#2A2340" stroke-width="1.4"/><g fill="#8A93A0"><circle cx="10" cy="10" r="1"/><circle cx="14" cy="10" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="10" cy="18" r="1"/><circle cx="14" cy="18" r="1"/></g></svg>',
+    sauce: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="10" ry="6" fill="#F3DDB0" stroke="#2A2340" stroke-width="1.8"/><ellipse cx="12" cy="13.5" rx="7" ry="3.8" fill="#E8362B"/></svg>'
+  };
+
+  /* one step of pouring syrup on top: adds point p to the current squiggle (if it has moved far enough) and now and
+     then a drip running over the front edge. top is the ellipse of the top {x, y, rx, ry}. True if it added a point. */
+  function syrupStep(d, line, p, top) {
+    var last = line[line.length - 1];
+    if (last && Math.hypot(last.x - p.x, last.y - p.y) < 6) return false;
+    if (d.syrup.reduce(function (n, s) { return n + s.length; }, 0) > 500) return false;
+    line.push({ x: p.x, y: p.y });
+    var nx = (p.x - top.x) / top.rx, ny = (p.y - top.y) / top.ry;
+    if (ny > 0.1 && nx * nx + ny * ny > 0.5 && d.drips.length < 16 && Math.random() < 0.25) {
+      var h = Math.hypot(nx, ny);
+      d.drips.push({ x: top.x + nx / h * top.rx * 0.98, y: top.y + ny / h * top.ry * 0.98, len: 0, max: 25 + Math.random() * 45 });
+    }
+    return true;
+  }
+
   /* ---------- whole dishes ---------- */
   // where each dish sits in Cosy Kitchen's 640-wide play area, and how wide a square holds it
   var DISHES = {
@@ -580,17 +606,17 @@
   }
 
   window.GGDish = {
-    pack: pack, draw: draw, ids: Object.keys(DISHES),
+    pack: pack, draw: draw, ids: Object.keys(DISHES), icons: ICONS, syrupStep: syrupStep,
     parts: {
       NORI: NORI, NORI_LIGHT: NORI_LIGHT, ROLL_R: ROLL_R, PLATES: PLATES, TONES: TONES, PATTY_TONES: PATTY_TONES, LAYER_H: LAYER_H,
       PCX: PCX, PCY: PCY, PR: PR, SOY: SOY, SX: SX, SY0: SY0, SRX: SRX, SRY: SRY, STH: STH, PLATE2: PLATE2, BX: BX, BY: BY,
       drawMini: drawMini, grainBatch: grainBatch, rollEnd: rollEnd, drawHandroll: drawHandroll, drawSeed: drawSeed, drawPlateScene: drawPlateScene,
       drawLeaf: drawLeaf, gingerSlice: gingerSlice, drawGinger: drawGinger, drawWasabi: drawWasabi, cakeInfo: cakeInfo, drawStackCake: drawStackCake,
-      stackOf: stackOf, stackTop: stackTop, drawButter: drawButter, drawTopping: drawTopping, drawStackScene: drawStackScene,
+      stackOf: stackOf, stackTop: stackTop, drawButter: drawButter, drawTopping: drawTopping, drawSyrup: drawSyrup, drawStackScene: drawStackScene,
       drawBunBottom: drawBunBottom, drawBunTop: drawBunTop, drawLayer: drawLayer, drawBurgerScene: drawBurgerScene, CHIP_COLOURS: CHIP_COLOURS,
       WX: WX, WY: WY, WRX: WRX, WRY: WRY, WSQ: WSQ, WTH: WTH, WAFFLE_TONES: WAFFLE_TONES, catWafflePath: catWafflePath, waffleGrid: waffleGrid,
       drawWaffleFlat: drawWaffleFlat, drawWaffle: drawWaffle, drawWaffleScene: drawWaffleScene, waffleTopPath: waffleTopPath, waffleTop: waffleTop,
-      ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, PIZZA_TOPS: PIZZA_TOPS, PIZZA_CUTS: PIZZA_CUTS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
+      ZX: ZX, ZY: ZY, ZRX: ZRX, ZRY: ZRY, ZSQ: ZSQ, PIZZA_TOPS: PIZZA_TOPS, PIZZA_CUTS: PIZZA_CUTS, drawPizzaTopping: drawPizzaTopping, drawPizzaScene: drawPizzaScene
     }
   };
 })();
